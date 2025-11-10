@@ -6,110 +6,70 @@ on:
     paths:
       - '.github/workflows/ffmpeg.yml'
       - 'internal/builder/**'
+  workflow_dispatch:
 
 permissions:
   pull-requests: write
   contents: write
 
 jobs:
-  linux_amd64:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
+  build:
+    name: Build FFmpeg library for ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-24.04
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: darwin
+            arch: amd64
+            runner: macos-15-intel
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+      fail-fast: false
 
-      - run: uname -a
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show system info
+        run: uname -a
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21
+          go-version: '1.24'
 
-      - name: Install deps
-        run: sudo apt-get install -y yasm nasm meson gperf
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y yasm nasm meson gperf
 
-      - run: mkdir build
-
-      - name: Build
-        working-directory: build
-        run: go run ../internal/builder/ ../libffmpeg_linux_amd64.a
-
-      - run: ls -la
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          title: "[CI] Rebuild linux amd64 library"
-          body: Automated changes by CI pipeline.
-          commit-message: "[CI] Rebuild linux amd64 library"
-          committer: GitHub CI <noreply@github.com>
-          author: GitHub CI <noreply@github.com>
-          branch: ci/linux-amd64
-          add-paths: libffmpeg_linux_amd64.a
-
-  darwin_amd64:
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: uname -a
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.21
-
-      - name: Install deps
+      - name: Install macOS dependencies
+        if: matrix.os == 'darwin'
         run: brew install yasm autoconf ragel meson nasm automake libtool
 
-      - run: mkdir build
+      - name: Create build directory
+        run: mkdir -p build
 
-      - name: Build
+      - name: Build FFmpeg library
         working-directory: build
-        run: go run ../internal/builder/ ../libffmpeg_darwin_amd64.a
+        run: go run ../internal/builder/ ../libffmpeg_${{ matrix.os }}_${{ matrix.arch }}.a
 
-      - run: ls -la
+      - name: List built files
+        run: ls -la
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
-          title: "[CI] Rebuild darwin amd64 library"
+          title: "[CI] Rebuild ${{ matrix.os }} ${{ matrix.arch }} library"
           body: Automated changes by CI pipeline.
-          commit-message: "[CI] Rebuild darwin amd64 library"
+          commit-message: "[CI] Rebuild ${{ matrix.os }} ${{ matrix.arch }} library"
           committer: GitHub CI <noreply@github.com>
           author: GitHub CI <noreply@github.com>
-          branch: ci/darwin-amd64
-          add-paths: libffmpeg_darwin_amd64.a
-
-  darwin_arm64:
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: uname -a
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.21
-
-      - name: Install deps
-        run: brew install yasm autoconf ragel meson nasm automake libtool
-
-      - run: mkdir build
-
-      - name: Build
-        working-directory: build
-        run: go run ../internal/builder/ ../libffmpeg_darwin_arm64.a
-
-      - run: ls -la
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          title: "[CI] Rebuild darwin arm64 library"
-          body: Automated changes by CI pipeline.
-          commit-message: "[CI] Rebuild darwin arm64 library"
-          committer: GitHub CI <noreply@github.com>
-          author: GitHub CI <noreply@github.com>
-          branch: ci/darwin-arm64
-          add-paths: libffmpeg_darwin_arm64.a
+          branch: ci/${{ matrix.os }}-${{ matrix.arch }}
+          add-paths: libffmpeg_${{ matrix.os }}_${{ matrix.arch }}.a
