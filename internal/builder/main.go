@@ -687,7 +687,7 @@ func buildZlib() {
 	srcPath := path.Join(buildDir, "zlib")
 
 	if !exists(zipPath) {
-		download("https://github.com/madler/zlib/releases/download/v1.3/zlib13.zip", zipPath)
+		download("https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip", zipPath)
 	}
 
 	unzip(zipPath, srcPath)
