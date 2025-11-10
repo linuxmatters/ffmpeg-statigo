@@ -7,7 +7,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.9.0
 	github.com/go-clang/bootstrap v0.14.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/schollz/progressbar/v3 v3.14.2
+	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/stretchr/testify v1.11.1
 	github.com/ulikunitz/xz v0.5.15
 )
