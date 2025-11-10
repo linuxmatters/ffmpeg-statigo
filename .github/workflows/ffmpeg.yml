@@ -51,7 +51,7 @@ jobs:
 
       - name: Install macOS dependencies
         if: matrix.os == 'darwin'
-        run: brew install yasm autoconf ragel meson nasm automake libtool
+        run: brew update && brew install yasm autoconf ragel meson nasm automake libtool
 
       - name: Create build directory
         run: mkdir -p build
