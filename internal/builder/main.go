@@ -880,7 +880,7 @@ func buildFreetype() {
 	srcPath := path.Join(buildDir, "freetype")
 
 	if !exists(zipPath) {
-		download("https://deac-ams.dl.sourceforge.net/project/freetype/freetype2/2.13.2/freetype-2.13.2.tar.xz", zipPath)
+		download("https://download-mirror.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz", zipPath)
 	}
 
 	untar(zipPath, srcPath, "freetype-2.13.2/")
