@@ -54,7 +54,10 @@ jobs:
         run: |
           brew update
           brew install yasm autoconf ragel meson nasm automake libtool
-          brew link --overwrite automake
+          # Create compatibility symlinks for older automake version references
+          ln -sf $(which aclocal) /usr/local/bin/aclocal-1.16
+          ln -sf $(which automake) /usr/local/bin/automake-1.16
+
       - name: Create build directory
         run: mkdir -p build
 
