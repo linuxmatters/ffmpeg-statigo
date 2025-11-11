@@ -1041,8 +1041,8 @@ func buildAOM() {
 	buildPath := path.Join(buildDir, "aom-build")
 
 	if !exists(zipPath) {
-		//https://aomedia.googlesource.com/aom/+/refs/tags/v3.8.1
-		download("https://aomedia.googlesource.com/aom/+archive/bb6430482199eaefbeaaa396600935082bc43f66.tar.gz", zipPath)
+		//https://aomedia.googlesource.com/aom/+/refs/tags/v3.13.1
+		download("https://aomedia.googlesource.com/aom/+archive/d772e334cc724105040382a977ebb10dfd393293.tar.gz", zipPath)
 	}
 
 	untar(zipPath, srcPath, "")
