@@ -593,10 +593,10 @@ func buildFribidi() {
 	srcPath := path.Join(buildDir, "fribidi")
 
 	if !exists(zipPath) {
-		download("https://github.com/fribidi/fribidi/releases/download/v1.0.13/fribidi-1.0.13.tar.xz", zipPath)
+		download("https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "fribidi-1.0.13/")
+	untar(zipPath, srcPath, "fribidi-1.0.16/")
 
 	{
 		log.Println("Running configure")
