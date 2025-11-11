@@ -8,8 +8,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/schollz/progressbar/v3"
-	"github.com/ulikunitz/xz"
 	"io"
 	"log"
 	"net/http"
@@ -18,6 +16,10 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/schollz/progressbar/v3"
+	"github.com/ulikunitz/xz"
 )
 
 func writeLines(dst string, lines []string) {
@@ -125,27 +127,125 @@ func exists(name string) bool {
 }
 
 func download(url string, path string) {
-	req, _ := http.NewRequest("GET", url, nil)
-	resp, _ := http.DefaultClient.Do(req)
+	const maxRetries = 3
+	const retryDelay = 5 * time.Second
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		err := downloadWithResume(url, path)
+		if err == nil {
+			return
+		}
+
+		if attempt < maxRetries {
+			log.Printf("Download attempt %d/%d failed: %v. Retrying in %v...", attempt, maxRetries, err, retryDelay)
+			time.Sleep(retryDelay)
+		} else {
+			log.Panicln("Failed to download file after", maxRetries, "attempts:", url, err)
+		}
+	}
+}
+
+func downloadWithResume(url string, path string) error {
+	// Check if file exists and get its size for resume support
+	var existingSize int64
+	if fi, err := os.Stat(path); err == nil {
+		existingSize = fi.Size()
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	// Add Range header for resume if file exists
+	if existingSize > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", existingSize))
+	}
+
+	client := &http.Client{
+		Timeout: 5 * time.Minute, // 5 minute timeout per request
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
 
-	f, _ := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	// Handle resume: 206 Partial Content means resume succeeded
+	// 200 OK means server doesn't support resume, start from scratch
+	var f *os.File
+	var totalSize int64
+
+	if resp.StatusCode == http.StatusPartialContent {
+		// Resume: append to existing file
+		f, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return err
+		}
+		totalSize = existingSize + resp.ContentLength
+	} else if resp.StatusCode == http.StatusOK {
+		// Start fresh
+		f, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			return err
+		}
+		totalSize = resp.ContentLength
+		existingSize = 0
+	} else {
+		return fmt.Errorf("unexpected HTTP status: %d", resp.StatusCode)
+	}
+
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-			log.Panicln(err)
+			log.Println("Error closing file:", err)
 		}
 	}(f)
 
-	bar := progressbar.DefaultBytes(
-		resp.ContentLength,
-		path,
-	)
+	// Detect if running in CI (GitHub Actions sets GITHUB_ACTIONS=true)
+	isCI := os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("CI") == "true"
 
-	_, err := io.Copy(io.MultiWriter(f, bar), resp.Body)
-	if err != nil {
-		log.Panicln("Failed to download file", url, err)
+	var writer io.Writer = f
+
+	if !isCI {
+		// Only show progress bar when not in CI
+		bar := progressbar.NewOptions64(
+			totalSize,
+			progressbar.OptionSetDescription(path),
+			progressbar.OptionSetWriter(os.Stderr),
+			progressbar.OptionShowBytes(true),
+			progressbar.OptionSetWidth(10),
+			progressbar.OptionThrottle(65*time.Millisecond),
+			progressbar.OptionShowCount(),
+			progressbar.OptionOnCompletion(func() {
+				fmt.Fprint(os.Stderr, "\n")
+			}),
+			progressbar.OptionSpinnerType(14),
+			progressbar.OptionFullWidth(),
+		)
+
+		// Set initial progress if resuming
+		if existingSize > 0 {
+			bar.Add64(existingSize)
+		}
+
+		writer = io.MultiWriter(f, bar)
+	} else {
+		// In CI, log download progress periodically
+		log.Printf("Downloading %s (%.2f MB)...", path, float64(totalSize)/(1024*1024))
 	}
+
+	_, err = io.Copy(writer, resp.Body)
+	if err != nil {
+		return fmt.Errorf("download interrupted: %w", err)
+	}
+
+	if isCI {
+		log.Printf("Download complete: %s", path)
+	}
+
+	return nil
 }
 
 func untar(src string, dest string, prefix string) {
