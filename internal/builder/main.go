@@ -239,11 +239,6 @@ func buildTheora() {
 
 	untar(zipPath, srcPath, "libtheora-1.2.0/")
 
-	vorbisPath := path.Join(buildDir, "vorbis")
-
-	copyFile(path.Join(srcPath, "config.guess"), path.Join(vorbisPath, "config.guess"))
-	copyFile(path.Join(srcPath, "config.sub"), path.Join(vorbisPath, "config.sub"))
-
 	{
 		log.Println("Running configure")
 
