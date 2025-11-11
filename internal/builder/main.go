@@ -865,6 +865,9 @@ func buildUnibreak() {
 		run("[unibreak configure]", cmd)
 	}
 
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
+
 	{
 		log.Println("Running make")
 
