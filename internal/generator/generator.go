@@ -29,6 +29,17 @@ var primTypes = map[string]string{
 	"double":   "float64",
 }
 
+// getCType returns the correct C type name to use in C.xxx() conversions.
+// This handles cases where libclang might report the wrong type (e.g., int instead of size_t).
+func getCType(typeName string, goType string) string {
+	// If the Go type is uint64, check if this should be size_t
+	if goType == "uint64" && (typeName == "size_t" || typeName == "int") {
+		// Always use size_t for uint64 parameters to handle libclang inconsistencies
+		return "size_t"
+	}
+	return typeName
+}
+
 type Generator struct {
 	input *Module
 }
@@ -61,6 +72,12 @@ func (g *Generator) generateConstants() {
 
 	for _, constName := range i.constantOrder {
 		constant := i.constants[constName]
+
+		// Skip constants that conflict with Go's math package
+		if constName == "NAN" || constName == "INFINITY" {
+			log.Println("Skipping constant", constant.Name, "(conflicts with Go math package)")
+			continue
+		}
 
 		log.Println("Generating constant", constant.Name)
 
@@ -689,6 +706,9 @@ var (
 	fileType = &PointerType{
 		Inner: &IdentType{Name: "FILE"},
 	}
+	fileType2 = &PointerType{
+		Inner: &IdentType{Name: "_IO_FILE"},
+	}
 	vaListType = &IdentType{Name: "va_list"}
 )
 
@@ -713,8 +733,16 @@ outer:
 			continue
 		}
 
-		if typeEquals(fn.Result, fileType) {
-			o.Commentf("%v skipped due to return.", fn.Name)
+		// WORKAROUND: libclang on Linux reports FILE* as int* for av_fopen_utf8
+		if fn.Name == "av_fopen_utf8" {
+			o.Commentf("%v skipped due to return", fn.Name)
+			o.Line()
+
+			continue outer
+		}
+
+		if typeEquals(fn.Result, fileType) || typeEquals(fn.Result, fileType2) {
+			o.Commentf("%v skipped due to return", fn.Name)
 			o.Line()
 
 			continue outer
@@ -723,7 +751,7 @@ outer:
 		for _, arg := range fn.Args {
 			skip := false
 
-			if typeEquals(arg.Type, fileType) || typeEquals(arg.Type, vaListType) {
+			if typeEquals(arg.Type, fileType) || typeEquals(arg.Type, fileType2) || typeEquals(arg.Type, vaListType) {
 				skip = true
 			}
 
@@ -757,13 +785,30 @@ outer:
 
 			switch v := arg.Type.(type) {
 			case *IdentType:
-				if m, ok := primTypes[v.Name]; ok {
+				// WORKAROUND: libclang on Linux incorrectly reports size_t as int
+				// Only fix specific known cases where FFmpeg headers use size_t
+				typeName := v.Name
+				if typeName == "int" && arg.Name == "buf_size" {
+					// These functions use size_t buf_size per FFmpeg headers
+					if fn.Name == "av_channel_name" || fn.Name == "av_channel_description" ||
+						fn.Name == "av_channel_layout_describe" {
+						typeName = "size_t"
+					}
+				} else if typeName == "int" && arg.Name == "max_size" {
+					// avio_read_to_bprint uses size_t max_size per FFmpeg headers
+					if fn.Name == "avio_read_to_bprint" {
+						typeName = "size_t"
+					}
+				}
+
+				if m, ok := primTypes[typeName]; ok {
 					params = append(params, jen.Id(pName).Id(m))
-					args = append(args, jen.Qual("C", v.Name).Params(jen.Id(pName)))
-				} else if e, ok := g.input.enums[v.Name]; ok {
-					params = append(params, jen.Id(pName).Id(v.Name))
+					cType := getCType(typeName, m)
+					args = append(args, jen.Qual("C", cType).Params(jen.Id(pName)))
+				} else if e, ok := g.input.enums[typeName]; ok {
+					params = append(params, jen.Id(pName).Id(typeName))
 					args = append(args, jen.Qual("C", e.CName()).Params(jen.Id(pName)))
-				} else if s, ok := g.input.structs[v.Name]; ok {
+				} else if s, ok := g.input.structs[typeName]; ok {
 					if s.ByValue {
 						params = append(params, jen.Id(pName).Op("*").Id(s.Name))
 						args = append(args, jen.Id(pName).Dot("value"))
@@ -774,7 +819,7 @@ outer:
 						continue outer
 					}
 				} else {
-					params = append(params, jen.Id(pName).Id(v.Name))
+					params = append(params, jen.Id(pName).Id(typeName))
 					args = append(args, jen.Qual("C", v.Name).Params(jen.Id(pName)))
 				}
 
