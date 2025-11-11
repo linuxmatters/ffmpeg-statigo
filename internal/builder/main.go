@@ -186,7 +186,7 @@ func buildVpx() {
 	buildDir := path.Join(srcPath, "ffbuild")
 
 	if !exists(zipPath) {
-		download("https://github.com/webmproject/libvpx/archive/refs/tags/v1.14.0.zip", zipPath)
+		download("https://github.com/webmproject/libvpx/archive/refs/tags/v1.15.2.zip", zipPath)
 	}
 
 	unzip(zipPath, srcPath)
@@ -230,19 +230,14 @@ func buildVpx() {
 }
 
 func buildTheora() {
-	zipPath := path.Join(downloadsDir, "theora.zip")
+	zipPath := path.Join(downloadsDir, "theora.tar.xz")
 	srcPath := path.Join(buildDir, "theora")
 
 	if !exists(zipPath) {
-		download("http://downloads.xiph.org/releases/theora/libtheora-1.1.1.zip", zipPath)
+		download("https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.2.0.tar.xz", zipPath)
 	}
 
-	unzip(zipPath, srcPath)
-
-	vorbisPath := path.Join(buildDir, "vorbis")
-
-	copyFile(path.Join(srcPath, "config.guess"), path.Join(vorbisPath, "config.guess"))
-	copyFile(path.Join(srcPath, "config.sub"), path.Join(vorbisPath, "config.sub"))
+	untar(zipPath, srcPath, "libtheora-1.2.0/")
 
 	{
 		log.Println("Running configure")
@@ -265,6 +260,9 @@ func buildTheora() {
 		run("[theora configure]", cmd)
 	}
 
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
+
 	{
 		log.Println("Running make")
 
@@ -280,14 +278,14 @@ func buildTheora() {
 }
 
 func buildOgg() {
-	zipPath := path.Join(downloadsDir, "ogg.tar.gz")
+	zipPath := path.Join(downloadsDir, "ogg.tar.xz")
 	srcPath := path.Join(buildDir, "ogg")
 
 	if !exists(zipPath) {
-		download("http://downloads.xiph.org/releases/ogg/libogg-1.3.1.tar.gz", zipPath)
+		download("https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.6.tar.xz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "libogg-1.3.1/")
+	untar(zipPath, srcPath, "libogg-1.3.6/")
 
 	{
 		log.Println("Running configure")
@@ -306,6 +304,9 @@ func buildOgg() {
 
 		run("[ogg configure]", cmd)
 	}
+
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
 
 	{
 		log.Println("Running make")
@@ -326,7 +327,7 @@ func buildVorbis() {
 	srcPath := path.Join(buildDir, "vorbis")
 
 	if !exists(zipPath) {
-		download("http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz", zipPath)
+		download("https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz", zipPath)
 	}
 
 	untar(zipPath, srcPath, "libvorbis-1.3.7/")
@@ -420,10 +421,10 @@ func buildOpus() {
 	srcPath := path.Join(buildDir, "opus")
 
 	if !exists(zipPath) {
-		download("https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz", zipPath)
+		download("https://ftp.osuosl.org/pub/xiph/releases/opus/opus-1.5.2.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "opus-1.4/")
+	untar(zipPath, srcPath, "opus-1.5.2/")
 
 	{
 		log.Println("Running configure")
@@ -509,10 +510,10 @@ func buildExpat() {
 	srcPath := path.Join(buildDir, "expat")
 
 	if !exists(zipPath) {
-		download("https://github.com/libexpat/libexpat/releases/download/R_2_5_0/expat-2.5.0.tar.gz", zipPath)
+		download("https://github.com/libexpat/libexpat/releases/download/R_2_7_3/expat-2.7.3.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "expat-2.5.0/")
+	untar(zipPath, srcPath, "expat-2.7.3/")
 
 	{
 		log.Println("Running configure")
@@ -521,9 +522,9 @@ func buildExpat() {
 			path.Join(srcPath, "configure"),
 			srcPath,
 			fmt.Sprintf("--prefix=%v", tgtDir),
-			"--disable-debug",
 			"--enable-static",
 			"--disable-shared",
+			"--without-xmlwf",
 			fmt.Sprintf("CFLAGS=-I%v", incDir),
 			fmt.Sprintf("CPPFLAGS=-I%v", incDir),
 			fmt.Sprintf("LDFLAGS=-L%v", libDir),
@@ -531,6 +532,9 @@ func buildExpat() {
 
 		run("[expat configure]", cmd)
 	}
+
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
 
 	{
 		log.Println("Running make")
@@ -547,14 +551,14 @@ func buildExpat() {
 }
 
 func buildFontconfig() {
-	zipPath := path.Join(downloadsDir, "fontconfig.tar.gz")
+	zipPath := path.Join(downloadsDir, "fontconfig.tar.xz")
 	srcPath := path.Join(buildDir, "fontconfig")
 
 	if !exists(zipPath) {
-		download("https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.15.0.tar.gz", zipPath)
+		download("https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.16.0.tar.xz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "fontconfig-2.15.0/")
+	untar(zipPath, srcPath, "fontconfig-2.16.0/")
 
 	{
 		log.Println("Running configure")
@@ -573,6 +577,9 @@ func buildFontconfig() {
 
 		run("[fontconfig configure]", cmd)
 	}
+
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
 
 	{
 		log.Println("Running make")
@@ -593,10 +600,10 @@ func buildFribidi() {
 	srcPath := path.Join(buildDir, "fribidi")
 
 	if !exists(zipPath) {
-		download("https://github.com/fribidi/fribidi/releases/download/v1.0.13/fribidi-1.0.13.tar.xz", zipPath)
+		download("https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "fribidi-1.0.13/")
+	untar(zipPath, srcPath, "fribidi-1.0.16/")
 
 	{
 		log.Println("Running configure")
@@ -636,10 +643,10 @@ func buildIconv() {
 	srcPath := path.Join(buildDir, "iconv")
 
 	if !exists(zipPath) {
-		download("https://ftp.mirrorservice.org/pub/gnu/libiconv/libiconv-1.17.tar.gz", zipPath)
+		download("https://ftp.mirrorservice.org/pub/gnu/libiconv/libiconv-1.18.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "libiconv-1.17/")
+	untar(zipPath, srcPath, "libiconv-1.18/")
 
 	{
 		log.Println("Running configure")
@@ -755,7 +762,7 @@ func buildBrotli() {
 	srcPath := path.Join(buildDir, "brotli")
 
 	if !exists(zipPath) {
-		download("https://codeload.github.com/google/brotli/zip/refs/heads/v1.1", zipPath)
+		download("https://github.com/google/brotli/archive/refs/tags/v1.2.0.zip", zipPath)
 	}
 
 	unzip(zipPath, srcPath)
@@ -799,7 +806,7 @@ func buildPng() {
 	srcPath := path.Join(buildDir, "png")
 
 	if !exists(zipPath) {
-		download("https://codeload.github.com/pnggroup/libpng/zip/refs/heads/libpng16", zipPath)
+		download("https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.zip", zipPath)
 	}
 
 	unzip(zipPath, srcPath)
@@ -842,10 +849,10 @@ func buildUnibreak() {
 	srcPath := path.Join(buildDir, "unibreak")
 
 	if !exists(zipPath) {
-		download("https://github.com/adah1972/libunibreak/releases/download/libunibreak_5_1/libunibreak-5.1.tar.gz", zipPath)
+		download("https://github.com/adah1972/libunibreak/releases/download/libunibreak_6_1/libunibreak-6.1.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "libunibreak-5.1/")
+	untar(zipPath, srcPath, "libunibreak-6.1/")
 
 	{
 		log.Println("Running configure")
@@ -863,6 +870,9 @@ func buildUnibreak() {
 
 		run("[unibreak configure]", cmd)
 	}
+
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
 
 	{
 		log.Println("Running make")
@@ -883,10 +893,10 @@ func buildFreetype() {
 	srcPath := path.Join(buildDir, "freetype")
 
 	if !exists(zipPath) {
-		download("https://download-mirror.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz", zipPath)
+		download("https://download-mirror.savannah.gnu.org/releases/freetype/freetype-2.14.1.tar.xz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "freetype-2.13.2/")
+	untar(zipPath, srcPath, "freetype-2.14.1/")
 
 	{
 		log.Println("Running configure")
@@ -927,10 +937,10 @@ func buildHarfbuzz() {
 	srcPath := path.Join(buildDir, "harfbuzz")
 
 	if !exists(zipPath) {
-		download("https://github.com/harfbuzz/harfbuzz/releases/download/8.3.0/harfbuzz-8.3.0.tar.xz", zipPath)
+		download("https://github.com/harfbuzz/harfbuzz/releases/download/12.2.0/harfbuzz-12.2.0.tar.xz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "harfbuzz-8.3.0/")
+	untar(zipPath, srcPath, "harfbuzz-12.2.0/")
 
 	{
 		log.Println("Running setup")
@@ -993,10 +1003,10 @@ func (b *Builder) buildASS() {
 	srcPath := path.Join(buildDir, "ass")
 
 	if !exists(zipPath) {
-		download("https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.gz", zipPath)
+		download("https://github.com/libass/libass/releases/download/0.17.4/libass-0.17.4.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "libass-0.17.1/")
+	untar(zipPath, srcPath, "libass-0.17.4/")
 
 	{
 		log.Println("Running configure")
@@ -1041,8 +1051,8 @@ func buildAOM() {
 	buildPath := path.Join(buildDir, "aom-build")
 
 	if !exists(zipPath) {
-		//https://aomedia.googlesource.com/aom/+/refs/tags/v3.8.1
-		download("https://aomedia.googlesource.com/aom/+archive/bb6430482199eaefbeaaa396600935082bc43f66.tar.gz", zipPath)
+		//https://aomedia.googlesource.com/aom/+/refs/tags/v3.13.1
+		download("https://aomedia.googlesource.com/aom/+archive/d772e334cc724105040382a977ebb10dfd393293.tar.gz", zipPath)
 	}
 
 	untar(zipPath, srcPath, "")
