@@ -321,10 +321,10 @@ func buildVorbis() {
 	srcPath := path.Join(buildDir, "vorbis")
 
 	if !exists(zipPath) {
-		download("https://ftp.osuosl.org/pub/xiph/releases/vorbis/vorbis-tools-1.4.3.tar.gz", zipPath)
+		download("https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "libvorbis-1.4.3/")
+	untar(zipPath, srcPath, "libvorbis-1.3.7/")
 
 	modify(
 		path.Join(srcPath, "configure"),
