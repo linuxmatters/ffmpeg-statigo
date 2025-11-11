@@ -636,10 +636,10 @@ func buildIconv() {
 	srcPath := path.Join(buildDir, "iconv")
 
 	if !exists(zipPath) {
-		download("https://ftp.mirrorservice.org/pub/gnu/libiconv/libiconv-1.17.tar.gz", zipPath)
+		download("https://ftp.mirrorservice.org/pub/gnu/libiconv/libiconv-1.18.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "libiconv-1.17/")
+	untar(zipPath, srcPath, "libiconv-1.18/")
 
 	{
 		log.Println("Running configure")
