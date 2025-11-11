@@ -420,10 +420,10 @@ func buildOpus() {
 	srcPath := path.Join(buildDir, "opus")
 
 	if !exists(zipPath) {
-		download("https://downloads.xiph.org/releases/opus/opus-1.4.tar.gz", zipPath)
+		download("https://ftp.osuosl.org/pub/xiph/releases/opus/opus-1.5.2.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "opus-1.4/")
+	untar(zipPath, srcPath, "opus-1.5.2/")
 
 	{
 		log.Println("Running configure")
