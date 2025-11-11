@@ -450,3 +450,40 @@ func modify(path string, mod func([]byte) []byte) {
 		log.Panicln(err)
 	}
 }
+
+// touchAutomakeFiles updates timestamps on automake-generated files to prevent
+// Make from trying to regenerate them. This works around automake version mismatches
+// where the tarball was configured with a different automake version than installed.
+func touchAutomakeFiles(srcPath string) {
+	now := time.Now()
+
+	// Touch all automake-generated files to be newer than their sources
+	// This prevents Make from invoking automake to regenerate them
+	files := []string{
+		"aclocal.m4",
+		"Makefile.in",
+		"config.h.in",
+		"configure",
+	}
+
+	for _, file := range files {
+		fullPath := filepath.Join(srcPath, file)
+		if _, err := os.Stat(fullPath); err == nil {
+			// File exists, update its timestamp
+			if err := os.Chtimes(fullPath, now, now); err != nil {
+				log.Printf("Warning: failed to touch %s: %v", file, err)
+			}
+		}
+	}
+
+	// Also touch any Makefile.in files in subdirectories
+	filepath.Walk(srcPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && info.Name() == "Makefile.in" {
+			os.Chtimes(path, now, now)
+		}
+		return nil
+	})
+}

@@ -398,6 +398,9 @@ func buildSpeex() {
 		run("[speex configure]", cmd)
 	}
 
+	// Prevent automake regeneration (macOS has automake 1.18 but speex was configured with 1.16)
+	touchAutomakeFiles(srcPath)
+
 	{
 		log.Println("Running make")
 
