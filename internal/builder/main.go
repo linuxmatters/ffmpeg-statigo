@@ -550,7 +550,7 @@ func buildExpat() {
 }
 
 func buildFontconfig() {
-	zipPath := path.Join(downloadsDir, "fontconfig.tar.gz")
+	zipPath := path.Join(downloadsDir, "fontconfig.tar.xz")
 	srcPath := path.Join(buildDir, "fontconfig")
 
 	if !exists(zipPath) {
