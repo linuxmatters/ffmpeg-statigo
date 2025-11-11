@@ -305,6 +305,9 @@ func buildOgg() {
 		run("[ogg configure]", cmd)
 	}
 
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
+
 	{
 		log.Println("Running make")
 
