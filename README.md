@@ -141,8 +141,6 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 - Q: Why is FFmpeg statically bundled?
   - A: The version of FFmpeg varies by platform, making a one-size fits all style binding difficult with the Go build
     system and its lack of a build.go file.
-- Q: Why are the arm packages not built by CI?
-  - A: Ideally they would be. However, the free GitHub plan does not include arm builders.
 - Q: Why is library `xyz` not enabled?
   - A: Libraries have been added on a as-needed basis. Feel free to create a PR enabling any additional libraries.
 - Q: I have some C code that I can't convert to Go, due to a missing binding feature
