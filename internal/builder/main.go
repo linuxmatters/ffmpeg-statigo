@@ -120,6 +120,12 @@ func main() {
 	buildHarfbuzz()
 	b.buildASS()
 	buildRav1e()
+
+	// NVENC/NVDEC support (Linux only, requires NVIDIA GPU drivers)
+	if os == Linux {
+		b.buildNVCodec()
+	}
+
 	buildLame()
 	buildOpus()
 	buildOgg()
@@ -1190,6 +1196,35 @@ func buildRav1e() {
 	}
 }
 
+func (b *Builder) buildNVCodec() {
+	// nv-codec-headers provides NVENC/NVDEC headers without requiring CUDA runtime
+	// This is a header-only library that enables hardware accelerated encoding/decoding
+	// on NVIDIA GPUs via the Video Codec SDK
+	zipPath := path.Join(downloadsDir, "nv-codec-headers.tar.gz")
+	srcPath := path.Join(buildDir, "nv-codec-headers")
+
+	if !exists(zipPath) {
+		// nv-codec-headers 12.2.72.0 (latest stable)
+		download("https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz", zipPath)
+	}
+
+	untar(zipPath, srcPath, "nv-codec-headers-12.2.72.0/")
+
+	{
+		log.Println("Installing nv-codec-headers")
+
+		// nv-codec-headers just installs header files, no compilation needed
+		cmd := cmd(
+			"make",
+			srcPath,
+			fmt.Sprintf("PREFIX=%v", tgtDir),
+			"install",
+		)
+
+		run("[nvcodec install]", cmd)
+	}
+}
+
 func (b *Builder) buildFFmpeg() {
 	zipPath := path.Join(downloadsDir, "ffmpeg.zip")
 	buildPath := path.Join(buildDir, "ffmpeg")
@@ -1331,6 +1366,12 @@ func (b *Builder) buildFFmpeg() {
 			cmd.Args = append(
 				cmd.Args,
 				"--enable-libfontconfig",
+				// NVENC/NVDEC: Hardware accelerated encode/decode for NVIDIA GPUs
+				// These flags enable NVENC/NVDEC support using nv-codec-headers
+				// No CUDA runtime required - works with NVIDIA drivers only
+				"--enable-ffnvcodec", // Enable NVENC/NVDEC support
+				"--enable-nvdec",     // Enable NVDEC hardware decoder
+				"--enable-nvenc",     // Enable NVENC hardware encoder
 			)
 		} else if b.os == MacOS {
 			cmd.Args = append(

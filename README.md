@@ -9,6 +9,9 @@ Go bindings for the FFmpeg AV libraries.
 - Thin layer over the C API.
 - Doc comments retained (where supported by clang).
 - GPL version of FFmpeg (allows for x264 etc).
+- Hardware acceleration:
+  - **NVENC/NVDEC** (Linux): Hardware encode/decode on NVIDIA GPUs (no CUDA runtime required)
+  - **VideoToolbox** (macOS): Native Apple hardware acceleration
 
 ### TODO
 
