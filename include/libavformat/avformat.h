@@ -1018,27 +1018,25 @@ typedef struct AVStreamGroupTileGrid {
      * - muxing: set by the caller before avformat_write_header().
      *
      * Freed by libavformat in avformat_free_context().
-     *
-     * TEMPORARILY COMMENTED OUT - Generator cannot handle unnamed structs yet
      */
-    // struct {
-    //     /**
-    //      * Index of the stream in the group this tile references.
-    //      *
-    //      * Must be < @ref AVStreamGroup.nb_streams "nb_streams".
-    //      */
-    //     unsigned int idx;
-    //     /**
-    //      * Offset in pixels from the left edge of the canvas where the tile
-    //      * should be placed.
-    //      */
-    //     int horizontal;
-    //     /**
-    //      * Offset in pixels from the top edge of the canvas where the tile
-    //      * should be placed.
-    //      */
-    //     int vertical;
-    // } *offsets;
+    struct UnnamedStruct_avformat_1022_5 {
+        /**
+         * Index of the stream in the group this tile references.
+         *
+         * Must be < @ref AVStreamGroup.nb_streams "nb_streams".
+         */
+        unsigned int idx;
+        /**
+         * Offset in pixels from the left edge of the canvas where the tile
+         * should be placed.
+         */
+        int horizontal;
+        /**
+         * Offset in pixels from the top edge of the canvas where the tile
+         * should be placed.
+         */
+        int vertical;
+    } *offsets;
 
     /**
      * The pixel value per channel in RGBA format used if no pixel of any tile

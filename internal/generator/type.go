@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-clang/bootstrap/clang"
 	"log"
+	"path/filepath"
 	"strings"
+
+	"github.com/go-clang/bootstrap/clang"
 )
 
 type Type interface {
@@ -177,7 +179,20 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 			log.Panicln(indent, "No name")
 		}
 
+		// Handle unnamed structs/unions by generating a synthetic name
 		if strings.Contains(name, " ") {
+			if strings.HasPrefix(name, "(unnamed") || strings.HasPrefix(name, "(anonymous") {
+				syntheticName := p.generateUnnamedStructName(t)
+				log.Println(indent, "Generated synthetic name for unnamed struct:", syntheticName)
+
+				// Register the unnamed struct so it gets generated
+				p.registerUnnamedStruct(indent, t, syntheticName)
+
+				return &IdentType{
+					Name: syntheticName,
+				}
+			}
+
 			log.Panicln(indent, "name", name, "contains space")
 		}
 
@@ -252,7 +267,20 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 				log.Panicln(indent, "No name")
 			}
 
+			// Handle unnamed structs
 			if strings.Contains(name, " ") {
+				if strings.HasPrefix(name, "struct (unnamed") || strings.HasPrefix(name, "union (unnamed") {
+					syntheticName := p.generateUnnamedStructName(t)
+					log.Println(indent, "Generated synthetic name for unnamed struct:", syntheticName)
+
+					// Register the unnamed struct so it gets generated
+					p.registerUnnamedStruct(indent, t, syntheticName)
+
+					return &IdentType{
+						Name: syntheticName,
+					}
+				}
+
 				log.Panicln(indent, "name", name, "contains space")
 			}
 
@@ -327,4 +355,107 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 		log.Panicln(indent, "Unknown type", t.Kind().Spelling())
 		return nil
 	}
+}
+
+// generateUnnamedStructName creates a synthetic name for an unnamed struct/union
+func (p *Parser) generateUnnamedStructName(t clang.Type) string {
+	// Get the canonical spelling which contains location info
+	spelling := t.CanonicalType().Spelling()
+
+	// Fallback: try to parse location from the spelling string
+	// Format: "struct (unnamed at .../avformat.h:1022:5)"
+	if strings.Contains(spelling, "unnamed at ") {
+		parts := strings.Split(spelling, "unnamed at ")
+		if len(parts) == 2 {
+			locStr := strings.TrimSuffix(parts[1], ")")
+			locParts := strings.Split(locStr, ":")
+			if len(locParts) >= 3 {
+				filename := filepath.Base(locParts[0])
+				filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+				filename = cleanIdentifier(filename)
+				line := locParts[len(locParts)-2]
+				col := locParts[len(locParts)-1]
+
+				return fmt.Sprintf("UnnamedStruct_%s_%s_%s", filename, line, col)
+			}
+		}
+	}
+
+	// Last resort fallback
+	return fmt.Sprintf("UnnamedStruct_%d", len(p.mod.structs))
+}
+
+// cleanIdentifier converts a string into a valid Go identifier
+func cleanIdentifier(s string) string {
+	// Replace common special characters with underscores
+	s = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return '_'
+	}, s)
+
+	// Remove consecutive underscores
+	for strings.Contains(s, "__") {
+		s = strings.ReplaceAll(s, "__", "_")
+	}
+
+	// Trim underscores from start/end
+	s = strings.Trim(s, "_")
+
+	return s
+}
+
+// registerUnnamedStruct creates a struct definition for an unnamed struct
+func (p *Parser) registerUnnamedStruct(indent string, t clang.Type, syntheticName string) {
+	// Check if we've already registered this struct
+	if _, exists := p.mod.structs[syntheticName]; exists {
+		log.Println(indent, "Unnamed struct already registered:", syntheticName)
+		return
+	}
+
+	log.Println(indent, "Registering unnamed struct:", syntheticName)
+
+	// Get the declaration to extract fields
+	decl := t.Declaration()
+	if decl.Spelling() == "" {
+		log.Println(indent, "Warning: unnamed struct has no valid declaration")
+		return
+	}
+
+	s := &Struct{
+		Name:     syntheticName,
+		Typedefd: false,
+		Comment:  "Synthetic type for unnamed struct",
+	}
+
+	// Visit fields of the struct
+	decl.Visit(func(cursor, parent clang.Cursor) clang.ChildVisitResult {
+		if cursor.Kind() == clang.Cursor_FieldDecl {
+			fieldName := cursor.Spelling()
+			if fieldName == "" {
+				log.Println(indent, "Warning: unnamed struct has field with no name")
+				return clang.ChildVisit_Continue
+			}
+
+			comment := processComment(cursor.RawCommentText())
+			fIndent := fmt.Sprintf("%v[%v]", indent, fieldName)
+			fieldType := p.parseType(fIndent, cursor.Type())
+
+			s.Fields = append(s.Fields, &Field{
+				Name:     fieldName,
+				Type:     fieldType,
+				BitWidth: cursor.FieldDeclBitWidth(),
+				Comment:  comment,
+			})
+		}
+
+		return clang.ChildVisit_Continue
+	})
+
+	// Register the struct
+	p.mod.structs[syntheticName] = s
+	p.mod.structOrder = append(p.mod.structOrder, syntheticName)
+
+	log.Println(indent, "Successfully registered unnamed struct:", syntheticName, "with", len(s.Fields), "fields")
 }

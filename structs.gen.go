@@ -10305,6 +10305,105 @@ func (s *AVStream) SetPtsWrapBits(value int) {
 	s.ptr.pts_wrap_bits = (C.int)(value)
 }
 
+// --- Struct UnnamedStruct_avformat_1022_5 ---
+
+// UnnamedStruct_avformat_1022_5 wraps UnnamedStruct_avformat_1022_5.
+// Synthetic type for unnamed struct
+type UnnamedStruct_avformat_1022_5 struct {
+	ptr *C.struct_UnnamedStruct_avformat_1022_5
+}
+
+func (s *UnnamedStruct_avformat_1022_5) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToUnnamedStruct_avformat_1022_5Array(ptr unsafe.Pointer) *Array[*UnnamedStruct_avformat_1022_5] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*UnnamedStruct_avformat_1022_5]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *UnnamedStruct_avformat_1022_5 {
+			ptr := (**C.struct_UnnamedStruct_avformat_1022_5)(pointer)
+			value := *ptr
+			var valueMapped *UnnamedStruct_avformat_1022_5
+			if value != nil {
+				valueMapped = &UnnamedStruct_avformat_1022_5{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *UnnamedStruct_avformat_1022_5) {
+			ptr := (**C.struct_UnnamedStruct_avformat_1022_5)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Idx gets the idx field.
+/*
+  Index of the stream in the group this tile references.
+
+  Must be < @ref AVStreamGroup.nb_streams "nb_streams".
+*/
+func (s *UnnamedStruct_avformat_1022_5) Idx() uint {
+	value := s.ptr.idx
+	return uint(value)
+}
+
+// SetIdx sets the idx field.
+/*
+  Index of the stream in the group this tile references.
+
+  Must be < @ref AVStreamGroup.nb_streams "nb_streams".
+*/
+func (s *UnnamedStruct_avformat_1022_5) SetIdx(value uint) {
+	s.ptr.idx = (C.uint)(value)
+}
+
+// Horizontal gets the horizontal field.
+/*
+  Offset in pixels from the left edge of the canvas where the tile
+  should be placed.
+*/
+func (s *UnnamedStruct_avformat_1022_5) Horizontal() int {
+	value := s.ptr.horizontal
+	return int(value)
+}
+
+// SetHorizontal sets the horizontal field.
+/*
+  Offset in pixels from the left edge of the canvas where the tile
+  should be placed.
+*/
+func (s *UnnamedStruct_avformat_1022_5) SetHorizontal(value int) {
+	s.ptr.horizontal = (C.int)(value)
+}
+
+// Vertical gets the vertical field.
+/*
+  Offset in pixels from the top edge of the canvas where the tile
+  should be placed.
+*/
+func (s *UnnamedStruct_avformat_1022_5) Vertical() int {
+	value := s.ptr.vertical
+	return int(value)
+}
+
+// SetVertical sets the vertical field.
+/*
+  Offset in pixels from the top edge of the canvas where the tile
+  should be placed.
+*/
+func (s *UnnamedStruct_avformat_1022_5) SetVertical(value int) {
+	s.ptr.vertical = (C.int)(value)
+}
+
 // --- Struct AVStreamGroupTileGrid ---
 
 // AVStreamGroupTileGrid wraps AVStreamGroupTileGrid.
@@ -10485,6 +10584,25 @@ func (s *AVStreamGroupTileGrid) CodedHeight() int {
 */
 func (s *AVStreamGroupTileGrid) SetCodedHeight(value int) {
 	s.ptr.coded_height = (C.int)(value)
+}
+
+// Offsets gets the offsets field.
+func (s *AVStreamGroupTileGrid) Offsets() *UnnamedStruct_avformat_1022_5 {
+	value := s.ptr.offsets
+	var valueMapped *UnnamedStruct_avformat_1022_5
+	if value != nil {
+		valueMapped = &UnnamedStruct_avformat_1022_5{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetOffsets sets the offsets field.
+func (s *AVStreamGroupTileGrid) SetOffsets(value *UnnamedStruct_avformat_1022_5) {
+	if value != nil {
+		s.ptr.offsets = value.ptr
+	} else {
+		s.ptr.offsets = nil
+	}
 }
 
 // Background gets the background field.
