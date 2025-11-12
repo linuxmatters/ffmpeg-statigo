@@ -18,7 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/schollz/progressbar/v3"
 	"github.com/ulikunitz/xz"
 )
 
@@ -130,22 +129,27 @@ func download(url string, path string) {
 	const maxRetries = 3
 	const retryDelay = 5 * time.Second
 
+	// Extract filename from path for cleaner logging
+	filename := filepath.Base(path)
+	log.Printf("[DOWNLOAD] Starting: %s", filename)
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		err := downloadWithResume(url, path)
+		err := downloadWithResume(url, path, filename)
 		if err == nil {
+			log.Printf("[DOWNLOAD] Complete: %s", filename)
 			return
 		}
 
 		if attempt < maxRetries {
-			log.Printf("Download attempt %d/%d failed: %v. Retrying in %v...", attempt, maxRetries, err, retryDelay)
+			log.Printf("[DOWNLOAD] Attempt %d/%d failed: %v. Retrying in %v...", attempt, maxRetries, err, retryDelay)
 			time.Sleep(retryDelay)
 		} else {
-			log.Panicln("Failed to download file after", maxRetries, "attempts:", url, err)
+			log.Panicln("[DOWNLOAD] Failed after", maxRetries, "attempts:", filename, err)
 		}
 	}
 }
 
-func downloadWithResume(url string, path string) error {
+func downloadWithResume(url string, path string, filename string) error {
 	// Check if file exists and get its size for resume support
 	var existingSize int64
 	if fi, err := os.Stat(path); err == nil {
@@ -163,7 +167,7 @@ func downloadWithResume(url string, path string) error {
 	}
 
 	client := &http.Client{
-		Timeout: 5 * time.Minute, // 5 minute timeout per request
+		Timeout: 10 * time.Minute, // 10 minute timeout for large files
 	}
 
 	resp, err := client.Do(req)
@@ -184,6 +188,10 @@ func downloadWithResume(url string, path string) error {
 			return err
 		}
 		totalSize = existingSize + resp.ContentLength
+		log.Printf("[DOWNLOAD] Resuming: %s from %.2f MB of %.2f MB",
+			filename,
+			float64(existingSize)/(1024*1024),
+			float64(totalSize)/(1024*1024))
 	} else if resp.StatusCode == http.StatusOK {
 		// Start fresh
 		f, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -192,6 +200,7 @@ func downloadWithResume(url string, path string) error {
 		}
 		totalSize = resp.ContentLength
 		existingSize = 0
+		log.Printf("[DOWNLOAD] Size: %.2f MB", float64(totalSize)/(1024*1024))
 	} else {
 		return fmt.Errorf("unexpected HTTP status: %d", resp.StatusCode)
 	}
@@ -199,56 +208,50 @@ func downloadWithResume(url string, path string) error {
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-			log.Println("Error closing file:", err)
+			log.Println("[DOWNLOAD] Error closing file:", err)
 		}
 	}(f)
 
-	// Detect if running in CI (GitHub Actions sets GITHUB_ACTIONS=true)
-	isCI := os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("CI") == "true"
+	// Simple progress reporting without animations
+	// Report every 10 MB downloaded
+	const reportInterval = 10 * 1024 * 1024
+	var bytesDownloaded int64
+	var lastReport int64
 
-	var writer io.Writer = f
+	buffer := make([]byte, 32*1024) // 32KB buffer
+	for {
+		n, err := resp.Body.Read(buffer)
+		if n > 0 {
+			if _, writeErr := f.Write(buffer[:n]); writeErr != nil {
+				return fmt.Errorf("write failed: %w", writeErr)
+			}
+			bytesDownloaded += int64(n)
 
-	if !isCI {
-		// Only show progress bar when not in CI
-		bar := progressbar.NewOptions64(
-			totalSize,
-			progressbar.OptionSetDescription(path),
-			progressbar.OptionSetWriter(os.Stderr),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionSetWidth(10),
-			progressbar.OptionThrottle(65*time.Millisecond),
-			progressbar.OptionShowCount(),
-			progressbar.OptionOnCompletion(func() {
-				fmt.Fprint(os.Stderr, "\n")
-			}),
-			progressbar.OptionSpinnerType(14),
-			progressbar.OptionFullWidth(),
-		)
-
-		// Set initial progress if resuming
-		if existingSize > 0 {
-			bar.Add64(existingSize)
+			// Report progress every 10MB
+			if bytesDownloaded-lastReport >= reportInterval {
+				currentMB := float64(existingSize+bytesDownloaded) / (1024 * 1024)
+				totalMB := float64(totalSize) / (1024 * 1024)
+				percent := float64(existingSize+bytesDownloaded) / float64(totalSize) * 100
+				log.Printf("[DOWNLOAD] Progress: %s - %.2f/%.2f MB (%.0f%%)",
+					filename, currentMB, totalMB, percent)
+				lastReport = bytesDownloaded
+			}
 		}
-
-		writer = io.MultiWriter(f, bar)
-	} else {
-		// In CI, log download progress periodically
-		log.Printf("Downloading %s (%.2f MB)...", path, float64(totalSize)/(1024*1024))
-	}
-
-	_, err = io.Copy(writer, resp.Body)
-	if err != nil {
-		return fmt.Errorf("download interrupted: %w", err)
-	}
-
-	if isCI {
-		log.Printf("Download complete: %s", path)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("read failed: %w", err)
+		}
 	}
 
 	return nil
 }
 
 func untar(src string, dest string, prefix string) {
+	filename := filepath.Base(src)
+	log.Printf("[EXTRACT] Starting: %s", filename)
+
 	os.RemoveAll(dest)
 
 	if err := os.MkdirAll(dest, 0755); err != nil {
@@ -279,6 +282,8 @@ func untar(src string, dest string, prefix string) {
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
+
+	var fileCount int
 
 	for {
 		header, err := tarReader.Next()
@@ -313,6 +318,7 @@ func untar(src string, dest string, prefix string) {
 				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
 			}
 			outFile.Close()
+			fileCount++
 
 		case tar.TypeXGlobalHeader:
 			log.Println("Ignoring TypeXGlobalHeader")
@@ -325,9 +331,14 @@ func untar(src string, dest string, prefix string) {
 		}
 
 	}
+
+	log.Printf("[EXTRACT] Complete: %s (%d files)", filename, fileCount)
 }
 
 func unzip(src string, dest string) {
+	filename := filepath.Base(src)
+	log.Printf("[EXTRACT] Starting: %s", filename)
+
 	os.RemoveAll(dest)
 
 	r, err := zip.OpenReader(src)
@@ -356,6 +367,7 @@ func unzip(src string, dest string) {
 		prefix = fmt.Sprintf("%v%v", s, string(os.PathSeparator))
 	}
 
+	var fileCount int
 	for _, f := range r.File {
 		f.Name = strings.TrimPrefix(f.Name, prefix)
 
@@ -366,7 +378,12 @@ func unzip(src string, dest string) {
 		if err := extractAndWriteFile(f, dest); err != nil {
 			log.Panicln(err)
 		}
+		if !f.FileInfo().IsDir() {
+			fileCount++
+		}
 	}
+
+	log.Printf("[EXTRACT] Complete: %s (%d files)", filename, fileCount)
 }
 
 func extractAndWriteFile(f *zip.File, dest string) error {
