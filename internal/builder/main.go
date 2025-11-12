@@ -1163,13 +1163,107 @@ func (b *Builder) buildFFmpeg() {
 			fmt.Sprintf("--extra-cflags=-I%v", incDir),
 			fmt.Sprintf("--extra-ldflags=-L%v/lib", tgtDir),
 			"--disable-autodetect",
+			"--disable-debug",
+			"--disable-doc",
+			"--disable-htmlpages",
+			"--disable-manpages",
+			"--disable-podpages",
 			"--disable-programs",
+			"--disable-txtpages",
+			"--disable-decoder=rv10,rv20,rv30,rv40,rv60",                            // RealVideo
+			"--disable-decoder=ra_144,ra_288",                                       // RealAudio 14.4/28.8 kbps (1995-1997)
+			"--disable-demuxer=rm",                                                  // RealMedia demuxer
+			"--disable-muxer=rm",                                                    // RealMedia muxer
+			"--disable-decoder=cook,sipr",                                           // RealAudio variants
+			"--disable-parser=cook,sipr",                                            // RealAudio variants
+			"--disable-decoder=vp3,vp4,vp5,vp6,vp6a,vp6f,vp7",                       // Early VP
+			"--disable-demuxer=ivf",                                                 // IVF container (VP8/VP9 test format)
+			"--disable-parser=vp3",                                                  // Early VP
+			"--disable-decoder=truemotion1,truemotion2,truemotion2rt",               // Duck corp
+			"--disable-decoder=cinepak,indeo2,indeo3,indeo4,indeo5,msrle",           // 1990s legacy
+			"--disable-encoder=cinepak,msrle",                                       // 1990s legacy
+			"--disable-decoder=msvideo1,wmv1,wmv2,wmv3,wmv3image",                   // Windows Media
+			"--disable-encoder=msvideo1,wmv1,wmv2,wmav1,wmav2",                      // Windows Media
+			"--disable-decoder=wmalossless,wmapro,wmav1,wmav2,wmavoice",             // Windows Media
+			"--disable-decoder=vc1,vc1_cuvid,vc1_mmal,vc1_qsv,vc1_v4l2m2m,vc1image", // VC-1
+			"--disable-demuxer=vc1,vc1t",                                            // VC-1
+			"--disable-muxer=vc1,vc1t",                                              // VC-1
+			"--disable-parser=vc1",                                                  // VC-1
+			"--disable-decoder=asf",                                                 // ASF
+			"--disable-demuxer=asf,asf_o",                                           // ASF
+			"--disable-muxer=asf,asf_stream",                                        // ASF
+			"--disable-encoder=mpeg4,msmpeg4v2,msmpeg4v3",                           // Old MS-MPEG-4 encoders
+			"--disable-decoder=mpeg4,msmpeg4v1,msmpeg4v2,msmpeg4v3",                 // Old MS-MPEG-4 decoders
+			"--disable-encoder=h261,h263,h263_v4l2m2m,h263p",                        // H.261/H.263
+			"--disable-decoder=h261,h263,h263_v4l2m2m,h263i,h263p",                  // H.261/H.263
+			"--disable-demuxer=h261,h263",                                           // H.261/H.263
+			"--disable-muxer=h261,h263",                                             // H.261/H.263
+			"--disable-parser=h261,h263",                                            // H.261/H.263
+			"--disable-encoder=flv",                                                 // Flash Sorenson H.263
+			"--disable-decoder=flv",                                                 // Flash Sorenson H.263
+			"--disable-demuxer=flv,live_flv",                                        // Flash Sorenson H.263
+			"--disable-muxer=flv",                                                   // Flash Sorenson H.263
+			"--disable-decoder=eacmv,eamad,eatgq,eatgv,eatqi",                       // Electronic Arts
+			"--disable-decoder=adpcm_ea_maxis_xa,adpcm_ea_r1,adpcm_ea_r2,adpcm_ea_r3,adpcm_ea_xas,adpcm_ima_ea_eacs,adpcm_ima_ea_sead", // Electronic Arts
+			"--disable-decoder=flic",                                                      // Autodesk FLIC 1990s
+			"--disable-demuxer=flic",                                                      // Autodesk FLIC 1990s
+			"--disable-decoder=anm",                                                       // Deluxe Paint 1980s
+			"--disable-decoder=adpcm_4xm,4xm",                                             // 4X Movie
+			"--disable-decoder=interplay_acm,interplay_dpcm,interplay_video",              // Interplay 1990s
+			"--disable-decoder=bethsoftvid",                                               // Bethesda pre-2002
+			"--disable-demuxer=bethsoftvid",                                               // Bethesda pre-2002
+			"--disable-decoder=vqa",                                                       // Westwood
+			"--disable-demuxer=wsvqa",                                                     // Westwood
+			"--disable-decoder=dsicinaudio,dsicinvideo",                                   // Delphine Software
+			"--disable-decoder=dsicin",                                                    // Delphine Software
+			"--disable-decoder=idcin,roq,roq_dpcm",                                        // Id Software
+			"--disable-encoder=roq,roq_dpcm",                                              // Id Software
+			"--disable-demuxer=idcin,roq",                                                 // Id Software
+			"--disable-muxer=roq",                                                         // Id Software
+			"--disable-decoder=bink,binkaudio_dct,binkaudio_rdft,smackaud,smacker,",       // RAD Game Tools
+			"--disable-demuxer=bink,binka,smacker",                                        // RAD Game Tools
+			"--disable-decoder=adpcm_argo,argo",                                           // Argonaut Games
+			"--disable-encoder=adpcm_argo",                                                // Argonaut Games
+			"--disable-demuxer=argo_asf,argo_brp,argo_cvg",                                // Argonaut Games
+			"--disable-muxer=argo_asf,argo_cvg",                                           // Argonaut Games
+			"--disable-encoder=dvvideo",                                                   // DV tape
+			"--disable-decoder=dvaudio,dvvideo",                                           // DV tape
+			"--disable-demuxer=dv",                                                        // DV tape
+			"--disable-muxer=dv",                                                          // DV tape
+			"--disable-parser=dvaudio",                                                    // DV tape
+			"--disable-decoder=adpcm_psx,adpcm_xa",                                        // PlayStation 1 / CD-ROM XA
+			"--disable-decoder=atrac1,atrac3,atrac3al,atrac3p,atrac3pal,atrac9",           // Sony ATRAC (MiniDisc/PS)
+			"--disable-encoder=svq1",                                                      // Sorenson Video (QuickTime)
+			"--disable-decoder=svq1,svq3",                                                 // Sorenson Video (QuickTime)
+			"--disable-decoder=qdm2,qdm2_at,qdmc,qdmc_at",                                 // QDesign Music (QuickTime)
+			"--disable-encoder=rpza,smc",                                                  // Apple legacy
+			"--disable-decoder=mace3,mace6,rpza,smc",                                      // Apple legacy
+			"--disable-decoder=cavs",                                                      // Chinese AVS
+			"--disable-demuxer=cavsvideo",                                                 // Chinese AVS
+			"--disable-muxer=cavsvideo",                                                   // Chinese AVS
+			"--disable-parser=cavsvideo",                                                  // Chinese AVS
+			"--disable-encoder=asv1,asv2",                                                 // ASUS V1/V2 encoders
+			"--disable-decoder=asv1,asv2",                                                 // ASUS V1/V2 decoders
+			"--disable-encoder=amv",                                                       // AMV video
+			"--disable-decoder=amv",                                                       // AMV video
+			"--disable-muxer=amv",                                                         // AMV video
+			"--disable-decoder=amr_nb_at,amrnb,amrnb_mediacodec,amrwb,amrwb_mediacodec",   // AMR mobile codecs
+			"--disable-demuxer=amr,amrnb,amrwb",                                           // AMR mobile codecs
+			"--disable-muxer=amr",                                                         // AMR mobile codecs
+			"--disable-parser=amr",                                                        // AMR mobile codecs
+			"--disable-decoder=libopencore_amrnb,libopencore_amrwb",                       // AMR mobile codecs
+			"--disable-encoder=adpcm_g722,adpcm_g726,adpcm_g726le,g723_1",                 // Telecom encoders
+			"--disable-decoder=adpcm_g722,adpcm_g726,adpcm_g726le,g723_1,g728,g729,qcelp", // Telecom decoders
+			"--disable-parser=g723_1,g729",                                                // Telecom parsers
+			"--disable-muxer=g722,g723_1,g726,g726le",                                     // Telecom muxers
+			"--disable-demuxer=g722,g723_1,g726,g726le,g728,g729",                         // Telecom demuxers
+			"--disable-decoder=truespeech",                                                // DSP Group TrueSpeech (1990s)
+			"--disable-encoder=a64multi,a64multi5",                                        // Commodore 64
+			"--disable-muxer=a64",                                                         // Commodore 64
 			"--enable-pic",
 			"--enable-gpl",
 			"--enable-version3",
 			"--enable-static",
-
-			// Enable libs
 			"--enable-libaom",
 			"--enable-libass",
 			"--enable-libfreetype",
