@@ -2,13 +2,18 @@
 default:
     @just --list
 
+# Clean build artifacts and downloads
+clean:
+    rm -rf temp/
+
 # Build FFmpeg static library for current platform
 build-ffmpeg:
-    @echo "Building FFmpeg static library..."
-    #!/usr/bin/env sh
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Building FFmpeg static library..."
     GOOS=$(go env GOOS)
     GOARCH=$(go env GOARCH)
-    go run ./internal/builder libffmpeg_${GOOS}_${GOARCH}.a
+    go run ./internal/builder "libffmpeg_${GOOS}_${GOARCH}.a"
 
 # Build all Go packages
 build:

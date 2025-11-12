@@ -311,31 +311,6 @@ func AVCodecOpen2(avctx *AVCodecContext, codec *AVCodec, options **AVDictionary)
 	return int(ret), WrapErr(int(ret))
 }
 
-// --- Function avcodec_close ---
-
-// AVCodecClose wraps avcodec_close.
-/*
-  Close a given AVCodecContext and free all the data associated with it
-  (but not the AVCodecContext itself).
-
-  Calling this function on an AVCodecContext that hasn't been opened will free
-  the codec-specific data allocated in avcodec_alloc_context3() with a non-NULL
-  codec. Subsequent calls will do nothing.
-
-  @deprecated Do not use this function. Use avcodec_free_context() to destroy a
-  codec context (either open or closed). Opening and closing a codec context
-  multiple times is not supported anymore -- use multiple codec contexts
-  instead.
-*/
-func AVCodecClose(avctx *AVCodecContext) (int, error) {
-	var tmpavctx *C.AVCodecContext
-	if avctx != nil {
-		tmpavctx = avctx.ptr
-	}
-	ret := C.avcodec_close(tmpavctx)
-	return int(ret), WrapErr(int(ret))
-}
-
 // --- Function avsubtitle_free ---
 
 // AVSubtitleFree wraps avsubtitle_free.
@@ -857,7 +832,7 @@ func AVCodecFillAudioFrame(frame *AVFrame, nbChannels int, sampleFmt AVSampleFor
 
   @note for encoders, this function will only do something if the encoder
   declares support for AV_CODEC_CAP_ENCODER_FLUSH. When called, the encoder
-  will drain any remaining packets, and can then be re-used for a different
+  will drain any remaining packets, and can then be reused for a different
   stream (as opposed to sending a null frame which will leave the encoder
   in a permanent EOF state after draining). This can be desirable if the
   cost of tearing down and replacing the encoder instance is high.
@@ -902,8 +877,8 @@ func AVGetAudioFrameDuration(avctx *AVCodecContext, frameBytes int) (int, error)
 
 // AVCodecIsOpen wraps avcodec_is_open.
 /*
-  @return a positive value if s is open (i.e. avcodec_open2() was called on it
-  with no corresponding avcodec_close()), 0 otherwise.
+  @return a positive value if s is open (i.e. avcodec_open2() was called on it),
+  0 otherwise.
 */
 func AVCodecIsOpen(s *AVCodecContext) (int, error) {
 	var tmps *C.AVCodecContext
@@ -1843,6 +1818,23 @@ func AVPacketRescaleTs(pkt *AVPacket, tbSrc *AVRational, tbDst *AVRational) {
 	C.av_packet_rescale_ts(tmppkt, tbSrc.value, tbDst.value)
 }
 
+// --- Function av_container_fifo_alloc_avpacket ---
+
+// AVContainerFifoAllocAVPacket wraps av_container_fifo_alloc_avpacket.
+/*
+  Allocate an AVContainerFifo instance for AVPacket.
+
+  @param flags currently unused
+*/
+func AVContainerFifoAllocAVPacket(flags uint) *AVContainerFifo {
+	ret := C.av_container_fifo_alloc_avpacket(C.uint(flags))
+	var retMapped *AVContainerFifo
+	if ret != nil {
+		retMapped = &AVContainerFifo{ptr: ret}
+	}
+	return retMapped
+}
+
 // --- Function avfilter_version ---
 
 // AVFilterVersion wraps avfilter_version.
@@ -1915,6 +1907,32 @@ func AVFilterPadGetType(pads *AVFilterPad, padIdx int) AVMediaType {
 	return AVMediaType(ret)
 }
 
+// --- Function avfilter_link_get_hw_frames_ctx ---
+
+// AVFilterLinkGetHWFramesCtx wraps avfilter_link_get_hw_frames_ctx.
+/*
+  Get the hardware frames context of a filter link.
+
+  @param link an AVFilterLink
+
+  @return a ref-counted copy of the link's hw_frames_ctx field if there is
+          a hardware frames context associated with the link or NULL otherwise.
+          The returned AVBufferRef needs to be released with av_buffer_unref()
+          when it is no longer used.
+*/
+func AVFilterLinkGetHWFramesCtx(link *AVFilterLink) *AVBufferRef {
+	var tmplink *C.AVFilterLink
+	if link != nil {
+		tmplink = link.ptr
+	}
+	ret := C.avfilter_link_get_hw_frames_ctx(tmplink)
+	var retMapped *AVBufferRef
+	if ret != nil {
+		retMapped = &AVBufferRef{ptr: ret}
+	}
+	return retMapped
+}
+
 // --- Function avfilter_filter_pad_count ---
 
 // AVFilterFilterPadCount wraps avfilter_filter_pad_count.
@@ -1951,47 +1969,6 @@ func AVFilterLink_(src *AVFilterContext, srcpad uint, dst *AVFilterContext, dstp
 		tmpdst = dst.ptr
 	}
 	ret := C.avfilter_link(tmpsrc, C.uint(srcpad), tmpdst, C.uint(dstpad))
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function avfilter_link_free ---
-
-// AVFilterLinkFree wraps avfilter_link_free.
-//
-//	@deprecated this function should never be called by users
-func AVFilterLinkFree(link **AVFilterLink) {
-	var ptrlink **C.AVFilterLink
-	var tmplink *C.AVFilterLink
-	var oldTmplink *C.AVFilterLink
-	if link != nil {
-		innerlink := *link
-		if innerlink != nil {
-			tmplink = innerlink.ptr
-			oldTmplink = tmplink
-		}
-		ptrlink = &tmplink
-	}
-	C.avfilter_link_free(ptrlink)
-	if tmplink != oldTmplink && link != nil {
-		if tmplink != nil {
-			*link = &AVFilterLink{ptr: tmplink}
-		} else {
-			*link = nil
-		}
-	}
-}
-
-// --- Function avfilter_config_links ---
-
-// AVFilterConfigLinks wraps avfilter_config_links.
-//
-//	@deprecated this function should never be called by users
-func AVFilterConfigLinks(filter *AVFilterContext) (int, error) {
-	var tmpfilter *C.AVFilterContext
-	if filter != nil {
-		tmpfilter = filter.ptr
-	}
-	ret := C.avfilter_config_links(tmpfilter)
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -2272,9 +2249,9 @@ func AVFilterGraphGetFilter(graph *AVFilterGraph, name *CStr) *AVFilterContext {
 
 // AVFilterGraphCreateFilter wraps avfilter_graph_create_filter.
 /*
-  Create and add a filter instance into an existing graph.
-  The filter instance is created from the filter filt and inited
-  with the parameter args. opaque is currently ignored.
+  A convenience wrapper that allocates and initializes a filter in a single
+  step. The filter instance is created from the filter filt and inited with the
+  parameter args. opaque is currently ignored.
 
   In case of success put in *filt_ctx the pointer to the created
   filter instance, otherwise set *filt_ctx to NULL.
@@ -2283,6 +2260,12 @@ func AVFilterGraphGetFilter(graph *AVFilterGraph, name *CStr) *AVFilterContext {
   @param graph_ctx the filter graph
   @return a negative AVERROR error code in case of failure, a non
   negative value otherwise
+
+  @warning Since the filter is initialized after this function successfully
+           returns, you MUST NOT set any further options on it. If you need to
+           do that, call ::avfilter_graph_alloc_filter(), followed by setting
+           the options, followed by ::avfilter_init_dict() instead of this
+           function.
 */
 func AVFilterGraphCreateFilter(filtCtx **AVFilterContext, filt *AVFilter, name *CStr, args *CStr, opaque unsafe.Pointer, graphCtx *AVFilterGraph) (int, error) {
 	var ptrfiltCtx **C.AVFilterContext
@@ -2805,7 +2788,7 @@ func AVFilterGraphSegmentInit(seg *AVFilterGraphSegment, flags int) (int, error)
   Unlabeled outputs are
   - linked to the first unlinked unlabeled input in the next non-disabled
     filter in the chain, if one exists
-  - exported in the ouputs linked list otherwise, with NULL label
+  - exported in the outputs linked list otherwise, with NULL label
 
   Similarly, unlinked input pads are exported in the inputs linked list.
 
@@ -3319,6 +3302,10 @@ func AVBuffersinkGetHWFramesCtx(ctx *AVFilterContext) *AVBufferRef {
 	return retMapped
 }
 
+// --- Function av_buffersink_get_side_data ---
+
+// av_buffersink_get_side_data skipped due to nbSideData
+
 // --- Function av_buffersink_get_frame ---
 
 // AVBuffersinkGetFrame wraps av_buffersink_get_frame.
@@ -3660,45 +3647,6 @@ func AVStreamGetParser(s *AVStream) *AVCodecParserContext {
 	return retMapped
 }
 
-// --- Function av_format_inject_global_side_data ---
-
-// AVFormatInjectGlobalSideData wraps av_format_inject_global_side_data.
-/*
-  This function will cause global side data to be injected in the next packet
-  of each stream as well as after any subsequent seek.
-
-  @note global side data is always available in every AVStream's
-        @ref AVCodecParameters.coded_side_data "codecpar side data" array, and
-        in a @ref AVCodecContext.coded_side_data "decoder's side data" array if
-        initialized with said stream's codecpar.
-  @see av_packet_side_data_get()
-*/
-func AVFormatInjectGlobalSideData(s *AVFormatContext) {
-	var tmps *C.AVFormatContext
-	if s != nil {
-		tmps = s.ptr
-	}
-	C.av_format_inject_global_side_data(tmps)
-}
-
-// --- Function av_fmt_ctx_get_duration_estimation_method ---
-
-// AVFmtCtxGetDurationEstimationMethod wraps av_fmt_ctx_get_duration_estimation_method.
-/*
-  Returns the method used to set ctx->duration.
-
-  @return AVFMT_DURATION_FROM_PTS, AVFMT_DURATION_FROM_STREAM, or AVFMT_DURATION_FROM_BITRATE.
-  @deprecated duration_estimation_method is public and can be read directly.
-*/
-func AVFmtCtxGetDurationEstimationMethod(ctx *AVFormatContext) AVDurationEstimationMethod {
-	var tmpctx *C.AVFormatContext
-	if ctx != nil {
-		tmpctx = ctx.ptr
-	}
-	ret := C.av_fmt_ctx_get_duration_estimation_method(tmpctx)
-	return AVDurationEstimationMethod(ret)
-}
-
 // --- Function avformat_version ---
 
 // AVFormatVersion wraps avformat_version.
@@ -3996,60 +3944,6 @@ func AVFormatStreamGroupAddStream(stg *AVStreamGroup, st *AVStream) (int, error)
 	return int(ret), WrapErr(int(ret))
 }
 
-// --- Function av_stream_add_side_data ---
-
-// AVStreamAddSideData wraps av_stream_add_side_data.
-/*
-  Wrap an existing array as stream side data.
-
-  @param st   stream
-  @param type side information type
-  @param data the side data array. It must be allocated with the av_malloc()
-              family of functions. The ownership of the data is transferred to
-              st.
-  @param size side information size
-
-  @return zero on success, a negative AVERROR code on failure. On failure,
-          the stream is unchanged and the data remains owned by the caller.
-  @deprecated use av_packet_side_data_add() with the stream's
-              @ref AVCodecParameters.coded_side_data "codecpar side data"
-*/
-func AVStreamAddSideData(st *AVStream, _type AVPacketSideDataType, data unsafe.Pointer, size uint64) (int, error) {
-	var tmpst *C.AVStream
-	if st != nil {
-		tmpst = st.ptr
-	}
-	ret := C.av_stream_add_side_data(tmpst, C.enum_AVPacketSideDataType(_type), (*C.uint8_t)(data), C.size_t(size))
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_stream_new_side_data ---
-
-// AVStreamNewSideData wraps av_stream_new_side_data.
-/*
-  Allocate new information from stream.
-
-  @param stream stream
-  @param type   desired side information type
-  @param size   side information size
-
-  @return pointer to fresh allocated data or NULL otherwise
-  @deprecated use av_packet_side_data_new() with the stream's
-              @ref AVCodecParameters.coded_side_data "codecpar side data"
-*/
-func AVStreamNewSideData(stream *AVStream, _type AVPacketSideDataType, size uint64) unsafe.Pointer {
-	var tmpstream *C.AVStream
-	if stream != nil {
-		tmpstream = stream.ptr
-	}
-	ret := C.av_stream_new_side_data(tmpstream, C.enum_AVPacketSideDataType(_type), C.size_t(size))
-	return unsafe.Pointer(ret)
-}
-
-// --- Function av_stream_get_side_data ---
-
-// av_stream_get_side_data skipped due to size
-
 // --- Function av_new_program ---
 
 // AVNewProgram wraps av_new_program.
@@ -4269,7 +4163,7 @@ func AVProbeInputBuffer(pb *AVIOContext, fmt **AVInputFormat, url *CStr, logctx 
                   which case an AVFormatContext is allocated by this
                   function and written into ps.
                   Note that a user-supplied AVFormatContext will be freed
-                  on failure.
+                  on failure and its pointer set to NULL.
   @param url      URL of the stream to open.
   @param fmt      If non-NULL, this parameter forces a specific input format.
                   Otherwise the format is autodetected.
@@ -4278,7 +4172,8 @@ func AVProbeInputBuffer(pb *AVIOContext, fmt **AVInputFormat, url *CStr, logctx 
                   On return this parameter will be destroyed and replaced with
                   a dict containing options that were not found. May be NULL.
 
-  @return 0 on success, a negative AVERROR on failure.
+  @return 0 on success; on failure: frees ps, sets its pointer to NULL,
+          and returns a negative AVERROR.
 
   @note If you want to use custom IO, preallocate the format context and set its pb field.
 */
@@ -8359,9 +8254,10 @@ func AVFrameMoveRef(dst *AVFrame, src *AVFrame) {
             cases.
 
   @param frame frame in which to store the new buffers.
-  @param align Required buffer size alignment. If equal to 0, alignment will be
-               chosen automatically for the current CPU. It is highly
-               recommended to pass 0 here unless you know what you are doing.
+  @param align Required buffer size and data pointer alignment. If equal to 0,
+               alignment will be chosen automatically for the current CPU.
+               It is highly recommended to pass 0 here unless you know what
+               you are doing.
 
   @return 0 on success, a negative AVERROR on error.
 */
@@ -8737,6 +8633,10 @@ func AVFrameSideDataGet(sd **AVFrameSideData, nbSd int, _type AVFrameSideDataTyp
 // --- Function av_frame_side_data_remove ---
 
 // av_frame_side_data_remove skipped due to sd
+
+// --- Function av_frame_side_data_remove_by_props ---
+
+// av_frame_side_data_remove_by_props skipped due to sd
 
 // --- Function av_hwdevice_find_type_by_name ---
 
@@ -9221,7 +9121,7 @@ func AVHWFrameConstraintsFree(constraints **AVHWFramesConstraints) {
   values indicate that it failed somehow.
 
   On failure, the destination frame will be left blank, except for the
-  hw_frames_ctx/format fields thay may have been set by the caller - those will
+  hw_frames_ctx/format fields they may have been set by the caller - those will
   be preserved as they were.
 
   @param dst Destination frame, to contain the mapping.
@@ -9529,7 +9429,7 @@ func AVCompareMod(a uint64, b uint64, mod uint64) int64 {
 /*
   Add a value to a timestamp.
 
-  This function guarantees that when the same value is repeatly added that
+  This function guarantees that when the same value is repeatedly added that
   no accumulation of rounding errors occurs.
 
   @param[in] ts     Input timestamp
@@ -10624,6 +10524,8 @@ func AVOptGetArray(obj unsafe.Pointer, name *CStr, searchFlags int, startElem ui
 
   @returns a pointer to the field, it can be cast to the correct type and read
            or written to.
+
+  @deprecated direct access to AVOption-exported fields is not supported
 */
 func AVOptPtr(avclass *AVClass, obj unsafe.Pointer, name *CStr) unsafe.Pointer {
 	var tmpavclass *C.AVClass
@@ -10753,7 +10655,7 @@ func AVOptFreepRanges(ranges **AVOptionRanges) {
 
   The result must be freed with av_opt_freep_ranges.
 
-  @return number of compontents returned on success, a negative errro code otherwise
+  @return number of components returned on success, a negative error code otherwise
 */
 func AVOptQueryRanges(param0 **AVOptionRanges, obj unsafe.Pointer, key *CStr, flags int) (int, error) {
 	var ptrparam0 **C.AVOptionRanges
@@ -10797,7 +10699,7 @@ func AVOptQueryRanges(param0 **AVOptionRanges, obj unsafe.Pointer, key *CStr, fl
 
   The result must be freed with av_opt_free_ranges.
 
-  @return number of compontents returned on success, a negative errro code otherwise
+  @return number of components returned on success, a negative error code otherwise
 */
 func AVOptQueryRangesDefault(param0 **AVOptionRanges, obj unsafe.Pointer, key *CStr, flags int) (int, error) {
 	var ptrparam0 **C.AVOptionRanges

@@ -37,7 +37,6 @@ var (
 		"libogg",
 		"libopus",
 		"libpng16",
-		"libpostproc",
 		"libspeex",
 		"libswresample",
 		"libswscale",
@@ -1073,17 +1072,58 @@ func buildAOM() {
 	{
 		log.Println("Running cmake")
 
-		cmd := cmd(
-			"cmake",
-			buildPath,
+		// Detect platform
+		goos := runtime.GOOS
+		goarch := runtime.GOARCH
+
+		cmakeArgs := []string{
 			"-G",
 			"Unix Makefiles",
 			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
 			"-DENABLE_TESTS=OFF",
-			// TODO: nasm
-			//-DENABLE_NASM=on
-			srcPath,
-		)
+			"-DBUILD_SHARED_LIBS=OFF", // Static library for ffmpeg
+		}
+
+		// Platform-specific assembler configuration
+		switch {
+		case goarch == "amd64" && goos == "linux":
+			// Linux x86_64: CMake will auto-prefer YASM over NASM
+			// No flag needed - just let it detect YASM
+			log.Println("Building for Linux x86_64 - using YASM (auto-detected)")
+
+		case goarch == "amd64" && goos == "darwin":
+			// macOS Intel: Explicitly use NASM (macOS convention)
+			cmakeArgs = append(cmakeArgs, "-DENABLE_NASM=ON")
+			log.Println("Building for macOS x86_64 - using NASM")
+
+		case goarch == "arm64" && goos == "linux":
+			// Linux ARM64: Uses GAS (GNU Assembler) - ENABLE_NASM is irrelevant
+			// Add -mcpu=native for optimal ARM performance
+			cmakeArgs = append(cmakeArgs,
+				"-DCMAKE_C_FLAGS=-mcpu=native",
+				"-DCMAKE_CXX_FLAGS=-mcpu=native",
+			)
+			log.Println("Building for Linux ARM64 - using GAS with native CPU optimizations")
+
+		case goarch == "arm64" && goos == "darwin":
+			// macOS Apple Silicon: Uses LLVM/Clang assembler - ENABLE_NASM is irrelevant
+			// Add -mcpu=native equivalent for Apple Silicon
+			cmakeArgs = append(cmakeArgs,
+				"-DCMAKE_C_FLAGS=-mcpu=apple-m1",
+				"-DCMAKE_CXX_FLAGS=-mcpu=apple-m1",
+			)
+			log.Println("Building for macOS ARM64 - using LLVM assembler with Apple Silicon optimizations")
+
+		default:
+			log.Printf("Building for %s/%s - using default CMake detection", goos, goarch)
+		}
+
+		// Add source path as final argument
+		cmakeArgs = append(cmakeArgs, srcPath)
+
+		// Build the full command with buildPath as working directory
+		cmdArgs := append([]string{buildPath}, cmakeArgs...)
+		cmd := cmd("cmake", cmdArgs[0], cmdArgs[1:]...)
 
 		run("[aom cmake]", cmd)
 	}
@@ -1107,7 +1147,7 @@ func (b *Builder) buildFFmpeg() {
 	buildPath := path.Join(buildDir, "ffmpeg")
 
 	if !exists(zipPath) {
-		download("https://codeload.github.com/FFmpeg/FFmpeg/zip/refs/heads/release/7.1", zipPath)
+		download("https://codeload.github.com/FFmpeg/FFmpeg/zip/refs/heads/release/8.0", zipPath)
 	}
 
 	unzip(zipPath, buildPath)

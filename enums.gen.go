@@ -796,6 +796,16 @@ const (
 	AVCodecIdVmix AVCodecID = C.AV_CODEC_ID_VMIX
 	// AVCodecIdLead wraps AV_CODEC_ID_LEAD.
 	AVCodecIdLead AVCodecID = C.AV_CODEC_ID_LEAD
+	// AVCodecIdDnxuc wraps AV_CODEC_ID_DNXUC.
+	AVCodecIdDnxuc AVCodecID = C.AV_CODEC_ID_DNXUC
+	// AVCodecIdRv60 wraps AV_CODEC_ID_RV60.
+	AVCodecIdRv60 AVCodecID = C.AV_CODEC_ID_RV60
+	// AVCodecIdJpegxlAnim wraps AV_CODEC_ID_JPEGXL_ANIM.
+	AVCodecIdJpegxlAnim AVCodecID = C.AV_CODEC_ID_JPEGXL_ANIM
+	// AVCodecIdApv wraps AV_CODEC_ID_APV.
+	AVCodecIdApv AVCodecID = C.AV_CODEC_ID_APV
+	// AVCodecIdProresRaw wraps AV_CODEC_ID_PRORES_RAW.
+	AVCodecIdProresRaw AVCodecID = C.AV_CODEC_ID_PRORES_RAW
 	// AVCodecIdFirstAudio wraps AV_CODEC_ID_FIRST_AUDIO.
 	//
 	//	A dummy id pointing at the start of audio codecs
@@ -1082,6 +1092,14 @@ const (
 	//
 	//	various ADPCM codecs
 	AVCodecIdAdpcmXmd AVCodecID = C.AV_CODEC_ID_ADPCM_XMD
+	// AVCodecIdAdpcmImaXbox wraps AV_CODEC_ID_ADPCM_IMA_XBOX.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmImaXbox AVCodecID = C.AV_CODEC_ID_ADPCM_IMA_XBOX
+	// AVCodecIdAdpcmSanyo wraps AV_CODEC_ID_ADPCM_SANYO.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmSanyo AVCodecID = C.AV_CODEC_ID_ADPCM_SANYO
 	// AVCodecIdAmrNb wraps AV_CODEC_ID_AMR_NB.
 	//
 	//	AMR
@@ -1356,6 +1374,8 @@ const (
 	AVCodecIdQoa AVCodecID = C.AV_CODEC_ID_QOA
 	// AVCodecIdLc3 wraps AV_CODEC_ID_LC3.
 	AVCodecIdLc3 AVCodecID = C.AV_CODEC_ID_LC3
+	// AVCodecIdG728 wraps AV_CODEC_ID_G728.
+	AVCodecIdG728 AVCodecID = C.AV_CODEC_ID_G728
 	// AVCodecIdFirstSubtitle wraps AV_CODEC_ID_FIRST_SUBTITLE.
 	//
 	//	A dummy ID pointing at the start of subtitle codecs.
@@ -1414,6 +1434,8 @@ const (
 	AVCodecIdTtml AVCodecID = C.AV_CODEC_ID_TTML
 	// AVCodecIdAribCaption wraps AV_CODEC_ID_ARIB_CAPTION.
 	AVCodecIdAribCaption AVCodecID = C.AV_CODEC_ID_ARIB_CAPTION
+	// AVCodecIdIvtvVbi wraps AV_CODEC_ID_IVTV_VBI.
+	AVCodecIdIvtvVbi AVCodecID = C.AV_CODEC_ID_IVTV_VBI
 	// AVCodecIdFirstUnknown wraps AV_CODEC_ID_FIRST_UNKNOWN.
 	//
 	//	A dummy ID pointing at the start of various fake codecs.
@@ -1446,6 +1468,8 @@ const (
 	AVCodecIdSmpte2038 AVCodecID = C.AV_CODEC_ID_SMPTE_2038
 	// AVCodecIdLcevc wraps AV_CODEC_ID_LCEVC.
 	AVCodecIdLcevc AVCodecID = C.AV_CODEC_ID_LCEVC
+	// AVCodecIdSmpte436MAnc wraps AV_CODEC_ID_SMPTE_436M_ANC.
+	AVCodecIdSmpte436MAnc AVCodecID = C.AV_CODEC_ID_SMPTE_436M_ANC
 	// AVCodecIdProbe wraps AV_CODEC_ID_PROBE.
 	//
 	//	codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
@@ -1787,7 +1811,7 @@ const (
 	AVPktDataCpbProperties AVPacketSideDataType = C.AV_PKT_DATA_CPB_PROPERTIES
 	// AVPktDataSkipSamples wraps AV_PKT_DATA_SKIP_SAMPLES.
 	/*
-	   Recommmends skipping the specified number of samples
+	   Recommends skipping the specified number of samples
 	   @code
 	   u32le number of samples to skip from start of this packet
 	   u32le number of samples to skip from end of this packet
@@ -1988,6 +2012,23 @@ const (
 	   bytes intact.
 	*/
 	AVPktDataLcevc AVPacketSideDataType = C.AV_PKT_DATA_LCEVC
+	// AVPktData3DReferenceDisplays wraps AV_PKT_DATA_3D_REFERENCE_DISPLAYS.
+	/*
+	   This side data contains information about the reference display width(s)
+	   and reference viewing distance(s) as well as information about the
+	   corresponding reference stereo pair(s), i.e., the pair(s) of views to be
+	   displayed for the viewer's left and right eyes on the reference display
+	   at the reference viewing distance.
+	   The payload is the AV3DReferenceDisplaysInfo struct defined in
+	   libavutil/tdrdi.h.
+	*/
+	AVPktData3DReferenceDisplays AVPacketSideDataType = C.AV_PKT_DATA_3D_REFERENCE_DISPLAYS
+	// AVPktDataRtcpSr wraps AV_PKT_DATA_RTCP_SR.
+	/*
+	   Contains the last received RTCP SR (Sender Report) information
+	   in the form of the AVRTCPSenderReport struct.
+	*/
+	AVPktDataRtcpSr AVPacketSideDataType = C.AV_PKT_DATA_RTCP_SR
 	// AVPktDataNb wraps AV_PKT_DATA_NB.
 	/*
 	   The number of side data types.
@@ -2514,42 +2555,80 @@ func AllocAVChannelArray(size uint64) *Array[AVChannel] {
 
 const (
 	// AVChanNone wraps AV_CHAN_NONE.
+	//
+	//	Invalid channel index
 	AVChanNone AVChannel = C.AV_CHAN_NONE
 	// AVChanFrontLeft wraps AV_CHAN_FRONT_LEFT.
+	//
+	//	Invalid channel index
 	AVChanFrontLeft AVChannel = C.AV_CHAN_FRONT_LEFT
 	// AVChanFrontRight wraps AV_CHAN_FRONT_RIGHT.
+	//
+	//	Invalid channel index
 	AVChanFrontRight AVChannel = C.AV_CHAN_FRONT_RIGHT
 	// AVChanFrontCenter wraps AV_CHAN_FRONT_CENTER.
+	//
+	//	Invalid channel index
 	AVChanFrontCenter AVChannel = C.AV_CHAN_FRONT_CENTER
 	// AVChanLowFrequency wraps AV_CHAN_LOW_FREQUENCY.
+	//
+	//	Invalid channel index
 	AVChanLowFrequency AVChannel = C.AV_CHAN_LOW_FREQUENCY
 	// AVChanBackLeft wraps AV_CHAN_BACK_LEFT.
+	//
+	//	Invalid channel index
 	AVChanBackLeft AVChannel = C.AV_CHAN_BACK_LEFT
 	// AVChanBackRight wraps AV_CHAN_BACK_RIGHT.
+	//
+	//	Invalid channel index
 	AVChanBackRight AVChannel = C.AV_CHAN_BACK_RIGHT
 	// AVChanFrontLeftOfCenter wraps AV_CHAN_FRONT_LEFT_OF_CENTER.
+	//
+	//	Invalid channel index
 	AVChanFrontLeftOfCenter AVChannel = C.AV_CHAN_FRONT_LEFT_OF_CENTER
 	// AVChanFrontRightOfCenter wraps AV_CHAN_FRONT_RIGHT_OF_CENTER.
+	//
+	//	Invalid channel index
 	AVChanFrontRightOfCenter AVChannel = C.AV_CHAN_FRONT_RIGHT_OF_CENTER
 	// AVChanBackCenter wraps AV_CHAN_BACK_CENTER.
+	//
+	//	Invalid channel index
 	AVChanBackCenter AVChannel = C.AV_CHAN_BACK_CENTER
 	// AVChanSideLeft wraps AV_CHAN_SIDE_LEFT.
+	//
+	//	Invalid channel index
 	AVChanSideLeft AVChannel = C.AV_CHAN_SIDE_LEFT
 	// AVChanSideRight wraps AV_CHAN_SIDE_RIGHT.
+	//
+	//	Invalid channel index
 	AVChanSideRight AVChannel = C.AV_CHAN_SIDE_RIGHT
 	// AVChanTopCenter wraps AV_CHAN_TOP_CENTER.
+	//
+	//	Invalid channel index
 	AVChanTopCenter AVChannel = C.AV_CHAN_TOP_CENTER
 	// AVChanTopFrontLeft wraps AV_CHAN_TOP_FRONT_LEFT.
+	//
+	//	Invalid channel index
 	AVChanTopFrontLeft AVChannel = C.AV_CHAN_TOP_FRONT_LEFT
 	// AVChanTopFrontCenter wraps AV_CHAN_TOP_FRONT_CENTER.
+	//
+	//	Invalid channel index
 	AVChanTopFrontCenter AVChannel = C.AV_CHAN_TOP_FRONT_CENTER
 	// AVChanTopFrontRight wraps AV_CHAN_TOP_FRONT_RIGHT.
+	//
+	//	Invalid channel index
 	AVChanTopFrontRight AVChannel = C.AV_CHAN_TOP_FRONT_RIGHT
 	// AVChanTopBackLeft wraps AV_CHAN_TOP_BACK_LEFT.
+	//
+	//	Invalid channel index
 	AVChanTopBackLeft AVChannel = C.AV_CHAN_TOP_BACK_LEFT
 	// AVChanTopBackCenter wraps AV_CHAN_TOP_BACK_CENTER.
+	//
+	//	Invalid channel index
 	AVChanTopBackCenter AVChannel = C.AV_CHAN_TOP_BACK_CENTER
 	// AVChanTopBackRight wraps AV_CHAN_TOP_BACK_RIGHT.
+	//
+	//	Invalid channel index
 	AVChanTopBackRight AVChannel = C.AV_CHAN_TOP_BACK_RIGHT
 	// AVChanStereoLeft wraps AV_CHAN_STEREO_LEFT.
 	//
@@ -2615,6 +2694,10 @@ const (
 	//
 	//	-110 degrees, Rvs, TpRS
 	AVChanTopSurroundRight AVChannel = C.AV_CHAN_TOP_SURROUND_RIGHT
+	// AVChanBinauralLeft wraps AV_CHAN_BINAURAL_LEFT.
+	AVChanBinauralLeft AVChannel = C.AV_CHAN_BINAURAL_LEFT
+	// AVChanBinauralRight wraps AV_CHAN_BINAURAL_RIGHT.
+	AVChanBinauralRight AVChannel = C.AV_CHAN_BINAURAL_RIGHT
 	// AVChanUnused wraps AV_CHAN_UNUSED.
 	//
 	//	Channel is empty can be safely skipped.
@@ -2865,7 +2948,7 @@ const (
 	AVFrameDataMotionVectors AVFrameSideDataType = C.AV_FRAME_DATA_MOTION_VECTORS
 	// AVFrameDataSkipSamples wraps AV_FRAME_DATA_SKIP_SAMPLES.
 	/*
-	   Recommmends skipping the specified number of samples. This is exported
+	   Recommends skipping the specified number of samples. This is exported
 	   only if the "skip_manual" AVOption is set in libavcodec.
 	   This has the same format as AV_PKT_DATA_SKIP_SAMPLES.
 	   @code
@@ -3013,6 +3096,17 @@ const (
 	   The data is an int storing the view ID.
 	*/
 	AVFrameDataViewId AVFrameSideDataType = C.AV_FRAME_DATA_VIEW_ID
+	// AVFrameData3DReferenceDisplays wraps AV_FRAME_DATA_3D_REFERENCE_DISPLAYS.
+	/*
+	   This side data contains information about the reference display width(s)
+	   and reference viewing distance(s) as well as information about the
+	   corresponding reference stereo pair(s), i.e., the pair(s) of views to be
+	   displayed for the viewer's left and right eyes on the reference display
+	   at the reference viewing distance.
+	   The payload is the AV3DReferenceDisplaysInfo struct defined in
+	   libavutil/tdrdi.h.
+	*/
+	AVFrameData3DReferenceDisplays AVFrameSideDataType = C.AV_FRAME_DATA_3D_REFERENCE_DISPLAYS
 )
 
 // --- Enum AVActiveFormatDescription ---
@@ -3106,6 +3200,27 @@ const (
 	   a single side data array.
 	*/
 	AVSideDataPropMulti AVSideDataProps = C.AV_SIDE_DATA_PROP_MULTI
+	// AVSideDataPropSizeDependent wraps AV_SIDE_DATA_PROP_SIZE_DEPENDENT.
+	/*
+	   Side data depends on the video dimensions. Side data with this property
+	   loses its meaning when rescaling or cropping the image, unless
+	   either recomputed or adjusted to the new resolution.
+	*/
+	AVSideDataPropSizeDependent AVSideDataProps = C.AV_SIDE_DATA_PROP_SIZE_DEPENDENT
+	// AVSideDataPropColorDependent wraps AV_SIDE_DATA_PROP_COLOR_DEPENDENT.
+	/*
+	   Side data depends on the video color space. Side data with this property
+	   loses its meaning when changing the video color encoding, e.g. by
+	   adapting to a different set of primaries or transfer characteristics.
+	*/
+	AVSideDataPropColorDependent AVSideDataProps = C.AV_SIDE_DATA_PROP_COLOR_DEPENDENT
+	// AVSideDataPropChannelDependent wraps AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT.
+	/*
+	   Side data depends on the channel layout. Side data with this property
+	   loses its meaning when downmixing or upmixing, unless either recomputed
+	   or adjusted to the new layout.
+	*/
+	AVSideDataPropChannelDependent AVSideDataProps = C.AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT
 )
 
 // --- Enum AVHWDeviceType ---
@@ -3165,6 +3280,12 @@ const (
 	AVHWDeviceTypeVulkan AVHWDeviceType = C.AV_HWDEVICE_TYPE_VULKAN
 	// AVHWDeviceTypeD3D12Va wraps AV_HWDEVICE_TYPE_D3D12VA.
 	AVHWDeviceTypeD3D12Va AVHWDeviceType = C.AV_HWDEVICE_TYPE_D3D12VA
+	// AVHWDeviceTypeAmf wraps AV_HWDEVICE_TYPE_AMF.
+	AVHWDeviceTypeAmf AVHWDeviceType = C.AV_HWDEVICE_TYPE_AMF
+	// AVHWDeviceTypeOhcodec wraps AV_HWDEVICE_TYPE_OHCODEC.
+	//
+	//	OpenHarmony Codec device
+	AVHWDeviceTypeOhcodec AVHWDeviceType = C.AV_HWDEVICE_TYPE_OHCODEC
 )
 
 // --- Enum AVHWFrameTransferDirection ---
@@ -3261,6 +3382,8 @@ const (
 	AVClassCategorySwscaler AVClassCategory = C.AV_CLASS_CATEGORY_SWSCALER
 	// AVClassCategorySwresampler wraps AV_CLASS_CATEGORY_SWRESAMPLER.
 	AVClassCategorySwresampler AVClassCategory = C.AV_CLASS_CATEGORY_SWRESAMPLER
+	// AVClassCategoryHWDevice wraps AV_CLASS_CATEGORY_HWDEVICE.
+	AVClassCategoryHWDevice AVClassCategory = C.AV_CLASS_CATEGORY_HWDEVICE
 	// AVClassCategoryDeviceVideoOutput wraps AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT.
 	AVClassCategoryDeviceVideoOutput AVClassCategory = C.AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT
 	// AVClassCategoryDeviceVideoInput wraps AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT.
@@ -3277,6 +3400,46 @@ const (
 	//
 	//	not part of ABI/API
 	AVClassCategoryNb AVClassCategory = C.AV_CLASS_CATEGORY_NB
+)
+
+// --- Enum AVClassStateFlags ---
+
+// AVClassStateFlags wraps AVClassStateFlags.
+type AVClassStateFlags C.enum_AVClassStateFlags
+
+const SizeOfAVClassStateFlags = C.sizeof_enum_AVClassStateFlags
+
+func ToAVClassStateFlagsArray(ptr unsafe.Pointer) *Array[AVClassStateFlags] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVClassStateFlags]{
+		elemSize: SizeOfAVClassStateFlags,
+		loadPtr: func(pointer unsafe.Pointer) AVClassStateFlags {
+			ptr := (*AVClassStateFlags)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVClassStateFlags) {
+			ptr := (*AVClassStateFlags)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVClassStateFlagsArray(size uint64) *Array[AVClassStateFlags] {
+	return ToAVClassStateFlagsArray(AVCalloc(size, SizeOfAVClassStateFlags))
+}
+
+const (
+	// AVClassStateInitialized wraps AV_CLASS_STATE_INITIALIZED.
+	/*
+	   Object initialization has finished and it is now in the 'runtime' stage.
+	   This affects e.g. what options can be set on the object (only
+	   AV_OPT_FLAG_RUNTIME_PARAM options can be set on initialized objects).
+	*/
+	AVClassStateInitialized AVClassStateFlags = C.AV_CLASS_STATE_INITIALIZED
 )
 
 // --- Enum AVRounding ---
@@ -4440,7 +4603,7 @@ const (
 	AVPixFmtP416Le AVPixelFormat = C.AV_PIX_FMT_P416LE
 	// AVPixFmtVuya wraps AV_PIX_FMT_VUYA.
 	//
-	//	packed VUYA 4:4:4, 32bpp, VUYAVUYA...
+	//	packed VUYA 4:4:4:4, 32bpp (1 Cr & Cb sample per 1x1 Y & A samples), VUYAVUYA...
 	AVPixFmtVuya AVPixelFormat = C.AV_PIX_FMT_VUYA
 	// AVPixFmtRgbaf16Be wraps AV_PIX_FMT_RGBAF16BE.
 	//
@@ -4452,7 +4615,7 @@ const (
 	AVPixFmtRgbaf16Le AVPixelFormat = C.AV_PIX_FMT_RGBAF16LE
 	// AVPixFmtVuyx wraps AV_PIX_FMT_VUYX.
 	//
-	//	packed VUYX 4:4:4, 32bpp, Variant of VUYA where alpha channel is left undefined
+	//	packed VUYX 4:4:4:4, 32bpp, Variant of VUYA where alpha channel is left undefined
 	AVPixFmtVuyx AVPixelFormat = C.AV_PIX_FMT_VUYX
 	// AVPixFmtP012Le wraps AV_PIX_FMT_P012LE.
 	//
@@ -4533,6 +4696,160 @@ const (
 	   data[0] points to an AVD3D12VAFrame
 	*/
 	AVPixFmtD3D12 AVPixelFormat = C.AV_PIX_FMT_D3D12
+	// AVPixFmtAyuv wraps AV_PIX_FMT_AYUV.
+	//
+	//	packed AYUV 4:4:4:4, 32bpp (1 Cr & Cb sample per 1x1 Y & A samples), AYUVAYUV...
+	AVPixFmtAyuv AVPixelFormat = C.AV_PIX_FMT_AYUV
+	// AVPixFmtUyva wraps AV_PIX_FMT_UYVA.
+	//
+	//	packed UYVA 4:4:4:4, 32bpp (1 Cr & Cb sample per 1x1 Y & A samples), UYVAUYVA...
+	AVPixFmtUyva AVPixelFormat = C.AV_PIX_FMT_UYVA
+	// AVPixFmtVyu444 wraps AV_PIX_FMT_VYU444.
+	//
+	//	packed VYU 4:4:4, 24bpp (1 Cr & Cb sample per 1x1 Y), VYUVYU...
+	AVPixFmtVyu444 AVPixelFormat = C.AV_PIX_FMT_VYU444
+	// AVPixFmtV30Xbe wraps AV_PIX_FMT_V30XBE.
+	//
+	//	packed VYUX 4:4:4 like XV30, 32bpp, (msb)10V 10Y 10U 2X(lsb), big-endian
+	AVPixFmtV30Xbe AVPixelFormat = C.AV_PIX_FMT_V30XBE
+	// AVPixFmtV30Xle wraps AV_PIX_FMT_V30XLE.
+	//
+	//	packed VYUX 4:4:4 like XV30, 32bpp, (msb)10V 10Y 10U 2X(lsb), little-endian
+	AVPixFmtV30Xle AVPixelFormat = C.AV_PIX_FMT_V30XLE
+	// AVPixFmtRgbf16Be wraps AV_PIX_FMT_RGBF16BE.
+	//
+	//	IEEE-754 half precision packed RGB 16:16:16, 48bpp, RGBRGB..., big-endian
+	AVPixFmtRgbf16Be AVPixelFormat = C.AV_PIX_FMT_RGBF16BE
+	// AVPixFmtRgbf16Le wraps AV_PIX_FMT_RGBF16LE.
+	//
+	//	IEEE-754 half precision packed RGB 16:16:16, 48bpp, RGBRGB..., little-endian
+	AVPixFmtRgbf16Le AVPixelFormat = C.AV_PIX_FMT_RGBF16LE
+	// AVPixFmtRgba128Be wraps AV_PIX_FMT_RGBA128BE.
+	//
+	//	packed RGBA 32:32:32:32, 128bpp, RGBARGBA..., big-endian
+	AVPixFmtRgba128Be AVPixelFormat = C.AV_PIX_FMT_RGBA128BE
+	// AVPixFmtRgba128Le wraps AV_PIX_FMT_RGBA128LE.
+	//
+	//	packed RGBA 32:32:32:32, 128bpp, RGBARGBA..., little-endian
+	AVPixFmtRgba128Le AVPixelFormat = C.AV_PIX_FMT_RGBA128LE
+	// AVPixFmtRgb96Be wraps AV_PIX_FMT_RGB96BE.
+	//
+	//	packed RGBA 32:32:32, 96bpp, RGBRGB..., big-endian
+	AVPixFmtRgb96Be AVPixelFormat = C.AV_PIX_FMT_RGB96BE
+	// AVPixFmtRgb96Le wraps AV_PIX_FMT_RGB96LE.
+	//
+	//	packed RGBA 32:32:32, 96bpp, RGBRGB..., little-endian
+	AVPixFmtRgb96Le AVPixelFormat = C.AV_PIX_FMT_RGB96LE
+	// AVPixFmtY216Be wraps AV_PIX_FMT_Y216BE.
+	//
+	//	packed YUV 4:2:2 like YUYV422, 32bpp, big-endian
+	AVPixFmtY216Be AVPixelFormat = C.AV_PIX_FMT_Y216BE
+	// AVPixFmtY216Le wraps AV_PIX_FMT_Y216LE.
+	//
+	//	packed YUV 4:2:2 like YUYV422, 32bpp, little-endian
+	AVPixFmtY216Le AVPixelFormat = C.AV_PIX_FMT_Y216LE
+	// AVPixFmtXv48Be wraps AV_PIX_FMT_XV48BE.
+	//
+	//	packed XVYU 4:4:4, 64bpp, big-endian, variant of Y416 where alpha channel is left undefined
+	AVPixFmtXv48Be AVPixelFormat = C.AV_PIX_FMT_XV48BE
+	// AVPixFmtXv48Le wraps AV_PIX_FMT_XV48LE.
+	//
+	//	packed XVYU 4:4:4, 64bpp, little-endian, variant of Y416 where alpha channel is left undefined
+	AVPixFmtXv48Le AVPixelFormat = C.AV_PIX_FMT_XV48LE
+	// AVPixFmtGbrpf16Be wraps AV_PIX_FMT_GBRPF16BE.
+	//
+	//	IEEE-754 half precision planer GBR 4:4:4, 48bpp, big-endian
+	AVPixFmtGbrpf16Be AVPixelFormat = C.AV_PIX_FMT_GBRPF16BE
+	// AVPixFmtGbrpf16Le wraps AV_PIX_FMT_GBRPF16LE.
+	//
+	//	IEEE-754 half precision planer GBR 4:4:4, 48bpp, little-endian
+	AVPixFmtGbrpf16Le AVPixelFormat = C.AV_PIX_FMT_GBRPF16LE
+	// AVPixFmtGbrapf16Be wraps AV_PIX_FMT_GBRAPF16BE.
+	//
+	//	IEEE-754 half precision planar GBRA 4:4:4:4, 64bpp, big-endian
+	AVPixFmtGbrapf16Be AVPixelFormat = C.AV_PIX_FMT_GBRAPF16BE
+	// AVPixFmtGbrapf16Le wraps AV_PIX_FMT_GBRAPF16LE.
+	//
+	//	IEEE-754 half precision planar GBRA 4:4:4:4, 64bpp, little-endian
+	AVPixFmtGbrapf16Le AVPixelFormat = C.AV_PIX_FMT_GBRAPF16LE
+	// AVPixFmtGrayf16Be wraps AV_PIX_FMT_GRAYF16BE.
+	//
+	//	IEEE-754 half precision Y, 16bpp, big-endian
+	AVPixFmtGrayf16Be AVPixelFormat = C.AV_PIX_FMT_GRAYF16BE
+	// AVPixFmtGrayf16Le wraps AV_PIX_FMT_GRAYF16LE.
+	//
+	//	IEEE-754 half precision Y, 16bpp, little-endian
+	AVPixFmtGrayf16Le AVPixelFormat = C.AV_PIX_FMT_GRAYF16LE
+	// AVPixFmtAmfSurface wraps AV_PIX_FMT_AMF_SURFACE.
+	//
+	//	HW acceleration through AMF. data[0] contain AMFSurface pointer
+	AVPixFmtAmfSurface AVPixelFormat = C.AV_PIX_FMT_AMF_SURFACE
+	// AVPixFmtGray32Be wraps AV_PIX_FMT_GRAY32BE.
+	//
+	//	Y        , 32bpp, big-endian
+	AVPixFmtGray32Be AVPixelFormat = C.AV_PIX_FMT_GRAY32BE
+	// AVPixFmtGray32Le wraps AV_PIX_FMT_GRAY32LE.
+	//
+	//	Y        , 32bpp, little-endian
+	AVPixFmtGray32Le AVPixelFormat = C.AV_PIX_FMT_GRAY32LE
+	// AVPixFmtYaf32Be wraps AV_PIX_FMT_YAF32BE.
+	//
+	//	IEEE-754 single precision packed YA, 32 bits gray, 32 bits alpha, 64bpp, big-endian
+	AVPixFmtYaf32Be AVPixelFormat = C.AV_PIX_FMT_YAF32BE
+	// AVPixFmtYaf32Le wraps AV_PIX_FMT_YAF32LE.
+	//
+	//	IEEE-754 single precision packed YA, 32 bits gray, 32 bits alpha, 64bpp, little-endian
+	AVPixFmtYaf32Le AVPixelFormat = C.AV_PIX_FMT_YAF32LE
+	// AVPixFmtYaf16Be wraps AV_PIX_FMT_YAF16BE.
+	//
+	//	IEEE-754 half precision packed YA, 16 bits gray, 16 bits alpha, 32bpp, big-endian
+	AVPixFmtYaf16Be AVPixelFormat = C.AV_PIX_FMT_YAF16BE
+	// AVPixFmtYaf16Le wraps AV_PIX_FMT_YAF16LE.
+	//
+	//	IEEE-754 half precision packed YA, 16 bits gray, 16 bits alpha, 32bpp, little-endian
+	AVPixFmtYaf16Le AVPixelFormat = C.AV_PIX_FMT_YAF16LE
+	// AVPixFmtGbrap32Be wraps AV_PIX_FMT_GBRAP32BE.
+	//
+	//	planar GBRA 4:4:4:4 128bpp, big-endian
+	AVPixFmtGbrap32Be AVPixelFormat = C.AV_PIX_FMT_GBRAP32BE
+	// AVPixFmtGbrap32Le wraps AV_PIX_FMT_GBRAP32LE.
+	//
+	//	planar GBRA 4:4:4:4 128bpp, little-endian
+	AVPixFmtGbrap32Le AVPixelFormat = C.AV_PIX_FMT_GBRAP32LE
+	// AVPixFmtYuv444P10Msbbe wraps AV_PIX_FMT_YUV444P10MSBBE.
+	//
+	//	planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, big-endian
+	AVPixFmtYuv444P10Msbbe AVPixelFormat = C.AV_PIX_FMT_YUV444P10MSBBE
+	// AVPixFmtYuv444P10Msble wraps AV_PIX_FMT_YUV444P10MSBLE.
+	//
+	//	planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, little-endian
+	AVPixFmtYuv444P10Msble AVPixelFormat = C.AV_PIX_FMT_YUV444P10MSBLE
+	// AVPixFmtYuv444P12Msbbe wraps AV_PIX_FMT_YUV444P12MSBBE.
+	//
+	//	planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, big-endian
+	AVPixFmtYuv444P12Msbbe AVPixelFormat = C.AV_PIX_FMT_YUV444P12MSBBE
+	// AVPixFmtYuv444P12Msble wraps AV_PIX_FMT_YUV444P12MSBLE.
+	//
+	//	planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, little-endian
+	AVPixFmtYuv444P12Msble AVPixelFormat = C.AV_PIX_FMT_YUV444P12MSBLE
+	// AVPixFmtGbrp10Msbbe wraps AV_PIX_FMT_GBRP10MSBBE.
+	//
+	//	planar GBR 4:4:4 30bpp, lowest bits zero, big-endian
+	AVPixFmtGbrp10Msbbe AVPixelFormat = C.AV_PIX_FMT_GBRP10MSBBE
+	// AVPixFmtGbrp10Msble wraps AV_PIX_FMT_GBRP10MSBLE.
+	//
+	//	planar GBR 4:4:4 30bpp, lowest bits zero, little-endian
+	AVPixFmtGbrp10Msble AVPixelFormat = C.AV_PIX_FMT_GBRP10MSBLE
+	// AVPixFmtGbrp12Msbbe wraps AV_PIX_FMT_GBRP12MSBBE.
+	//
+	//	planar GBR 4:4:4 36bpp, lowest bits zero, big-endian
+	AVPixFmtGbrp12Msbbe AVPixelFormat = C.AV_PIX_FMT_GBRP12MSBBE
+	// AVPixFmtGbrp12Msble wraps AV_PIX_FMT_GBRP12MSBLE.
+	//
+	//	planar GBR 4:4:4 36bpp, lowest bits zero, little-endian
+	AVPixFmtGbrp12Msble AVPixelFormat = C.AV_PIX_FMT_GBRP12MSBLE
+	// AVPixFmtOhcodec wraps AV_PIX_FMT_OHCODEC.
+	AVPixFmtOhcodec AVPixelFormat = C.AV_PIX_FMT_OHCODEC
 	// AVPixFmtNb wraps AV_PIX_FMT_NB.
 	//
 	//	number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
