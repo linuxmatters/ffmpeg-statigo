@@ -167,4 +167,7 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 | unibreak | 6.1     |
 | vpx      | 1.15.0  |
 | x264     | head    |
+| x265     | head    |
+| dav1d    | 1.5.2   |
+| rav1e    | 0.8.2   |
 | zlib     | 1.3.1   |

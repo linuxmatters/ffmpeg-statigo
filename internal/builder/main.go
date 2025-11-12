@@ -19,7 +19,7 @@ var (
 	libDir       = path.Join(tgtDir, "lib")
 
 	libs = []string{
-		"libaom",
+		"librav1e",
 		"libass",
 		"libavcodec",
 		"libavdevice",
@@ -45,6 +45,7 @@ var (
 		"libvpx",
 		"libx264",
 		"libx265",
+		"libdav1d",
 		"libz",
 	}
 )
@@ -118,7 +119,7 @@ func main() {
 
 	buildHarfbuzz()
 	b.buildASS()
-	buildAOM()
+	buildRav1e()
 	buildLame()
 	buildOpus()
 	buildOgg()
@@ -128,6 +129,7 @@ func main() {
 	buildVpx()
 	buildX264()
 	buildX265()
+	buildDav1d()
 
 	b.buildFFmpeg()
 
@@ -155,11 +157,14 @@ func buildX264() {
 			path.Join(srcPath, "configure"),
 			srcPath,
 			fmt.Sprintf("--prefix=%v", tgtDir),
-			"--disable-dependency-tracking",
-			"--enable-static",
+			"--disable-avs",
+			"--disable-cli",
+			"--disable-ffms",
+			"--disable-gpac",
+			"--disable-lavf",
 			"--disable-lsmash",
 			"--disable-swscale",
-			"--disable-ffms",
+			"--enable-static",
 			"--enable-strip",
 		)
 		// x264 needs to find nasm explicitly on x86/x86_64
@@ -207,8 +212,9 @@ func buildX265() {
 		cmakeArgs := []string{
 			"-G", "Unix Makefiles",
 			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
-			"-DENABLE_SHARED=OFF", // Static library
-			"-DENABLE_CLI=OFF",    // No CLI tools needed
+			"-DCMAKE_BUILD_TYPE=Release", // Optimized build
+			"-DENABLE_SHARED=OFF",        // Static library
+			"-DENABLE_CLI=OFF",           // No CLI tools needed
 			"-DENABLE_AGGRESSIVE_CHECKS=OFF",
 			path.Join(srcPath, "source"), // x265 source is in source/ subdirectory
 		}
@@ -230,6 +236,51 @@ func buildX265() {
 		)
 
 		run("[x265 make]", cmd)
+	}
+}
+
+func buildDav1d() {
+	zipPath := path.Join(downloadsDir, "dav1d.tar.bz2")
+	srcPath := path.Join(buildDir, "dav1d")
+	buildPath := path.Join(buildDir, "dav1d-build")
+
+	if !exists(zipPath) {
+		// dav1d 1.5.2 - fast AV1 decoder from VideoLAN
+		download("https://code.videolan.org/videolan/dav1d/-/archive/1.5.2/dav1d-1.5.2.tar.bz2", zipPath)
+	}
+
+	untar(zipPath, srcPath, "dav1d-1.5.2/")
+
+	{
+		log.Println("Running meson setup")
+
+		cmd := cmd(
+			"meson",
+			"",
+			"setup",
+			buildPath,
+			srcPath,
+			fmt.Sprintf("--prefix=%v", tgtDir),
+			"--default-library=static",
+			"--buildtype=release",
+			"-Denable_tools=false",
+			"-Denable_tests=false",
+		)
+
+		run("[dav1d meson]", cmd)
+	}
+
+	{
+		log.Println("Running ninja install")
+
+		cmd := cmd(
+			"ninja",
+			buildPath,
+			"-C", buildPath,
+			"install",
+		)
+
+		run("[dav1d ninja]", cmd)
 	}
 }
 
@@ -1089,6 +1140,9 @@ func (b *Builder) buildASS() {
 		run("[ass configure]", cmd)
 	}
 
+	// Prevent automake regeneration
+	touchAutomakeFiles(srcPath)
+
 	{
 		log.Println("Running make")
 
@@ -1103,92 +1157,36 @@ func (b *Builder) buildASS() {
 	}
 }
 
-func buildAOM() {
-	zipPath := path.Join(downloadsDir, "aom.tar.gz")
-	srcPath := path.Join(buildDir, "aom")
-	buildPath := path.Join(buildDir, "aom-build")
+func buildRav1e() {
+	zipPath := path.Join(downloadsDir, "rav1e.tar.gz")
+	srcPath := path.Join(buildDir, "rav1e")
 
 	if !exists(zipPath) {
-		//https://aomedia.googlesource.com/aom/+/refs/tags/v3.13.1
-		download("https://aomedia.googlesource.com/aom/+archive/d772e334cc724105040382a977ebb10dfd393293.tar.gz", zipPath)
+		// rav1e v0.8.1 - Fastest and safest AV1 encoder from Xiph
+		download("https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz", zipPath)
 	}
 
-	untar(zipPath, srcPath, "")
-
-	if err := os.MkdirAll(buildPath, 0755); err != nil {
-		log.Panicln(err)
-	}
+	untar(zipPath, srcPath, "rav1e-0.8.1/")
 
 	{
-		log.Println("Running cmake")
+		log.Println("Running cargo cinstall for rav1e")
 
-		// Detect platform
-		goos := runtime.GOOS
-		goarch := runtime.GOARCH
-
-		cmakeArgs := []string{
-			"-G",
-			"Unix Makefiles",
-			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
-			"-DENABLE_TESTS=OFF",
-			"-DBUILD_SHARED_LIBS=OFF", // Static library for ffmpeg
-		}
-
-		// Platform-specific assembler configuration
-		switch {
-		case goarch == "amd64" && goos == "linux":
-			// Linux x86_64: CMake will auto-prefer YASM over NASM
-			// No flag needed - just let it detect YASM
-			log.Println("Building for Linux x86_64 - using YASM (auto-detected)")
-
-		case goarch == "amd64" && goos == "darwin":
-			// macOS Intel: Explicitly use NASM (macOS convention)
-			cmakeArgs = append(cmakeArgs, "-DENABLE_NASM=ON")
-			log.Println("Building for macOS x86_64 - using NASM")
-
-		case goarch == "arm64" && goos == "linux":
-			// Linux ARM64: Uses GAS (GNU Assembler) - ENABLE_NASM is irrelevant
-			// Add -mcpu=native for optimal ARM performance
-			cmakeArgs = append(cmakeArgs,
-				"-DCMAKE_C_FLAGS=-mcpu=native",
-				"-DCMAKE_CXX_FLAGS=-mcpu=native",
-			)
-			log.Println("Building for Linux ARM64 - using GAS with native CPU optimizations")
-
-		case goarch == "arm64" && goos == "darwin":
-			// macOS Apple Silicon: Uses LLVM/Clang assembler - ENABLE_NASM is irrelevant
-			// Add -mcpu=native equivalent for Apple Silicon
-			cmakeArgs = append(cmakeArgs,
-				"-DCMAKE_C_FLAGS=-mcpu=apple-m1",
-				"-DCMAKE_CXX_FLAGS=-mcpu=apple-m1",
-			)
-			log.Println("Building for macOS ARM64 - using LLVM assembler with Apple Silicon optimizations")
-
-		default:
-			log.Printf("Building for %s/%s - using default CMake detection", goos, goarch)
-		}
-
-		// Add source path as final argument
-		cmakeArgs = append(cmakeArgs, srcPath)
-
-		// Build the full command with buildPath as working directory
-		cmdArgs := append([]string{buildPath}, cmakeArgs...)
-		cmd := cmd("cmake", cmdArgs[0], cmdArgs[1:]...)
-
-		run("[aom cmake]", cmd)
-	}
-
-	{
-		log.Println("Running make")
-
+		// Set RUSTFLAGS for native CPU optimization
 		cmd := cmd(
-			"make",
-			buildPath,
-			"-j8",
-			"install",
+			"cargo",
+			srcPath,
+			"cinstall",
+			fmt.Sprintf("--prefix=%v", tgtDir),
+			"--libdir=lib",
+			"--library-type=staticlib",
+			"--crt-static",
+			"--release",
 		)
 
-		run("[aom make]", cmd)
+		// Add RUSTFLAGS environment variable for native CPU optimization
+		cmd.Env = append(os.Environ(), "RUSTFLAGS=-C target-cpu=native")
+
+		run("[rav1e cargo]", cmd)
 	}
 }
 
@@ -1314,7 +1312,7 @@ func (b *Builder) buildFFmpeg() {
 			"--enable-gpl",
 			"--enable-version3",
 			"--enable-static",
-			"--enable-libaom",
+			"--enable-librav1e",
 			"--enable-libass",
 			"--enable-libfreetype",
 			"--enable-libfribidi",
@@ -1326,6 +1324,7 @@ func (b *Builder) buildFFmpeg() {
 			"--enable-libvpx",
 			"--enable-libx264",
 			"--enable-libx265",
+			"--enable-libdav1d",
 		)
 
 		if b.os == Linux {

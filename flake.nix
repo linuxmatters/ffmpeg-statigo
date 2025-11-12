@@ -42,6 +42,10 @@
             llvmPackages.llvm
             pkg-config
             yasm
+            # Rust toolchain for rav1e AV1 encoder
+            cargo
+            cargo-c
+            rustc
           ];
 
           # Environment for go-clang CGO compilation
