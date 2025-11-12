@@ -27,6 +27,7 @@
             curl
             ffmpeg
             gcc
+            git-filter-repo
             gnumake
             go
             gperf
