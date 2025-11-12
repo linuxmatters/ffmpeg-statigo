@@ -44,6 +44,7 @@ var (
 		"libunibreak",
 		"libvpx",
 		"libx264",
+		"libx265",
 		"libz",
 	}
 )
@@ -126,6 +127,7 @@ func main() {
 	buildTheora()
 	buildVpx()
 	buildX264()
+	buildX265()
 
 	b.buildFFmpeg()
 
@@ -180,6 +182,54 @@ func buildX264() {
 		)
 
 		run("[x264 make]", cmd)
+	}
+}
+
+func buildX265() {
+	zipPath := path.Join(downloadsDir, "x265.tar.bz2")
+	srcPath := path.Join(buildDir, "x265")
+	buildPath := path.Join(buildDir, "x265-build")
+
+	if !exists(zipPath) {
+		// x265 master branch HEAD (ffba52bab55d) - newer with CMake fixes
+		download("https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2", zipPath)
+	}
+
+	untar(zipPath, srcPath, "multicoreware-x265_git-ffba52bab55d/")
+
+	if err := os.MkdirAll(buildPath, 0755); err != nil {
+		log.Panicln(err)
+	}
+
+	{
+		log.Println("Running cmake")
+
+		cmakeArgs := []string{
+			"-G", "Unix Makefiles",
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+			"-DENABLE_SHARED=OFF", // Static library
+			"-DENABLE_CLI=OFF",    // No CLI tools needed
+			"-DENABLE_AGGRESSIVE_CHECKS=OFF",
+			path.Join(srcPath, "source"), // x265 source is in source/ subdirectory
+		}
+
+		cmdArgs := append([]string{buildPath}, cmakeArgs...)
+		cmd := cmd("cmake", cmdArgs[0], cmdArgs[1:]...)
+
+		run("[x265 cmake]", cmd)
+	}
+
+	{
+		log.Println("Running make")
+
+		cmd := cmd(
+			"make",
+			buildPath,
+			"-j8",
+			"install",
+		)
+
+		run("[x265 make]", cmd)
 	}
 }
 
@@ -1275,8 +1325,7 @@ func (b *Builder) buildFFmpeg() {
 			"--enable-libtheora",
 			"--enable-libvpx",
 			"--enable-libx264",
-
-			//--enable-libx265         enable HEVC encoding via x265 [no]
+			"--enable-libx265",
 		)
 
 		if b.os == Linux {
