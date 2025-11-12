@@ -94,7 +94,7 @@ func combineLinux(output string) {
 		cmd := exec.Command("strip")
 		cmd.Args = append(
 			cmd.Args,
-			"-d",
+			"--strip-unneeded",
 			output,
 		)
 		run("[strip]", cmd)
