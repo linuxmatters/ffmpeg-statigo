@@ -37,6 +37,32 @@ jobs:
         with:
           go-version: '1.24'
 
+      - name: Install libclang for generator
+        run: |
+          if [ "${{ matrix.os }}" = "linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y libclang-dev llvm-dev
+          elif [ "${{ matrix.os }}" = "darwin" ]; then
+            brew install llvm
+          fi
+
+      - name: Run generator
+        run: go run ./internal/generator
+        continue-on-error: true
+
+      - name: Check for generated code differences
+        run: |
+          if ! git diff --quiet *.gen.go; then
+            echo "::notice title=Generated Code Diff on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ from committed version. This may be platform-specific behavior."
+            git diff *.gen.go > /tmp/generator-diff.txt
+            echo "::group::Generator Diff"
+            cat /tmp/generator-diff.txt
+            echo "::endgroup::"
+          else
+            echo "::notice title=Generated Code Match on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings match committed version."
+          fi
+        continue-on-error: true
+
       - name: Build
         run: go build -v .
 
