@@ -57,7 +57,6 @@ var AllLibraries = []*Library{
 var iconv = &Library{
 	Name:        "iconv",
 	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz",
-	StripPrefix: "libiconv-1.18/",
 	Platform:    []string{"darwin"},
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -75,7 +74,6 @@ var iconv = &Library{
 var expat = &Library{
 	Name:        "expat",
 	URL:         "https://github.com/libexpat/libexpat/releases/download/R_2_7_3/expat-2.7.3.tar.gz",
-	StripPrefix: "expat-2.7.3/",
 	Platform:    []string{"linux"},
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -92,7 +90,6 @@ var expat = &Library{
 var zlib = &Library{
 	Name:          "zlib",
 	URL:           "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz",
-	StripPrefix:   "zlib-1.3.1/",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // zlib has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
@@ -107,7 +104,6 @@ var zlib = &Library{
 var bz2 = &Library{
 	Name:        "bz2",
 	URL:         "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
-	StripPrefix: "bzip2-1.0.8/",
 	BuildSystem: &MakefileBuild{
 		Targets: []string{"libbz2.a"},
 		InstallFunc: func(srcPath, installDir string) error {
@@ -134,7 +130,6 @@ var bz2 = &Library{
 var brotli = &Library{
 	Name:        "brotli",
 	URL:         "https://github.com/google/brotli/archive/refs/tags/v1.2.0.tar.gz",
-	StripPrefix: "brotli-1.2.0/",
 	BuildSystem: &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -151,7 +146,6 @@ var brotli = &Library{
 var png = &Library{
 	Name:        "png",
 	URL:         "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz",
-	StripPrefix: "libpng-1.6.50/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -168,7 +162,6 @@ var png = &Library{
 var fribidi = &Library{
 	Name:        "fribidi",
 	URL:         "https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz",
-	StripPrefix: "fribidi-1.0.16/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -185,7 +178,6 @@ var fribidi = &Library{
 var unibreak = &Library{
 	Name:        "unibreak",
 	URL:         "https://github.com/adah1972/libunibreak/releases/download/libunibreak_6_1/libunibreak-6.1.tar.gz",
-	StripPrefix: "libunibreak-6.1/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -200,7 +192,6 @@ var unibreak = &Library{
 var fontconfig = &Library{
 	Name:        "fontconfig",
 	URL:         "https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.16.0.tar.xz",
-	StripPrefix: "fontconfig-2.16.0/",
 	Platform:    []string{"linux"},
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -216,7 +207,6 @@ var fontconfig = &Library{
 var freetype = &Library{
 	Name:        "freetype",
 	URL:         "https://download.savannah.gnu.org/releases/freetype/freetype-2.14.1.tar.xz",
-	StripPrefix: "freetype-2.14.1/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -233,7 +223,6 @@ var freetype = &Library{
 var harfbuzz = &Library{
 	Name:        "harfbuzz",
 	URL:         "https://github.com/harfbuzz/harfbuzz/releases/download/12.2.0/harfbuzz-12.2.0.tar.xz",
-	StripPrefix: "harfbuzz-12.2.0/",
 	BuildSystem: &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -253,7 +242,6 @@ var harfbuzz = &Library{
 var libass = &Library{
 	Name:        "ass",
 	URL:         "https://github.com/libass/libass/releases/download/0.17.4/libass-0.17.4.tar.gz",
-	StripPrefix: "libass-0.17.4/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		args := []string{
@@ -278,7 +266,6 @@ var libass = &Library{
 var nvcodec = &Library{
 	Name:        "nvcodec",
 	URL:         "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz",
-	StripPrefix: "nv-codec-headers-12.2.72.0/",
 	Platform:    []string{"linux"},
 	BuildSystem: &MakefileBuild{
 		Targets: nil, // No build targets, just install
@@ -293,7 +280,6 @@ var nvcodec = &Library{
 var vulkanHeaders = &Library{
 	Name:        "vulkan",
 	URL:         "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.332.tar.gz",
-	StripPrefix: "Vulkan-Headers-1.4.332/",
 	BuildSystem: &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -307,7 +293,6 @@ var vulkanHeaders = &Library{
 var libvpl = &Library{
 	Name:        "vpl",
 	URL:         "https://github.com/intel/libvpl/archive/refs/tags/v2.15.0.tar.gz",
-	StripPrefix: "libvpl-2.15.0/",
 	Platform:    []string{"linux"},
 	BuildSystem: &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -342,7 +327,6 @@ var libvpl = &Library{
 var lame = &Library{
 	Name:        "lame",
 	URL:         "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz",
-	StripPrefix: "lame-3.100/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -358,7 +342,6 @@ var lame = &Library{
 var opus = &Library{
 	Name:        "opus",
 	URL:         "https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz",
-	StripPrefix: "opus-1.5.2/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -375,7 +358,6 @@ var opus = &Library{
 var ogg = &Library{
 	Name:        "ogg",
 	URL:         "https://downloads.xiph.org/releases/ogg/libogg-1.3.6.tar.xz",
-	StripPrefix: "libogg-1.3.6/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -390,7 +372,6 @@ var ogg = &Library{
 var vorbis = &Library{
 	Name:        "vorbis",
 	URL:         "https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz",
-	StripPrefix: "libvorbis-1.3.7/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -406,7 +387,6 @@ var vorbis = &Library{
 var speex = &Library{
 	Name:        "speex",
 	URL:         "https://downloads.xiph.org/releases/speex/speex-1.2.1.tar.gz",
-	StripPrefix: "speex-1.2.1/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -421,7 +401,6 @@ var speex = &Library{
 var theora = &Library{
 	Name:        "theora",
 	URL:         "https://downloads.xiph.org/releases/theora/libtheora-1.2.0.tar.xz",
-	StripPrefix: "libtheora-1.2.0/",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -443,7 +422,6 @@ var theora = &Library{
 var vpx = &Library{
 	Name:          "vpx",
 	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.15.2.tar.gz",
-	StripPrefix:   "libvpx-1.15.2/",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // vpx has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
@@ -463,7 +441,6 @@ var vpx = &Library{
 var x264 = &Library{
 	Name:          "x264",
 	URL:           "https://code.videolan.org/videolan/x264/-/archive/master/x264-master.tar.bz2",
-	StripPrefix:   "x264-master/",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // x264 has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
@@ -494,7 +471,6 @@ var x264 = &Library{
 var x265 = &Library{
 	Name:        "x265",
 	URL:         "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
-	StripPrefix: "multicoreware-x265_git-ffba52bab55d/",
 	BuildSystem: &CMakeBuild{
 		SourceSubdir: "source", // x265 source is in source/ subdirectory
 	},
@@ -512,7 +488,6 @@ var x265 = &Library{
 var dav1d = &Library{
 	Name:        "dav1d",
 	URL:         "https://code.videolan.org/videolan/dav1d/-/archive/1.5.2/dav1d-1.5.2.tar.bz2",
-	StripPrefix: "dav1d-1.5.2/",
 	BuildSystem: &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
@@ -529,7 +504,6 @@ var dav1d = &Library{
 var rav1e = &Library{
 	Name:        "rav1e",
 	URL:         "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
-	StripPrefix: "rav1e-0.8.1/",
 	BuildSystem: &CargoBuild{
 		InstallFunc: func(srcPath, installDir string) error {
 			// Set RUSTFLAGS for native CPU optimization
@@ -551,7 +525,6 @@ var rav1e = &Library{
 var ffmpeg = &Library{
 	Name:          "ffmpeg",
 	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.0.tar.gz",
-	StripPrefix:   "FFmpeg-n8.0/",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // FFmpeg uses --extra-cflags and --extra-ldflags instead
 	ConfigureArgs: func(os string) []string {
