@@ -437,7 +437,7 @@ func cmd(name string, dir string, args ...string) *exec.Cmd {
 	cmd.Env = os.Environ()
 
 	// Include both lib and lib64 pkgconfig directories for libraries that install to either
-	// Use tgtDir directly to construct proper paths
+	// Use stagingDir directly to construct proper paths
 	lib64Dir := filepath.Join(filepath.Dir(libDir), "lib64")
 	pkgConfigPath := fmt.Sprintf("%v/pkgconfig:%v/pkgconfig", libDir, lib64Dir)
 

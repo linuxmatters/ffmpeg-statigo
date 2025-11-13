@@ -4,7 +4,7 @@ default:
 
 # Clean build artifacts and downloads
 clean:
-    rm -rf temp/
+    rm -rf .build/
 
 # Build FFmpeg static library for current platform
 build-ffmpeg:
@@ -13,11 +13,18 @@ build-ffmpeg:
     echo "Building FFmpeg static library..."
     GOOS=$(go env GOOS)
     GOARCH=$(go env GOARCH)
-    go run ./internal/builder "libffmpeg_${GOOS}_${GOARCH}.a"
+    mkdir -p "lib/${GOOS}_${GOARCH}"
+    go run ./internal/builder "lib/${GOOS}_${GOARCH}/libffmpeg.a"
 
 # Build all Go packages
 build:
     go build -v ./...
+
+# Build example programs
+build-examples:
+    go build -v ./examples/metadata/
+    go build -v ./examples/asciiplayer/
+    go build -v ./examples/transcode/
 
 # Generate Go bindings from FFmpeg headers using libclang
 generate:

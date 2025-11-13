@@ -1,5 +1,28 @@
-_obj/
+# Build artifacts
+.build/
+*.log
+asciiplayer
+builder
+metadata
+transcode
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+*.out
+coverage.html
+
+# Nix
 .direnv/
-build/
-temp/
+result
+result-*
 

@@ -9,14 +9,14 @@ import (
 /*
 #cgo CFLAGS: -I${SRCDIR}/include -Wno-deprecated -Wno-deprecated-declarations
 
-#cgo linux LDFLAGS: -L${SRCDIR}
-#cgo linux,amd64 LDFLAGS: -lffmpeg_linux_amd64
-#cgo linux,arm64 LDFLAGS: -lffmpeg_linux_arm64
-#cgo linux LDFLAGS: -lm -ldl
+#cgo linux LDFLAGS: -L${SRCDIR}/lib/linux_amd64 -L${SRCDIR}/lib/linux_arm64
+#cgo linux,amd64 LDFLAGS: -lffmpeg
+#cgo linux,arm64 LDFLAGS: -lffmpeg
+#cgo linux LDFLAGS: -lm -ldl -lstdc++ -lpthread
 
-#cgo darwin LDFLAGS: -L${SRCDIR} -lm -framework ApplicationServices -framework CoreVideo -framework CoreMedia -framework VideoToolbox -framework AudioToolbox
-#cgo darwin,amd64 LDFLAGS: -lffmpeg_darwin_amd64
-#cgo darwin,arm64 LDFLAGS: -lffmpeg_darwin_arm64
+#cgo darwin LDFLAGS: -L${SRCDIR}/lib/darwin_amd64 -L${SRCDIR}/lib/darwin_arm64 -lm -framework ApplicationServices -framework CoreVideo -framework CoreMedia -framework VideoToolbox -framework AudioToolbox
+#cgo darwin,amd64 LDFLAGS: -lffmpeg
+#cgo darwin,arm64 LDFLAGS: -lffmpeg
 
 #include <errno.h>
 #include <stdlib.h>
