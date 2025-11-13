@@ -1,32 +1,34 @@
-# ffmpeg-go
-Go bindings for the FFmpeg AV libraries.
+# ffmpeg-statigo
 
-### Features
+**Real FFmpeg bindings for Go. Not a wrapper. Not a CLI tool. The actual libraries.**
 
-- Static build (does still require some system libraries, such as `m`).
-- Linux (arm64, amd64) and macOS (arm64, amd64) support.
-- Auto generated.
-- Thin layer over the C API.
-- Doc comments retained (where supported by clang).
-- GPL version of FFmpeg (allows for x264 etc).
-- Hardware acceleration:
-  - **NVENC/NVDEC** (Linux): Hardware encode/decode on NVIDIA GPUs (no CUDA runtime required)
-  - **VideoToolbox** (macOS): Native Apple hardware acceleration
+Cross-platform, static FFmpeg libraries bundled directly into your Go binary.
+Hardware acceleration included. Zero runtime dependencies. Ship it and forget it.
 
-### TODO
+## Why This Exists
 
-- [ ] Expose more headers.
-- [ ] Ensure acceleration enabled in builds.
-- [ ] Expose platform specific headers.
-- [ ] Cleanup internal packages.
+Every other Go ffmpeg projects wrap the `ffmpeg` command, ffmpeg-statigo gives you the actual FFmpeg C libraries with proper Go bindings.
+Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches. Predictable codec support.
 
-### Setup
+## Features
+
+- **FFmpeg 8.0** - Latest release with AV1, H.265, H.264, VP8/9
+- **Truly static** - Builds into your binary (just needs system `m`ath library)
+- **Cross-platform** - Linux and macOS (arm64, amd64)
+- **Hardware acceleration** - NVENC/NVDEC, VideoToolbox, Vulkan and QuickSync support
+- **GPL build** - x264, x265, and all the good codecs included
+- **Auto-generated** - Thin, predictable bindings directly from FFmpeg headers
+- **Preserved documentation** - Original FFmpeg comments in your IDE
+
+*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.0, Go 1.24, hardware acceleration and a 99.5% smaller git history.*
+
+## Setup
 
 ```
-go get github.com/csnewman/ffmpeg-go
+go get github.com/linuxmatters/ffmpeg-statigo
 ```
 
-### Example
+## Example
 
 ![example.gif](example.gif)
 
@@ -139,29 +141,18 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 2024/01/15 21:39:43 INFO     Meta key=vendor_id value=[0][0][0][0]
 ```
 
-### FAQ
-
-- Q: Why is FFmpeg statically bundled?
-  - A: The version of FFmpeg varies by platform, making a one-size fits all style binding difficult with the Go build
-    system and its lack of a build.go file.
-- Q: Why is library `xyz` not enabled?
-  - A: Libraries have been added on a as-needed basis. Feel free to create a PR enabling any additional libraries.
-- Q: I have some C code that I can't convert to Go, due to a missing binding feature
-  - A: Create an issue with a C sample, and we can go from there.
-
-### Library versions
+## Library versions
 
 | Library  | Version |
 |----------|---------|
-| FFmpeg   | 6.1     |
-| aom      | 3.13.1  |
+| FFmpeg   | 8.0     |
 | ass      | 0.17.4  |
 | brotli   | 1.2.0   |
 | bz2      | 1.0.8   |
 | freetype | 2.14.1  |
 | fribidi  | 1.0.16  |
 | harfbuzz | 12.2.0  |
-| mp3lame  | 3.1000  |
+| mp3lame  | 3.100   |
 | ogg      | 1.3.6   |
 | opus     | 1.5.2   |
 | png      | 1.6.50  |
@@ -174,3 +165,70 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 | dav1d    | 1.5.2   |
 | rav1e    | 0.8.2   |
 | zlib     | 1.3.1   |
+
+### Codec Inclusion Policy
+
+ffmpeg-statigo provides a curated FFmpeg static library with Go bindings for contemporary audio and video processing, encoding, conversion and streaming.
+
+If you're working on a project in one of thes domains ffmpeg-go should be equipped with you need:
+- Streaming platforms (live and on-demand)
+- Content management systems
+- Social media applications
+- Video conferencing services
+- Media transcoding pipelines
+- Web-based media players
+- Broadcasting tools
+- Modern content creation workflows
+
+If you feel a library or codec is missing that should be include, open an issue to discuss it's inclusion.
+
+#### Why is codec `xyz` not enabled?
+
+This is a purpose-built media toolkit for Go developers building modern applications—optimised for size, focused on current workflows, and opinionated about what matters in 2025 and beyond.
+
+Codecs that support these use case are disabled to help keep the static library size reasonable:
+- Video archivists preserving historical formats
+- Retro gaming emulator developers
+- Digital archaeology projects
+- Legacy format conversion utilities
+- Film restoration specialists
+
+## Hardware Acceleration Support Matrix
+
+| Codec          | NVENC (Linux)    | QuickSync (Linux) | VideoToolbox (macOS) | Vulkan Video (Cross-platform) |
+|----------------|------------------|-------------------|----------------------|-------------------------------|
+| **AV1**        | ✅ Encode/Decode | ✅ Encode/Decode  | ☑️ Decode            | ✅ Encode/Decode              |
+| **H.266/VVC**  | ❌               | ☑️ Decode         | ❌                   | ☑️ Decode                     |
+| **H.265/HEVC** | ✅ Encode/Decode | ✅ Encode/Decode  | ✅ Encode/Decode     | ✅ Encode/Decode              |
+| **H.264/AVC**  | ✅ Encode/Decode | ✅ Encode/Decode  | ✅ Encode/Decode     | ✅ Encode/Decode              |
+| **VP9**        | ✅ Encode/Decode | ✅ Encode/Decode  | ❌                   | ☑️ Decode                     |
+| **VP8**        | ☑️ Dec️ode        | ☑️ Decode         | ❌                   | ❌                            |
+| **MPEG-2**     | ☑️ Decode        | ✅ Encode/Decode  | ❌                   | ❌                            |
+| **JPEG/MJPEG** | ☑️ Decode        | ✅ Encode/Decode  | ❌                   | ❌                            |
+
+### Capabilities
+
+- **NVENC/NVDEC**: [Most NVIDIA GPUs come with NVENC/NVDEC support](https://developer.nvidia.com/video-encode-decode-support-matrix) but some low-end and mobile models are exceptions.
+  - Decoding & Encoding H.264 8-bit - Any NVIDIA GPU supporting NVENC/NVDEC
+  - Decoding & Encoding HEVC 8-bit - Maxwell 2nd Gen (GM206) and newer
+  - Decoding HEVC 10-bit - Maxwell 2nd Gen (GM206) and newer
+  - Encoding HEVC 10-bit - Pascal and newer
+  - Decoding AV1 8/10-bit - Ampere and newer
+  - Encoding AV1 8/10-bit - Ada Lovelace and newer
+- **QuickSync (QSV)**: Requires Intel CPU (6th gen Skylake+) or Intel Arc GPU. Uses libvpl/oneVPL dispatcher.
+  - Decoding & Encoding H.264 8-bit - Any Intel GPU that supports Quick Sync Video
+  - Decoding & Encoding HEVC 8-bit - Gen 9 Skylake (6th Gen Core) and newer
+  - Decoding & Encoding HEVC 10-bit - Gen 9.5 Kaby Lake (7th Gen Core), Apollo Lake, Gemini Lake (Pentium and Celeron) and newer
+  - Decoding AV1 8/10-bit - Gen 12 Tiger Lake (11th Gen Core) and newer
+  - Encoding AV1 8/10-bit - Gen 12.5 DG2 / ARC A-series, Gen 12.7 Meteor Lake (14th Gen Core Mobile / 1st Gen Core Ultra) and newer
+  - VP9 requires 7th gen Kaby Lake or newer
+- **VideoToolbox**: Available on macOS with Apple Silicon or Intel Macs with hardware support.
+  - Decoding & Encoding H.264 8-bit - Any VideoToolbox-supported Mac.
+  - Decoding & Encoding HEVC 8/10-bit - Macs from 2017 and later
+  - Decoding AV1 8/10-bit - Requires an M3 series Apple Silicon Mac
+- **Vulkan Video**: Works with any GPU that has Vulkan 1.3+ drivers (NVIDIA, AMD, Intel).
+
+## Licensing
+
+The Go binding code is MIT licensed. However, the bundled FFmpeg libraries are compiled with GPL-licensed components like `x264` and `x265`.
+Any project using ffmpeg-statigo inherits the GPL requirements from FFmpeg through this linking, making the combined work subject to GPLv3 licensing obligations.

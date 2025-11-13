@@ -1,6 +1,5 @@
-.idea
+_obj/
 .direnv/
 build/
-internal/builder/temp/
 temp/
 

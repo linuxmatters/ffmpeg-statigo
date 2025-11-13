@@ -1,5 +1,5 @@
 {
-  description = "ffmpeg-go";
+  description = "ffmpeg-statigo development shell";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
