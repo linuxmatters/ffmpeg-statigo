@@ -15,7 +15,6 @@ import (
 type Library struct {
 	Name          string
 	URL           string
-	StripPrefix   string
 	Platform      []string // empty = all platforms, ["linux"], ["darwin"], etc.
 	BuildSystem   BuildSystem
 	ConfigureArgs func(os string) []string
@@ -89,7 +88,7 @@ func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error 
 		return fmt.Errorf("failed to clean source dir: %w", err)
 	}
 
-	if err := ExtractArchive(archivePath, srcPath, lib.ArchiveType(), lib.StripPrefix, logger); err != nil {
+	if err := ExtractArchive(archivePath, srcPath, lib.ArchiveType(), logger); err != nil {
 		return fmt.Errorf("extract failed: %w", err)
 	}
 
@@ -128,7 +127,6 @@ func (lib *Library) ConfigHash() string {
 	h := sha256.New()
 	h.Write([]byte(lib.URL))
 	h.Write([]byte(lib.Name))
-	h.Write([]byte(lib.StripPrefix))
 	for _, p := range lib.Platform {
 		h.Write([]byte(p))
 	}
