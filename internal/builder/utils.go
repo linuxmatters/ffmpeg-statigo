@@ -436,13 +436,21 @@ func cmd(name string, dir string, args ...string) *exec.Cmd {
 	cmd.Dir = dir
 	cmd.Env = os.Environ()
 
+	// Include both lib and lib64 pkgconfig directories for libraries that install to either
+	// Use tgtDir directly to construct proper paths
+	lib64Dir := filepath.Join(filepath.Dir(libDir), "lib64")
+	pkgConfigPath := fmt.Sprintf("%v/pkgconfig:%v/pkgconfig", libDir, lib64Dir)
+
+	log.Printf("DEBUG cmd(): libDir=%s, lib64Dir=%s", libDir, lib64Dir)
+	log.Printf("DEBUG cmd(): PKG_CONFIG_PATH=%s", pkgConfigPath)
+
 	cmd.Env = append(
 		cmd.Env,
 		fmt.Sprintf("CFLAGS=-I%v", incDir),
 		fmt.Sprintf("CPPFLAGS=-I%v", incDir),
 		fmt.Sprintf("CXXFLAGS=-I%v", incDir),
 		fmt.Sprintf("LDFLAGS=-L%v", libDir),
-		fmt.Sprintf("PKG_CONFIG_PATH=%v/pkgconfig", libDir),
+		fmt.Sprintf("PKG_CONFIG_PATH=%v", pkgConfigPath),
 	)
 
 	cmd.Args = append(cmd.Args, args...)
