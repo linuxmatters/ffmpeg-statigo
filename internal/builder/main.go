@@ -129,6 +129,11 @@ func main() {
 	// Vulkan headers (cross-platform, for Vulkan filters/hwaccel)
 	b.buildVulkanHeaders()
 
+	// libvpl/oneVPL headers (Linux only, for Intel QuickSync)
+	if os == Linux {
+		b.buildLibVPL()
+	}
+
 	buildLame()
 	buildOpus()
 	buildOgg()
@@ -1274,6 +1279,65 @@ func (b *Builder) buildVulkanHeaders() {
 	}
 }
 
+func (b *Builder) buildLibVPL() {
+	// libvpl (oneVPL) provides Intel Video Processing Library for QuickSync hardware acceleration
+	// Note: libvpl is C++ code, so static linking requires -lstdc++
+	zipPath := path.Join(downloadsDir, "libvpl.tar.gz")
+	srcPath := path.Join(buildDir, "libvpl")
+	buildPath := path.Join(buildDir, "libvpl-build")
+
+	if !exists(zipPath) {
+		download("https://github.com/intel/libvpl/archive/refs/tags/v2.15.0.tar.gz", zipPath)
+	}
+
+	untar(zipPath, srcPath, "libvpl-2.15.0/")
+
+	// Patch vpl.pc.in to add -lstdc++ for C++ static library linking
+	vplPcIn := filepath.Join(srcPath, "libvpl", "pkgconfig", "vpl.pc.in")
+	modify(vplPcIn, func(content []byte) []byte {
+		// Add -lstdc++ after -l@OUTPUT_NAME@ since libvpl is C++ code
+		return []byte(strings.ReplaceAll(string(content), "-l@OUTPUT_NAME@ @VPL_PKGCONFIG_DEPENDENT_LIBS@", "-l@OUTPUT_NAME@ -lstdc++ @VPL_PKGCONFIG_DEPENDENT_LIBS@"))
+	})
+
+	if err := os.MkdirAll(buildPath, 0755); err != nil {
+		log.Panicln(err)
+	}
+
+	{
+		log.Println("Running cmake for libvpl")
+
+		cmd := cmd(
+			"cmake",
+			"",
+			"-S", srcPath,
+			"-B", buildPath,
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+			"-DCMAKE_INSTALL_LIBDIR=lib",
+			"-DCMAKE_BUILD_TYPE=Release",
+			"-DBUILD_SHARED_LIBS=OFF",
+			"-DBUILD_EXAMPLES=OFF",
+			"-DBUILD_TESTS=OFF",
+			"-DINSTALL_EXAMPLES=OFF",
+			"-DINSTALL_DEV=ON",
+		)
+
+		run("[libvpl cmake]", cmd)
+	}
+
+	{
+		log.Println("Building and installing libvpl")
+
+		cmd := cmd(
+			"cmake",
+			"",
+			"--build", buildPath,
+			"--target", "install",
+		)
+
+		run("[libvpl build]", cmd)
+	}
+}
+
 func (b *Builder) buildFFmpeg() {
 	zipPath := path.Join(downloadsDir, "ffmpeg.zip")
 	buildPath := path.Join(buildDir, "ffmpeg")
@@ -1416,12 +1480,10 @@ func (b *Builder) buildFFmpeg() {
 			cmd.Args = append(
 				cmd.Args,
 				"--enable-libfontconfig",
-				// NVENC/NVDEC: Hardware accelerated encode/decode for NVIDIA GPUs
-				// These flags enable NVENC/NVDEC support using nv-codec-headers
-				// No CUDA runtime required - works with NVIDIA drivers only
 				"--enable-ffnvcodec", // Enable NVENC/NVDEC support
 				"--enable-nvdec",     // Enable NVDEC hardware decoder
 				"--enable-nvenc",     // Enable NVENC hardware encoder
+				"--enable-libvpl",    // Enable Intel QuickSync support
 			)
 		} else if b.os == MacOS {
 			cmd.Args = append(
@@ -1431,10 +1493,6 @@ func (b *Builder) buildFFmpeg() {
 				"--enable-videotoolbox",
 			)
 		}
-
-		// Set PKG_CONFIG_PATH to find all pkg-config files (both lib and lib64)
-		pkgConfigPath := fmt.Sprintf("%s/lib/pkgconfig:%s/lib64/pkgconfig", tgtDir, tgtDir)
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PKG_CONFIG_PATH=%s", pkgConfigPath))
 
 		run("[ffmpeg configure]", cmd)
 	}
