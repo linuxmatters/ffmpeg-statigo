@@ -15,7 +15,6 @@ import (
 type Library struct {
 	Name          string
 	URL           string
-	ArchiveType   string // "tar.gz", "tar.bz2", "tar.xz", "zip"
 	StripPrefix   string
 	Platform      []string // empty = all platforms, ["linux"], ["darwin"], etc.
 	BuildSystem   BuildSystem
@@ -46,6 +45,23 @@ func (lib *Library) ShouldBuild() bool {
 	return false
 }
 
+// ArchiveType derives the archive type from the URL
+func (lib *Library) ArchiveType() string {
+	url := strings.ToLower(lib.URL)
+	switch {
+	case strings.HasSuffix(url, ".tar.gz"), strings.HasSuffix(url, ".tgz"):
+		return "tar.gz"
+	case strings.HasSuffix(url, ".tar.bz2"), strings.HasSuffix(url, ".tbz2"):
+		return "tar.bz2"
+	case strings.HasSuffix(url, ".tar.xz"), strings.HasSuffix(url, ".txz"):
+		return "tar.xz"
+	case strings.HasSuffix(url, ".zip"):
+		return "zip"
+	default:
+		return ""
+	}
+}
+
 // Build performs the complete build process for this library
 func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error {
 	if !lib.ShouldBuild() {
@@ -73,7 +89,7 @@ func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error 
 		return fmt.Errorf("failed to clean source dir: %w", err)
 	}
 
-	if err := ExtractArchive(archivePath, srcPath, lib.ArchiveType, lib.StripPrefix, logger); err != nil {
+	if err := ExtractArchive(archivePath, srcPath, lib.ArchiveType(), lib.StripPrefix, logger); err != nil {
 		return fmt.Errorf("extract failed: %w", err)
 	}
 
@@ -112,7 +128,6 @@ func (lib *Library) ConfigHash() string {
 	h := sha256.New()
 	h.Write([]byte(lib.URL))
 	h.Write([]byte(lib.Name))
-	h.Write([]byte(lib.ArchiveType))
 	h.Write([]byte(lib.StripPrefix))
 	for _, p := range lib.Platform {
 		h.Write([]byte(p))
