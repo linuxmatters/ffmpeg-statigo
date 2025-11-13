@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Refactor the internal build tool
+- [x] Refactor the internal build tool
 - [x] Reorganise project structure
 - [ ] Rebrand to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
@@ -9,6 +9,7 @@
 - [ ] Add `libavif` - AVIF image support (AV1-based)
 - [ ] Enable Whisper for transcription workflows (New in FFmpgeg in 8.0 ✨)
 - [ ] Enable VA-API? - Still required now we have NVENC, QuickSync and Vulkan?
+- [ ] Review default codecs: https://ffmpeg.martin-riedl.de/
 
 ## More headers
 
