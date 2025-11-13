@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	tempDir, _   = filepath.Abs("temp")
+	tempDir, _   = filepath.Abs(".build")
 	downloadsDir = path.Join(tempDir, "downloads")
 	buildDir     = path.Join(tempDir, "build")
-	tgtDir       = path.Join(tempDir, "tgt")
-	incDir       = path.Join(tgtDir, "include")
-	libDir       = path.Join(tgtDir, "lib")
+	stagingDir   = path.Join(tempDir, "staging")
+	incDir       = path.Join(stagingDir, "include")
+	libDir       = path.Join(stagingDir, "lib")
 
 	libs = []string{
 		"librav1e",
@@ -69,7 +69,7 @@ func main() {
 
 	//os.RemoveAll(tempDir)
 	os.RemoveAll(buildDir)
-	os.RemoveAll(tgtDir)
+	os.RemoveAll(stagingDir)
 
 	if err := os.MkdirAll(downloadsDir, 0755); err != nil {
 		log.Panicln(err)
@@ -79,7 +79,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	if err := os.MkdirAll(tgtDir, 0755); err != nil {
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		log.Panicln(err)
 	}
 
@@ -132,6 +132,7 @@ func main() {
 	// libvpl/oneVPL headers (Linux only, for Intel QuickSync)
 	if os == Linux {
 		b.buildLibVPL()
+		libs = append(libs, "libvpl")
 	}
 
 	buildLame()
@@ -170,7 +171,7 @@ func buildX264() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-avs",
 			"--disable-cli",
 			"--disable-ffms",
@@ -225,7 +226,7 @@ func buildX265() {
 
 		cmakeArgs := []string{
 			"-G", "Unix Makefiles",
-			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", stagingDir),
 			"-DCMAKE_BUILD_TYPE=Release", // Optimized build
 			"-DENABLE_SHARED=OFF",        // Static library
 			"-DENABLE_CLI=OFF",           // No CLI tools needed
@@ -274,7 +275,7 @@ func buildDav1d() {
 			"setup",
 			buildPath,
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--default-library=static",
 			"--buildtype=release",
 			"-Denable_tools=false",
@@ -319,7 +320,7 @@ func buildVpx() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			buildDir,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--enable-static",
 			"--disable-shared",
@@ -364,7 +365,7 @@ func buildTheora() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--enable-static",
 			"--disable-shared",
@@ -412,7 +413,7 @@ func buildOgg() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--enable-static",
 			"--disable-shared",
@@ -464,7 +465,7 @@ func buildVorbis() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--enable-static",
 			"--disable-shared",
@@ -506,7 +507,7 @@ func buildSpeex() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--enable-static",
 			"--disable-shared",
@@ -551,7 +552,7 @@ func buildOpus() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--disable-debug",
 			"--disable-doc",
@@ -598,7 +599,7 @@ func buildLame() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--disable-debug",
 			"--enable-static",
@@ -641,7 +642,7 @@ func buildExpat() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--enable-static",
 			"--disable-shared",
 			"--without-xmlwf",
@@ -686,7 +687,7 @@ func buildFontconfig() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-debug",
 			"--enable-static",
 			"--disable-shared",
@@ -731,7 +732,7 @@ func buildFribidi() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--disable-debug",
 			"--disable-silent-rules",
@@ -777,7 +778,7 @@ func buildIconv() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--disable-debug",
 			"--enable-extra-encodings",
@@ -831,7 +832,7 @@ func buildZlib() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--static",
 		)
 
@@ -870,7 +871,7 @@ func buildBZ2() {
 			srcPath,
 			"-j8",
 			"install",
-			fmt.Sprintf("PREFIX=%v", tgtDir),
+			fmt.Sprintf("PREFIX=%v", stagingDir),
 			fmt.Sprintf("CFLAGS=-I%v", incDir),
 			fmt.Sprintf("CPPFLAGS=-I%v", incDir),
 			fmt.Sprintf("LDFLAGS=-L%v", libDir),
@@ -898,7 +899,7 @@ func buildBrotli() {
 			srcPath,
 			"-G",
 			"Unix Makefiles",
-			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", stagingDir),
 			"-DCMAKE_BUILD_TYPE=Release",
 			"-DCMAKE_FIND_FRAMEWORK=last",
 			"-DCMAKE_VERBOSE_MAKEFILE=ON",
@@ -940,7 +941,7 @@ func buildPng() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-dependency-tracking",
 			"--disable-silent-rules",
 			"--disable-shared",
@@ -983,7 +984,7 @@ func buildUnibreak() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-shared",
 			"--enable-static",
 			fmt.Sprintf("CFLAGS=-I%v", incDir),
@@ -1027,7 +1028,7 @@ func buildFreetype() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--without-harfbuzz",
 			// brotlii breaks harfbuzz building
 			"--without-brotli",
@@ -1073,7 +1074,7 @@ func buildHarfbuzz() {
 			srcPath,
 			"setup",
 			"build",
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			fmt.Sprintf("--libdir=%v", libDir),
 			"--buildtype=release",
 			"--default-library=static",
@@ -1137,7 +1138,7 @@ func (b *Builder) buildASS() {
 		cmd := cmd(
 			path.Join(srcPath, "configure"),
 			srcPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--disable-shared",
 		)
 
@@ -1190,7 +1191,7 @@ func buildRav1e() {
 			"cargo",
 			srcPath,
 			"cinstall",
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--libdir=lib",
 			"--library-type=staticlib",
 			"--crt-static",
@@ -1225,7 +1226,7 @@ func (b *Builder) buildNVCodec() {
 		cmd := cmd(
 			"make",
 			srcPath,
-			fmt.Sprintf("PREFIX=%v", tgtDir),
+			fmt.Sprintf("PREFIX=%v", stagingDir),
 			"install",
 		)
 
@@ -1259,7 +1260,7 @@ func (b *Builder) buildVulkanHeaders() {
 			"",
 			"-S", srcPath,
 			"-B", buildPath,
-			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", stagingDir),
 		)
 
 		run("[vulkan-headers cmake]", cmd)
@@ -1272,7 +1273,7 @@ func (b *Builder) buildVulkanHeaders() {
 			"cmake",
 			"",
 			"--install", buildPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 		)
 
 		run("[vulkan-headers install]", cmd)
@@ -1311,7 +1312,7 @@ func (b *Builder) buildLibVPL() {
 			"",
 			"-S", srcPath,
 			"-B", buildPath,
-			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", stagingDir),
 			"-DCMAKE_INSTALL_LIBDIR=lib",
 			"-DCMAKE_BUILD_TYPE=Release",
 			"-DBUILD_SHARED_LIBS=OFF",
@@ -1354,10 +1355,10 @@ func (b *Builder) buildFFmpeg() {
 		cmd := cmd(
 			path.Join(buildPath, "configure"),
 			buildPath,
-			fmt.Sprintf("--prefix=%v", tgtDir),
+			fmt.Sprintf("--prefix=%v", stagingDir),
 			"--pkg-config-flags=--static",
 			fmt.Sprintf("--extra-cflags=-I%v", incDir),
-			fmt.Sprintf("--extra-ldflags=-L%v/lib", tgtDir),
+			fmt.Sprintf("--extra-ldflags=-L%v/lib", stagingDir),
 			"--disable-autodetect",
 			"--disable-debug",
 			"--disable-doc",
