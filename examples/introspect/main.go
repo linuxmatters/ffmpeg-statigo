@@ -1,0 +1,392 @@
+package main
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+	"unsafe"
+
+	ffmpeg "github.com/csnewman/ffmpeg-go"
+)
+
+type codecInfo struct {
+	name      string
+	longName  string
+	mediaType string
+	isEncoder bool
+	isDecoder bool
+}
+
+func main() {
+	fmt.Println("ffmpeg-statigo")
+	fmt.Println("==============")
+	fmt.Println()
+
+	// Get configuration
+	fmt.Println("Configuration:")
+	fmt.Printf("%s\n\n", ffmpeg.AVFormatConfiguration().String())
+
+	// Get license
+	fmt.Println("License:")
+	fmt.Printf("%s\n\n", ffmpeg.AVFormatLicense().String())
+
+	// List all components
+	listCodecs()
+	listFormats()
+}
+
+func listCodecs() {
+	fmt.Println("==================================================")
+	fmt.Println("CODECS")
+	fmt.Println("==================================================")
+	fmt.Println("Format: <name> E=Encoder D=Decoder <description>")
+	fmt.Println()
+
+	// Collect all codec information
+	codecMap := make(map[string]*codecInfo)
+
+	// Iterate through all codec descriptors
+	var desc *ffmpeg.AVCodecDescriptor
+	for {
+		desc = ffmpeg.AVCodecDescriptorNext(desc)
+		if desc == nil {
+			break
+		}
+
+		codecID := desc.Id()
+		name := desc.Name().String()
+		longName := desc.LongName().String()
+		mediaType := getMediaTypeString(desc.Type())
+
+		// Check if encoder exists for this codec
+		encoder := ffmpeg.AVCodecFindEncoder(codecID)
+		// Check if decoder exists for this codec
+		decoder := ffmpeg.AVCodecFindDecoder(codecID)
+
+		if encoder != nil || decoder != nil {
+			codecMap[name] = &codecInfo{
+				name:      name,
+				longName:  longName,
+				mediaType: mediaType,
+				isEncoder: encoder != nil,
+				isDecoder: decoder != nil,
+			}
+		}
+	}
+
+	// Sort codecs by name for consistent output
+	names := make([]string, 0, len(codecMap))
+	for name := range codecMap {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	// Count encoders and decoders by type
+	videoEncoders, videoDecoders := 0, 0
+	audioEncoders, audioDecoders := 0, 0
+	subtitleEncoders, subtitleDecoders := 0, 0
+	otherEncoders, otherDecoders := 0, 0
+
+	// Print all codecs
+	for _, name := range names {
+		info := codecMap[name]
+
+		flags := ""
+		if info.isDecoder {
+			flags += "D"
+			switch info.mediaType {
+			case "VIDEO":
+				videoDecoders++
+			case "AUDIO":
+				audioDecoders++
+			case "SUBTITLE":
+				subtitleDecoders++
+			default:
+				otherDecoders++
+			}
+		} else {
+			flags += "."
+		}
+		if info.isEncoder {
+			flags += "E"
+			switch info.mediaType {
+			case "VIDEO":
+				videoEncoders++
+			case "AUDIO":
+				audioEncoders++
+			case "SUBTITLE":
+				subtitleEncoders++
+			default:
+				otherEncoders++
+			}
+		} else {
+			flags += "."
+		}
+
+		// Truncate long codec names and descriptions to match format style
+		codecName := info.name
+		if len(codecName) > 24 {
+			codecName = codecName[:24]
+		}
+
+		description := info.longName
+		if len(description) > 42 {
+			description = description[:42]
+		}
+
+		fmt.Printf(" %s  %-24s %-42s [%s]\n", flags, codecName, description, info.mediaType)
+	}
+
+	totalDecoders := videoDecoders + audioDecoders + subtitleDecoders + otherDecoders
+	totalEncoders := videoEncoders + audioEncoders + subtitleEncoders + otherEncoders
+
+	fmt.Printf("\nSummary:\n")
+	fmt.Printf("  Total codecs: %d\n", len(codecMap))
+	fmt.Printf("  Total decoders: %d (Video: %d, Audio: %d, Subtitle: %d, Other: %d)\n",
+		totalDecoders, videoDecoders, audioDecoders, subtitleDecoders, otherDecoders)
+	fmt.Printf("  Total encoders: %d (Video: %d, Audio: %d, Subtitle: %d, Other: %d)\n\n",
+		totalEncoders, videoEncoders, audioEncoders, subtitleEncoders, otherEncoders)
+}
+
+func getMediaTypeString(mediaType ffmpeg.AVMediaType) string {
+	switch mediaType {
+	case ffmpeg.AVMediaTypeVideo:
+		return "VIDEO"
+	case ffmpeg.AVMediaTypeAudio:
+		return "AUDIO"
+	case ffmpeg.AVMediaTypeSubtitle:
+		return "SUBTITLE"
+	case ffmpeg.AVMediaTypeData:
+		return "DATA"
+	case ffmpeg.AVMediaTypeAttachment:
+		return "ATTACH"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+func getCodecName(codecID ffmpeg.AVCodecID) string {
+	desc := ffmpeg.AVCodecDescriptorGet(codecID)
+	if desc != nil && desc.Name() != nil {
+		return desc.Name().String()
+	}
+	return fmt.Sprintf("codec_%d", codecID)
+}
+
+func listFormats() {
+	fmt.Println("\n==================================================")
+	fmt.Println("FORMATS")
+	fmt.Println("==================================================")
+	fmt.Println("Format: <name> D=Demuxer E=Muxer <description>")
+	fmt.Println()
+
+	type formatInfo struct {
+		name          string
+		longName      string
+		exts          string
+		mimeType      string
+		videoCodec    string
+		audioCodec    string
+		subtitleCodec string
+		hasMuxer      bool
+		hasDemuxer    bool
+	}
+
+	formatMap := make(map[string]*formatInfo)
+
+	// Iterate through all registered muxers
+	var muxerOpaque unsafe.Pointer
+	for {
+		muxer := ffmpeg.AVMuxerIterate(&muxerOpaque)
+		if muxer == nil {
+			break
+		}
+
+		name := ""
+		if muxer.Name() != nil {
+			name = muxer.Name().String()
+		}
+
+		if name == "" {
+			continue
+		}
+
+		longName := ""
+		if muxer.LongName() != nil {
+			longName = muxer.LongName().String()
+		}
+
+		extensions := ""
+		if muxer.Extensions() != nil {
+			extensions = muxer.Extensions().String()
+		}
+
+		mimeType := ""
+		if muxer.MimeType() != nil {
+			mimeType = muxer.MimeType().String()
+		}
+
+		videoCodec := ""
+		if muxer.VideoCodec() != ffmpeg.AVCodecIdNone {
+			videoCodec = getCodecName(muxer.VideoCodec())
+		}
+
+		audioCodec := ""
+		if muxer.AudioCodec() != ffmpeg.AVCodecIdNone {
+			audioCodec = getCodecName(muxer.AudioCodec())
+		}
+
+		subtitleCodec := ""
+		if muxer.SubtitleCodec() != ffmpeg.AVCodecIdNone {
+			subtitleCodec = getCodecName(muxer.SubtitleCodec())
+		}
+
+		if existing, exists := formatMap[name]; exists {
+			existing.hasMuxer = true
+			if existing.longName == "" {
+				existing.longName = longName
+			}
+			if existing.mimeType == "" {
+				existing.mimeType = mimeType
+			}
+			if existing.videoCodec == "" {
+				existing.videoCodec = videoCodec
+			}
+			if existing.audioCodec == "" {
+				existing.audioCodec = audioCodec
+			}
+			if existing.subtitleCodec == "" {
+				existing.subtitleCodec = subtitleCodec
+			}
+		} else {
+			formatMap[name] = &formatInfo{
+				name:          name,
+				longName:      longName,
+				exts:          extensions,
+				mimeType:      mimeType,
+				videoCodec:    videoCodec,
+				audioCodec:    audioCodec,
+				subtitleCodec: subtitleCodec,
+				hasMuxer:      true,
+				hasDemuxer:    false,
+			}
+		}
+	}
+
+	// Iterate through all registered demuxers
+	var demuxerOpaque unsafe.Pointer
+	for {
+		demuxer := ffmpeg.AVDemuxerIterate(&demuxerOpaque)
+		if demuxer == nil {
+			break
+		}
+
+		name := ""
+		if demuxer.Name() != nil {
+			name = demuxer.Name().String()
+		}
+
+		if name == "" {
+			continue
+		}
+
+		longName := ""
+		if demuxer.LongName() != nil {
+			longName = demuxer.LongName().String()
+		}
+
+		extensions := ""
+		if demuxer.Extensions() != nil {
+			extensions = demuxer.Extensions().String()
+		}
+
+		if existing, exists := formatMap[name]; exists {
+			existing.hasDemuxer = true
+			if existing.longName == "" {
+				existing.longName = longName
+			}
+		} else {
+			formatMap[name] = &formatInfo{
+				name:          name,
+				longName:      longName,
+				exts:          extensions,
+				mimeType:      "",
+				videoCodec:    "",
+				audioCodec:    "",
+				subtitleCodec: "",
+				hasMuxer:      false,
+				hasDemuxer:    true,
+			}
+		}
+	} // Convert map to slice and sort
+	var formats []formatInfo
+	for _, f := range formatMap {
+		formats = append(formats, *f)
+	}
+
+	sort.Slice(formats, func(i, j int) bool {
+		return formats[i].name < formats[j].name
+	})
+
+	// Count totals
+	totalMuxers := 0
+	totalDemuxers := 0
+
+	for _, f := range formats {
+		demuxFlag := "."
+		if f.hasDemuxer {
+			demuxFlag = "D"
+			totalDemuxers++
+		}
+
+		muxFlag := "."
+		if f.hasMuxer {
+			muxFlag = "E"
+			totalMuxers++
+		}
+
+		// Build additional info for single line display
+		additionalInfo := []string{}
+		if f.mimeType != "" {
+			additionalInfo = append(additionalInfo, fmt.Sprintf("MIME:%s", f.mimeType))
+		}
+
+		codecs := []string{}
+		if f.videoCodec != "" {
+			codecs = append(codecs, fmt.Sprintf("video:%s", f.videoCodec))
+		}
+		if f.audioCodec != "" {
+			codecs = append(codecs, fmt.Sprintf("audio:%s", f.audioCodec))
+		}
+		if f.subtitleCodec != "" {
+			codecs = append(codecs, fmt.Sprintf("subtitle:%s", f.subtitleCodec))
+		}
+
+		if len(codecs) > 0 {
+			additionalInfo = append(additionalInfo, fmt.Sprintf("Codecs:%s", strings.Join(codecs, ",")))
+		}
+
+		// Truncate long names and descriptions
+		formatName := f.name
+		if len(formatName) > 24 {
+			formatName = formatName[:24]
+		}
+
+		description := f.longName
+		if len(description) > 42 {
+			description = description[:42]
+		}
+
+		// Display format on single line
+		if len(additionalInfo) > 0 {
+			fmt.Printf("%s%s  %-24s %-42s [%s]\n", demuxFlag, muxFlag, formatName, description, strings.Join(additionalInfo, " "))
+		} else {
+			fmt.Printf("%s%s  %-24s %s\n", demuxFlag, muxFlag, formatName, description)
+		}
+	}
+
+	fmt.Printf("\nSummary:\n")
+	fmt.Printf("  Total formats: %d\n", len(formats))
+	fmt.Printf("  Total demuxers: %d\n", totalDemuxers)
+	fmt.Printf("  Total muxers: %d\n", totalMuxers)
+}
