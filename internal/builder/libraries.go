@@ -11,17 +11,15 @@ import (
 
 // All libraries in build order
 var AllLibraries = []*Library{
-	// Platform-specific dependencies first
-	iconv,
-	expat,
-
-	// Core compression libraries
+	// Compression libraries
 	zlib,
-	bz2,
-	brotli,
 
-	// Image and font libraries
+	// Image libraries
 	png,
+
+	// Font libraries & rendering
+	expat,
+	iconv,
 	fribidi,
 	unibreak,
 	freetype,
@@ -39,7 +37,6 @@ var AllLibraries = []*Library{
 	opus,
 	ogg,
 	vorbis,
-	speex,
 
 	// Video codecs
 	theora,
@@ -100,48 +97,6 @@ var zlib = &Library{
 	LinkLibs: []string{"libz"},
 }
 
-// bz2 - bzip2 compression library
-var bz2 = &Library{
-	Name:        "bz2",
-	URL:         "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
-	BuildSystem: &MakefileBuild{
-		Targets: []string{"libbz2.a"},
-		InstallFunc: func(srcPath, installDir string) error {
-			// Manual installation for bz2
-			libPath := filepath.Join(installDir, "lib")
-			incPath := filepath.Join(installDir, "include")
-
-			os.MkdirAll(libPath, 0755)
-			os.MkdirAll(incPath, 0755)
-
-			// Copy library
-			runCommand(srcPath, os.Stdout, installDir, "cp", "libbz2.a", libPath)
-
-			// Copy header
-			runCommand(srcPath, os.Stdout, installDir, "cp", "bzlib.h", incPath)
-
-			return nil
-		},
-	},
-	LinkLibs: []string{"libbz2"},
-}
-
-// brotli - Brotli compression library
-var brotli = &Library{
-	Name:        "brotli",
-	URL:         "https://github.com/google/brotli/archive/refs/tags/v1.2.0.tar.gz",
-	BuildSystem: &CMakeBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"-DCMAKE_FIND_FRAMEWORK=last",
-			"-DCMAKE_VERBOSE_MAKEFILE=ON",
-			"-Wno-dev",
-			"-DBUILD_SHARED_LIBS=OFF",
-		}
-	},
-	LinkLibs: []string{"libbrotlicommon", "libbrotlidec", "libbrotlienc"},
-}
-
 // png - PNG image library
 var png = &Library{
 	Name:        "png",
@@ -158,7 +113,7 @@ var png = &Library{
 	LinkLibs: []string{"libpng16"},
 }
 
-// fribidi - Unicode bidirectional algorithm library
+// fribidi - Unicode bidirectional algorithm library (needed by libass)
 var fribidi = &Library{
 	Name:        "fribidi",
 	URL:         "https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz",
@@ -174,7 +129,7 @@ var fribidi = &Library{
 	LinkLibs: []string{"libfribidi"},
 }
 
-// unibreak - line breaking library
+// unibreak - line breaking library (needed by libass)
 var unibreak = &Library{
 	Name:        "unibreak",
 	URL:         "https://github.com/adah1972/libunibreak/releases/download/libunibreak_6_1/libunibreak-6.1.tar.gz",
@@ -213,13 +168,14 @@ var freetype = &Library{
 			"--enable-static",
 			"--disable-shared",
 			"--without-brotli",
+			"--without-bzip2",
 			"--without-harfbuzz",
 		}
 	},
 	LinkLibs: []string{"libfreetype"},
 }
 
-// harfbuzz - text shaping library
+// harfbuzz - text shaping library (needed by libass)
 var harfbuzz = &Library{
 	Name:        "harfbuzz",
 	URL:         "https://github.com/harfbuzz/harfbuzz/releases/download/12.2.0/harfbuzz-12.2.0.tar.xz",
@@ -264,9 +220,9 @@ var libass = &Library{
 
 // nvcodec - NVIDIA codec SDK headers (Linux only)
 var nvcodec = &Library{
-	Name:        "nvcodec",
-	URL:         "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz",
-	Platform:    []string{"linux"},
+	Name:     "nvcodec",
+	URL:      "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz",
+	Platform: []string{"linux"},
 	BuildSystem: &MakefileBuild{
 		Targets: nil, // No build targets, just install
 		InstallFunc: func(srcPath, installDir string) error {
@@ -383,20 +339,6 @@ var vorbis = &Library{
 	LinkLibs: []string{"libvorbis"},
 }
 
-// speex - Speex audio codec
-var speex = &Library{
-	Name:        "speex",
-	URL:         "https://downloads.xiph.org/releases/speex/speex-1.2.1.tar.gz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-		}
-	},
-	LinkLibs: []string{"libspeex"},
-}
-
 // theora - Theora video codec
 var theora = &Library{
 	Name:        "theora",
@@ -469,8 +411,8 @@ var x264 = &Library{
 
 // x265 - H.265/HEVC video encoder
 var x265 = &Library{
-	Name:        "x265",
-	URL:         "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
+	Name: "x265",
+	URL:  "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
 	BuildSystem: &CMakeBuild{
 		SourceSubdir: "source", // x265 source is in source/ subdirectory
 	},
@@ -502,8 +444,8 @@ var dav1d = &Library{
 
 // rav1e - AV1 video encoder
 var rav1e = &Library{
-	Name:        "rav1e",
-	URL:         "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
+	Name: "rav1e",
+	URL:  "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
 	BuildSystem: &CargoBuild{
 		InstallFunc: func(srcPath, installDir string) error {
 			// Set RUSTFLAGS for native CPU optimization
@@ -635,25 +577,26 @@ var ffmpeg = &Library{
 			"--disable-decoder=truespeech",                                                // DSP Group TrueSpeech (1990s)
 			"--disable-encoder=a64multi,a64multi5",                                        // Commodore 64
 			"--disable-muxer=a64",                                                         // Commodore 64
-			// Enable features
+			// Build options
 			"--enable-pic",
 			"--enable-gpl",
 			"--enable-version3",
 			"--enable-static",
-			"--enable-librav1e",
+			// Enable features
 			"--enable-libass",
+			"--enable-libdav1d",
 			"--enable-libfreetype",
 			"--enable-libfribidi",
 			"--enable-libharfbuzz",
 			"--enable-libmp3lame",
 			"--enable-libopus",
-			"--enable-libspeex",
+			"--enable-librav1e",
 			"--enable-libtheora",
 			"--enable-libvpx",
+			"--enable-vulkan",
 			"--enable-libx264",
 			"--enable-libx265",
-			"--enable-libdav1d",
-			"--enable-vulkan",
+			"--enable-zlib",
 		}
 
 		// Platform-specific options

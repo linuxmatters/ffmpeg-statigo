@@ -26,6 +26,7 @@
             cmake
             curl
             ffmpeg
+            file
             gcc
             git-filter-repo
             gnumake
