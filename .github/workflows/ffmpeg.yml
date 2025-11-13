@@ -61,6 +61,8 @@ jobs:
         if: matrix.os == 'darwin'
         run: brew update && brew install yasm autoconf ragel meson nasm automake libtool
 
+      - name: Create output directory
+        run: mkdir -p lib/${{ matrix.os }}_${{ matrix.arch }}
       - name: Build FFmpeg library
         run: go run ./internal/builder/ lib/${{ matrix.os }}_${{ matrix.arch }}/libffmpeg.a
 
