@@ -147,8 +147,6 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 |----------|---------|
 | FFmpeg   | 8.0     |
 | ass      | 0.17.4  |
-| brotli   | 1.2.0   |
-| bz2      | 1.0.8   |
 | freetype | 2.14.1  |
 | fribidi  | 1.0.16  |
 | harfbuzz | 12.2.0  |
@@ -156,7 +154,6 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 | ogg      | 1.3.6   |
 | opus     | 1.5.2   |
 | png      | 1.6.50  |
-| speex    | 1.2.1   |
 | theora   | 1.2.0   |
 | unibreak | 6.1     |
 | vpx      | 1.15.0  |
