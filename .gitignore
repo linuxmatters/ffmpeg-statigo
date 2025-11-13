@@ -3,6 +3,7 @@
 *.log
 asciiplayer
 builder
+introspect
 metadata
 transcode
 
