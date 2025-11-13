@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -116,17 +117,20 @@ func main() {
 		os.MkdirAll(logDir, 0755)
 
 		logFile := filepath.Join(logDir, "build.log")
-		logger, err := os.Create(logFile)
+		logFileWriter, err := os.Create(logFile)
 		if err != nil {
 			log.Fatalf("Failed to create log file for %s: %v\n", lib.Name, err)
 		}
 
+		// Use MultiWriter to send output to both stdout and log file
+		logger := io.MultiWriter(os.Stdout, logFileWriter)
+
 		if err := lib.Build(buildRoot, stagingDir, logger); err != nil {
-			logger.Close()
+			logFileWriter.Close()
 			log.Fatalf("Build failed for %s: %v\nSee log: %s\n", lib.Name, err, logFile)
 		}
 
-		logger.Close()
+		logFileWriter.Close()
 
 		if lib.ShouldBuild() {
 			built++

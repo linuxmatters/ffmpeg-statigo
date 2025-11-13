@@ -52,17 +52,28 @@ func DownloadFile(url, dest string, logger io.Writer) error {
 		// Start download
 		resp := client.Do(req)
 
-		// Monitor progress
-		t := resp.Progress()
+		// Monitor progress - update every 2 seconds to avoid log spam
+		ticker := time.NewTicker(2 * time.Second)
+		defer ticker.Stop()
+
+		lastProgress := 0.0
 		for !resp.IsComplete() {
-			fmt.Fprintf(logger, "  %.2f%% complete\r", t*100)
-			t = resp.Progress()
+			select {
+			case <-ticker.C:
+				progress := resp.Progress() * 100
+				if progress > lastProgress {
+					fmt.Fprintf(logger, "  %.2f%% complete\n", progress)
+					lastProgress = progress
+				}
+			default:
+				time.Sleep(100 * time.Millisecond)
+			}
 		}
 
 		// Check for errors
 		if err := resp.Err(); err != nil {
 			lastErr = err
-			fmt.Fprintf(logger, "\nDownload attempt %d failed: %v\n", attempt, err)
+			fmt.Fprintf(logger, "Download attempt %d failed: %v\n", attempt, err)
 			// Remove partial download
 			os.Remove(dest)
 			continue
