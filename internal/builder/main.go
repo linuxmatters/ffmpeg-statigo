@@ -126,6 +126,9 @@ func main() {
 		b.buildNVCodec()
 	}
 
+	// Vulkan headers (cross-platform, for Vulkan filters/hwaccel)
+	b.buildVulkanHeaders()
+
 	buildLame()
 	buildOpus()
 	buildOgg()
@@ -1225,6 +1228,52 @@ func (b *Builder) buildNVCodec() {
 	}
 }
 
+func (b *Builder) buildVulkanHeaders() {
+	// Vulkan-Headers provides Vulkan API headers for Vulkan filters and hwaccel
+	// This is a header-only library that enables Vulkan-based video processing
+	zipPath := path.Join(downloadsDir, "vulkan-headers.tar.gz")
+	srcPath := path.Join(buildDir, "vulkan-headers")
+	buildPath := path.Join(buildDir, "vulkan-headers-build")
+
+	if !exists(zipPath) {
+		// Vulkan-Headers 1.4.326 (matching your build fragment)
+		download("https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.332.tar.gz", zipPath)
+	}
+
+	untar(zipPath, srcPath, "Vulkan-Headers-1.4.332/")
+
+	if err := os.MkdirAll(buildPath, 0755); err != nil {
+		log.Panicln(err)
+	}
+
+	{
+		log.Println("Running cmake for Vulkan headers")
+
+		cmd := cmd(
+			"cmake",
+			"",
+			"-S", srcPath,
+			"-B", buildPath,
+			fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%v", tgtDir),
+		)
+
+		run("[vulkan-headers cmake]", cmd)
+	}
+
+	{
+		log.Println("Installing Vulkan headers")
+
+		cmd := cmd(
+			"cmake",
+			"",
+			"--install", buildPath,
+			fmt.Sprintf("--prefix=%v", tgtDir),
+		)
+
+		run("[vulkan-headers install]", cmd)
+	}
+}
+
 func (b *Builder) buildFFmpeg() {
 	zipPath := path.Join(downloadsDir, "ffmpeg.zip")
 	buildPath := path.Join(buildDir, "ffmpeg")
@@ -1360,6 +1409,7 @@ func (b *Builder) buildFFmpeg() {
 			"--enable-libx264",
 			"--enable-libx265",
 			"--enable-libdav1d",
+			"--enable-vulkan",
 		)
 
 		if b.os == Linux {
