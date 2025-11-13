@@ -14,10 +14,10 @@ func combineMac(output string) {
 		var matches []string
 
 		for _, lib := range libs {
-			libPath := path.Join(tgtDir, "lib", fmt.Sprintf("%v.a", lib))
+			libPath := path.Join(stagingDir, "lib", fmt.Sprintf("%v.a", lib))
 			// Check lib64 if not found in lib (aom and brotli may install there)
 			if !exists(libPath) {
-				libPath = path.Join(tgtDir, "lib64", fmt.Sprintf("%v.a", lib))
+				libPath = path.Join(stagingDir, "lib64", fmt.Sprintf("%v.a", lib))
 			}
 			matches = append(matches, libPath)
 		}
@@ -54,10 +54,10 @@ func combineLinux(output string) {
 	var matches []string
 
 	for _, lib := range libs {
-		libPath := path.Join(tgtDir, "lib", fmt.Sprintf("%v.a", lib))
+		libPath := path.Join(stagingDir, "lib", fmt.Sprintf("%v.a", lib))
 		// Check lib64 if not found in lib (aom and brotli install there)
 		if !exists(libPath) {
-			libPath = path.Join(tgtDir, "lib64", fmt.Sprintf("%v.a", lib))
+			libPath = path.Join(stagingDir, "lib64", fmt.Sprintf("%v.a", lib))
 		}
 		matches = append(matches, libPath)
 	}

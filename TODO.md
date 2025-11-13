@@ -1,7 +1,7 @@
 # TODO
 
 - [ ] Refactor the internal build tool
-- [ ] Reorganise project structure
+- [x] Reorganise project structure
 - [ ] Rebrand to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
 - [ ] Enable Dolby Vision/HDR10+ metadata handling via `--enable-libdovi` (if available)

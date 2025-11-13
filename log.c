@@ -1,3 +1,7 @@
+// CGO bridge for FFmpeg logging callbacks.
+// This file is compiled inline with log.go via CGO.
+// It bridges FFmpeg's C logging system to Go callbacks.
+
 #include <libavutil/bprint.h>
 #include <libavutil/avutil.h>
 
