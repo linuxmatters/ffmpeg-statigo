@@ -9,7 +9,8 @@ import (
 /*
 #cgo CFLAGS: -I${SRCDIR}/include -Wno-deprecated -Wno-deprecated-declarations
 
-#cgo linux LDFLAGS: -L${SRCDIR}/lib/linux_amd64 -L${SRCDIR}/lib/linux_arm64
+#cgo linux,amd64 LDFLAGS: -L${SRCDIR}/lib/linux_amd64
+#cgo linux,arm64 LDFLAGS: -L${SRCDIR}/lib/linux_arm64
 #cgo linux,amd64 LDFLAGS: -lffmpeg
 #cgo linux,arm64 LDFLAGS: -lffmpeg
 #cgo linux LDFLAGS: -lm -ldl -lstdc++ -lpthread
