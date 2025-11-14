@@ -32,6 +32,7 @@ func main() {
 
 	// List all components
 	listCodecs()
+	listHWAccels()
 	listFormats()
 	listParsers()
 	listProtocols()
@@ -552,4 +553,159 @@ func listProtocols() {
 	fmt.Printf("  Total protocols: %d\n", len(protocols))
 	fmt.Printf("  Total input protocols: %d\n", totalInput)
 	fmt.Printf("  Total output protocols: %d\n", totalOutput)
+}
+
+func listHWAccels() {
+	fmt.Println("\n==================================================")
+	fmt.Println("HARDWARE ACCELERATORS")
+	fmt.Println("==================================================\n")
+
+	// First list hardware device types
+	fmt.Printf("    %-24s\n", "NAME")
+	fmt.Println()
+
+	var hwaccels []string
+
+	// Iterate through hardware device types
+	deviceType := ffmpeg.AVHWDeviceTypeNone
+	for {
+		deviceType = ffmpeg.AVHWDeviceIterateTypes(deviceType)
+		if deviceType == ffmpeg.AVHWDeviceTypeNone {
+			break
+		}
+
+		name := ffmpeg.AVHWDeviceGetTypeName(deviceType)
+		if name != nil {
+			hwaccels = append(hwaccels, name.String())
+		}
+	}
+
+	// Sort hwaccels by name
+	sort.Strings(hwaccels)
+
+	// Display hwaccels
+	for _, name := range hwaccels {
+		// Truncate long names to 24 chars
+		if len(name) > 24 {
+			name = name[:24]
+		}
+		fmt.Printf("    %-24s\n", name)
+	}
+
+	// Now list hardware-accelerated encoders and decoders
+	fmt.Println("\n--------------------------------------------------\n")
+	fmt.Printf(" %s  %-24s %-42s %s\n", "DE", "NAME", "DESCRIPTION", "TYPE")
+	fmt.Println()
+
+	type hwCodecInfo struct {
+		name      string
+		longName  string
+		mediaType string
+		isEncoder bool
+		isDecoder bool
+	}
+
+	var hwCodecs []hwCodecInfo
+
+	// Iterate through all codecs using av_codec_iterate
+	var opaque unsafe.Pointer
+	for {
+		codec := ffmpeg.AVCodecIterate(&opaque)
+		if codec == nil {
+			break
+		}
+
+		name := ""
+		if codec.Name() != nil {
+			name = codec.Name().String()
+		}
+
+		if name == "" {
+			continue
+		}
+
+		// Check if this is a hardware-accelerated codec
+		// Hardware codecs typically have suffixes like _nvenc, _qsv, _vaapi, _videotoolbox, _vulkan, etc.
+		isHWCodec := strings.Contains(name, "_nvenc") ||
+			strings.Contains(name, "_nvdec") ||
+			strings.Contains(name, "_qsv") ||
+			strings.Contains(name, "_vaapi") ||
+			strings.Contains(name, "_videotoolbox") ||
+			strings.Contains(name, "_vulkan") ||
+			strings.Contains(name, "_amf") ||
+			strings.Contains(name, "_v4l2") ||
+			strings.Contains(name, "_mediacodec") ||
+			strings.Contains(name, "_mmal") ||
+			strings.Contains(name, "_omx") ||
+			strings.Contains(name, "_cuvid")
+
+		if !isHWCodec {
+			continue
+		}
+
+		longName := ""
+		if codec.LongName() != nil {
+			longName = codec.LongName().String()
+		}
+
+		mediaType := getMediaTypeString(codec.Type())
+
+		isEncoderVal, _ := ffmpeg.AVCodecIsEncoder(codec)
+		isEncoder := isEncoderVal != 0
+
+		isDecoderVal, _ := ffmpeg.AVCodecIsDecoder(codec)
+		isDecoder := isDecoderVal != 0
+
+		hwCodecs = append(hwCodecs, hwCodecInfo{
+			name:      name,
+			longName:  longName,
+			mediaType: mediaType,
+			isEncoder: isEncoder,
+			isDecoder: isDecoder,
+		})
+	}
+
+	// Sort by name
+	sort.Slice(hwCodecs, func(i, j int) bool {
+		return hwCodecs[i].name < hwCodecs[j].name
+	})
+
+	// Count encoders and decoders
+	hwEncoders := 0
+	hwDecoders := 0
+
+	// Display hardware codecs
+	for _, info := range hwCodecs {
+		flags := ""
+		if info.isDecoder {
+			flags += "D"
+			hwDecoders++
+		} else {
+			flags += "."
+		}
+		if info.isEncoder {
+			flags += "E"
+			hwEncoders++
+		} else {
+			flags += "."
+		}
+
+		codecName := info.name
+		if len(codecName) > 24 {
+			codecName = codecName[:24]
+		}
+
+		description := info.longName
+		if len(description) > 42 {
+			description = description[:42]
+		}
+
+		fmt.Printf(" %s  %-24s %-42s [%s]\n", flags, codecName, description, info.mediaType)
+	}
+
+	fmt.Printf("\nSummary:\n")
+	fmt.Printf("  Total hardware accelerators: %d\n", len(hwaccels))
+	fmt.Printf("  Total hardware codecs: %d\n", len(hwCodecs))
+	fmt.Printf("  Hardware decoders: %d\n", hwDecoders)
+	fmt.Printf("  Hardware encoders: %d\n", hwEncoders)
 }

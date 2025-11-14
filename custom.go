@@ -4,6 +4,13 @@ package ffmpeg
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavcodec/avcodec.h>
+
+// Forward declarations for iteration functions
+extern const AVCodec *av_codec_iterate(void **opaque);
+extern const AVCodecParser *av_parser_iterate(void **opaque);
+extern const char *avio_enum_protocols(void **opaque, int output);
+extern const AVOutputFormat *av_muxer_iterate(void **opaque);
+extern const AVInputFormat *av_demuxer_iterate(void **opaque);
 */
 import "C"
 import (
@@ -54,6 +61,21 @@ func AVParserIterate(opaque *unsafe.Pointer) *AVCodecParser {
 		return nil
 	}
 	return &AVCodecParser{ptr: ret}
+}
+
+// AVCodecIterate iterates over all registered codecs.
+//
+// @param opaque a pointer where libavcodec will store the iteration state. Must
+//
+//	point to NULL to start the iteration.
+//
+// @return the next registered codec or NULL when the iteration is finished
+func AVCodecIterate(opaque *unsafe.Pointer) *AVCodec {
+	ret := C.av_codec_iterate((*unsafe.Pointer)(unsafe.Pointer(opaque)))
+	if ret == nil {
+		return nil
+	}
+	return &AVCodec{ptr: ret}
 }
 
 // AVIOEnumProtocols iterates through names of available protocols.
