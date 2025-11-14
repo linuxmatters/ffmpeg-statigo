@@ -4,6 +4,7 @@ package ffmpeg
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavcodec/avcodec.h>
+#include <libavcodec/bsf.h>
 #include <libavfilter/avfilter.h>
 
 // Forward declarations for iteration functions
@@ -13,12 +14,41 @@ extern const char *avio_enum_protocols(void **opaque, int output);
 extern const AVOutputFormat *av_muxer_iterate(void **opaque);
 extern const AVInputFormat *av_demuxer_iterate(void **opaque);
 extern const AVFilter *av_filter_iterate(void **opaque);
+extern const AVBitStreamFilter *av_bsf_iterate(void **opaque);
 */
 import "C"
 import (
 	"fmt"
 	"unsafe"
 )
+
+// AVBitStreamFilter represents an FFmpeg bitstream filter.
+// This is a minimal wrapper for the C struct.
+type AVBitStreamFilter struct {
+	ptr *C.AVBitStreamFilter
+}
+
+// Name returns the bitstream filter's name.
+func (bsf *AVBitStreamFilter) Name() string {
+	return C.GoString(bsf.ptr.name)
+}
+
+// CodecIds returns the array of codec IDs supported by this filter.
+// Returns nil if the filter supports all codecs.
+func (bsf *AVBitStreamFilter) CodecIds() *AVCodecID {
+	if bsf.ptr.codec_ids == nil {
+		return nil
+	}
+	return (*AVCodecID)(unsafe.Pointer(bsf.ptr.codec_ids))
+}
+
+// PrivClass returns the AVClass for private data options, or nil if none.
+func (bsf *AVBitStreamFilter) PrivClass() *AVClass {
+	if bsf.ptr.priv_class == nil {
+		return nil
+	}
+	return &AVClass{ptr: bsf.ptr.priv_class}
+}
 
 // AVMuxerIterate iterates over all registered muxers.
 //
@@ -93,6 +123,21 @@ func AVFilterIterate(opaque *unsafe.Pointer) *AVFilter {
 		return nil
 	}
 	return &AVFilter{ptr: ret}
+}
+
+// AVBSFIterate iterates over all registered bitstream filters.
+//
+// @param opaque a pointer where libavcodec will store the iteration state. Must
+//
+//	point to NULL to start the iteration.
+//
+// @return the next registered bitstream filter or NULL when the iteration is finished
+func AVBSFIterate(opaque *unsafe.Pointer) *AVBitStreamFilter {
+	ret := C.av_bsf_iterate((*unsafe.Pointer)(unsafe.Pointer(opaque)))
+	if ret == nil {
+		return nil
+	}
+	return &AVBitStreamFilter{ptr: ret}
 }
 
 // AVIOEnumProtocols iterates through names of available protocols.
