@@ -2,6 +2,7 @@ package ffmpeg
 
 /*
 #include <libavformat/avformat.h>
+#include <libavformat/avio.h>
 #include <libavcodec/avcodec.h>
 */
 import "C"
@@ -53,6 +54,23 @@ func AVParserIterate(opaque *unsafe.Pointer) *AVCodecParser {
 		return nil
 	}
 	return &AVCodecParser{ptr: ret}
+}
+
+// AVIOEnumProtocols iterates through names of available protocols.
+//
+// @param opaque a pointer where libavformat will store the iteration state. Must
+//
+//	point to NULL to start the iteration.
+//
+// @param output if set to 1, iterate over output protocols, otherwise over input protocols.
+//
+// @return a static string containing the name of current protocol or NULL
+func AVIOEnumProtocols(opaque *unsafe.Pointer, output int) string {
+	ret := C.avio_enum_protocols((*unsafe.Pointer)(unsafe.Pointer(opaque)), C.int(output))
+	if ret == nil {
+		return ""
+	}
+	return C.GoString(ret)
 }
 
 // AVOptSetSlice is a helper for storing a slice of primitive data to the named field. This function provides no
