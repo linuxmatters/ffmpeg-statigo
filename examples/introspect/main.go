@@ -178,7 +178,7 @@ func listFormats() {
 	fmt.Println("\n==================================================")
 	fmt.Println("FORMATS")
 	fmt.Println("==================================================\n")
-	fmt.Printf("%s  %-24s %-42s %s\n", "DE", "NAME", "DESCRIPTION", "DETAILS")
+	fmt.Printf("%s  %-24s %-42s %-35s %s\n", "DE", "NAME", "DESCRIPTION", "CODECS", "MIME TYPE")
 	fmt.Println()
 
 	type formatInfo struct {
@@ -346,12 +346,7 @@ func listFormats() {
 			totalMuxers++
 		}
 
-		// Build additional info for single line display
-		additionalInfo := []string{}
-		if f.mimeType != "" {
-			additionalInfo = append(additionalInfo, fmt.Sprintf("MIME:%s", f.mimeType))
-		}
-
+		// Build codec list
 		codecs := []string{}
 		if f.videoCodec != "" {
 			codecs = append(codecs, fmt.Sprintf("video:%s", f.videoCodec))
@@ -363,8 +358,14 @@ func listFormats() {
 			codecs = append(codecs, fmt.Sprintf("subtitle:%s", f.subtitleCodec))
 		}
 
-		if len(codecs) > 0 {
-			additionalInfo = append(additionalInfo, fmt.Sprintf("Codecs:%s", strings.Join(codecs, ",")))
+		codecList := strings.Join(codecs, ",")
+		if len(codecList) > 35 {
+			codecList = codecList[:35]
+		}
+
+		mimeType := f.mimeType
+		if len(mimeType) > 20 {
+			mimeType = mimeType[:20]
 		}
 
 		// Truncate long names and descriptions
@@ -379,11 +380,7 @@ func listFormats() {
 		}
 
 		// Display format on single line
-		if len(additionalInfo) > 0 {
-			fmt.Printf("%s%s  %-24s %-42s [%s]\n", demuxFlag, muxFlag, formatName, description, strings.Join(additionalInfo, " "))
-		} else {
-			fmt.Printf("%s%s  %-24s %s\n", demuxFlag, muxFlag, formatName, description)
-		}
+		fmt.Printf("%s%s  %-24s %-42s %-35s %s\n", demuxFlag, muxFlag, formatName, description, codecList, mimeType)
 	}
 
 	fmt.Printf("\nSummary:\n")
