@@ -2,6 +2,7 @@ package ffmpeg
 
 /*
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
 */
 import "C"
 import (
@@ -37,6 +38,21 @@ func AVDemuxerIterate(opaque *unsafe.Pointer) *AVInputFormat {
 		return nil
 	}
 	return &AVInputFormat{ptr: ret}
+}
+
+// AVParserIterate iterates over all registered codec parsers.
+//
+// @param opaque a pointer where libavcodec will store the iteration state. Must
+//
+//	point to NULL to start the iteration.
+//
+// @return the next registered parser or NULL when the iteration is finished
+func AVParserIterate(opaque *unsafe.Pointer) *AVCodecParser {
+	ret := (*C.AVCodecParser)(C.av_parser_iterate((*unsafe.Pointer)(unsafe.Pointer(opaque))))
+	if ret == nil {
+		return nil
+	}
+	return &AVCodecParser{ptr: ret}
 }
 
 // AVOptSetSlice is a helper for storing a slice of primitive data to the named field. This function provides no
