@@ -617,6 +617,73 @@ func listProtocols() {
 	fmt.Printf("  Total output protocols: %d\n", totalOutput)
 }
 
+// testHardwareAvailable tests if a hardware device type is actually available
+// by attempting to create a device context for it.
+func testHardwareAvailable(deviceType ffmpeg.AVHWDeviceType) bool {
+	// Save current log level and temporarily silence FFmpeg logs
+	// to avoid error messages for unavailable hardware
+	oldLevel, _ := ffmpeg.AVLogGetLevel()
+	ffmpeg.AVLogSetLevel(ffmpeg.AVLogQuiet)
+	defer ffmpeg.AVLogSetLevel(oldLevel)
+
+	var hwDeviceCtx *ffmpeg.AVBufferRef
+	ret, _ := ffmpeg.AVHWDeviceCtxCreate(&hwDeviceCtx, deviceType, nil, nil, 0)
+	if ret == 0 && hwDeviceCtx != nil {
+		// Successfully created - hardware is available
+		ffmpeg.AVBufferUnref(&hwDeviceCtx)
+		return true
+	}
+	return false
+}
+
+// getHWDeviceTypeFromCodec determines the hardware device type from codec's hardware config
+func getHWDeviceTypeFromCodec(codec *ffmpeg.AVCodec) ffmpeg.AVHWDeviceType {
+	// Iterate through hardware configurations to find device type
+	for i := 0; ; i++ {
+		hwConfig := ffmpeg.AVCodecGetHWConfig(codec, i)
+		if hwConfig == nil {
+			break
+		}
+
+		deviceType := hwConfig.DeviceType()
+		if deviceType != ffmpeg.AVHWDeviceTypeNone {
+			return deviceType
+		}
+	}
+
+	// Fallback to name-based detection if no hardware config found
+	// This handles some edge cases where the codec metadata might be incomplete
+	codecName := ""
+	if codec.Name() != nil {
+		codecName = codec.Name().String()
+	}
+
+	switch {
+	case strings.Contains(codecName, "_nvenc") || strings.Contains(codecName, "_nvdec") || strings.Contains(codecName, "_cuvid"):
+		return ffmpeg.AVHWDeviceTypeCuda
+	case strings.Contains(codecName, "_qsv"):
+		return ffmpeg.AVHWDeviceTypeQsv
+	case strings.Contains(codecName, "_vaapi"):
+		return ffmpeg.AVHWDeviceTypeVaapi
+	case strings.Contains(codecName, "_videotoolbox"):
+		return ffmpeg.AVHWDeviceTypeVideotoolbox
+	case strings.Contains(codecName, "_vulkan"):
+		return ffmpeg.AVHWDeviceTypeVulkan
+	case strings.Contains(codecName, "_amf"):
+		return ffmpeg.AVHWDeviceTypeAmf
+	case strings.Contains(codecName, "_mediacodec"):
+		return ffmpeg.AVHWDeviceTypeMediacodec
+	case strings.Contains(codecName, "_dxva2"):
+		return ffmpeg.AVHWDeviceTypeDxva2
+	case strings.Contains(codecName, "_d3d11va"):
+		return ffmpeg.AVHWDeviceTypeD3D11Va
+	case strings.Contains(codecName, "_vdpau"):
+		return ffmpeg.AVHWDeviceTypeVdpau
+	default:
+		return ffmpeg.AVHWDeviceTypeNone
+	}
+}
+
 func listHWAccels() {
 	fmt.Println("\n==================================================")
 	fmt.Println("HARDWARE ACCELERATORS")
@@ -656,15 +723,27 @@ func listHWAccels() {
 
 	// Now list hardware-accelerated encoders and decoders
 	fmt.Println("\n--------------------------------------------------\n")
-	fmt.Printf(" %s  %-24s %-42s %s\n", "DE", "NAME", "DESCRIPTION", "TYPE")
+	fmt.Printf(" %s  %-24s %-42s %s %s\n", "DE", "NAME", "DESCRIPTION", "TYPE", "PRESENT")
 	fmt.Println()
 
+	// Build a map of available hardware devices for quick lookup
+	availableHW := make(map[ffmpeg.AVHWDeviceType]bool)
+	testDeviceType := ffmpeg.AVHWDeviceTypeNone
+	for {
+		testDeviceType = ffmpeg.AVHWDeviceIterateTypes(testDeviceType)
+		if testDeviceType == ffmpeg.AVHWDeviceTypeNone {
+			break
+		}
+		availableHW[testDeviceType] = testHardwareAvailable(testDeviceType)
+	}
+
 	type hwCodecInfo struct {
-		name      string
-		longName  string
-		mediaType string
-		isEncoder bool
-		isDecoder bool
+		name         string
+		longName     string
+		mediaType    string
+		isEncoder    bool
+		isDecoder    bool
+		hwDeviceType ffmpeg.AVHWDeviceType
 	}
 
 	var hwCodecs []hwCodecInfo
@@ -686,20 +765,16 @@ func listHWAccels() {
 			continue
 		}
 
-		// Check if this is a hardware-accelerated codec
-		// Hardware codecs typically have suffixes like _nvenc, _qsv, _vaapi, _videotoolbox, _vulkan, etc.
-		isHWCodec := strings.Contains(name, "_nvenc") ||
-			strings.Contains(name, "_nvdec") ||
-			strings.Contains(name, "_qsv") ||
-			strings.Contains(name, "_vaapi") ||
-			strings.Contains(name, "_videotoolbox") ||
-			strings.Contains(name, "_vulkan") ||
-			strings.Contains(name, "_amf") ||
-			strings.Contains(name, "_v4l2") ||
-			strings.Contains(name, "_mediacodec") ||
-			strings.Contains(name, "_mmal") ||
-			strings.Contains(name, "_omx") ||
-			strings.Contains(name, "_cuvid")
+		// Check if this is a hardware-accelerated codec by checking capabilities
+		// and hardware configurations
+		capabilities := codec.Capabilities()
+		isHWCodec := (capabilities & ffmpeg.AVCodecCapHardware) != 0
+
+		// Also check if codec has hardware configurations
+		if !isHWCodec {
+			hwConfig := ffmpeg.AVCodecGetHWConfig(codec, 0)
+			isHWCodec = hwConfig != nil
+		}
 
 		if !isHWCodec {
 			continue
@@ -718,12 +793,16 @@ func listHWAccels() {
 		isDecoderVal, _ := ffmpeg.AVCodecIsDecoder(codec)
 		isDecoder := isDecoderVal != 0
 
+		// Determine hardware device type from codec's hardware config
+		deviceType := getHWDeviceTypeFromCodec(codec)
+
 		hwCodecs = append(hwCodecs, hwCodecInfo{
-			name:      name,
-			longName:  longName,
-			mediaType: mediaType,
-			isEncoder: isEncoder,
-			isDecoder: isDecoder,
+			name:         name,
+			longName:     longName,
+			mediaType:    mediaType,
+			isEncoder:    isEncoder,
+			isDecoder:    isDecoder,
+			hwDeviceType: deviceType,
 		})
 	}
 
@@ -762,7 +841,15 @@ func listHWAccels() {
 			description = description[:42]
 		}
 
-		fmt.Printf(" %s  %-24s %-42s [%s]\n", flags, codecName, description, info.mediaType)
+		// Check if hardware is present
+		present := "N"
+		if info.hwDeviceType != ffmpeg.AVHWDeviceTypeNone {
+			if availableHW[info.hwDeviceType] {
+				present = "Y"
+			}
+		}
+
+		fmt.Printf(" %s  %-24s %-42s [%s]  %s\n", flags, codecName, description, info.mediaType, present)
 	}
 
 	fmt.Printf("\nSummary:\n")
