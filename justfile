@@ -15,10 +15,6 @@ build-lib +args='':
     mkdir -p "lib/${GOOS}_${GOARCH}"
     go run ./internal/builder {{args}}
 
-# Build all Go packages
-build:
-    go build -v ./...
-
 # Build example programs
 build-examples:
     go build -v ./examples/introspect/
@@ -26,19 +22,21 @@ build-examples:
     go build -v ./examples/asciiplayer/
     go build -v ./examples/transcode/
 
-# Build and run introspection tool
-build-introspect:
+# Build everything
+build:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "→ Step 1: Building FFmpeg library..."
     just build-lib ffmpeg --clean
     just build-lib
-    echo "→ Step 2: Regenerating Go bindings from FFmpeg headers..."
+    echo "→ Step 2: Regenerating Go bindings..."
     just generate
     echo "→ Step 3: Building Go packages..."
-    just build
-    echo "→ Step 4: Running introspection tool..."
-    cd examples/introspect && go run main.go
+    go build -v ./...
+    echo "→ Step 4: Building examples..."
+    just build-examples
+    echo "→ Step 5: Running introspection tool..."
+    ./introspect
 
 # Generate Go bindings from FFmpeg headers using libclang
 generate:
