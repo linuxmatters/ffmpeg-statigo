@@ -167,7 +167,7 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
 
 ffmpeg-statigo provides a curated FFmpeg static library with Go bindings for contemporary audio and video processing, encoding, conversion and streaming.
 
-If you're working on a project in one of thes domains ffmpeg-go should be equipped with you need:
+If you're working on a project in one of thes domains ffmpeg-statigo should be equipped with you need:
 - Streaming platforms (live and on-demand)
 - Content management systems
 - Social media applications
