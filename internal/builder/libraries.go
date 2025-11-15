@@ -479,63 +479,16 @@ var ffmpeg = &Library{
 			"--pkg-config-flags=--static",
 			fmt.Sprintf("--extra-cflags=-I%s", incDir),
 			fmt.Sprintf("--extra-ldflags=-L%s", libDir),
-			"--disable-autodetect",
-			"--disable-debug",
-			"--disable-doc",
-			"--disable-htmlpages",
-			"--disable-manpages",
-			"--disable-podpages",
-			"--disable-programs",
-			"--disable-txtpages",
-			// Disable everything, then selectively enable
-			"--disable-everything",
-			// Build options
-			"--enable-pic",
-			"--enable-gpl",
-			"--enable-version3",
-			"--enable-static",
-			// Enable all protocols and filters
-			"--enable-protocols",
-			"--enable-filters",
-			// TEMPORARILY Enable all muxers, demuxers, parsers, bsfs, encoders, decoders
-			"--enable-muxers",
-			"--enable-demuxers",
-			"--enable-parsers",
-			"--enable-bsfs",
-			"--enable-encoders",
-			"--enable-decoders",
-			// Enable external libraries
-			"--enable-libass",
-			"--enable-libdav1d",
-			"--enable-libfreetype",
-			"--enable-libfribidi",
-			"--enable-libharfbuzz",
-			"--enable-libmp3lame",
-			"--enable-libopus",
-			"--enable-librav1e",
-			"--enable-libtheora",
-			"--enable-libvpx",
-			"--enable-vulkan",
-			"--enable-libx264",
-			"--enable-libx265",
-			"--enable-zlib",
 		}
 
-		// Platform-specific options
+		// Add common FFmpeg arguments
+		args = append(args, FFmpegArgsCommon()...)
+
+		// Add platform-specific arguments
 		if os == "linux" {
-			args = append(args,
-				"--enable-libfontconfig",
-				"--enable-ffnvcodec",
-				"--enable-nvdec",
-				"--enable-nvenc",
-				"--enable-libvpl",
-			)
+			args = append(args, FFmpegArgsLinux()...)
 		} else if os == "darwin" {
-			args = append(args,
-				"--enable-avfoundation",
-				"--enable-audiotoolbox",
-				"--enable-videotoolbox",
-			)
+			args = append(args, FFmpegArgsDarwin()...)
 		}
 
 		return args
