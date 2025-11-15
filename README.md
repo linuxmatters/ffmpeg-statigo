@@ -22,175 +22,135 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 
 *Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.0, Go 1.24, hardware acceleration and a 99.5% smaller git history.*
 
-## Setup
+## Codec Inclusion Policy
+
+ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core strengths of FFmpeg: **decoding, processing, and encoding** audio and video streams. ffmpeg-statigo is designed for **Go developers building modern streaming applications**. The pattern is:
+
+1. **Generate content in Go** - Text, graphics, effects using Go's excellent libraries
+2. **Feed frames to FFmpeg** - Use ffmpeg-statigo for encoding and stream processing
+3. **Let FFmpeg handle codecs** - Hardware acceleration, format conversion, container muxing
+
+#### What's Included
+
+- **Decoders**: All contemporary formats (H.264, H.265, AV1, VP8/9, Opus, AAC, MP3)
+- **Encoders**: Modern codecs for streaming and transcoding (x264, x265, dav1d, rav1e, vpx, lame, opus)
+- **Hardware acceleration**: NVENC, QuickSync, VideoToolbox, Vulkan Video
+- **Containers**: MP4, MKV, WebM, DASH, HLS, and all major formats
+- **Filters**: Video scaling, colour conversion, audio resampling, and processing filters
+- **Streaming protocols**: RTMP, SRT, RIST, HLS, DASH
+
+**Building something that deals with video?** You're probably covered:
+- Streaming platform (your own Twitch/YouTube/Owncast)
+- Content management system with media handling
+- Social media app with video uploads
+- Video conferencing service
+- Transcoding pipeline for your media library
+- Home media server ripping DVDs/Blu-rays
+- Web-based media player
+- Broadcasting tool or modern content creation workflow
+
+#### What's Intentionally Absent
+
+Some FFmpeg features commonly found in the `ffmpeg` CLI tool are **not included** because they're better implemented in Go:
+
+- ❌ **`drawtext` filter** - Use Go's `image/draw` + `golang.org/x/image/font` packages instead
+- ❌ **Font libraries** (freetype, harfbuzz, fontconfig) - Not needed when rendering in Go
+- ❌ **`subtitles` and `ass` filters** - Use separate subtitle streams instead
+- ❌ **libass** - Subtitle rendering library not needed
+  - FFmpeg can still **copy, extract, and mux** subtitle streams without libass.
+
+The excluded features can be added back if a compelling use case emerges. ffmpeg-statigo is a **living project** and the curated library evolves based on real-world needs.
+
+If you need complete FFmpeg with all filters, use the official FFmpeg distribution. If you need modern streaming codecs with Go integration, ffmpeg-statigo is designed for you.
+
+### Library versions
+
+| Library          | Version   | Description                                                                        |
+|------------------|-----------|------------------------------------------------------------------------------------|
+| FFmpeg           | 8.0       | A complete, cross-platform solution to record, convert and stream audio and video  |
+| dav1d            | 1.5.2     | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
+| glslang          | 15.4.0    | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
+| libvpl           | 2.15.0    | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
+| libvpx           | 1.15.2    | High-quality, open video format for the web that's freely available to everyone    |
+| libxml2          | 2.15.1    | An XML parser and toolkit implemented in C                                         |
+| libiconv         | 1.18      | A character set conversion library (*macOS only*)                                  |
+| mp3lame          | 3.100     | A high quality MPEG Audio Layer III (MP3) encoder                                  |
+| nv-codec-headers | 11.1.5.3  | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
+| opus             | 1.5.2     | A totally open, royalty-free, highly versatile audio codec                         |
+| rav1e            | 0.8.2     | The fastest and safest AV1 encoder.                                                |
+| Vulkan-Headers   | 1.4.332   | Vulkan header files and API registry                                               |
+| x264             | head      | H.264/MPEG-4 AVC compression format library for encoding video streams             |
+| x265             | head      | H.265/MPEG-H HEVC compression format library for encoding video streams            |
+| zlib             | 1.3.1     | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
+
+### Enabled Codecs
+
+These are the codecs enable in the static ffmpeg library that ffmpeg-statigo ships.
 
 ```
-go get github.com/linuxmatters/ffmpeg-statigo
+DE  NAME                     DESCRIPTION                                TYPE
+
+DE  aac                      AAC (Advanced Audio Coding)                [AUDIO]
+DE  ac3                      ATSC A/52A (AC-3)                          [AUDIO]
+DE  alac                     ALAC (Apple Lossless Audio Codec)          [AUDIO]
+DE  anull                    Null audio codec                           [AUDIO]
+DE  aptx                     aptX (Audio Processing Technology for Blue [AUDIO]
+DE  aptx_hd                  aptX HD (Audio Processing Technology for B [AUDIO]
+DE  av1                      Alliance for Open Media AV1                [VIDEO]
+DE  cfhd                     GoPro CineForm HD                          [VIDEO]
+DE  dnxhd                    VC3/DNxHD                                  [VIDEO]
+DE  dpx                      DPX (Digital Picture Exchange) image       [VIDEO]
+DE  dts                      DCA (DTS Coherent Acoustics)               [AUDIO]
+DE  dvb_subtitle             DVB subtitles                              [SUBTITLE]
+DE  dvd_subtitle             DVD subtitles                              [SUBTITLE]
+DE  eac3                     ATSC A/52B (AC-3, E-AC-3)                  [AUDIO]
+DE  exr                      OpenEXR image                              [VIDEO]
+DE  ffv1                     FFmpeg video codec #1                      [VIDEO]
+DE  flac                     FLAC (Free Lossless Audio Codec)           [AUDIO]
+DE  gif                      CompuServe GIF (Graphics Interchange Forma [VIDEO]
+DE  h264                     H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  [VIDEO]
+DE  hevc                     H.265 / HEVC (High Efficiency Video Coding [VIDEO]
+DE  mjpeg                    Motion JPEG                                [VIDEO]
+DE  mp2                      MP2 (MPEG audio layer 2)                   [AUDIO]
+DE  mp3                      MP3 (MPEG audio layer 3)                   [AUDIO]
+DE  mpeg2video               MPEG-2 video                               [VIDEO]
+DE  opus                     Opus (Opus Interactive Audio Codec)        [AUDIO]
+DE  pbm                      PBM (Portable BitMap) image                [VIDEO]
+DE  pcm_alaw                 PCM A-law / G.711 A-law                    [AUDIO]
+DE  pcm_f32be                PCM 32-bit floating point big-endian       [AUDIO]
+DE  pcm_f32le                PCM 32-bit floating point little-endian    [AUDIO]
+DE  pcm_mulaw                PCM mu-law / G.711 mu-law                  [AUDIO]
+DE  pcm_s16be                PCM signed 16-bit big-endian               [AUDIO]
+DE  pcm_s16be_planar         PCM signed 16-bit big-endian planar        [AUDIO]
+DE  pcm_s16le                PCM signed 16-bit little-endian            [AUDIO]
+DE  pcm_s16le_planar         PCM signed 16-bit little-endian planar     [AUDIO]
+DE  pcm_s24be                PCM signed 24-bit big-endian               [AUDIO]
+DE  pcm_s24le                PCM signed 24-bit little-endian            [AUDIO]
+DE  pcm_s24le_planar         PCM signed 24-bit little-endian planar     [AUDIO]
+DE  pcm_s32be                PCM signed 32-bit big-endian               [AUDIO]
+DE  pcm_s32le                PCM signed 32-bit little-endian            [AUDIO]
+DE  pcm_s32le_planar         PCM signed 32-bit little-endian planar     [AUDIO]
+DE  png                      PNG (Portable Network Graphics) image      [VIDEO]
+DE  ppm                      PPM (Portable PixelMap) image              [VIDEO]
+DE  prores                   Apple ProRes (iCodec Pro)                  [VIDEO]
+D.  prores_raw               Apple ProRes RAW                           [VIDEO]
+DE  sbc                      SBC (low-complexity subband codec)         [AUDIO]
+DE  text                     raw UTF-8 text                             [SUBTITLE]
+DE  theora                   Theora                                     [VIDEO]
+DE  tiff                     TIFF image                                 [VIDEO]
+DE  truehd                   TrueHD                                     [AUDIO]
+D.  vc1                      SMPTE VC-1                                 [VIDEO]
+DE  vnull                    Null video codec                           [VIDEO]
+DE  vorbis                   Vorbis                                     [AUDIO]
+DE  vp8                      On2 VP8                                    [VIDEO]
+DE  vp9                      Google VP9                                 [VIDEO]
+D.  vvc                      H.266 / VVC (Versatile Video Coding)       [VIDEO]
+D.  webp                     WebP                                       [VIDEO]
+DE  webvtt                   WebVTT subtitle                            [SUBTITLE]
+DE  yuv4                     Uncompressed packed 4:2:0                  [VIDEO]
 ```
 
-## Example
-
-![example.gif](example.gif)
-
-(The asciiplayer demo playing [Big Buck Bunny](https://en.wikipedia.org/wiki/Big_Buck_Bunny), with some GIF artifacts)
-
-The `examples` directory contains some ported and some custom examples based on the C docs.
-
-An example of printing a file's metadata:
-
-```go
-package main
-
-import (
-	"log"
-	"log/slog"
-	"os"
-
-	"github.com/csnewman/ffmpeg-go"
-)
-
-func main() {
-	slog.Info("Metadata")
-
-	var ctx *ffmpeg.AVFormatContext
-
-	url := ffmpeg.ToCStr(os.Args[1])
-	defer url.Free()
-
-	_, err := ffmpeg.AVFormatOpenInput(&ctx, url, nil, nil)
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	defer ffmpeg.AVFormatFreeContext(ctx)
-
-	if _, err := ffmpeg.AVFormatFindStreamInfo(ctx, nil); err != nil {
-		log.Panicln(err)
-	}
-
-	ffmpeg.AVDumpFormat(ctx, 0, url, 0)
-
-	streams := ctx.Streams()
-
-	for i := uintptr(0); i < uintptr(ctx.NbStreams()); i++ {
-		s := streams.Get(i)
-
-		slog.Info("  Stream", "i", i, "id", s.Id(), "dur", s.Duration())
-
-		meta := s.Metadata()
-
-		var entry *ffmpeg.AVDictionaryEntry
-
-		for {
-			entry = ffmpeg.AVDictGet(meta, ffmpeg.GlobalCStr(""), entry, ffmpeg.AVDictIgnoreSuffix)
-			if entry == nil {
-				break
-			}
-
-			slog.Info("    Meta", "key", entry.Key(), "value", entry.Value())
-		}
-	}
-}
-```
-
-```
-2024/01/15 21:39:43 INFO Metadata
-Input #0, mov,mp4,m4a,3gp,3g2,mj2, from './bbb.mp4':
-  Metadata:
-    major_brand     : isom
-    minor_version   : 1
-    compatible_brands: isomavc1
-    creation_time   : 2013-12-16T17:59:32.000000Z
-    title           : Big Buck Bunny, Sunflower version
-    artist          : Blender Foundation 2008, Janus Bager Kristensen 2013
-    comment         : Creative Commons Attribution 3.0 - http://bbb3d.renderfarming.net
-    genre           : Animation
-    composer        : Sacha Goedegebure
-  Duration: 00:10:34.57, start: 0.000000, bitrate: 4486 kb/s
-  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080 [SAR 1:1 DAR 16:9], 4001 kb/s, 60 fps, 60 tbr, 60k tbn (default)
-    Metadata:
-      creation_time   : 2013-12-16T17:59:32.000000Z
-      handler_name    : GPAC ISO Video Handler
-      vendor_id       : [0][0][0][0]
-  Stream #0:1[0x2](und): Audio: mp3 (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 160 kb/s (default)
-    Metadata:
-      creation_time   : 2013-12-16T17:59:37.000000Z
-      handler_name    : GPAC ISO Audio Handler
-      vendor_id       : [0][0][0][0]
-  Stream #0:2[0x3](und): Audio: ac3 (ac-3 / 0x332D6361), 48000 Hz, 5.1(side), fltp, 320 kb/s (default)
-    Metadata:
-      creation_time   : 2013-12-16T17:59:37.000000Z
-      handler_name    : GPAC ISO Audio Handler
-      vendor_id       : [0][0][0][0]
-    Side data:
-      audio service type: main
-2024/01/15 21:39:43 INFO   Stream i=0 id=1 dur=38072000
-2024/01/15 21:39:43 INFO     Meta key=creation_time value=2013-12-16T17:59:32.000000Z
-2024/01/15 21:39:43 INFO     Meta key=language value=und
-2024/01/15 21:39:43 INFO     Meta key=handler_name value="GPAC ISO Video Handler"
-2024/01/15 21:39:43 INFO     Meta key=vendor_id value=[0][0][0][0]
-2024/01/15 21:39:43 INFO   Stream i=1 id=2 dur=30441600
-2024/01/15 21:39:43 INFO     Meta key=creation_time value=2013-12-16T17:59:37.000000Z
-2024/01/15 21:39:43 INFO     Meta key=language value=und
-2024/01/15 21:39:43 INFO     Meta key=handler_name value="GPAC ISO Audio Handler"
-2024/01/15 21:39:43 INFO     Meta key=vendor_id value=[0][0][0][0]
-2024/01/15 21:39:43 INFO   Stream i=2 id=3 dur=30438912
-2024/01/15 21:39:43 INFO     Meta key=creation_time value=2013-12-16T17:59:37.000000Z
-2024/01/15 21:39:43 INFO     Meta key=language value=und
-2024/01/15 21:39:43 INFO     Meta key=handler_name value="GPAC ISO Audio Handler"
-2024/01/15 21:39:43 INFO     Meta key=vendor_id value=[0][0][0][0]
-```
-
-## Library versions
-
-| Library  | Version |
-|----------|---------|
-| FFmpeg   | 8.0     |
-| ass      | 0.17.4  |
-| freetype | 2.14.1  |
-| fribidi  | 1.0.16  |
-| harfbuzz | 12.2.0  |
-| mp3lame  | 3.100   |
-| ogg      | 1.3.6   |
-| opus     | 1.5.2   |
-| png      | 1.6.50  |
-| theora   | 1.2.0   |
-| unibreak | 6.1     |
-| vpx      | 1.15.0  |
-| x264     | head    |
-| x265     | head    |
-| dav1d    | 1.5.2   |
-| rav1e    | 0.8.2   |
-| zlib     | 1.3.1   |
-
-### Codec Inclusion Policy
-
-ffmpeg-statigo provides a curated FFmpeg static library with Go bindings for contemporary audio and video processing, encoding, conversion and streaming.
-
-If you're working on a project in one of thes domains ffmpeg-statigo should be equipped with you need:
-- Streaming platforms (live and on-demand)
-- Content management systems
-- Social media applications
-- Video conferencing services
-- Media transcoding pipelines
-- Web-based media players
-- Broadcasting tools
-- Modern content creation workflows
-
-If you feel a library or codec is missing that should be include, open an issue to discuss it's inclusion.
-
-#### Why is codec `xyz` not enabled?
-
-This is a purpose-built media toolkit for Go developers building modern applications—optimised for size, focused on current workflows, and opinionated about what matters in 2025 and beyond.
-
-Codecs that support these use case are disabled to help keep the static library size reasonable:
-- Video archivists preserving historical formats
-- Retro gaming emulator developers
-- Digital archaeology projects
-- Legacy format conversion utilities
-- Film restoration specialists
-
-## Hardware Acceleration Support Matrix
+### Hardware Acceleration Support Matrix
 
 | Codec          | NVENC (Linux)    | QuickSync (Linux) | VideoToolbox (macOS) | Vulkan Video (Cross-platform) |
 |----------------|------------------|-------------------|----------------------|-------------------------------|
@@ -223,7 +183,11 @@ Codecs that support these use case are disabled to help keep the static library 
   - Decoding & Encoding H.264 8-bit - Any VideoToolbox-supported Mac.
   - Decoding & Encoding HEVC 8/10-bit - Macs from 2017 and later
   - Decoding AV1 8/10-bit - Requires an M3 series Apple Silicon Mac
-- **Vulkan Video**: Works with any GPU that has Vulkan 1.3+ drivers (NVIDIA, AMD, Intel).
+- **Vulkan Video**: Works with any GPU that has Vulkan 1.3+ drivers.
+  - Decoding & Encoding H.264 8-bit
+  - Decoding & Encoding HEVC 8/10-bit
+  - Decoding & Encoding AV1 8/10-bit
+  - **Works via MoltenVK on macOS when MoltenVK runtime is installed**
 
 ## Licensing
 
