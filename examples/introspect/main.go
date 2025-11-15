@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"unsafe"
@@ -13,11 +14,24 @@ type codecInfo struct {
 	name      string
 	longName  string
 	mediaType string
+	codecID   ffmpeg.AVCodecID
 	isEncoder bool
 	isDecoder bool
 }
 
 func main() {
+	// Check for --enable or --disable flags
+	if len(os.Args) >= 3 {
+		if os.Args[1] == "--enable" {
+			analyzeCodecDependencies(os.Args[2], false)
+			return
+		} else if os.Args[1] == "--disable" {
+			analyzeCodecDependencies(os.Args[2], true)
+			return
+		}
+	}
+
+	// Normal introspection output
 	fmt.Println("ffmpeg-statigo")
 	fmt.Println("==============")
 	fmt.Println()
@@ -1017,4 +1031,457 @@ func listFilters() {
 	fmt.Println("  S - Slice threading")
 	fmt.Println("  H - Hardware device required")
 	fmt.Println("  M - Metadata only (does not modify frame data)")
+}
+
+// codecDependencies holds all the components needed for a codec
+type codecDependencies struct {
+	codecName    string
+	longName     string
+	descriptions []string // Multiple codec descriptions when consolidating
+	decoders     []string
+	encoders     []string
+	parsers      []string
+	demuxers     []string
+	muxers       []string
+	bsfs         []string
+}
+
+// analyzeCodecDependencies finds all dependencies for a given codec and outputs configure flags
+func analyzeCodecDependencies(codecName string, disable bool) {
+	// Build lookup maps for all components
+	codecNameMap := buildCodecNameMap()
+	parserMap := buildParserMap()
+	formatMap := buildFormatMap()
+	bsfMap := buildBSFMap()
+
+	// Find all matching codecs using improved matching logic
+	matches := findMatchingCodecs(codecName, codecNameMap, parserMap, formatMap, bsfMap)
+
+	if len(matches) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: No codec found matching '%s'\n", codecName)
+		os.Exit(1)
+	}
+
+	// Sort codecs: exact match first, then software, then hardware
+	sortedMatches := sortCodecsByPriority(matches, codecName)
+
+	// Consolidate all codecs into single dependency set
+	prefix := "--enable"
+	if disable {
+		prefix = "--disable"
+	}
+
+	deps := consolidateCodecDependencies(sortedMatches, parserMap, formatMap, bsfMap)
+	outputConsolidatedDependencies(deps, prefix)
+}
+
+// findMatchingCodecs uses improved matching logic and reverse lookups
+func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
+	parserMap map[ffmpeg.AVCodecID][]string, formatMap map[ffmpeg.AVCodecID]*formatDeps,
+	bsfMap map[ffmpeg.AVCodecID][]string) []*codecInfo {
+
+	searchLower := strings.ToLower(search)
+	matchedCodecs := make(map[string]*codecInfo)
+
+	// 1. Direct codec name matching with improved logic
+	for _, info := range codecNameMap {
+		nameLower := strings.ToLower(info.name)
+
+		// Exact match
+		if nameLower == searchLower {
+			matchedCodecs[info.name] = info
+			continue
+		}
+
+		// Variant pattern: <codec>_<suffix> (e.g., av1_qsv, h264_nvenc)
+		if strings.HasPrefix(nameLower, searchLower+"_") {
+			matchedCodecs[info.name] = info
+			continue
+		}
+
+		// Library pattern: lib*<codec>* (e.g., libdav1d, librav1e, libx264)
+		if strings.HasPrefix(nameLower, "lib") && strings.Contains(nameLower, searchLower) {
+			matchedCodecs[info.name] = info
+			continue
+		}
+
+		// Starts with search term (e.g., searching "h26" finds "h264", "h265")
+		if strings.HasPrefix(nameLower, searchLower) {
+			matchedCodecs[info.name] = info
+			continue
+		}
+	}
+
+	// 2. Reverse lookup from parsers
+	for codecID, parserNames := range parserMap {
+		for _, parserName := range parserNames {
+			if strings.Contains(strings.ToLower(parserName), searchLower) {
+				// Find all codecs with this codecID
+				for _, info := range codecNameMap {
+					if info.codecID == codecID {
+						matchedCodecs[info.name] = info
+					}
+				}
+			}
+		}
+	}
+
+	// 3. Reverse lookup from formats (demuxers/muxers)
+	for codecID := range formatMap {
+		codecName := getCodecName(codecID)
+		// Check if format name contains search term (e.g., "avif" for av1, "matroska" for various codecs)
+		if strings.Contains(strings.ToLower(codecName), searchLower) {
+			for _, info := range codecNameMap {
+				if info.codecID == codecID {
+					matchedCodecs[info.name] = info
+				}
+			}
+		}
+	}
+
+	// 4. Reverse lookup from BSFs
+	for codecID, bsfNames := range bsfMap {
+		for _, bsfName := range bsfNames {
+			if strings.Contains(strings.ToLower(bsfName), searchLower) {
+				// Find all codecs with this codecID
+				for _, info := range codecNameMap {
+					if info.codecID == codecID {
+						matchedCodecs[info.name] = info
+					}
+				}
+			}
+		}
+	}
+
+	// Convert map to slice
+	var result []*codecInfo
+	for _, info := range matchedCodecs {
+		result = append(result, info)
+	}
+
+	return result
+}
+
+// sortCodecsByPriority orders codecs: exact match, software, hardware
+func sortCodecsByPriority(codecs []*codecInfo, searchTerm string) []*codecInfo {
+	var exact []*codecInfo
+	var software []*codecInfo
+	var hardware []*codecInfo
+
+	searchLower := strings.ToLower(searchTerm)
+
+	for _, codec := range codecs {
+		nameLower := strings.ToLower(codec.name)
+
+		// Exact match
+		if nameLower == searchLower {
+			exact = append(exact, codec)
+		} else if isHardwareCodec(codec.name) {
+			hardware = append(hardware, codec)
+		} else {
+			software = append(software, codec)
+		}
+	}
+
+	// Combine: exact first, then software, then hardware
+	result := make([]*codecInfo, 0, len(codecs))
+	result = append(result, exact...)
+	result = append(result, software...)
+	result = append(result, hardware...)
+
+	return result
+}
+
+// isHardwareCodec checks if codec uses hardware acceleration
+func isHardwareCodec(name string) bool {
+	nameLower := strings.ToLower(name)
+	hwSuffixes := []string{"_qsv", "_nvenc", "_nvdec", "_vulkan", "_vaapi", "_videotoolbox", "_amf", "_v4l2m2m"}
+	for _, suffix := range hwSuffixes {
+		if strings.HasSuffix(nameLower, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+// consolidateCodecDependencies merges all codec dependencies into one set
+func consolidateCodecDependencies(codecs []*codecInfo,
+	parserMap map[ffmpeg.AVCodecID][]string, formatMap map[ffmpeg.AVCodecID]*formatDeps,
+	bsfMap map[ffmpeg.AVCodecID][]string) *codecDependencies {
+
+	deps := &codecDependencies{}
+	deps.descriptions = make([]string, 0)
+
+	descriptionSet := make(map[string]bool)
+	decoderSet := make(map[string]bool)
+	encoderSet := make(map[string]bool)
+	parserSet := make(map[string]bool)
+	demuxerSet := make(map[string]bool)
+	muxerSet := make(map[string]bool)
+	bsfSet := make(map[string]bool)
+
+	// Collect all components from all codecs
+	for _, codec := range codecs {
+		// Add description (deduplicate)
+		if !descriptionSet[codec.longName] {
+			deps.descriptions = append(deps.descriptions, codec.longName)
+			descriptionSet[codec.longName] = true
+		}
+
+		codecID := codec.codecID
+
+		// Get encoders and decoders
+		if codec.isEncoder {
+			encoderSet[codec.name] = true
+		}
+		if codec.isDecoder {
+			decoderSet[codec.name] = true
+		}
+
+		// Get parsers
+		if parsers, ok := parserMap[codecID]; ok {
+			for _, p := range parsers {
+				parserSet[p] = true
+			}
+		}
+
+		// Get formats
+		if formats, ok := formatMap[codecID]; ok {
+			for _, d := range formats.demuxers {
+				demuxerSet[d] = true
+			}
+			for _, m := range formats.muxers {
+				muxerSet[m] = true
+			}
+		}
+
+		// Get BSFs
+		if bsfs, ok := bsfMap[codecID]; ok {
+			for _, b := range bsfs {
+				bsfSet[b] = true
+			}
+		}
+	}
+
+	// Convert sets to sorted slices (alphanumerically)
+	deps.decoders = sortedKeys(decoderSet)
+	deps.encoders = sortedKeys(encoderSet)
+	deps.parsers = sortedKeys(parserSet)
+	deps.demuxers = sortedKeys(demuxerSet)
+	deps.muxers = sortedKeys(muxerSet)
+	deps.bsfs = sortedKeys(bsfSet)
+
+	return deps
+}
+
+// outputConsolidatedDependencies prints consolidated codec dependencies
+func outputConsolidatedDependencies(deps *codecDependencies, prefix string) {
+	// Print all codec descriptions as comments
+	for _, desc := range deps.descriptions {
+		fmt.Printf("// %s\n", desc)
+	}
+
+	// Print each component type with comma-delimited list (only if not empty)
+	if len(deps.encoders) > 0 {
+		fmt.Printf("%s-encoder=%s\n", prefix, strings.Join(deps.encoders, ","))
+	}
+	if len(deps.decoders) > 0 {
+		fmt.Printf("%s-decoder=%s\n", prefix, strings.Join(deps.decoders, ","))
+	}
+	if len(deps.parsers) > 0 {
+		fmt.Printf("%s-parser=%s\n", prefix, strings.Join(deps.parsers, ","))
+	}
+	if len(deps.demuxers) > 0 {
+		fmt.Printf("%s-demuxer=%s\n", prefix, strings.Join(deps.demuxers, ","))
+	}
+	if len(deps.muxers) > 0 {
+		fmt.Printf("%s-muxer=%s\n", prefix, strings.Join(deps.muxers, ","))
+	}
+	if len(deps.bsfs) > 0 {
+		fmt.Printf("%s-bsf=%s\n", prefix, strings.Join(deps.bsfs, ","))
+	}
+}
+
+// Helper functions for building lookup maps
+type formatDeps struct {
+	demuxers []string
+	muxers   []string
+}
+
+func buildCodecNameMap() map[string]*codecInfo {
+	codecMap := make(map[string]*codecInfo)
+
+	var opaque unsafe.Pointer
+	for {
+		codec := ffmpeg.AVCodecIterate(&opaque)
+		if codec == nil {
+			break
+		}
+
+		codecID := codec.Id()
+		name := ""
+		if codec.Name() != nil {
+			name = codec.Name().String()
+		}
+
+		if name == "" {
+			continue
+		}
+
+		longName := ""
+		if codec.LongName() != nil {
+			longName = codec.LongName().String()
+		}
+
+		mediaType := getMediaTypeString(codec.Type())
+
+		isEncoderVal, _ := ffmpeg.AVCodecIsEncoder(codec)
+		isEncoder := isEncoderVal != 0
+
+		isDecoderVal, _ := ffmpeg.AVCodecIsDecoder(codec)
+		isDecoder := isDecoderVal != 0
+
+		// Check if codec already exists in map (e.g., separate encoder/decoder entries)
+		if existing, exists := codecMap[name]; exists {
+			// Merge encoder/decoder flags
+			existing.isEncoder = existing.isEncoder || isEncoder
+			existing.isDecoder = existing.isDecoder || isDecoder
+		} else {
+			// Create new entry
+			codecMap[name] = &codecInfo{
+				name:      name,
+				longName:  longName,
+				mediaType: mediaType,
+				codecID:   codecID,
+				isEncoder: isEncoder,
+				isDecoder: isDecoder,
+			}
+		}
+	}
+
+	return codecMap
+}
+
+func buildParserMap() map[ffmpeg.AVCodecID][]string {
+	parserMap := make(map[ffmpeg.AVCodecID][]string)
+
+	var opaque unsafe.Pointer
+	for {
+		parser := ffmpeg.AVParserIterate(&opaque)
+		if parser == nil {
+			break
+		}
+
+		codecIDArray := parser.CodecIds()
+		for i := uintptr(0); ; i++ {
+			codecID := codecIDArray.Get(i)
+			if codecID == 0 {
+				break
+			}
+
+			codecName := getCodecName(ffmpeg.AVCodecID(codecID))
+			parserMap[ffmpeg.AVCodecID(codecID)] = append(parserMap[ffmpeg.AVCodecID(codecID)], codecName)
+		}
+	}
+
+	return parserMap
+}
+
+func buildFormatMap() map[ffmpeg.AVCodecID]*formatDeps {
+	formatMap := make(map[ffmpeg.AVCodecID]*formatDeps)
+
+	// Note: Demuxers don't expose codec info directly via the API
+	// We'll use muxer data and assume demuxers support the same codecs
+
+	// Iterate through muxers
+	var muxerOpaque unsafe.Pointer
+	for {
+		muxer := ffmpeg.AVMuxerIterate(&muxerOpaque)
+		if muxer == nil {
+			break
+		}
+
+		name := ""
+		if muxer.Name() != nil {
+			name = muxer.Name().String()
+		}
+
+		// Add format for video codec
+		if muxer.VideoCodec() != ffmpeg.AVCodecIdNone {
+			codecID := muxer.VideoCodec()
+			if _, exists := formatMap[codecID]; !exists {
+				formatMap[codecID] = &formatDeps{}
+			}
+			formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
+			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
+		}
+
+		// Add format for audio codec
+		if muxer.AudioCodec() != ffmpeg.AVCodecIdNone {
+			codecID := muxer.AudioCodec()
+			if _, exists := formatMap[codecID]; !exists {
+				formatMap[codecID] = &formatDeps{}
+			}
+			formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
+			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
+		}
+
+		// Add format for subtitle codec
+		if muxer.SubtitleCodec() != ffmpeg.AVCodecIdNone {
+			codecID := muxer.SubtitleCodec()
+			if _, exists := formatMap[codecID]; !exists {
+				formatMap[codecID] = &formatDeps{}
+			}
+			formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
+			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
+		}
+	}
+
+	return formatMap
+}
+
+func buildBSFMap() map[ffmpeg.AVCodecID][]string {
+	bsfMap := make(map[ffmpeg.AVCodecID][]string)
+	var genericBSFs []string
+
+	var opaque unsafe.Pointer
+	for {
+		bsf := ffmpeg.AVBSFIterate(&opaque)
+		if bsf == nil {
+			break
+		}
+
+		name := bsf.Name()
+		codecIDs := bsf.CodecIds()
+
+		if codecIDs == nil {
+			// Generic BSF - applies to all codecs
+			genericBSFs = append(genericBSFs, name)
+		} else {
+			// Codec-specific BSF
+			for i := uintptr(0); ; i++ {
+				codecID := (*ffmpeg.AVCodecID)(unsafe.Pointer(uintptr(unsafe.Pointer(codecIDs)) + i*unsafe.Sizeof(*codecIDs)))
+				if *codecID == ffmpeg.AVCodecIdNone {
+					break
+				}
+				bsfMap[*codecID] = append(bsfMap[*codecID], name)
+			}
+		}
+	}
+
+	// Add generic BSFs to all codec IDs
+	for codecID := range bsfMap {
+		bsfMap[codecID] = append(bsfMap[codecID], genericBSFs...)
+	}
+
+	return bsfMap
+}
+
+func sortedKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

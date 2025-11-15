@@ -6,6 +6,11 @@ builder
 introspect
 metadata
 transcode
+examples/asciiplayer/asciiplayer
+examples/builder/builder
+examples/introspect/introspect
+examples/metadata/metadata
+examples/transcode/transcode
 
 # IDE and editor files
 .vscode/
