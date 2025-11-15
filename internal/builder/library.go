@@ -172,17 +172,32 @@ func buildEnv(installDir string) []string {
 	pkgConfigPath := pkgConfigPath(installDir)
 
 	// Update or add PKG_CONFIG_PATH
-	updated := false
+	updatedPkg := false
 	for i, e := range env {
 		if strings.HasPrefix(e, "PKG_CONFIG_PATH=") {
 			existing := strings.TrimPrefix(e, "PKG_CONFIG_PATH=")
 			env[i] = "PKG_CONFIG_PATH=" + pkgConfigPath + ":" + existing
-			updated = true
+			updatedPkg = true
 			break
 		}
 	}
-	if !updated {
+	if !updatedPkg {
 		env = append(env, "PKG_CONFIG_PATH="+pkgConfigPath)
+	}
+
+	// Update or add PATH to include staging/bin for tools like glslang, spirv-*
+	binPath := filepath.Join(installDir, "bin")
+	updatedPath := false
+	for i, e := range env {
+		if strings.HasPrefix(e, "PATH=") {
+			existing := strings.TrimPrefix(e, "PATH=")
+			env[i] = "PATH=" + binPath + ":" + existing
+			updatedPath = true
+			break
+		}
+	}
+	if !updatedPath {
+		env = append(env, "PATH="+binPath)
 	}
 
 	return env

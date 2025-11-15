@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -30,6 +31,7 @@ var AllLibraries = []*Library{
 	// Hardware acceleration headers
 	nvcodec,
 	vulkanHeaders,
+	glslang,
 	libvpl,
 
 	// Audio codecs
@@ -243,6 +245,46 @@ var vulkanHeaders = &Library{
 		}
 	},
 	LinkLibs: nil, // Headers only
+}
+
+// glslang - Khronos GLSL/SPIR-V shader compiler (required for Vulkan encoders/decoders/filters)
+var glslang = &Library{
+	Name:        "glslang",
+	URL:         "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.0.0.tar.gz",
+	BuildSystem: &CMakeBuild{},
+	PostExtract: func(srcPath string) error {
+		// Run update_glslang_sources.py to fetch external dependencies
+		pythonScript := filepath.Join(srcPath, "update_glslang_sources.py")
+		if _, err := os.Stat(pythonScript); err == nil {
+			fmt.Fprintf(os.Stderr, "Running update_glslang_sources.py to fetch glslang dependencies...\n")
+			cmd := exec.Command("python3", pythonScript)
+			cmd.Dir = srcPath
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("failed to run update_glslang_sources.py: %w", err)
+			}
+		}
+		return nil
+	},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"-DENABLE_SHARED=OFF",
+			"-DBUILD_SHARED_LIBS=OFF",
+			"-DENABLE_CTEST=OFF",
+			"-DBUILD_TESTING=OFF",
+		}
+	},
+	LinkLibs: []string{
+		"libglslang",
+		"libglslang-default-resource-limits",
+		"libGenericCodeGen",
+		"libMachineIndependent",
+		"libOSDependent",
+		"libSPIRV",
+		"libSPIRV-Tools",
+		"libSPIRV-Tools-opt",
+	},
 }
 
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)
@@ -474,11 +516,12 @@ var ffmpeg = &Library{
 		stagingDir, _ := filepath.Abs(".build/staging")
 		incDir := filepath.Join(stagingDir, "include")
 		libDir := filepath.Join(stagingDir, "lib")
+		lib64Dir := filepath.Join(stagingDir, "lib64")
 
 		args := []string{
 			"--pkg-config-flags=--static",
 			fmt.Sprintf("--extra-cflags=-I%s", incDir),
-			fmt.Sprintf("--extra-ldflags=-L%s", libDir),
+			fmt.Sprintf("--extra-ldflags=-L%s -L%s", libDir, lib64Dir),
 		}
 
 		// Add common FFmpeg arguments

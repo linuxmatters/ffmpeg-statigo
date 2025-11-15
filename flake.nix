@@ -42,6 +42,7 @@
             llvmPackages.libclang
             llvmPackages.llvm
             pkg-config
+            python3
             yasm
             # Rust toolchain for rav1e AV1 encoder
             cargo

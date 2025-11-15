@@ -55,11 +55,11 @@ jobs:
 
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y yasm nasm meson gperf
+        run: sudo apt-get update && sudo apt-get install -y yasm nasm meson gperf python3
 
       - name: Install macOS dependencies
         if: matrix.os == 'darwin'
-        run: brew update && brew install yasm autoconf ragel meson nasm automake libtool
+        run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
 
       - name: Create output directory
         run: mkdir -p lib/${{ matrix.os }}_${{ matrix.arch }}
