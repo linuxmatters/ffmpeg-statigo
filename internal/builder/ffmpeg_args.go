@@ -32,42 +32,5 @@ func FFmpegArgsCommon() []string {
 		"--enable-bsfs",
 		"--enable-encoders",
 		"--enable-decoders",
-
-		// External libraries
-		"--enable-libdav1d",
-		"--enable-libglslang",
-		"--enable-libmp3lame",
-		"--enable-libopus",
-		"--enable-librav1e",
-		"--enable-libsrt",
-		"--enable-libvpx",
-		"--enable-libvvenc",
-		"--enable-libwebp",
-		"--enable-libx264",
-		"--enable-libx265",
-		"--enable-libzimg",
-		"--enable-openssl",
-		"--enable-vulkan",
-		"--enable-zlib",
-	}
-}
-
-// FFmpegArgsLinux returns Linux-specific FFmpeg configure arguments
-func FFmpegArgsLinux() []string {
-	return []string{
-		"--enable-cuvid",
-		"--enable-ffnvcodec",
-		"--enable-nvdec",
-		"--enable-nvenc",
-		"--enable-libvpl",
-	}
-}
-
-// FFmpegArgsDarwin returns macOS-specific FFmpeg configure arguments
-func FFmpegArgsDarwin() []string {
-	return []string{
-		"--enable-avfoundation",
-		"--enable-audiotoolbox",
-		"--enable-videotoolbox",
 	}
 }

@@ -13,6 +13,9 @@ import (
 )
 
 func main() {
+	// Initialize FFmpeg library enables after AllLibraries is fully defined
+	CollectFFmpegEnables()
+
 	// Derive output path based on architecture
 	arch := runtime.GOARCH
 	targetOutput := filepath.Join("lib", runtime.GOOS+"_"+arch, "libffmpeg.a")
