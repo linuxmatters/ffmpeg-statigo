@@ -82,6 +82,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | opus             | 1.5.2       | A totally open, royalty-free, highly versatile audio codec                         |
 | rav1e            | 0.8.2       | The fastest and safest AV1 encoder.                                                |
 | Vulkan-Headers   | 1.4.332     | Vulkan header files and API registry                                               |
+| VVenC            | 1.13.1      | Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder  |
 | x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams             |
 | x265             | head        | H.265/MPEG-H HEVC compression format library for encoding video streams            |
 | zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                              |
@@ -140,7 +141,7 @@ DE  prores                   Apple ProRes (iCodec Pro)                  [VIDEO]
 D.  prores_raw               Apple ProRes RAW                           [VIDEO]
 DE  sbc                      SBC (low-complexity subband codec)         [AUDIO]
 DE  text                     raw UTF-8 text                             [SUBTITLE]
-DE  theora                   Theora                                     [VIDEO]
+D.  theora                   Theora                                     [VIDEO]
 DE  tiff                     TIFF image                                 [VIDEO]
 DE  truehd                   TrueHD                                     [AUDIO]
 D.  vc1                      SMPTE VC-1                                 [VIDEO]
@@ -149,7 +150,7 @@ DE  vorbis                   Vorbis                                     [AUDIO]
 DE  vp8                      On2 VP8                                    [VIDEO]
 DE  vp9                      Google VP9                                 [VIDEO]
 D.  vvc                      H.266 / VVC (Versatile Video Coding)       [VIDEO]
-D.  webp                     WebP                                       [VIDEO]
+DE  webp                     WebP                                       [VIDEO]
 DE  webvtt                   WebVTT subtitle                            [SUBTITLE]
 DE  yuv4                     Uncompressed packed 4:2:0                  [VIDEO]
 ```
