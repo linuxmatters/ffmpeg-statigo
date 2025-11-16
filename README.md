@@ -73,6 +73,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | libsrt           | 1.5.5-rc.0a | A transport protocol for ultra low latency live video and audio streaming          |
 | libvpl           | 2.15.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
 | libvpx           | 1.15.2      | High-quality, open video format for the web that's freely available to everyone    |
+| libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression            |
 | libxml2          | 2.15.1      | An XML parser and toolkit implemented in C                                         |
 | libiconv         | 1.18        | A character set conversion library (*macOS only*)                                  |
 | mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                  |
