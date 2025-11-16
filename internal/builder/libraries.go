@@ -55,6 +55,7 @@ var AllLibraries = []*Library{
 var zlib = &Library{
 	Name:          "zlib",
 	URL:           "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz",
+	FFmpegEnables: []string{"zlib"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // zlib has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
@@ -101,14 +102,16 @@ var libxml2 = &Library{
 			"--without-xptr",     // Don't need XPointer support
 		}
 	},
-	LinkLibs: []string{"libxml2"},
+	LinkLibs:     []string{"libxml2"},
+	Dependencies: []*Library{zlib},
 }
 
 // nvcodecheaders - NVIDIA codec SDK headers (Linux only)
 var nvcodecheaders = &Library{
-	Name:     "nv-codec-headers",
-	URL:      "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.3/nv-codec-headers-11.1.5.3.tar.gz",
-	Platform: []string{"linux"},
+	Name:          "nv-codec-headers",
+	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.3/nv-codec-headers-11.1.5.3.tar.gz",
+	Platform:      []string{"linux"},
+	FFmpegEnables: []string{"cuvid", "ffnvcodec", "nvdec", "nvenc"},
 	BuildSystem: &MakefileBuild{
 		Targets: nil, // No build targets, just install
 		InstallFunc: func(srcPath, installDir string) error {
@@ -120,9 +123,10 @@ var nvcodecheaders = &Library{
 
 // vulkanheaders - Vulkan API headers (cross-platform)
 var vulkanheaders = &Library{
-	Name:        "Vulkan-Headers",
-	URL:         "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.332.tar.gz",
-	BuildSystem: &CMakeBuild{},
+	Name:          "Vulkan-Headers",
+	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.332.tar.gz",
+	FFmpegEnables: []string{"vulkan"},
+	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"-DVULKAN_HEADERS_ENABLE_MODULE=OFF",
@@ -135,9 +139,10 @@ var vulkanheaders = &Library{
 // NOTE: Pinned to 15.4.0 because FFmpeg 8.0 requires libSPVRemapper which was removed in glslang 16.0.0
 // (functionality moved to SPIRV-Tools). Upgrade to 16.x requires FFmpeg to update their spirv_compiler detection.
 var glslang = &Library{
-	Name:        "glslang",
-	URL:         "https://github.com/KhronosGroup/glslang/archive/refs/tags/15.4.0.tar.gz",
-	BuildSystem: &CMakeBuild{},
+	Name:          "glslang",
+	URL:           "https://github.com/KhronosGroup/glslang/archive/refs/tags/15.4.0.tar.gz",
+	FFmpegEnables: []string{"libglslang"},
+	BuildSystem:   &CMakeBuild{},
 	PostExtract: func(srcPath string) error {
 		// Run update_glslang_sources.py to fetch external dependencies
 		pythonScript := filepath.Join(srcPath, "update_glslang_sources.py")
@@ -177,10 +182,11 @@ var glslang = &Library{
 
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)
 var libvpl = &Library{
-	Name:        "libvpl",
-	URL:         "https://github.com/intel/libvpl/archive/refs/tags/v2.15.0.tar.gz",
-	Platform:    []string{"linux"},
-	BuildSystem: &CMakeBuild{},
+	Name:          "libvpl",
+	URL:           "https://github.com/intel/libvpl/archive/refs/tags/v2.15.0.tar.gz",
+	Platform:      []string{"linux"},
+	FFmpegEnables: []string{"libvpl"},
+	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"-DBUILD_SHARED_LIBS=OFF",
@@ -210,9 +216,10 @@ var libvpl = &Library{
 
 // zimg - High-quality image scaling and colorspace conversion library
 var zimg = &Library{
-	Name:        "zimg",
-	URL:         "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.6.tar.gz",
-	BuildSystem: &AutoconfBuild{},
+	Name:          "zimg",
+	URL:           "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.6.tar.gz",
+	FFmpegEnables: []string{"libzimg"},
+	BuildSystem:   &AutoconfBuild{},
 	PostExtract: func(srcPath string) error {
 		// Run autogen.sh to generate configure script
 		autogenScript := filepath.Join(srcPath, "autogen.sh")
@@ -258,9 +265,10 @@ var zimg = &Library{
 
 // libwebp - WebP image format encoder
 var libwebp = &Library{
-	Name:        "libwebp",
-	URL:         "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz",
-	BuildSystem: &CMakeBuild{},
+	Name:          "libwebp",
+	URL:           "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz",
+	FFmpegEnables: []string{"libwebp"},
+	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"-DBUILD_SHARED_LIBS=OFF",
@@ -279,9 +287,10 @@ var libwebp = &Library{
 
 // lame - MP3 encoder
 var lame = &Library{
-	Name:        "lame",
-	URL:         "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz",
-	BuildSystem: &AutoconfBuild{},
+	Name:          "lame",
+	URL:           "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz",
+	FFmpegEnables: []string{"libmp3lame"},
+	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--disable-debug",
@@ -297,9 +306,10 @@ var lame = &Library{
 
 // opus - Opus audio codec
 var opus = &Library{
-	Name:        "opus",
-	URL:         "https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz",
-	BuildSystem: &AutoconfBuild{},
+	Name:          "opus",
+	URL:           "https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz",
+	FFmpegEnables: []string{"libopus"},
+	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--disable-doc",
@@ -315,6 +325,7 @@ var opus = &Library{
 var libvpx = &Library{
 	Name:          "libvpx",
 	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.15.2.tar.gz",
+	FFmpegEnables: []string{"libvpx"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // vpx has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
@@ -340,6 +351,7 @@ var libvpx = &Library{
 var x264 = &Library{
 	Name:          "x264",
 	URL:           "https://code.videolan.org/videolan/x264/-/archive/master/x264-master.tar.bz2",
+	FFmpegEnables: []string{"libx264"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // x264 has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
@@ -368,8 +380,9 @@ var x264 = &Library{
 
 // x265 - H.265/HEVC video encoder 7.9M
 var x265 = &Library{
-	Name: "x265",
-	URL:  "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
+	Name:          "x265",
+	URL:           "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
+	FFmpegEnables: []string{"libx265"},
 	BuildSystem: &CMakeBuild{
 		SourceSubdir: "source", // x265 source is in source/ subdirectory
 	},
@@ -387,9 +400,10 @@ var x265 = &Library{
 
 // dav1d - AV1 video decoder
 var dav1d = &Library{
-	Name:        "dav1d",
-	URL:         "https://code.videolan.org/videolan/dav1d/-/archive/1.5.2/dav1d-1.5.2.tar.bz2",
-	BuildSystem: &MesonBuild{},
+	Name:          "dav1d",
+	URL:           "https://code.videolan.org/videolan/dav1d/-/archive/1.5.2/dav1d-1.5.2.tar.bz2",
+	FFmpegEnables: []string{"libdav1d"},
+	BuildSystem:   &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--default-library=static",
@@ -403,9 +417,10 @@ var dav1d = &Library{
 
 // vvenc - H.266/VVC video encoder
 var vvenc = &Library{
-	Name:        "vvenc",
-	URL:         "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.13.1.tar.gz",
-	BuildSystem: &CMakeBuild{},
+	Name:          "vvenc",
+	URL:           "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.13.1.tar.gz",
+	FFmpegEnables: []string{"libvvenc"},
+	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"-DBUILD_SHARED_LIBS=OFF",               // Static library only
@@ -420,8 +435,9 @@ var vvenc = &Library{
 
 // rav1e - AV1 video encoder
 var rav1e = &Library{
-	Name: "rav1e",
-	URL:  "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
+	Name:          "rav1e",
+	URL:           "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
+	FFmpegEnables: []string{"librav1e"},
 	BuildSystem: &CargoBuild{
 		InstallFunc: func(srcPath, installDir string) error {
 			// Set RUSTFLAGS for native CPU optimization
@@ -450,9 +466,10 @@ var rav1e = &Library{
 // - X509 certificates
 // - BIO, EVP APIs
 var openssl = &Library{
-	Name:        "openssl",
-	URL:         "https://github.com/openssl/openssl/releases/download/openssl-3.6.0/openssl-3.6.0.tar.gz",
-	BuildSystem: &OpenSSLBuild{},
+	Name:          "openssl",
+	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.0/openssl-3.6.0.tar.gz",
+	FFmpegEnables: []string{"openssl"},
+	BuildSystem:   &OpenSSLBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"no-shared",
@@ -512,9 +529,10 @@ var openssl = &Library{
 
 // libsrt - Secure Reliable Transport (SRT) protocol library
 var libsrt = &Library{
-	Name:        "libsrt",
-	URL:         "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5-rc.0a.tar.gz",
-	BuildSystem: &CMakeBuild{},
+	Name:          "libsrt",
+	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5-rc.0a.tar.gz",
+	FFmpegEnables: []string{"libsrt"},
+	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"-DENABLE_SHARED=OFF",              // Static library only
@@ -582,13 +600,6 @@ var ffmpeg = &Library{
 		// Add common FFmpeg arguments
 		args = append(args, FFmpegArgsCommon()...)
 
-		// Add platform-specific arguments
-		if os == "linux" {
-			args = append(args, FFmpegArgsLinux()...)
-		} else if os == "darwin" {
-			args = append(args, FFmpegArgsDarwin()...)
-		}
-
 		return args
 	},
 	LinkLibs: []string{
@@ -600,6 +611,52 @@ var ffmpeg = &Library{
 		"libswresample",
 		"libswscale",
 	},
+}
+
+// CollectFFmpegEnables collects --enable-* flags from all enabled external libraries
+// This must be called AFTER AllLibraries is initialized to inject the enables into ffmpeg's ConfigureArgs
+func CollectFFmpegEnables() {
+	// Find the ffmpeg library
+	var ffmpegLib *Library
+	for _, lib := range AllLibraries {
+		if lib.Name == "ffmpeg" {
+			ffmpegLib = lib
+			break
+		}
+	}
+	if ffmpegLib == nil {
+		return
+	}
+
+	// Wrap the original ConfigureArgs function
+	originalConfigureArgs := ffmpegLib.ConfigureArgs
+	ffmpegLib.ConfigureArgs = func(os string) []string {
+		// Get base args from original function
+		args := originalConfigureArgs(os)
+
+		// Collect and add --enable-* flags from all enabled external libraries
+		for _, lib := range AllLibraries {
+			// Skip ffmpeg itself and libraries that are disabled or shouldn't build on current platform
+			if lib.Name == "ffmpeg" || !lib.ShouldBuild() {
+				continue
+			}
+			// Add all FFmpeg enable flags for this library
+			for _, flag := range lib.FFmpegEnables {
+				args = append(args, "--enable-"+flag)
+			}
+		}
+
+		// Add platform-specific built-in FFmpeg features (not external libraries)
+		if os == "darwin" {
+			args = append(args,
+				"--enable-avfoundation",
+				"--enable-audiotoolbox",
+				"--enable-videotoolbox",
+			)
+		}
+
+		return args
+	}
 }
 
 // touchAutomakeFiles touches all automake-related files to prevent regeneration

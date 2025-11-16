@@ -15,7 +15,9 @@ import (
 type Library struct {
 	Name          string
 	URL           string
+	Enabled       *bool    // Defaults to true (nil = enabled) - set to false to disable without removing code
 	Platform      []string // empty = all platforms, ["linux"], ["darwin"], etc.
+	FFmpegEnables []string // Optional FFmpeg --enable-* flags (e.g. ["libx264"], ["nvenc", "nvdec"])
 	BuildSystem   BuildSystem
 	ConfigureArgs func(os string) []string
 	PostExtract   func(srcPath string) error // optional patches
@@ -32,6 +34,12 @@ type BuildSystem interface {
 
 // ShouldBuild checks if this library should be built on the current platform
 func (lib *Library) ShouldBuild() bool {
+	// Check if library is enabled (nil = true, explicitly set to false = disabled)
+	if lib.Enabled != nil && !*lib.Enabled {
+		return false
+	}
+
+	// Check platform restrictions
 	if len(lib.Platform) == 0 {
 		return true // no platform restriction = build everywhere
 	}
