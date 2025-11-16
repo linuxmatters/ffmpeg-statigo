@@ -11,10 +11,10 @@
 
 # Example binaries
 examples/asciiplayer/asciiplayer
-examples/builder/builder
 examples/introspect/introspect
 examples/metadata/metadata
 examples/transcode/transcode
+internal/builder/builder
 
 # IDE and editor files
 .vscode/
