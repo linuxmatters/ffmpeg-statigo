@@ -41,6 +41,7 @@ func FFmpegArgsCommon() []string {
 		"--enable-librav1e",
 		"--enable-libsrt",
 		"--enable-libvpx",
+		"--enable-libwebp",
 		"--enable-libx264",
 		"--enable-libx265",
 		"--enable-libzimg",

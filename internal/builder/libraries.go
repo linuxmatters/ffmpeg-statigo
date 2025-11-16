@@ -27,6 +27,7 @@ var AllLibraries = []*Library{
 
 	// Image processing
 	zimg,
+	libwebp,
 
 	// Audio codecs
 	lame,
@@ -252,6 +253,27 @@ var zimg = &Library{
 		}
 	},
 	LinkLibs: []string{"libzimg"},
+}
+
+// libwebp - WebP image format encoder
+var libwebp = &Library{
+	Name:        "libwebp",
+	URL:         "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz",
+	BuildSystem: &CMakeBuild{},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"-DBUILD_SHARED_LIBS=OFF",
+			"-DWEBP_BUILD_ANIM_UTILS=OFF", // Don't build animation utilities
+			"-DWEBP_BUILD_CWEBP=OFF",      // Don't build cwebp CLI tool
+			"-DWEBP_BUILD_DWEBP=OFF",      // Don't build dwebp CLI tool
+			"-DWEBP_BUILD_GIF2WEBP=OFF",   // Don't build gif2webp CLI tool
+			"-DWEBP_BUILD_IMG2WEBP=OFF",   // Don't build img2webp CLI tool
+			"-DWEBP_BUILD_VWEBP=OFF",      // Don't build vwebp viewer
+			"-DWEBP_BUILD_WEBPINFO=OFF",   // Don't build webpinfo tool
+			"-DWEBP_BUILD_EXTRAS=OFF",     // Don't build extra tools
+		}
+	},
+	LinkLibs: []string{"libwebp", "libwebpmux", "libsharpyuv"},
 }
 
 // lame - MP3 encoder

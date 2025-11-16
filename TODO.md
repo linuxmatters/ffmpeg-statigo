@@ -6,7 +6,6 @@
 - [ ] FFmpeg feature enablement
   --enable-libvmaf         enable vmaf filter via libvmaf [no]
   --enable-libvvenc        enable H.266/VVC encoding via vvenc [no]             <https://github.com/fraunhoferhhi/vvenc>
-  --enable-libwebp         enable WebP encoding via libwebp [no]                <https://chromium.googlesource.com/webm/libwebp>
   --enable-whisper         enable whisper filter [no]
 - [ ] Rebrand to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
