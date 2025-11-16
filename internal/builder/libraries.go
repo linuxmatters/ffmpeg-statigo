@@ -39,6 +39,9 @@ var AllLibraries = []*Library{
 	// TLS/SSL
 	openssl,
 
+	// Streaming protocols
+	libsrt,
+
 	// FFmpeg (must be last)
 	ffmpeg,
 }
@@ -414,6 +417,30 @@ var openssl = &Library{
 		}
 	},
 	LinkLibs: []string{"libssl", "libcrypto"},
+}
+
+// libsrt - Secure Reliable Transport (SRT) protocol library
+var libsrt = &Library{
+	Name:        "libsrt",
+	URL:         "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5-rc.0a.tar.gz",
+	BuildSystem: &CMakeBuild{},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"-DENABLE_SHARED=OFF",              // Static library only
+			"-DENABLE_STATIC=ON",               // Build static library
+			"-DENABLE_APPS=OFF",                // Skip srt-live-transmit and CLI tools (saves ~1MB and build time)
+			"-DENABLE_BONDING=OFF",             // Advanced bonding feature not used by FFmpeg
+			"-DENABLE_TESTING=OFF",             // No test applications
+			"-DENABLE_UNITTESTS=OFF",           // No unit tests
+			"-DENABLE_LOGGING=OFF",             // Minimal logging (FFmpeg has its own)
+			"-DENABLE_HEAVY_LOGGING=OFF",       // Minimal logging (FFmpeg has its own)
+			"-DUSE_STATIC_LIBSTDCXX=OFF",       // Static C++ stdlib linking
+			"-DSRT_USE_OPENSSL_STATIC_LIBS=ON", // Link OpenSSL statically
+			"-DUSE_OPENSSL_PC=ON",              // Use pkg-config to find OpenSSL
+		}
+	},
+	LinkLibs:     []string{"libsrt"},
+	Dependencies: []*Library{openssl}, // SRT requires OpenSSL for encryption
 }
 
 // ffmpeg - FFmpeg multimedia framework
