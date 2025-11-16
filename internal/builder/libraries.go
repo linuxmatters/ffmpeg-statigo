@@ -36,6 +36,9 @@ var AllLibraries = []*Library{
 	x264,
 	x265,
 
+	// TLS/SSL
+	openssl,
+
 	// FFmpeg (must be last)
 	ffmpeg,
 }
@@ -343,12 +346,108 @@ var rav1e = &Library{
 	LinkLibs: []string{"librav1e"},
 }
 
+// openssl - TLS/SSL library for HTTPS, RTMPS, SRT, RIST protocols
+// Keep these essential features (explicitly enabled):
+// - TLS 1.2, TLS 1.3, DTLS 1.2
+// - EC (for secp256r1 key generation)
+// - DH (for RTMP Diffie-Hellman)
+// - AES (for SRTP and TLS ciphers)
+// - SHA-256, SHA-384, SHA-512
+// - X509 certificates
+// - BIO, EVP APIs
+var openssl = &Library{
+	Name:        "openssl",
+	URL:         "https://github.com/openssl/openssl/releases/download/openssl-3.6.0/openssl-3.6.0.tar.gz",
+	BuildSystem: &OpenSSLBuild{},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"no-shared",
+			"no-apps",
+			"no-comp",       // Disable compression (CRIME vulnerability, rarely used)
+			"no-ct",         // No Certificate Transparency
+			"no-deprecated", // Exclude deprecated APIs (FFmpeg patched for OpenSSL 3.6 compatibility)
+			"no-docs",
+			"no-engine",       // Disable engine support (legacy plugin system)
+			"no-err",          // Don't compile error strings (~200-300KB savings)
+			"no-nextprotoneg", // Deprecated NPN (use ALPN)
+			"no-tests",
+			"no-ts",         // No Time Stamping Authority
+			"no-ui-console", // No interactive console prompts
+
+			// Disable old/insecure SSL/TLS versions (keep TLS 1.2, 1.3, DTLS 1.2)
+			"no-ssl3",
+			"no-tls1",
+			"no-tls1_1",
+			"no-dtls1",
+
+			// Disable weak/obsolete/uncommon algorithms
+			"no-bf",        // Blowfish (old)
+			"no-blake2",    // BLAKE2 (uncommon hash)
+			"no-camellia",  // Uncommon cipher
+			"no-cast",      // Ancient cipher
+			"no-dsa",       // FFmpeg uses EC, not DSA
+			"no-ec2m",      // Binary field ECC (rarely used)
+			"no-idea",      // Ancient cipher
+			"no-md2",       // MD2 (broken)
+			"no-md4",       // MD4 (broken)
+			"no-mdc2",      // Ancient hash
+			"no-ocb",       // OCB mode (uncommon)
+			"no-rc2",       // Ancient cipher
+			"no-rc4",       // Broken cipher
+			"no-rc5",       // Ancient cipher
+			"no-rmd160",    // RIPEMD-160 (uncommon)
+			"no-seed",      // Uncommon cipher
+			"no-siv",       // SIV mode (uncommon)
+			"no-sm2",       // Chinese SM2 (algorithm)
+			"no-sm3",       // Chinese SM3 (hash)
+			"no-sm4",       // Chinese SM4 (cipher)
+			"no-whirlpool", // Uncommon hash
+			"no-gost",      // Russian crypto standard (not needed for streaming)
+
+			// Disable advanced PKI features not used by FFmpeg
+			"no-cms",  // Cryptographic Message Syntax (email)
+			"no-ocsp", // Online Certificate Status Protocol
+
+			// Disable authentication schemes not needed for HTTPS/RTMPS
+			"no-srp", // Secure Remote Password
+			"no-psk", // Pre-shared keys
+		}
+	},
+	LinkLibs: []string{"libssl", "libcrypto"},
+}
+
 // ffmpeg - FFmpeg multimedia framework
 var ffmpeg = &Library{
 	Name:          "ffmpeg",
 	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.0.tar.gz",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // FFmpeg uses --extra-cflags and --extra-ldflags instead
+	PostExtract: func(srcPath string) error {
+		// Apply OpenSSL 3.6 compatibility patch
+		patchFile := filepath.Join(srcPath, "libavformat", "tls_openssl.c")
+
+		// Read the file
+		content, err := os.ReadFile(patchFile)
+		if err != nil {
+			return fmt.Errorf("failed to read tls_openssl.c: %w", err)
+		}
+
+		// Apply the replacements
+		patched := strings.ReplaceAll(string(content),
+			"X509_gmtime_adj(X509_get_notBefore(*cert)",
+			"X509_gmtime_adj(X509_get0_notBefore(*cert)")
+		patched = strings.ReplaceAll(patched,
+			"X509_gmtime_adj(X509_get_notAfter(*cert)",
+			"X509_gmtime_adj(X509_get0_notAfter(*cert)")
+
+		// Write back
+		if err := os.WriteFile(patchFile, []byte(patched), 0644); err != nil {
+			return fmt.Errorf("failed to write patched tls_openssl.c: %w", err)
+		}
+
+		fmt.Printf("Applied OpenSSL 3.6 compatibility patch to tls_openssl.c\n")
+		return nil
+	},
 	ConfigureArgs: func(os string) []string {
 		// FFmpeg needs explicit paths to headers and libraries
 		stagingDir, _ := filepath.Abs(".build/staging")
