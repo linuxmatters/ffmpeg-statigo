@@ -5,7 +5,6 @@
 - [x] FFmpeg build argument resolver.to enable/disable codecs
 - [ ] FFmpeg feature enablement
   --enable-librist         enable RIST via librist [no]
-  --enable-libsrt          enable Haivision SRT protocol via libsrt [no]
   --enable-libvmaf         enable vmaf filter via libvmaf [no]
   --enable-libvvenc        enable H.266/VVC encoding via vvenc [no]             <https://github.com/fraunhoferhhi/vvenc>
   --enable-libwebp         enable WebP encoding via libwebp [no]                <https://chromium.googlesource.com/webm/libwebp>
