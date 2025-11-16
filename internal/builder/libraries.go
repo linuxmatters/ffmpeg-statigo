@@ -37,6 +37,7 @@ var AllLibraries = []*Library{
 	dav1d,
 	libvpx,
 	rav1e,
+	vvenc,
 	x264,
 	x265,
 
@@ -398,6 +399,23 @@ var dav1d = &Library{
 		}
 	},
 	LinkLibs: []string{"libdav1d"},
+}
+
+// vvenc - H.266/VVC video encoder
+var vvenc = &Library{
+	Name:        "vvenc",
+	URL:         "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.13.1.tar.gz",
+	BuildSystem: &CMakeBuild{},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"-DBUILD_SHARED_LIBS=OFF",               // Static library only
+			"-DVVENC_LIBRARY_ONLY=ON",               // Skip vvencapp, vvencFFapp, and all test suites (~1MB savings)
+			"-DVVENC_ENABLE_THIRDPARTY_JSON=OFF",    // No JSON dependency (only used by CLI apps)
+			"-DVVENC_ENABLE_LINK_TIME_OPT=OFF",      // Disable LTO (incompatible with ar combining)
+			"-DVVENC_ENABLE_BUILD_TYPE_POSTFIX=OFF", // No -s/-ds library postfix
+		}
+	},
+	LinkLibs: []string{"libvvenc"},
 }
 
 // rav1e - AV1 video encoder

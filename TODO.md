@@ -5,7 +5,6 @@
 - [x] FFmpeg build argument resolver.to enable/disable codecs
 - [ ] FFmpeg feature enablement
   --enable-libvmaf         enable vmaf filter via libvmaf [no]
-  --enable-libvvenc        enable H.266/VVC encoding via vvenc [no]             <https://github.com/fraunhoferhhi/vvenc>
   --enable-whisper         enable whisper filter [no]
 - [ ] Rebrand to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
