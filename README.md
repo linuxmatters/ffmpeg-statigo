@@ -37,7 +37,7 @@ ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core 
 - **Hardware acceleration**: NVENC, QuickSync, VideoToolbox, Vulkan Video
 - **Containers**: MP4, MKV, WebM, DASH, HLS, and all major formats
 - **Filters**: Video scaling, colour conversion, audio resampling, and processing filters
-- **Streaming protocols**: RTMP, SRT, RIST, HLS, DASH
+- **Streaming protocols**: RTMP, SRT, HLS, DASH
 
 **Building something that deals with video?** You're probably covered:
 - Streaming platform (your own Twitch/YouTube/Owncast)
