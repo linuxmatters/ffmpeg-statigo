@@ -1,11 +1,15 @@
 # Build artifacts
 .build/
 *.log
-asciiplayer
-builder
-introspect
-metadata
-transcode
+
+# Root-level binaries (compiled from cmd/)
+/asciiplayer
+/builder
+/introspect
+/metadata
+/transcode
+
+# Example binaries
 examples/asciiplayer/asciiplayer
 examples/builder/builder
 examples/introspect/introspect

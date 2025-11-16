@@ -23,6 +23,8 @@
           packages = with pkgs; [
             # Build tools
             autoconf
+            automake
+            libtool
             cmake
             curl
             ffmpeg

@@ -83,6 +83,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | Vulkan-Headers   | 1.4.332     | Vulkan header files and API registry                                               |
 | x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams             |
 | x265             | head        | H.265/MPEG-H HEVC compression format library for encoding video streams            |
+| zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                              |
 | zlib             | 1.3.1       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
 
 ### Enabled Codecs
