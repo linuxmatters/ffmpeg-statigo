@@ -4,14 +4,14 @@ default:
 
 # Clean build artifacts and downloads
 clean:
-    rm -rf .build/
-    rm examples/asciiplayer/asciiplayer
-    rm examples/introspect/introspect
-    rm examples/metadata/metadata
-    rm examples/transcode/transcode
+    @rm -rf .build/ 2>/dev/null || true
+    @rm examples/asciiplayer/asciiplayer 2>/dev/null || true
+    @rm examples/introspect/introspect 2>/dev/null || true
+    @rm examples/metadata/metadata 2>/dev/null || true
+    @rm examples/transcode/transcode 2>/dev/null || true
 
 # Build FFmpeg static library
-build-lib +args='':
+build-static +args='':
     #!/usr/bin/env bash
     set -euo pipefail
     GOOS=$(go env GOOS)
@@ -30,16 +30,12 @@ build-examples:
 build:
     #!/usr/bin/env bash
     set -euo pipefail
-    just build-lib ffmpeg --clean
-    just build-lib
-    just generate
+    just build-static ffmpeg --clean
+    just build-static
+    go run ./internal/generator 2>&1 | grep -v "cgo-gcc-prolog\|deprecated" || true
     go build -v ./...
     just build-examples
     ./introspect
-
-# Generate Go bindings from FFmpeg headers using libclang
-generate:
-    @go run ./internal/generator 2>&1 | grep -v "cgo-gcc-prolog\|deprecated" || true
 
 # Run tests
 test:

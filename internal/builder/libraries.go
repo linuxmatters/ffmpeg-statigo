@@ -12,77 +12,32 @@ import (
 
 // All libraries in build order
 var AllLibraries = []*Library{
-	// Compression libraries
+	// Compression
 	zlib,
 
-	// Image libraries
-	png,
+	// XML parsing and formatting
+	libiconv,
+	libxml2,
 
-	// Font libraries & rendering
-	expat,
-	iconv,
-	fribidi,
-	unibreak,
-	freetype,
-	fontconfig,
-	harfbuzz,
-	libass,
-
-	// Hardware acceleration headers
-	nvcodec,
-	vulkanHeaders,
-	glslang,
+	// Hardware acceleration
 	libvpl,
+	nvcodecheaders,
+	vulkanheaders,
+	glslang,
 
 	// Audio codecs
 	lame,
 	opus,
-	ogg,
-	vorbis,
 
 	// Video codecs
-	theora,
-	vpx,
+	dav1d,
+	libvpx,
+	rav1e,
 	x264,
 	x265,
-	dav1d,
-	rav1e,
 
-	// FFmpeg itself (must be last)
+	// FFmpeg (must be last)
 	ffmpeg,
-}
-
-// iconv - character encoding conversion (macOS only)
-var iconv = &Library{
-	Name:        "iconv",
-	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz",
-	Platform:    []string{"darwin"},
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--disable-dependency-tracking",
-			"--disable-debug",
-			"--enable-extra-encodings",
-			"--enable-static",
-		}
-	},
-	LinkLibs: []string{"libiconv"},
-}
-
-// expat - XML parser (Linux only, needed for fontconfig)
-var expat = &Library{
-	Name:        "expat",
-	URL:         "https://github.com/libexpat/libexpat/releases/download/R_2_7_3/expat-2.7.3.tar.gz",
-	Platform:    []string{"linux"},
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-			"--without-xmlwf",
-		}
-	},
-	LinkLibs: []string{"libexpat"},
 }
 
 // zlib - compression library
@@ -99,131 +54,49 @@ var zlib = &Library{
 	LinkLibs: []string{"libz"},
 }
 
-// png - PNG image library
-var png = &Library{
-	Name:        "png",
-	URL:         "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--disable-dependency-tracking",
-			"--disable-silent-rules",
-			"--disable-shared",
-			"--enable-static",
-		}
-	},
-	LinkLibs: []string{"libpng16"},
-}
-
-// fribidi - Unicode bidirectional algorithm library (needed by libass)
-var fribidi = &Library{
-	Name:        "fribidi",
-	URL:         "https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz",
+// libiconv - character encoding conversion (macOS only)
+var libiconv = &Library{
+	Name:        "libiconv",
+	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz",
+	Platform:    []string{"darwin"},
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--disable-dependency-tracking",
 			"--disable-debug",
-			"--disable-silent-rules",
+			"--enable-extra-encodings",
 			"--enable-static",
 		}
 	},
-	LinkLibs: []string{"libfribidi"},
+	LinkLibs: []string{"libiconv"},
 }
 
-// unibreak - line breaking library (needed by libass)
-var unibreak = &Library{
-	Name:        "unibreak",
-	URL:         "https://github.com/adah1972/libunibreak/releases/download/libunibreak_6_1/libunibreak-6.1.tar.gz",
+// libxml2 - XML parsing library
+var libxml2 = &Library{
+	Name:        "libxml2",
+	URL:         "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.1.tar.xz",
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--enable-static",
 			"--disable-shared",
+			"--with-zlib",
+			"--without-python",
+			"--without-catalog",  // Don't need XML catalog resolution
+			"--without-debug",    // Disable debug module
+			"--without-modules",  // Don't need dynamic module loading
+			"--without-sax1",     // Don't need legacy SAX1 interface
+			"--without-xinclude", // Don't need XInclude processing
+			"--without-xptr",     // Don't need XPointer support
 		}
 	},
-	LinkLibs: []string{"libunibreak"},
+	LinkLibs: []string{"libxml2"},
 }
 
-// fontconfig - font configuration library (Linux only)
-var fontconfig = &Library{
-	Name:        "fontconfig",
-	URL:         "https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.16.0.tar.xz",
-	Platform:    []string{"linux"},
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-		}
-	},
-	LinkLibs: []string{"libfontconfig"},
-}
-
-// freetype - font rendering library
-var freetype = &Library{
-	Name:        "freetype",
-	URL:         "https://download.savannah.gnu.org/releases/freetype/freetype-2.14.1.tar.xz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-			"--without-brotli",
-			"--without-bzip2",
-			"--without-harfbuzz",
-		}
-	},
-	LinkLibs: []string{"libfreetype"},
-}
-
-// harfbuzz - text shaping library (needed by libass)
-var harfbuzz = &Library{
-	Name:        "harfbuzz",
-	URL:         "https://github.com/harfbuzz/harfbuzz/releases/download/12.2.0/harfbuzz-12.2.0.tar.xz",
-	BuildSystem: &MesonBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--buildtype=release",
-			"--default-library=static",
-			"-Dcairo=disabled",
-			"-Dcoretext=enabled",
-			"-Dfreetype=enabled",
-			"-Dintrospection=disabled",
-			"-Dtests=disabled",
-		}
-	},
-	LinkLibs: []string{"libharfbuzz"},
-}
-
-// libass - subtitle rendering library
-var libass = &Library{
-	Name:        "ass",
-	URL:         "https://github.com/libass/libass/releases/download/0.17.4/libass-0.17.4.tar.gz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		args := []string{
-			"--disable-shared",
-		}
-
-		// libass uses coretext on macOS, fontconfig on Linux
-		if os == "darwin" {
-			args = append(args, "--disable-fontconfig")
-		}
-
-		return args
-	},
-	PostExtract: func(srcPath string) error {
-		// Prevent automake regeneration
-		return touchAutomakeFiles(srcPath)
-	},
-	LinkLibs: []string{"libass"},
-}
-
-// nvcodec - NVIDIA codec SDK headers (Linux only)
-var nvcodec = &Library{
-	Name:     "nvcodec",
-	URL:      "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz",
+// nvcodecheaders - NVIDIA codec SDK headers (Linux only)
+var nvcodecheaders = &Library{
+	Name:     "nv-codec-headers",
+	URL:      "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.3/nv-codec-headers-11.1.5.3.tar.gz",
 	Platform: []string{"linux"},
 	BuildSystem: &MakefileBuild{
 		Targets: nil, // No build targets, just install
@@ -234,9 +107,9 @@ var nvcodec = &Library{
 	LinkLibs: nil, // Headers only
 }
 
-// vulkanHeaders - Vulkan API headers (cross-platform)
-var vulkanHeaders = &Library{
-	Name:        "vulkan",
+// vulkanheaders - Vulkan API headers (cross-platform)
+var vulkanheaders = &Library{
+	Name:        "Vulkan-Headers",
 	URL:         "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.332.tar.gz",
 	BuildSystem: &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -248,9 +121,11 @@ var vulkanHeaders = &Library{
 }
 
 // glslang - Khronos GLSL/SPIR-V shader compiler (required for Vulkan encoders/decoders/filters)
+// NOTE: Pinned to 15.4.0 because FFmpeg 8.0 requires libSPVRemapper which was removed in glslang 16.0.0
+// (functionality moved to SPIRV-Tools). Upgrade to 16.x requires FFmpeg to update their spirv_compiler detection.
 var glslang = &Library{
 	Name:        "glslang",
-	URL:         "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.0.0.tar.gz",
+	URL:         "https://github.com/KhronosGroup/glslang/archive/refs/tags/15.4.0.tar.gz",
 	BuildSystem: &CMakeBuild{},
 	PostExtract: func(srcPath string) error {
 		// Run update_glslang_sources.py to fetch external dependencies
@@ -269,19 +144,21 @@ var glslang = &Library{
 	},
 	ConfigureArgs: func(os string) []string {
 		return []string{
-			"-DENABLE_SHARED=OFF",
 			"-DBUILD_SHARED_LIBS=OFF",
-			"-DENABLE_CTEST=OFF",
-			"-DBUILD_TESTING=OFF",
+			"-DENABLE_GLSLANG_BINARIES=OFF", // Don't build CLI tools
+			"-DENABLE_HLSL=OFF",             // Don't need DirectX HLSL support for Vulkan
+			"-DGLSLANG_TESTS=OFF",           // Don't build tests
+			"-DSPIRV_SKIP_EXECUTABLES=ON",
+			"-DSPIRV_SKIP_TESTS=ON",
 		}
 	},
 	LinkLibs: []string{
 		"libglslang",
-		"libglslang-default-resource-limits",
 		"libGenericCodeGen",
 		"libMachineIndependent",
 		"libOSDependent",
 		"libSPIRV",
+		"libSPVRemapper",
 		"libSPIRV-Tools",
 		"libSPIRV-Tools-opt",
 	},
@@ -289,16 +166,15 @@ var glslang = &Library{
 
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)
 var libvpl = &Library{
-	Name:        "vpl",
+	Name:        "libvpl",
 	URL:         "https://github.com/intel/libvpl/archive/refs/tags/v2.15.0.tar.gz",
 	Platform:    []string{"linux"},
 	BuildSystem: &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"-DBUILD_SHARED_LIBS=OFF",
-			"-DBUILD_TOOLS=OFF",
 			"-DBUILD_TESTS=OFF",
-			"-DINSTALL_EXAMPLE_CODE=OFF",
+			"-DBUILD_EXPERIMENTAL=OFF",
 		}
 	},
 	PostExtract: func(srcPath string) error {
@@ -329,6 +205,9 @@ var lame = &Library{
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--disable-debug",
+			"--disable-decoder",        // Only need MP3 encoder
+			"--disable-frontend",       // Don't build lame CLI tool
+			"--disable-analyzer-hooks", // Exclude debugging hooks
 			"--enable-static",
 			"--disable-shared",
 		}
@@ -343,79 +222,35 @@ var opus = &Library{
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
-			"--disable-debug",
 			"--disable-doc",
-			"--enable-static",
+			"--disable-extra-programs",
 			"--disable-shared",
+			"--enable-static",
 		}
 	},
 	LinkLibs: []string{"libopus"},
 }
 
-// ogg - Ogg container format
-var ogg = &Library{
-	Name:        "ogg",
-	URL:         "https://downloads.xiph.org/releases/ogg/libogg-1.3.6.tar.xz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-		}
-	},
-	LinkLibs: []string{"libogg"},
-}
-
-// vorbis - Vorbis audio codec
-var vorbis = &Library{
-	Name:        "vorbis",
-	URL:         "https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-			"--disable-examples",
-		}
-	},
-	LinkLibs: []string{"libvorbis"},
-}
-
-// theora - Theora video codec
-var theora = &Library{
-	Name:        "theora",
-	URL:         "https://downloads.xiph.org/releases/theora/libtheora-1.2.0.tar.xz",
-	BuildSystem: &AutoconfBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--enable-static",
-			"--disable-shared",
-			"--disable-oggtest",
-			"--disable-vorbistest",
-			"--disable-examples",
-		}
-	},
-	PostExtract: func(srcPath string) error {
-		// Prevent automake regeneration
-		return touchAutomakeFiles(srcPath)
-	},
-	LinkLibs: []string{"libtheora"},
-}
-
-// vpx - VP8/VP9 video codec
-var vpx = &Library{
-	Name:          "vpx",
+// libvpx - VP8/VP9 video codec
+var libvpx = &Library{
+	Name:          "libvpx",
 	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.15.2.tar.gz",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // vpx has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
 		return []string{
-			"--enable-static",
-			"--disable-shared",
-			"--disable-examples",
-			"--enable-vp9-highbitdepth",
-			"--disable-unit-tests",
 			"--as=yasm",
+			"--disable-docs",
+			"--disable-examples",
+			"--disable-install-bins",
+			"--disable-libyuv",   // FFmpeg handles color conversion
+			"--disable-postproc", // Decoder visual enhancement - FFmpeg doesn't use
+			"--disable-shared",
+			"--disable-tools", // Don't build vpxenc/vpxdec
+			"--disable-unit-tests",
+			"--disable-vp9-postproc", // VP9 decoder postprocessing - FFmpeg doesn't use
+			"--enable-static",
+			"--enable-vp9-highbitdepth",
 		}
 	},
 	LinkLibs: []string{"libvpx"},
@@ -451,7 +286,7 @@ var x264 = &Library{
 	LinkLibs: []string{"libx264"},
 }
 
-// x265 - H.265/HEVC video encoder
+// x265 - H.265/HEVC video encoder 7.9M
 var x265 = &Library{
 	Name: "x265",
 	URL:  "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
@@ -460,9 +295,11 @@ var x265 = &Library{
 	},
 	ConfigureArgs: func(os string) []string {
 		return []string{
-			"-DENABLE_SHARED=OFF",
-			"-DENABLE_CLI=OFF",
 			"-DENABLE_AGGRESSIVE_CHECKS=OFF",
+			"-DENABLE_CLI=OFF",
+			"-DENABLE_SHARED=OFF",
+			"-DENABLE_TESTS=OFF",      // Don't build test suite
+			"-DLOGGED_PRIMITIVES=OFF", // Reduce logging overhead
 		}
 	},
 	LinkLibs: []string{"libx265"},
@@ -492,6 +329,7 @@ var rav1e = &Library{
 		InstallFunc: func(srcPath, installDir string) error {
 			// Set RUSTFLAGS for native CPU optimization
 			os.Setenv("RUSTFLAGS", "-C target-cpu=native")
+			os.Setenv("CARGO_PROFILE_RELEASE_DEBUG", "false")
 
 			// cargo cinstall for C library installation
 			return runCommand(srcPath, os.Stdout, installDir, "cargo", "cinstall",
