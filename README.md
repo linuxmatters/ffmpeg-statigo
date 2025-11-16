@@ -76,6 +76,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | libiconv         | 1.18      | A character set conversion library (*macOS only*)                                  |
 | mp3lame          | 3.100     | A high quality MPEG Audio Layer III (MP3) encoder                                  |
 | nv-codec-headers | 11.1.5.3  | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
+| openssl          | 3.6.0     | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
 | opus             | 1.5.2     | A totally open, royalty-free, highly versatile audio codec                         |
 | rav1e            | 0.8.2     | The fastest and safest AV1 encoder.                                                |
 | Vulkan-Headers   | 1.4.332   | Vulkan header files and API registry                                               |

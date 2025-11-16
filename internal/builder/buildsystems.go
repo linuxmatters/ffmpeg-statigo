@@ -271,3 +271,75 @@ func (m *MakefileBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	return nil
 }
+
+// OpenSSLBuild implements the BuildSystem interface for OpenSSL's Configure/make
+type OpenSSLBuild struct{}
+
+func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+	// OpenSSL uses 'Configure' (capital C) Perl script, not autoconf
+	args := []string{
+		fmt.Sprintf("--prefix=%s", installDir),
+		fmt.Sprintf("--openssldir=%s", filepath.Join(installDir, "ssl")),
+		"--libdir=lib",
+		fmt.Sprintf("--with-zlib-include=%s/include", installDir),
+		fmt.Sprintf("--with-zlib-lib=%s/lib", installDir),
+		"zlib", // Enable zlib support
+	}
+
+	if lib.ConfigureArgs != nil {
+		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
+	}
+
+	// Run Configure from source directory
+	configurePath := "./Configure"
+	absConfigurePath := filepath.Join(srcPath, "Configure")
+	if !fileExists(absConfigurePath) {
+		return fmt.Errorf("Configure script not found at %s", absConfigurePath)
+	}
+
+	// Make Configure executable
+	if err := os.Chmod(absConfigurePath, 0755); err != nil {
+		return fmt.Errorf("failed to make Configure executable: %w", err)
+	}
+
+	logFile := filepath.Join(buildDir, "build.log")
+	logger, err := os.Create(logFile)
+	if err != nil {
+		return err
+	}
+	defer logger.Close()
+
+	multiWriter := io.MultiWriter(logger, os.Stdout)
+
+	if err := runCommand(srcPath, multiWriter, installDir, configurePath, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *OpenSSLBuild) Build(lib *Library, srcPath, buildDir string) error {
+	logFile := filepath.Join(buildDir, "build.log")
+	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer logger.Close()
+
+	multiWriter := io.MultiWriter(logger, os.Stdout)
+
+	// Get installDir from buildDir path
+	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+
+	// make
+	if err := runCommand(srcPath, multiWriter, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		return err
+	}
+
+	// make install_sw (install software only, skip docs)
+	if err := runCommand(srcPath, multiWriter, installDir, "make", "install_sw"); err != nil {
+		return err
+	}
+
+	return nil
+}

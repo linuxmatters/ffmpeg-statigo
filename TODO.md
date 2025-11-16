@@ -10,7 +10,6 @@
   --enable-libvvenc        enable H.266/VVC encoding via vvenc [no]             <https://github.com/fraunhoferhhi/vvenc>
   --enable-libwebp         enable WebP encoding via libwebp [no]                <https://chromium.googlesource.com/webm/libwebp>
   --enable-libzimg         enable z.lib, needed for zscale filter [no]
-  --enable-openssl         enable openssl, needed for https support [no]
   --enable-whisper         enable whisper filter [no]
 - [ ] Rebrand to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
