@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/csnewman/ffmpeg-go"
+	"github.com/linuxmatters/ffmpeg-statigo"
 )
 
 func main() {

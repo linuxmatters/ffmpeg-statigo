@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/csnewman/ffmpeg-go"
 	"log"
 	"slices"
 	"unsafe"
+
+	"github.com/linuxmatters/ffmpeg-statigo"
 )
 
 type Decoder struct {

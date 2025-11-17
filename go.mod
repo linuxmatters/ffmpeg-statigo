@@ -1,4 +1,4 @@
-module github.com/csnewman/ffmpeg-go
+module github.com/linuxmatters/ffmpeg-statigo
 
 go 1.24.0
 
