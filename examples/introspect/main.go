@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unsafe"
 
-	ffmpeg "github.com/csnewman/ffmpeg-go"
+	ffmpeg "github.com/linuxmatters/ffmpeg-statigo"
 )
 
 type codecInfo struct {

@@ -6,7 +6,7 @@
 - [ ] FFmpeg feature enablement
   --enable-libvmaf         enable vmaf filter via libvmaf [no]
   --enable-whisper         enable whisper filter [no]
-- [ ] Rebrand to ffmpeg-statigo
+- [x] Rename to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
 - [ ] Review default codecs:
   - https://ffmpeg.martin-riedl.de/
@@ -76,7 +76,7 @@ just generate
 
 # Onboard
 
-The is my hard fork of the [ffmpeg-go](https://github.com/csnewman/ffmpeg-go) project called ffmpeg-statigo.
+This is a hard fork of the [ffmpeg-go](https://github.com/csnewman/ffmpeg-go) project, now called **ffmpeg-statigo**.
 
 ffmpeg-statigo has been updated to Go 1.24, all dependencies uplifted to current versions, GitHub CI is fixed so the ffmpeg static libraries are built for all supported architectures and the generator has been updated to support current `clang` on Linux. Mostly critically this project has been updated from FFmpeg 6.1 to FFmpeg 8.0 including the addition os `x265`, `dav1d`, `rav1e` and hardware acceleration support for NVENC, QuickSync and Vulkan to complement the exist VideoToolbox support.
 

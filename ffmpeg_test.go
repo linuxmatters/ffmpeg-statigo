@@ -3,7 +3,7 @@ package ffmpeg_test
 import (
 	"testing"
 
-	"github.com/csnewman/ffmpeg-go"
+	"github.com/linuxmatters/ffmpeg-statigo"
 	"github.com/stretchr/testify/assert"
 )
 
