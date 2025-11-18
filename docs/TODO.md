@@ -3,12 +3,12 @@
 - [x] Refactor the internal build tool
 - [x] Reorganise project structure
 - [x] FFmpeg build argument resolver.to enable/disable codecs
-- [ ] FFmpeg feature enablement
+- [x] FFmpeg feature enablement
   --enable-libvmaf         enable vmaf filter via libvmaf [no]
   --enable-whisper         enable whisper filter [no]
 - [x] Rename to ffmpeg-statigo
 - [ ] How to embed/distribute the static FFmpeg library?
-- [ ] Review default codecs:
+- [x] Review default codecs:
   - https://ffmpeg.martin-riedl.de/
   - https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg
 

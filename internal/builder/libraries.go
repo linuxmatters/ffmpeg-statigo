@@ -10,13 +10,19 @@ import (
 	"time"
 )
 
-// All libraries in build order
-var AllLibraries = []*Library{
+// AllLibraries returns all libraries in dependency order
+// Libraries are automatically sorted so dependencies are built before dependents
+var AllLibraries = buildLibraryOrder()
+
+// allLibraryDefinitions contains all library definitions (order doesn't matter)
+var allLibraryDefinitions = []*Library{
 	// Compression
 	zlib,
 
-	// XML parsing and formatting
+	// Character encoding (macOS)
 	libiconv,
+
+	// XML parsing
 	libxml2,
 
 	// Hardware acceleration
@@ -47,8 +53,108 @@ var AllLibraries = []*Library{
 	// Streaming protocols
 	libsrt,
 
-	// FFmpeg (must be last)
+	// FFmpeg (has many dependencies)
 	ffmpeg,
+}
+
+// buildLibraryOrder performs topological sort on libraries based on dependencies
+// Returns libraries in build order (dependencies before dependents)
+// FFmpeg is always placed last as it depends on all other libraries
+func buildLibraryOrder() []*Library {
+	// Build dependency graph
+	graph := make(map[*Library][]*Library)
+	inDegree := make(map[*Library]int)
+
+	// Initialize all libraries in the graph
+	for _, lib := range allLibraryDefinitions {
+		if _, exists := inDegree[lib]; !exists {
+			inDegree[lib] = 0
+		}
+		if _, exists := graph[lib]; !exists {
+			graph[lib] = []*Library{}
+		}
+	}
+
+	// Build edges (dependency -> dependent)
+	for _, lib := range allLibraryDefinitions {
+		for _, dep := range lib.Dependencies {
+			graph[dep] = append(graph[dep], lib)
+			inDegree[lib]++
+		}
+	}
+
+	// Topological sort using Kahn's algorithm
+	var queue []*Library
+	for lib, degree := range inDegree {
+		if degree == 0 {
+			queue = append(queue, lib)
+		}
+	}
+
+	var result []*Library
+	var ffmpegLib *Library
+	for len(queue) > 0 {
+		// Pop from queue
+		current := queue[0]
+		queue = queue[1:]
+
+		// Hold FFmpeg aside to add at the end
+		if current.Name == "ffmpeg" {
+			ffmpegLib = current
+		} else {
+			result = append(result, current)
+		}
+
+		// Reduce in-degree for dependents
+		for _, dependent := range graph[current] {
+			inDegree[dependent]--
+			if inDegree[dependent] == 0 {
+				queue = append(queue, dependent)
+			}
+		}
+	}
+
+	// Check for cycles (shouldn't happen with proper dependencies)
+	if len(result)+1 != len(allLibraryDefinitions) { // +1 for ffmpeg which we held aside
+		fmt.Fprintf(os.Stderr, "\n=== CIRCULAR DEPENDENCY DETECTED ===\n")
+		fmt.Fprintf(os.Stderr, "Expected %d libraries, but only sorted %d (plus ffmpeg)\n", len(allLibraryDefinitions), len(result))
+
+		// Find which libraries weren't processed
+		processed := make(map[*Library]bool)
+		for _, lib := range result {
+			processed[lib] = true
+		}
+		if ffmpegLib != nil {
+			processed[ffmpegLib] = true
+		}
+
+		fmt.Fprintf(os.Stderr, "\nLibraries stuck in cycle:\n")
+		for _, lib := range allLibraryDefinitions {
+			if !processed[lib] {
+				fmt.Fprintf(os.Stderr, "  - %s (in-degree: %d)\n", lib.Name, inDegree[lib])
+				fmt.Fprintf(os.Stderr, "    Dependencies: ")
+				if len(lib.Dependencies) == 0 {
+					fmt.Fprintf(os.Stderr, "none\n")
+				} else {
+					for i, dep := range lib.Dependencies {
+						if i > 0 {
+							fmt.Fprintf(os.Stderr, ", ")
+						}
+						fmt.Fprintf(os.Stderr, "%s", dep.Name)
+					}
+					fmt.Fprintf(os.Stderr, "\n")
+				}
+			}
+		}
+		fmt.Fprintf(os.Stderr, "=====================================\n\n")
+	}
+
+	// Always add FFmpeg last as it depends on all other libraries
+	if ffmpegLib != nil {
+		result = append(result, ffmpegLib)
+	}
+
+	return result
 }
 
 // zlib - compression library
@@ -85,9 +191,10 @@ var libiconv = &Library{
 
 // libxml2 - XML parsing library
 var libxml2 = &Library{
-	Name:        "libxml2",
-	URL:         "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.1.tar.xz",
-	BuildSystem: &AutoconfBuild{},
+	Name:          "libxml2",
+	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.1.tar.xz",
+	FFmpegEnables: []string{"libxml2"},
+	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
 		return []string{
 			"--enable-static",
@@ -109,7 +216,7 @@ var libxml2 = &Library{
 // nvcodecheaders - NVIDIA codec SDK headers (Linux only)
 var nvcodecheaders = &Library{
 	Name:          "nv-codec-headers",
-	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n11.1.5.3/nv-codec-headers-11.1.5.3.tar.gz",
+	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz",
 	Platform:      []string{"linux"},
 	FFmpegEnables: []string{"cuvid", "ffnvcodec", "nvdec", "nvenc"},
 	BuildSystem: &MakefileBuild{
@@ -178,6 +285,7 @@ var glslang = &Library{
 		"libSPIRV-Tools",
 		"libSPIRV-Tools-opt",
 	},
+	Dependencies: []*Library{vulkanheaders},
 }
 
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)
@@ -339,18 +447,20 @@ var libvpx = &Library{
 			"--disable-shared",
 			"--disable-tools", // Don't build vpxenc/vpxdec
 			"--disable-unit-tests",
-			"--disable-vp9-postproc", // VP9 decoder postprocessing - FFmpeg doesn't use
+			"--disable-vp8-encoder",      // VP8 decoder-only (VP9 is contemporary encoding target)
+			"--disable-vp9-postproc",     // VP9 decoder postprocessing - FFmpeg doesn't use
+			"--disable-vp9-highbitdepth", // 10/12-bit VP9 not needed for contemporary streaming
 			"--enable-static",
-			"--enable-vp9-highbitdepth",
 		}
 	},
-	LinkLibs: []string{"libvpx"},
+	LinkLibs:     []string{"libvpx"},
+	Dependencies: []*Library{glslang, libvpl, nvcodecheaders, libwebp},
 }
 
 // x264 - H.264/AVC video encoder
 var x264 = &Library{
 	Name:          "x264",
-	URL:           "https://code.videolan.org/videolan/x264/-/archive/master/x264-master.tar.bz2",
+	URL:           "https://code.videolan.org/videolan/x264/-/archive/0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee/x264-0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee.tar.bz2",
 	FFmpegEnables: []string{"libx264"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // x264 has a custom configure script that rejects CFLAGS/LDFLAGS
@@ -375,7 +485,8 @@ var x264 = &Library{
 		}
 		return nil
 	},
-	LinkLibs: []string{"libx264"},
+	LinkLibs:     []string{"libx264"},
+	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
 }
 
 // x265 - H.265/HEVC video encoder 7.9M
@@ -395,7 +506,8 @@ var x265 = &Library{
 			"-DLOGGED_PRIMITIVES=OFF", // Reduce logging overhead
 		}
 	},
-	LinkLibs: []string{"libx265"},
+	LinkLibs:     []string{"libx265"},
+	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
 }
 
 // dav1d - AV1 video decoder
@@ -412,25 +524,8 @@ var dav1d = &Library{
 			"-Denable_tests=false",
 		}
 	},
-	LinkLibs: []string{"libdav1d"},
-}
-
-// vvenc - H.266/VVC video encoder
-var vvenc = &Library{
-	Name:          "vvenc",
-	URL:           "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.13.1.tar.gz",
-	FFmpegEnables: []string{"libvvenc"},
-	BuildSystem:   &CMakeBuild{},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"-DBUILD_SHARED_LIBS=OFF",               // Static library only
-			"-DVVENC_LIBRARY_ONLY=ON",               // Skip vvencapp, vvencFFapp, and all test suites (~1MB savings)
-			"-DVVENC_ENABLE_THIRDPARTY_JSON=OFF",    // No JSON dependency (only used by CLI apps)
-			"-DVVENC_ENABLE_LINK_TIME_OPT=OFF",      // Disable LTO (incompatible with ar combining)
-			"-DVVENC_ENABLE_BUILD_TYPE_POSTFIX=OFF", // No -s/-ds library postfix
-		}
-	},
-	LinkLibs: []string{"libvvenc"},
+	LinkLibs:     []string{"libdav1d"},
+	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
 }
 
 // rav1e - AV1 video encoder
@@ -453,7 +548,28 @@ var rav1e = &Library{
 				"--release")
 		},
 	},
-	LinkLibs: []string{"librav1e"},
+	LinkLibs:     []string{"librav1e"},
+	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
+}
+
+// vvenc - H.266/VVC video encoder
+var vvenc = &Library{
+	Name:          "vvenc",
+	URL:           "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.13.1.tar.gz",
+	FFmpegEnables: []string{"libvvenc"},
+	BuildSystem:   &CMakeBuild{},
+	Enabled:       Disabled(),
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"-DBUILD_SHARED_LIBS=OFF",               // Static library only
+			"-DVVENC_LIBRARY_ONLY=ON",               // Skip vvencapp, vvencFFapp, and all test suites (~1MB savings)
+			"-DVVENC_ENABLE_THIRDPARTY_JSON=OFF",    // No JSON dependency (only used by CLI apps)
+			"-DVVENC_ENABLE_LINK_TIME_OPT=OFF",      // Disable LTO (incompatible with ar combining)
+			"-DVVENC_ENABLE_BUILD_TYPE_POSTFIX=OFF", // No -s/-ds library postfix
+		}
+	},
+	LinkLibs:     []string{"libvvenc"},
+	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
 }
 
 // openssl - TLS/SSL library for HTTPS, RTMPS, SRT, RIST protocols
@@ -597,8 +713,8 @@ var ffmpeg = &Library{
 			fmt.Sprintf("--extra-ldflags=-L%s -L%s", libDir, lib64Dir),
 		}
 
-		// Add common FFmpeg arguments
-		args = append(args, FFmpegArgsCommon()...)
+		// Add common FFmpeg arguments (platform-specific)
+		args = append(args, FFmpegArgsCommon(os)...)
 
 		return args
 	},
