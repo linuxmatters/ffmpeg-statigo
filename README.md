@@ -90,70 +90,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 
 ### Enabled Codecs
 
-These are the codecs enable in the static ffmpeg library that ffmpeg-statigo ships.
-
-```
-DE  NAME                     DESCRIPTION                                TYPE
-
-DE  aac                      AAC (Advanced Audio Coding)                [AUDIO]
-DE  ac3                      ATSC A/52A (AC-3)                          [AUDIO]
-DE  alac                     ALAC (Apple Lossless Audio Codec)          [AUDIO]
-DE  anull                    Null audio codec                           [AUDIO]
-DE  aptx                     aptX (Audio Processing Technology for Blue [AUDIO]
-DE  aptx_hd                  aptX HD (Audio Processing Technology for B [AUDIO]
-DE  av1                      Alliance for Open Media AV1                [VIDEO]
-DE  cfhd                     GoPro CineForm HD                          [VIDEO]
-DE  dnxhd                    VC3/DNxHD                                  [VIDEO]
-DE  dpx                      DPX (Digital Picture Exchange) image       [VIDEO]
-DE  dts                      DCA (DTS Coherent Acoustics)               [AUDIO]
-DE  dvb_subtitle             DVB subtitles                              [SUBTITLE]
-DE  dvd_subtitle             DVD subtitles                              [SUBTITLE]
-DE  eac3                     ATSC A/52B (AC-3, E-AC-3)                  [AUDIO]
-DE  exr                      OpenEXR image                              [VIDEO]
-DE  ffv1                     FFmpeg video codec #1                      [VIDEO]
-DE  flac                     FLAC (Free Lossless Audio Codec)           [AUDIO]
-DE  gif                      CompuServe GIF (Graphics Interchange Forma [VIDEO]
-DE  h264                     H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  [VIDEO]
-DE  hevc                     H.265 / HEVC (High Efficiency Video Coding [VIDEO]
-DE  mjpeg                    Motion JPEG                                [VIDEO]
-DE  mp2                      MP2 (MPEG audio layer 2)                   [AUDIO]
-DE  mp3                      MP3 (MPEG audio layer 3)                   [AUDIO]
-DE  mpeg2video               MPEG-2 video                               [VIDEO]
-DE  opus                     Opus (Opus Interactive Audio Codec)        [AUDIO]
-DE  pbm                      PBM (Portable BitMap) image                [VIDEO]
-DE  pcm_alaw                 PCM A-law / G.711 A-law                    [AUDIO]
-DE  pcm_f32be                PCM 32-bit floating point big-endian       [AUDIO]
-DE  pcm_f32le                PCM 32-bit floating point little-endian    [AUDIO]
-DE  pcm_mulaw                PCM mu-law / G.711 mu-law                  [AUDIO]
-DE  pcm_s16be                PCM signed 16-bit big-endian               [AUDIO]
-DE  pcm_s16be_planar         PCM signed 16-bit big-endian planar        [AUDIO]
-DE  pcm_s16le                PCM signed 16-bit little-endian            [AUDIO]
-DE  pcm_s16le_planar         PCM signed 16-bit little-endian planar     [AUDIO]
-DE  pcm_s24be                PCM signed 24-bit big-endian               [AUDIO]
-DE  pcm_s24le                PCM signed 24-bit little-endian            [AUDIO]
-DE  pcm_s24le_planar         PCM signed 24-bit little-endian planar     [AUDIO]
-DE  pcm_s32be                PCM signed 32-bit big-endian               [AUDIO]
-DE  pcm_s32le                PCM signed 32-bit little-endian            [AUDIO]
-DE  pcm_s32le_planar         PCM signed 32-bit little-endian planar     [AUDIO]
-DE  png                      PNG (Portable Network Graphics) image      [VIDEO]
-DE  ppm                      PPM (Portable PixelMap) image              [VIDEO]
-DE  prores                   Apple ProRes (iCodec Pro)                  [VIDEO]
-D.  prores_raw               Apple ProRes RAW                           [VIDEO]
-DE  sbc                      SBC (low-complexity subband codec)         [AUDIO]
-DE  text                     raw UTF-8 text                             [SUBTITLE]
-D.  theora                   Theora                                     [VIDEO]
-DE  tiff                     TIFF image                                 [VIDEO]
-DE  truehd                   TrueHD                                     [AUDIO]
-D.  vc1                      SMPTE VC-1                                 [VIDEO]
-DE  vnull                    Null video codec                           [VIDEO]
-DE  vorbis                   Vorbis                                     [AUDIO]
-DE  vp8                      On2 VP8                                    [VIDEO]
-DE  vp9                      Google VP9                                 [VIDEO]
-DE  vvc                      H.266 / VVC (Versatile Video Coding)       [VIDEO]
-DE  webp                     WebP                                       [VIDEO]
-DE  webvtt                   WebVTT subtitle                            [SUBTITLE]
-DE  yuv4                     Uncompressed packed 4:2:0                  [VIDEO]
-```
+Details of codecs, muxers and parsers available in enable in the static ffmpeg library that ffmpeg-statigo ships are documented in [`docs/CODECS.md`](docs/CODECS.md).
 
 ### Hardware Acceleration Support Matrix
 
