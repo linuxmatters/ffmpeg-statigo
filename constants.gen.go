@@ -30,6 +30,7 @@ package ffmpeg
 // #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
+// #include <libavutil/blowfish.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -41,6 +42,7 @@ package ffmpeg
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
+// #include <libavutil/dovi_meta.h>
 // #include <libavutil/downmix_info.h>
 // #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
@@ -49,6 +51,7 @@ package ffmpeg
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
 // #include <libavutil/file.h>
+// #include <libavutil/film_grain_params.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hash.h>
 // #include <libavutil/hdr_dynamic_metadata.h>
@@ -57,6 +60,7 @@ package ffmpeg
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/intfloat.h>
+// #include <libavutil/lfg.h>
 // #include <libavutil/log.h>
 // #include <libavutil/lzo.h>
 // #include <libavutil/macros.h>
@@ -90,6 +94,7 @@ package ffmpeg
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
+// #include <libavutil/xtea.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -1496,6 +1501,9 @@ const AVTimeBase = C.AV_TIME_BASE
 // AVFourccMaxStringSize wraps AV_FOURCC_MAX_STRING_SIZE.
 const AVFourccMaxStringSize = C.AV_FOURCC_MAX_STRING_SIZE
 
+// AVBfRounds wraps AV_BF_ROUNDS.
+const AVBfRounds = C.AV_BF_ROUNDS
+
 // AVBufferFlagReadonly wraps AV_BUFFER_FLAG_READONLY.
 const AVBufferFlagReadonly = C.AV_BUFFER_FLAG_READONLY
 
@@ -1945,6 +1953,12 @@ const AVDictMultikey = C.AV_DICT_MULTIKEY
 
 // AVDictDedup wraps AV_DICT_DEDUP.
 const AVDictDedup = C.AV_DICT_DEDUP
+
+// AVDoviMaxPieces wraps AV_DOVI_MAX_PIECES.
+const AVDoviMaxPieces = C.AV_DOVI_MAX_PIECES
+
+// AVDoviMaxExtBlocks wraps AV_DOVI_MAX_EXT_BLOCKS.
+const AVDoviMaxExtBlocks = C.AV_DOVI_MAX_EXT_BLOCKS
 
 // AVErrorBsfNotFoundConst wraps AVERROR_BSF_NOT_FOUND.
 const AVErrorBsfNotFoundConst = C.AVERROR_BSF_NOT_FOUND

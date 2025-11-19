@@ -32,6 +32,7 @@ import "unsafe"
 // #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
+// #include <libavutil/blowfish.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -43,6 +44,7 @@ import "unsafe"
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
+// #include <libavutil/dovi_meta.h>
 // #include <libavutil/downmix_info.h>
 // #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
@@ -51,6 +53,7 @@ import "unsafe"
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
 // #include <libavutil/file.h>
+// #include <libavutil/film_grain_params.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hash.h>
 // #include <libavutil/hdr_dynamic_metadata.h>
@@ -59,6 +62,7 @@ import "unsafe"
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/intfloat.h>
+// #include <libavutil/lfg.h>
 // #include <libavutil/log.h>
 // #include <libavutil/lzo.h>
 // #include <libavutil/macros.h>
@@ -92,6 +96,7 @@ import "unsafe"
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
+// #include <libavutil/xtea.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -8043,6 +8048,63 @@ func AVBase64Encode(out *CStr, outSize int, in unsafe.Pointer, inSize int) *CStr
 	return wrapCStr(ret)
 }
 
+// --- Function av_blowfish_alloc ---
+
+// AVBlowfishAlloc wraps av_blowfish_alloc.
+//
+//	Allocate an AVBlowfish context.
+func AVBlowfishAlloc() *AVBlowfish {
+	ret := C.av_blowfish_alloc()
+	var retMapped *AVBlowfish
+	if ret != nil {
+		retMapped = &AVBlowfish{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_blowfish_init ---
+
+// AVBlowfishInit wraps av_blowfish_init.
+/*
+  Initialize an AVBlowfish context.
+
+  @param ctx an AVBlowfish context
+  @param key a key
+  @param key_len length of the key
+*/
+func AVBlowfishInit(ctx *AVBlowfish, key unsafe.Pointer, keyLen int) {
+	var tmpctx *C.AVBlowfish
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_blowfish_init(tmpctx, (*C.uint8_t)(key), C.int(keyLen))
+}
+
+// --- Function av_blowfish_crypt_ecb ---
+
+// av_blowfish_crypt_ecb skipped due to xl
+
+// --- Function av_blowfish_crypt ---
+
+// AVBlowfishCrypt wraps av_blowfish_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context.
+
+  @param ctx an AVBlowfish context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 8 byte blocks
+  @param iv initialization vector for CBC mode, if NULL ECB will be used
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVBlowfishCrypt(ctx *AVBlowfish, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.AVBlowfish
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_blowfish_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
 // --- Function av_bswap16 ---
 
 // AVBswap16 wraps av_bswap16.
@@ -9715,6 +9777,98 @@ func AVDictFree(m **AVDictionary) {
 
 // av_display_matrix_flip skipped due to const array param matrix
 
+// --- Function av_dovi_alloc ---
+
+// av_dovi_alloc skipped due to size
+
+// --- Function av_dovi_get_header ---
+
+// AVDoviGetHeader wraps av_dovi_get_header.
+func AVDoviGetHeader(data *AVDOVIMetadata) *AVDOVIRpuDataHeader {
+	var tmpdata *C.AVDOVIMetadata
+	if data != nil {
+		tmpdata = data.ptr
+	}
+	ret := C.av_dovi_get_header(tmpdata)
+	var retMapped *AVDOVIRpuDataHeader
+	if ret != nil {
+		retMapped = &AVDOVIRpuDataHeader{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dovi_get_mapping ---
+
+// AVDoviGetMapping wraps av_dovi_get_mapping.
+func AVDoviGetMapping(data *AVDOVIMetadata) *AVDOVIDataMapping {
+	var tmpdata *C.AVDOVIMetadata
+	if data != nil {
+		tmpdata = data.ptr
+	}
+	ret := C.av_dovi_get_mapping(tmpdata)
+	var retMapped *AVDOVIDataMapping
+	if ret != nil {
+		retMapped = &AVDOVIDataMapping{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dovi_get_color ---
+
+// AVDoviGetColor wraps av_dovi_get_color.
+func AVDoviGetColor(data *AVDOVIMetadata) *AVDOVIColorMetadata {
+	var tmpdata *C.AVDOVIMetadata
+	if data != nil {
+		tmpdata = data.ptr
+	}
+	ret := C.av_dovi_get_color(tmpdata)
+	var retMapped *AVDOVIColorMetadata
+	if ret != nil {
+		retMapped = &AVDOVIColorMetadata{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dovi_get_ext ---
+
+// AVDoviGetExt wraps av_dovi_get_ext.
+func AVDoviGetExt(data *AVDOVIMetadata, index int) *AVDOVIDmData {
+	var tmpdata *C.AVDOVIMetadata
+	if data != nil {
+		tmpdata = data.ptr
+	}
+	ret := C.av_dovi_get_ext(tmpdata, C.int(index))
+	var retMapped *AVDOVIDmData
+	if ret != nil {
+		retMapped = &AVDOVIDmData{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dovi_find_level ---
+
+// AVDoviFindLevel wraps av_dovi_find_level.
+/*
+  Find an extension block with a given level, or NULL. In the case of
+  multiple extension blocks, only the first is returned.
+*/
+func AVDoviFindLevel(data *AVDOVIMetadata, level uint8) *AVDOVIDmData {
+	var tmpdata *C.AVDOVIMetadata
+	if data != nil {
+		tmpdata = data.ptr
+	}
+	ret := C.av_dovi_find_level(tmpdata, C.uint8_t(level))
+	var retMapped *AVDOVIDmData
+	if ret != nil {
+		retMapped = &AVDOVIDmData{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dovi_metadata_alloc ---
+
+// av_dovi_metadata_alloc skipped due to size
+
 // --- Function av_downmix_info_update_side_data ---
 
 // AVDownmixInfoUpdateSideData wraps av_downmix_info_update_side_data.
@@ -10311,6 +10465,58 @@ func AVFifoFreep2(f **AVFifo) {
 */
 func AVFileUnmap(bufptr unsafe.Pointer, size uint64) {
 	C.av_file_unmap((*C.uint8_t)(bufptr), C.size_t(size))
+}
+
+// --- Function av_film_grain_params_alloc ---
+
+// av_film_grain_params_alloc skipped due to size
+
+// --- Function av_film_grain_params_create_side_data ---
+
+// AVFilmGrainParamsCreateSideData wraps av_film_grain_params_create_side_data.
+/*
+  Allocate a complete AVFilmGrainParams and add it to the frame.
+
+  @param frame The frame which side data is added to.
+
+  @return The AVFilmGrainParams structure to be filled by caller.
+*/
+func AVFilmGrainParamsCreateSideData(frame *AVFrame) *AVFilmGrainParams {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_film_grain_params_create_side_data(tmpframe)
+	var retMapped *AVFilmGrainParams
+	if ret != nil {
+		retMapped = &AVFilmGrainParams{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_film_grain_params_select ---
+
+// AVFilmGrainParamsSelect wraps av_film_grain_params_select.
+/*
+  Select the most appropriate film grain parameters set for the frame,
+  taking into account the frame's format, resolution and video signal
+  characteristics.
+
+  @note, for H.274, this may select a film grain parameter set with
+  greater chroma resolution than the frame. Users should take care to
+  correctly adjust the chroma grain frequency to the frame.
+*/
+func AVFilmGrainParamsSelect(frame *AVFrame) *AVFilmGrainParams {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_film_grain_params_select(tmpframe)
+	var retMapped *AVFilmGrainParams
+	if ret != nil {
+		retMapped = &AVFilmGrainParams{ptr: ret}
+	}
+	return retMapped
 }
 
 // --- Function av_frame_alloc ---
@@ -12174,6 +12380,73 @@ func AVDouble2Int(f float64) uint64 {
 	ret := C.av_double2int(C.double(f))
 	return uint64(ret)
 }
+
+// --- Function av_lfg_init ---
+
+// AVLfgInit wraps av_lfg_init.
+func AVLfgInit(c *AVLFG, seed uint) {
+	var tmpc *C.AVLFG
+	if c != nil {
+		tmpc = c.ptr
+	}
+	C.av_lfg_init(tmpc, C.uint(seed))
+}
+
+// --- Function av_lfg_init_from_data ---
+
+// AVLfgInitFromData wraps av_lfg_init_from_data.
+/*
+  Seed the state of the ALFG using binary data.
+
+  @return 0 on success, negative value (AVERROR) on failure.
+*/
+func AVLfgInitFromData(c *AVLFG, data unsafe.Pointer, length uint) (int, error) {
+	var tmpc *C.AVLFG
+	if c != nil {
+		tmpc = c.ptr
+	}
+	ret := C.av_lfg_init_from_data(tmpc, (*C.uint8_t)(data), C.uint(length))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_lfg_get ---
+
+// AVLfgGet wraps av_lfg_get.
+/*
+  Get the next random unsigned 32-bit number using an ALFG.
+
+  Please also consider a simple LCG like state= state*1664525+1013904223,
+  it may be good enough and faster for your specific use case.
+*/
+func AVLfgGet(c *AVLFG) uint {
+	var tmpc *C.AVLFG
+	if c != nil {
+		tmpc = c.ptr
+	}
+	ret := C.av_lfg_get(tmpc)
+	return uint(ret)
+}
+
+// --- Function av_mlfg_get ---
+
+// AVMlfgGet wraps av_mlfg_get.
+/*
+  Get the next random unsigned 32-bit number using a MLFG.
+
+  Please also consider av_lfg_get() above, it is faster.
+*/
+func AVMlfgGet(c *AVLFG) uint {
+	var tmpc *C.AVLFG
+	if c != nil {
+		tmpc = c.ptr
+	}
+	ret := C.av_mlfg_get(tmpc)
+	return uint(ret)
+}
+
+// --- Function av_bmg_get ---
+
+// av_bmg_get skipped due to const array param out
 
 // --- Function av_log ---
 
@@ -15600,6 +15873,72 @@ func AVVideoHintCreateSideData(frame *AVFrame, nbRects uint64) *AVVideoHint {
 		retMapped = &AVVideoHint{ptr: ret}
 	}
 	return retMapped
+}
+
+// --- Function av_xtea_alloc ---
+
+// AVXteaAlloc wraps av_xtea_alloc.
+//
+//	Allocate an AVXTEA context.
+func AVXteaAlloc() *AVXTEA {
+	ret := C.av_xtea_alloc()
+	var retMapped *AVXTEA
+	if ret != nil {
+		retMapped = &AVXTEA{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_xtea_init ---
+
+// av_xtea_init skipped due to const array param key
+
+// --- Function av_xtea_le_init ---
+
+// av_xtea_le_init skipped due to const array param key
+
+// --- Function av_xtea_crypt ---
+
+// AVXteaCrypt wraps av_xtea_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context,
+  in big endian format.
+
+  @param ctx an AVXTEA context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 8 byte blocks
+  @param iv initialization vector for CBC mode, if NULL then ECB will be used
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVXteaCrypt(ctx *AVXTEA, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.AVXTEA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_xtea_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_xtea_le_crypt ---
+
+// AVXteaLeCrypt wraps av_xtea_le_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context,
+  in little endian format.
+
+  @param ctx an AVXTEA context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 8 byte blocks
+  @param iv initialization vector for CBC mode, if NULL then ECB will be used
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVXteaLeCrypt(ctx *AVXTEA, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.AVXTEA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_xtea_le_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
 }
 
 // --- Function swr_get_class ---

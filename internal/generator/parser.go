@@ -50,7 +50,7 @@ var files = []string{
 	"libavutil/avstring.h",
 	"libavutil/avutil.h",
 	"libavutil/base64.h",
-	////"libavutil/blowfish.h", // undefined: ToUint32Array
+	"libavutil/blowfish.h",
 	////"libavutil/bprint.h", // could not determine what C.AVEscapeMode refers to
 	"libavutil/bswap.h",
 	"libavutil/buffer.h",
@@ -66,7 +66,7 @@ var files = []string{
 	"libavutil/detection_bbox.h",
 	"libavutil/dict.h",
 	"libavutil/display.h",
-	////"libavutil/dovi_meta.h", // undefined: ToUint16Array
+	"libavutil/dovi_meta.h",
 	"libavutil/downmix_info.h",
 	"libavutil/encryption_info.h",
 	"libavutil/error.h",
@@ -75,7 +75,7 @@ var files = []string{
 	"libavutil/ffversion.h",
 	"libavutil/fifo.h",
 	"libavutil/file.h",
-	////"libavutil/film_grain_params.h", // undefined: ToUint16Array
+	"libavutil/film_grain_params.h",
 	"libavutil/frame.h",
 	"libavutil/hash.h",
 	"libavutil/hdr_dynamic_metadata.h",
@@ -90,7 +90,7 @@ var files = []string{
 	////"libavutil/imgutils.h", // undefined: ptrdiff_t
 	"libavutil/intfloat.h",
 	////"libavutil/intreadwrite.h", //Unknown typedef kind UnionDecl
-	////"libavutil/lfg.h", //undefined: ToUintArray
+	"libavutil/lfg.h",
 	"libavutil/log.h",
 	"libavutil/lzo.h",
 	"libavutil/macros.h",
@@ -128,7 +128,7 @@ var files = []string{
 	"libavutil/version.h",
 	"libavutil/video_enc_params.h",
 	"libavutil/video_hint.h",
-	////"libavutil/xtea.h", // undefined: ToUint32Array
+	"libavutil/xtea.h",
 	"libswresample/version.h",
 	"libswresample/version_major.h",
 	"libswresample/swresample.h",
