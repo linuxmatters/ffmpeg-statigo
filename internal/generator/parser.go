@@ -18,7 +18,7 @@ var (
 
 var files = []string{
 	"libavcodec/avcodec.h",
-	"libavcodec/bsf.h",
+	////"libavcodec/bsf.h", // include manually defined bindings
 	"libavcodec/codec.h",
 	"libavcodec/codec_desc.h",
 	"libavcodec/codec_id.h",
@@ -39,21 +39,68 @@ var files = []string{
 	"libavformat/avio.h",
 	"libavformat/version.h",
 	"libavformat/version_major.h",
+	//"libavutil/ambient_viewing_environment.h",
+	////"libavutil/attributes.h", // includecs object-like macros
+	////"libavutil/audio_fifo.h", // includecs object-like macros
+	"libavutil/avassert.h",
+	"libavutil/avconfig.h",
+	////"libavutil/avstring.h", // includecs object-like macros
 	"libavutil/avutil.h",
+	//"libavutil/bprint.h",
+	////"libavutil/bswap.h", // includecs object-like macros
 	"libavutil/buffer.h",
 	"libavutil/channel_layout.h",
+	////"libavutil/common.h", // includecs object-like macros
+	"libavutil/container_fifo.h",
+	"libavutil/cpu.h",
+	////"libavutil/detection_bbox.h", // includecs object-like macros
 	"libavutil/dict.h",
+	"libavutil/display.h",
+	////"libavutil/dovi_meta.h", // includecs object-like macros
+	"libavutil/downmix_info.h",
+	"libavutil/encryption_info.h",
 	"libavutil/error.h",
+	"libavutil/eval.h",
+	"libavutil/executor.h",
+	"libavutil/ffversion.h",
+	"libavutil/fifo.h",
+	////"libavutil/file.h", // includecs object-like macros
+	//"libavutil/film_grain_params.h",
 	"libavutil/frame.h",
+	//"libavutil/hdr_dynamic_metadata.h",
+	//"libavutil/hdr_dynamic_vivid_metadata.h",
 	"libavutil/hwcontext.h",
+	////"libavutil/hwcontext_cuda.h",
+	////"libavutil/hwcontext_qsv.h",
+	////"libavutil/hwcontext_videotoolbox.h",
+	////"libavutil/hwcontext_vulkan.h",
+	////"libavutil/iamf.h", // includecs object-like macros
+	//"libavutil/imgutils.h", // undefined: ptrdiff_t
+	////"libavutil/intfloat.h", // includecs object-like macros
+	////"libavutil/intreadwrite.h",
+	////"libavutil/lfg.h",
 	"libavutil/log.h",
+	////"libavutil/macros.h", // includes object-like macros
+	//"libavutil/mastering_display_metadata.h",
 	"libavutil/mathematics.h",
 	"libavutil/mem.h",
+	//"libavutil/motion_vector.h",
 	"libavutil/opt.h",
+	"libavutil/parseutils.h",
+	////"libavutil/pixdesc.h",
+	//"libavutil/pixelutils.h", // undefined: av_pixelutils_sad_fn
 	"libavutil/pixfmt.h",
+	//"libavutil/random_seed.h",
 	"libavutil/rational.h",
+	//"libavutil/refstruct.h", //typedef name AVRefStructOpaque
+	"libavutil/replaygain.h",
 	"libavutil/samplefmt.h",
+	"libavutil/time.h",
+	"libavutil/timecode.h",
+	"libavutil/timestamp.h",
 	"libavutil/version.h",
+	"libavutil/video_enc_params.h",
+	"libavutil/video_hint.h",
 	"libswresample/version.h",
 	"libswresample/version_major.h",
 	"libswresample/swresample.h",
@@ -171,8 +218,7 @@ func (p *Parser) parseTopLevel(indent string, c clang.Cursor) {
 		}
 
 		// Skip compiler attribute macros (from libavutil/attributes.h and transitively included headers)
-		if strings.HasPrefix(name, "av_") && (
-			strings.HasSuffix(name, "_inline") ||
+		if strings.HasPrefix(name, "av_") && (strings.HasSuffix(name, "_inline") ||
 			strings.Contains(name, "_unused") ||
 			strings.Contains(name, "_deprecated") ||
 			strings.Contains(name, "_result") ||

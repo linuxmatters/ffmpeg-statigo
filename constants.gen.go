@@ -1,7 +1,6 @@
 package ffmpeg
 
 // #include <libavcodec/avcodec.h>
-// #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
@@ -22,21 +21,39 @@ package ffmpeg
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/avassert.h>
+// #include <libavutil/avconfig.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/container_fifo.h>
+// #include <libavutil/cpu.h>
 // #include <libavutil/dict.h>
+// #include <libavutil/display.h>
+// #include <libavutil/downmix_info.h>
+// #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
+// #include <libavutil/eval.h>
+// #include <libavutil/executor.h>
+// #include <libavutil/ffversion.h>
+// #include <libavutil/fifo.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/log.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/opt.h>
+// #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/replaygain.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/time.h>
+// #include <libavutil/timecode.h>
+// #include <libavutil/timestamp.h>
 // #include <libavutil/version.h>
+// #include <libavutil/video_enc_params.h>
+// #include <libavutil/video_hint.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -1380,6 +1397,12 @@ const FFAPINoDefaultTlsVerify = C.FF_API_NO_DEFAULT_TLS_VERIFY
 // FFAPIRFrameRate wraps FF_API_R_FRAME_RATE.
 const FFAPIRFrameRate = C.FF_API_R_FRAME_RATE
 
+// AVHaveBigendian wraps AV_HAVE_BIGENDIAN.
+const AVHaveBigendian = C.AV_HAVE_BIGENDIAN
+
+// AVHaveFastUnaligned wraps AV_HAVE_FAST_UNALIGNED.
+const AVHaveFastUnaligned = C.AV_HAVE_FAST_UNALIGNED
+
 // FFLambdaShift wraps FF_LAMBDA_SHIFT.
 const FFLambdaShift = C.FF_LAMBDA_SHIFT
 
@@ -1638,6 +1661,192 @@ const AVChLayout22Point2 = C.AV_CH_LAYOUT_22POINT2
 // AVChLayout7Point1TopBack wraps AV_CH_LAYOUT_7POINT1_TOP_BACK.
 const AVChLayout7Point1TopBack = C.AV_CH_LAYOUT_7POINT1_TOP_BACK
 
+// AVCpuFlagForce wraps AV_CPU_FLAG_FORCE.
+const AVCpuFlagForce = C.AV_CPU_FLAG_FORCE
+
+// AVCpuFlagMmx wraps AV_CPU_FLAG_MMX.
+const AVCpuFlagMmx = C.AV_CPU_FLAG_MMX
+
+// AVCpuFlagMmxext wraps AV_CPU_FLAG_MMXEXT.
+const AVCpuFlagMmxext = C.AV_CPU_FLAG_MMXEXT
+
+// AVCpuFlagMmx2 wraps AV_CPU_FLAG_MMX2.
+const AVCpuFlagMmx2 = C.AV_CPU_FLAG_MMX2
+
+// AVCpuFlag3Dnow wraps AV_CPU_FLAG_3DNOW.
+const AVCpuFlag3Dnow = C.AV_CPU_FLAG_3DNOW
+
+// AVCpuFlagSse wraps AV_CPU_FLAG_SSE.
+const AVCpuFlagSse = C.AV_CPU_FLAG_SSE
+
+// AVCpuFlagSse2 wraps AV_CPU_FLAG_SSE2.
+const AVCpuFlagSse2 = C.AV_CPU_FLAG_SSE2
+
+// AVCpuFlagSse2Slow wraps AV_CPU_FLAG_SSE2SLOW.
+const AVCpuFlagSse2Slow = C.AV_CPU_FLAG_SSE2SLOW
+
+// AVCpuFlag3Dnowext wraps AV_CPU_FLAG_3DNOWEXT.
+const AVCpuFlag3Dnowext = C.AV_CPU_FLAG_3DNOWEXT
+
+// AVCpuFlagSse3 wraps AV_CPU_FLAG_SSE3.
+const AVCpuFlagSse3 = C.AV_CPU_FLAG_SSE3
+
+// AVCpuFlagSse3Slow wraps AV_CPU_FLAG_SSE3SLOW.
+const AVCpuFlagSse3Slow = C.AV_CPU_FLAG_SSE3SLOW
+
+// AVCpuFlagSsse3 wraps AV_CPU_FLAG_SSSE3.
+const AVCpuFlagSsse3 = C.AV_CPU_FLAG_SSSE3
+
+// AVCpuFlagSsse3Slow wraps AV_CPU_FLAG_SSSE3SLOW.
+const AVCpuFlagSsse3Slow = C.AV_CPU_FLAG_SSSE3SLOW
+
+// AVCpuFlagAtom wraps AV_CPU_FLAG_ATOM.
+const AVCpuFlagAtom = C.AV_CPU_FLAG_ATOM
+
+// AVCpuFlagSse4 wraps AV_CPU_FLAG_SSE4.
+const AVCpuFlagSse4 = C.AV_CPU_FLAG_SSE4
+
+// AVCpuFlagSse42 wraps AV_CPU_FLAG_SSE42.
+const AVCpuFlagSse42 = C.AV_CPU_FLAG_SSE42
+
+// AVCpuFlagAesni wraps AV_CPU_FLAG_AESNI.
+const AVCpuFlagAesni = C.AV_CPU_FLAG_AESNI
+
+// AVCpuFlagAVX wraps AV_CPU_FLAG_AVX.
+const AVCpuFlagAVX = C.AV_CPU_FLAG_AVX
+
+// AVCpuFlagAVXslow wraps AV_CPU_FLAG_AVXSLOW.
+const AVCpuFlagAVXslow = C.AV_CPU_FLAG_AVXSLOW
+
+// AVCpuFlagXop wraps AV_CPU_FLAG_XOP.
+const AVCpuFlagXop = C.AV_CPU_FLAG_XOP
+
+// AVCpuFlagFma4 wraps AV_CPU_FLAG_FMA4.
+const AVCpuFlagFma4 = C.AV_CPU_FLAG_FMA4
+
+// AVCpuFlagCmov wraps AV_CPU_FLAG_CMOV.
+const AVCpuFlagCmov = C.AV_CPU_FLAG_CMOV
+
+// AVCpuFlagAVX2 wraps AV_CPU_FLAG_AVX2.
+const AVCpuFlagAVX2 = C.AV_CPU_FLAG_AVX2
+
+// AVCpuFlagFma3 wraps AV_CPU_FLAG_FMA3.
+const AVCpuFlagFma3 = C.AV_CPU_FLAG_FMA3
+
+// AVCpuFlagBmi1 wraps AV_CPU_FLAG_BMI1.
+const AVCpuFlagBmi1 = C.AV_CPU_FLAG_BMI1
+
+// AVCpuFlagBmi2 wraps AV_CPU_FLAG_BMI2.
+const AVCpuFlagBmi2 = C.AV_CPU_FLAG_BMI2
+
+// AVCpuFlagAVX512 wraps AV_CPU_FLAG_AVX512.
+const AVCpuFlagAVX512 = C.AV_CPU_FLAG_AVX512
+
+// AVCpuFlagAVX512Icl wraps AV_CPU_FLAG_AVX512ICL.
+const AVCpuFlagAVX512Icl = C.AV_CPU_FLAG_AVX512ICL
+
+// AVCpuFlagSlowGather wraps AV_CPU_FLAG_SLOW_GATHER.
+const AVCpuFlagSlowGather = C.AV_CPU_FLAG_SLOW_GATHER
+
+// AVCpuFlagAltivec wraps AV_CPU_FLAG_ALTIVEC.
+const AVCpuFlagAltivec = C.AV_CPU_FLAG_ALTIVEC
+
+// AVCpuFlagVsx wraps AV_CPU_FLAG_VSX.
+const AVCpuFlagVsx = C.AV_CPU_FLAG_VSX
+
+// AVCpuFlagPower8 wraps AV_CPU_FLAG_POWER8.
+const AVCpuFlagPower8 = C.AV_CPU_FLAG_POWER8
+
+// AVCpuFlagArmv5Te wraps AV_CPU_FLAG_ARMV5TE.
+const AVCpuFlagArmv5Te = C.AV_CPU_FLAG_ARMV5TE
+
+// AVCpuFlagArmv6 wraps AV_CPU_FLAG_ARMV6.
+const AVCpuFlagArmv6 = C.AV_CPU_FLAG_ARMV6
+
+// AVCpuFlagArmv6T2 wraps AV_CPU_FLAG_ARMV6T2.
+const AVCpuFlagArmv6T2 = C.AV_CPU_FLAG_ARMV6T2
+
+// AVCpuFlagVfp wraps AV_CPU_FLAG_VFP.
+const AVCpuFlagVfp = C.AV_CPU_FLAG_VFP
+
+// AVCpuFlagVfpv3 wraps AV_CPU_FLAG_VFPV3.
+const AVCpuFlagVfpv3 = C.AV_CPU_FLAG_VFPV3
+
+// AVCpuFlagNeon wraps AV_CPU_FLAG_NEON.
+const AVCpuFlagNeon = C.AV_CPU_FLAG_NEON
+
+// AVCpuFlagArmv8 wraps AV_CPU_FLAG_ARMV8.
+const AVCpuFlagArmv8 = C.AV_CPU_FLAG_ARMV8
+
+// AVCpuFlagVfpVm wraps AV_CPU_FLAG_VFP_VM.
+const AVCpuFlagVfpVm = C.AV_CPU_FLAG_VFP_VM
+
+// AVCpuFlagDotprod wraps AV_CPU_FLAG_DOTPROD.
+const AVCpuFlagDotprod = C.AV_CPU_FLAG_DOTPROD
+
+// AVCpuFlagI8Mm wraps AV_CPU_FLAG_I8MM.
+const AVCpuFlagI8Mm = C.AV_CPU_FLAG_I8MM
+
+// AVCpuFlagSve wraps AV_CPU_FLAG_SVE.
+const AVCpuFlagSve = C.AV_CPU_FLAG_SVE
+
+// AVCpuFlagSve2 wraps AV_CPU_FLAG_SVE2.
+const AVCpuFlagSve2 = C.AV_CPU_FLAG_SVE2
+
+// AVCpuFlagSetend wraps AV_CPU_FLAG_SETEND.
+const AVCpuFlagSetend = C.AV_CPU_FLAG_SETEND
+
+// AVCpuFlagMmi wraps AV_CPU_FLAG_MMI.
+const AVCpuFlagMmi = C.AV_CPU_FLAG_MMI
+
+// AVCpuFlagMsa wraps AV_CPU_FLAG_MSA.
+const AVCpuFlagMsa = C.AV_CPU_FLAG_MSA
+
+// AVCpuFlagLsx wraps AV_CPU_FLAG_LSX.
+const AVCpuFlagLsx = C.AV_CPU_FLAG_LSX
+
+// AVCpuFlagLasx wraps AV_CPU_FLAG_LASX.
+const AVCpuFlagLasx = C.AV_CPU_FLAG_LASX
+
+// AVCpuFlagRvi wraps AV_CPU_FLAG_RVI.
+const AVCpuFlagRvi = C.AV_CPU_FLAG_RVI
+
+// AVCpuFlagRvf wraps AV_CPU_FLAG_RVF.
+const AVCpuFlagRvf = C.AV_CPU_FLAG_RVF
+
+// AVCpuFlagRvd wraps AV_CPU_FLAG_RVD.
+const AVCpuFlagRvd = C.AV_CPU_FLAG_RVD
+
+// AVCpuFlagRvvI32 wraps AV_CPU_FLAG_RVV_I32.
+const AVCpuFlagRvvI32 = C.AV_CPU_FLAG_RVV_I32
+
+// AVCpuFlagRvvF32 wraps AV_CPU_FLAG_RVV_F32.
+const AVCpuFlagRvvF32 = C.AV_CPU_FLAG_RVV_F32
+
+// AVCpuFlagRvvI64 wraps AV_CPU_FLAG_RVV_I64.
+const AVCpuFlagRvvI64 = C.AV_CPU_FLAG_RVV_I64
+
+// AVCpuFlagRvvF64 wraps AV_CPU_FLAG_RVV_F64.
+const AVCpuFlagRvvF64 = C.AV_CPU_FLAG_RVV_F64
+
+// AVCpuFlagRvbBasic wraps AV_CPU_FLAG_RVB_BASIC.
+const AVCpuFlagRvbBasic = C.AV_CPU_FLAG_RVB_BASIC
+
+// AVCpuFlagRvbAddr wraps AV_CPU_FLAG_RVB_ADDR.
+const AVCpuFlagRvbAddr = C.AV_CPU_FLAG_RVB_ADDR
+
+// AVCpuFlagRvZvbb wraps AV_CPU_FLAG_RV_ZVBB.
+const AVCpuFlagRvZvbb = C.AV_CPU_FLAG_RV_ZVBB
+
+// AVCpuFlagRvMisaligned wraps AV_CPU_FLAG_RV_MISALIGNED.
+const AVCpuFlagRvMisaligned = C.AV_CPU_FLAG_RV_MISALIGNED
+
+// AVCpuFlagRvb wraps AV_CPU_FLAG_RVB.
+const AVCpuFlagRvb = C.AV_CPU_FLAG_RVB
+
+// AVCpuFlagSimd128 wraps AV_CPU_FLAG_SIMD128.
+const AVCpuFlagSimd128 = C.AV_CPU_FLAG_SIMD128
+
 // AVDictMatchCase wraps AV_DICT_MATCH_CASE.
 const AVDictMatchCase = C.AV_DICT_MATCH_CASE
 
@@ -1748,6 +1957,9 @@ const AVErrorHttpServerErrorConst = C.AVERROR_HTTP_SERVER_ERROR
 
 // AVErrorMaxStringSize wraps AV_ERROR_MAX_STRING_SIZE.
 const AVErrorMaxStringSize = C.AV_ERROR_MAX_STRING_SIZE
+
+// AVFifoFlagAutoGrow wraps AV_FIFO_FLAG_AUTO_GROW.
+const AVFifoFlagAutoGrow = C.AV_FIFO_FLAG_AUTO_GROW
 
 // AVNumDataPointers wraps AV_NUM_DATA_POINTERS.
 const AVNumDataPointers = C.AV_NUM_DATA_POINTERS
@@ -2309,6 +2521,12 @@ const AVPixFmtRgb96 = C.AV_PIX_FMT_RGB96
 
 // AVPixFmtRgba128 wraps AV_PIX_FMT_RGBA128.
 const AVPixFmtRgba128 = C.AV_PIX_FMT_RGBA128
+
+// AVTimecodeStrSize wraps AV_TIMECODE_STR_SIZE.
+const AVTimecodeStrSize = C.AV_TIMECODE_STR_SIZE
+
+// AVTsMaxStringSize wraps AV_TS_MAX_STRING_SIZE.
+const AVTsMaxStringSize = C.AV_TS_MAX_STRING_SIZE
 
 // LIBAVUtilVersionMajor wraps LIBAVUTIL_VERSION_MAJOR.
 const LIBAVUtilVersionMajor = C.LIBAVUTIL_VERSION_MAJOR

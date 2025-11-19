@@ -3,7 +3,6 @@ package ffmpeg
 import "unsafe"
 
 // #include <libavcodec/avcodec.h>
-// #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
@@ -24,21 +23,39 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/avassert.h>
+// #include <libavutil/avconfig.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/container_fifo.h>
+// #include <libavutil/cpu.h>
 // #include <libavutil/dict.h>
+// #include <libavutil/display.h>
+// #include <libavutil/downmix_info.h>
+// #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
+// #include <libavutil/eval.h>
+// #include <libavutil/executor.h>
+// #include <libavutil/ffversion.h>
+// #include <libavutil/fifo.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/log.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/opt.h>
+// #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/replaygain.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/time.h>
+// #include <libavutil/timecode.h>
+// #include <libavutil/timestamp.h>
 // #include <libavutil/version.h>
+// #include <libavutil/video_enc_params.h>
+// #include <libavutil/video_hint.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -888,483 +905,6 @@ func AVCodecIsOpen(s *AVCodecContext) (int, error) {
 		tmps = s.ptr
 	}
 	ret := C.avcodec_is_open(tmps)
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_get_by_name ---
-
-// AVBsfGetByName wraps av_bsf_get_by_name.
-/*
-  @return a bitstream filter with the specified name or NULL if no such
-          bitstream filter exists.
-*/
-func AVBsfGetByName(name *CStr) *AVBitStreamFilter {
-	var tmpname *C.char
-	if name != nil {
-		tmpname = name.ptr
-	}
-	ret := C.av_bsf_get_by_name(tmpname)
-	var retMapped *AVBitStreamFilter
-	if ret != nil {
-		retMapped = &AVBitStreamFilter{ptr: ret}
-	}
-	return retMapped
-}
-
-// --- Function av_bsf_iterate ---
-
-// av_bsf_iterate skipped due to opaque
-
-// --- Function av_bsf_alloc ---
-
-// AVBsfAlloc wraps av_bsf_alloc.
-/*
-  Allocate a context for a given bitstream filter. The caller must fill in the
-  context parameters as described in the documentation and then call
-  av_bsf_init() before sending any data to the filter.
-
-  @param filter the filter for which to allocate an instance.
-  @param[out] ctx a pointer into which the pointer to the newly-allocated context
-                  will be written. It must be freed with av_bsf_free() after the
-                  filtering is done.
-
-  @return 0 on success, a negative AVERROR code on failure
-*/
-func AVBsfAlloc(filter *AVBitStreamFilter, ctx **AVBSFContext) (int, error) {
-	var tmpfilter *C.AVBitStreamFilter
-	if filter != nil {
-		tmpfilter = filter.ptr
-	}
-	var ptrctx **C.AVBSFContext
-	var tmpctx *C.AVBSFContext
-	var oldTmpctx *C.AVBSFContext
-	if ctx != nil {
-		innerctx := *ctx
-		if innerctx != nil {
-			tmpctx = innerctx.ptr
-			oldTmpctx = tmpctx
-		}
-		ptrctx = &tmpctx
-	}
-	ret := C.av_bsf_alloc(tmpfilter, ptrctx)
-	if tmpctx != oldTmpctx && ctx != nil {
-		if tmpctx != nil {
-			*ctx = &AVBSFContext{ptr: tmpctx}
-		} else {
-			*ctx = nil
-		}
-	}
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_init ---
-
-// AVBsfInit wraps av_bsf_init.
-/*
-  Prepare the filter for use, after all the parameters and options have been
-  set.
-
-  @param ctx a AVBSFContext previously allocated with av_bsf_alloc()
-*/
-func AVBsfInit(ctx *AVBSFContext) (int, error) {
-	var tmpctx *C.AVBSFContext
-	if ctx != nil {
-		tmpctx = ctx.ptr
-	}
-	ret := C.av_bsf_init(tmpctx)
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_send_packet ---
-
-// AVBsfSendPacket wraps av_bsf_send_packet.
-/*
-  Submit a packet for filtering.
-
-  After sending each packet, the filter must be completely drained by calling
-  av_bsf_receive_packet() repeatedly until it returns AVERROR(EAGAIN) or
-  AVERROR_EOF.
-
-  @param ctx an initialized AVBSFContext
-  @param pkt the packet to filter. The bitstream filter will take ownership of
-  the packet and reset the contents of pkt. pkt is not touched if an error occurs.
-  If pkt is empty (i.e. NULL, or pkt->data is NULL and pkt->side_data_elems zero),
-  it signals the end of the stream (i.e. no more non-empty packets will be sent;
-  sending more empty packets does nothing) and will cause the filter to output
-  any packets it may have buffered internally.
-
-  @return
-   - 0 on success.
-   - AVERROR(EAGAIN) if packets need to be retrieved from the filter (using
-     av_bsf_receive_packet()) before new input can be consumed.
-   - Another negative AVERROR value if an error occurs.
-*/
-func AVBsfSendPacket(ctx *AVBSFContext, pkt *AVPacket) (int, error) {
-	var tmpctx *C.AVBSFContext
-	if ctx != nil {
-		tmpctx = ctx.ptr
-	}
-	var tmppkt *C.AVPacket
-	if pkt != nil {
-		tmppkt = pkt.ptr
-	}
-	ret := C.av_bsf_send_packet(tmpctx, tmppkt)
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_receive_packet ---
-
-// AVBsfReceivePacket wraps av_bsf_receive_packet.
-/*
-  Retrieve a filtered packet.
-
-  @param ctx an initialized AVBSFContext
-  @param[out] pkt this struct will be filled with the contents of the filtered
-                  packet. It is owned by the caller and must be freed using
-                  av_packet_unref() when it is no longer needed.
-                  This parameter should be "clean" (i.e. freshly allocated
-                  with av_packet_alloc() or unreffed with av_packet_unref())
-                  when this function is called. If this function returns
-                  successfully, the contents of pkt will be completely
-                  overwritten by the returned data. On failure, pkt is not
-                  touched.
-
-  @return
-   - 0 on success.
-   - AVERROR(EAGAIN) if more packets need to be sent to the filter (using
-     av_bsf_send_packet()) to get more output.
-   - AVERROR_EOF if there will be no further output from the filter.
-   - Another negative AVERROR value if an error occurs.
-
-  @note one input packet may result in several output packets, so after sending
-  a packet with av_bsf_send_packet(), this function needs to be called
-  repeatedly until it stops returning 0. It is also possible for a filter to
-  output fewer packets than were sent to it, so this function may return
-  AVERROR(EAGAIN) immediately after a successful av_bsf_send_packet() call.
-*/
-func AVBsfReceivePacket(ctx *AVBSFContext, pkt *AVPacket) (int, error) {
-	var tmpctx *C.AVBSFContext
-	if ctx != nil {
-		tmpctx = ctx.ptr
-	}
-	var tmppkt *C.AVPacket
-	if pkt != nil {
-		tmppkt = pkt.ptr
-	}
-	ret := C.av_bsf_receive_packet(tmpctx, tmppkt)
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_flush ---
-
-// AVBsfFlush wraps av_bsf_flush.
-//
-//	Reset the internal bitstream filter state. Should be called e.g. when seeking.
-func AVBsfFlush(ctx *AVBSFContext) {
-	var tmpctx *C.AVBSFContext
-	if ctx != nil {
-		tmpctx = ctx.ptr
-	}
-	C.av_bsf_flush(tmpctx)
-}
-
-// --- Function av_bsf_free ---
-
-// AVBsfFree wraps av_bsf_free.
-/*
-  Free a bitstream filter context and everything associated with it; write NULL
-  into the supplied pointer.
-*/
-func AVBsfFree(ctx **AVBSFContext) {
-	var ptrctx **C.AVBSFContext
-	var tmpctx *C.AVBSFContext
-	var oldTmpctx *C.AVBSFContext
-	if ctx != nil {
-		innerctx := *ctx
-		if innerctx != nil {
-			tmpctx = innerctx.ptr
-			oldTmpctx = tmpctx
-		}
-		ptrctx = &tmpctx
-	}
-	C.av_bsf_free(ptrctx)
-	if tmpctx != oldTmpctx && ctx != nil {
-		if tmpctx != nil {
-			*ctx = &AVBSFContext{ptr: tmpctx}
-		} else {
-			*ctx = nil
-		}
-	}
-}
-
-// --- Function av_bsf_get_class ---
-
-// AVBsfGetClass wraps av_bsf_get_class.
-/*
-  Get the AVClass for AVBSFContext. It can be used in combination with
-  AV_OPT_SEARCH_FAKE_OBJ for examining options.
-
-  @see av_opt_find().
-*/
-func AVBsfGetClass() *AVClass {
-	ret := C.av_bsf_get_class()
-	var retMapped *AVClass
-	if ret != nil {
-		retMapped = &AVClass{ptr: ret}
-	}
-	return retMapped
-}
-
-// --- Function av_bsf_list_alloc ---
-
-// AVBsfListAlloc wraps av_bsf_list_alloc.
-/*
-  Allocate empty list of bitstream filters.
-  The list must be later freed by av_bsf_list_free()
-  or finalized by av_bsf_list_finalize().
-
-  @return Pointer to @ref AVBSFList on success, NULL in case of failure
-*/
-func AVBsfListAlloc() *AVBSFList {
-	ret := C.av_bsf_list_alloc()
-	var retMapped *AVBSFList
-	if ret != nil {
-		retMapped = &AVBSFList{ptr: ret}
-	}
-	return retMapped
-}
-
-// --- Function av_bsf_list_free ---
-
-// AVBsfListFree wraps av_bsf_list_free.
-/*
-  Free list of bitstream filters.
-
-  @param lst Pointer to pointer returned by av_bsf_list_alloc()
-*/
-func AVBsfListFree(lst **AVBSFList) {
-	var ptrlst **C.AVBSFList
-	var tmplst *C.AVBSFList
-	var oldTmplst *C.AVBSFList
-	if lst != nil {
-		innerlst := *lst
-		if innerlst != nil {
-			tmplst = innerlst.ptr
-			oldTmplst = tmplst
-		}
-		ptrlst = &tmplst
-	}
-	C.av_bsf_list_free(ptrlst)
-	if tmplst != oldTmplst && lst != nil {
-		if tmplst != nil {
-			*lst = &AVBSFList{ptr: tmplst}
-		} else {
-			*lst = nil
-		}
-	}
-}
-
-// --- Function av_bsf_list_append ---
-
-// AVBsfListAppend wraps av_bsf_list_append.
-/*
-  Append bitstream filter to the list of bitstream filters.
-
-  @param lst List to append to
-  @param bsf Filter context to be appended
-
-  @return >=0 on success, negative AVERROR in case of failure
-*/
-func AVBsfListAppend(lst *AVBSFList, bsf *AVBSFContext) (int, error) {
-	var tmplst *C.AVBSFList
-	if lst != nil {
-		tmplst = lst.ptr
-	}
-	var tmpbsf *C.AVBSFContext
-	if bsf != nil {
-		tmpbsf = bsf.ptr
-	}
-	ret := C.av_bsf_list_append(tmplst, tmpbsf)
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_list_append2 ---
-
-// AVBsfListAppend2 wraps av_bsf_list_append2.
-/*
-  Construct new bitstream filter context given it's name and options
-  and append it to the list of bitstream filters.
-
-  @param lst      List to append to
-  @param bsf_name Name of the bitstream filter
-  @param options  Options for the bitstream filter, can be set to NULL
-
-  @return >=0 on success, negative AVERROR in case of failure
-*/
-func AVBsfListAppend2(lst *AVBSFList, bsfName *CStr, options **AVDictionary) (int, error) {
-	var tmplst *C.AVBSFList
-	if lst != nil {
-		tmplst = lst.ptr
-	}
-	var tmpbsfName *C.char
-	if bsfName != nil {
-		tmpbsfName = bsfName.ptr
-	}
-	var ptroptions **C.AVDictionary
-	var tmpoptions *C.AVDictionary
-	var oldTmpoptions *C.AVDictionary
-	if options != nil {
-		inneroptions := *options
-		if inneroptions != nil {
-			tmpoptions = inneroptions.ptr
-			oldTmpoptions = tmpoptions
-		}
-		ptroptions = &tmpoptions
-	}
-	ret := C.av_bsf_list_append2(tmplst, tmpbsfName, ptroptions)
-	if tmpoptions != oldTmpoptions && options != nil {
-		if tmpoptions != nil {
-			*options = &AVDictionary{ptr: tmpoptions}
-		} else {
-			*options = nil
-		}
-	}
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_list_finalize ---
-
-// AVBsfListFinalize wraps av_bsf_list_finalize.
-/*
-  Finalize list of bitstream filters.
-
-  This function will transform @ref AVBSFList to single @ref AVBSFContext,
-  so the whole chain of bitstream filters can be treated as single filter
-  freshly allocated by av_bsf_alloc().
-  If the call is successful, @ref AVBSFList structure is freed and lst
-  will be set to NULL. In case of failure, caller is responsible for
-  freeing the structure by av_bsf_list_free()
-
-  @param      lst Filter list structure to be transformed
-  @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
-                  representing the chain of bitstream filters
-
-  @return >=0 on success, negative AVERROR in case of failure
-*/
-func AVBsfListFinalize(lst **AVBSFList, bsf **AVBSFContext) (int, error) {
-	var ptrlst **C.AVBSFList
-	var tmplst *C.AVBSFList
-	var oldTmplst *C.AVBSFList
-	if lst != nil {
-		innerlst := *lst
-		if innerlst != nil {
-			tmplst = innerlst.ptr
-			oldTmplst = tmplst
-		}
-		ptrlst = &tmplst
-	}
-	var ptrbsf **C.AVBSFContext
-	var tmpbsf *C.AVBSFContext
-	var oldTmpbsf *C.AVBSFContext
-	if bsf != nil {
-		innerbsf := *bsf
-		if innerbsf != nil {
-			tmpbsf = innerbsf.ptr
-			oldTmpbsf = tmpbsf
-		}
-		ptrbsf = &tmpbsf
-	}
-	ret := C.av_bsf_list_finalize(ptrlst, ptrbsf)
-	if tmplst != oldTmplst && lst != nil {
-		if tmplst != nil {
-			*lst = &AVBSFList{ptr: tmplst}
-		} else {
-			*lst = nil
-		}
-	}
-	if tmpbsf != oldTmpbsf && bsf != nil {
-		if tmpbsf != nil {
-			*bsf = &AVBSFContext{ptr: tmpbsf}
-		} else {
-			*bsf = nil
-		}
-	}
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_list_parse_str ---
-
-// AVBsfListParseStr wraps av_bsf_list_parse_str.
-/*
-  Parse string describing list of bitstream filters and create single
-  @ref AVBSFContext describing the whole chain of bitstream filters.
-  Resulting @ref AVBSFContext can be treated as any other @ref AVBSFContext freshly
-  allocated by av_bsf_alloc().
-
-  @param      str String describing chain of bitstream filters in format
-                  `bsf1[=opt1=val1:opt2=val2][,bsf2]`
-  @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
-                  representing the chain of bitstream filters
-
-  @return >=0 on success, negative AVERROR in case of failure
-*/
-func AVBsfListParseStr(str *CStr, bsf **AVBSFContext) (int, error) {
-	var tmpstr *C.char
-	if str != nil {
-		tmpstr = str.ptr
-	}
-	var ptrbsf **C.AVBSFContext
-	var tmpbsf *C.AVBSFContext
-	var oldTmpbsf *C.AVBSFContext
-	if bsf != nil {
-		innerbsf := *bsf
-		if innerbsf != nil {
-			tmpbsf = innerbsf.ptr
-			oldTmpbsf = tmpbsf
-		}
-		ptrbsf = &tmpbsf
-	}
-	ret := C.av_bsf_list_parse_str(tmpstr, ptrbsf)
-	if tmpbsf != oldTmpbsf && bsf != nil {
-		if tmpbsf != nil {
-			*bsf = &AVBSFContext{ptr: tmpbsf}
-		} else {
-			*bsf = nil
-		}
-	}
-	return int(ret), WrapErr(int(ret))
-}
-
-// --- Function av_bsf_get_null_filter ---
-
-// AVBsfGetNullFilter wraps av_bsf_get_null_filter.
-/*
-  Get null/pass-through bitstream filter.
-
-  @param[out] bsf Pointer to be set to new instance of pass-through bitstream filter
-
-  @return
-*/
-func AVBsfGetNullFilter(bsf **AVBSFContext) (int, error) {
-	var ptrbsf **C.AVBSFContext
-	var tmpbsf *C.AVBSFContext
-	var oldTmpbsf *C.AVBSFContext
-	if bsf != nil {
-		innerbsf := *bsf
-		if innerbsf != nil {
-			tmpbsf = innerbsf.ptr
-			oldTmpbsf = tmpbsf
-		}
-		ptrbsf = &tmpbsf
-	}
-	ret := C.av_bsf_get_null_filter(ptrbsf)
-	if tmpbsf != oldTmpbsf && bsf != nil {
-		if tmpbsf != nil {
-			*bsf = &AVBSFContext{ptr: tmpbsf}
-		} else {
-			*bsf = nil
-		}
-	}
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -7514,6 +7054,18 @@ func AVIOHandshake(c *AVIOContext) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_assert0_fpu ---
+
+// AVAssert0Fpu wraps av_assert0_fpu.
+/*
+  Assert that floating point operations can be executed.
+
+  This will av_assert0() that the cpu is not in MMX state on X86
+*/
+func AVAssert0Fpu() {
+	C.av_assert0_fpu()
+}
+
 // --- Function avutil_version ---
 
 // AVUtilVersion wraps avutil_version.
@@ -8520,6 +8072,192 @@ func AVChannelLayoutRetype(channelLayout *AVChannelLayout, order AVChannelOrder,
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_container_fifo_alloc ---
+
+// av_container_fifo_alloc skipped due to container_alloc.
+
+// --- Function av_container_fifo_alloc_avframe ---
+
+// AVContainerFifoAllocAVFrame wraps av_container_fifo_alloc_avframe.
+/*
+  Allocate an AVContainerFifo instance for AVFrames.
+
+  @param flags currently unused
+*/
+func AVContainerFifoAllocAVFrame(flags uint) *AVContainerFifo {
+	ret := C.av_container_fifo_alloc_avframe(C.uint(flags))
+	var retMapped *AVContainerFifo
+	if ret != nil {
+		retMapped = &AVContainerFifo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_container_fifo_free ---
+
+// AVContainerFifoFree wraps av_container_fifo_free.
+//
+//	Free a AVContainerFifo and everything in it.
+func AVContainerFifoFree(cf **AVContainerFifo) {
+	var ptrcf **C.AVContainerFifo
+	var tmpcf *C.AVContainerFifo
+	var oldTmpcf *C.AVContainerFifo
+	if cf != nil {
+		innercf := *cf
+		if innercf != nil {
+			tmpcf = innercf.ptr
+			oldTmpcf = tmpcf
+		}
+		ptrcf = &tmpcf
+	}
+	C.av_container_fifo_free(ptrcf)
+	if tmpcf != oldTmpcf && cf != nil {
+		if tmpcf != nil {
+			*cf = &AVContainerFifo{ptr: tmpcf}
+		} else {
+			*cf = nil
+		}
+	}
+}
+
+// --- Function av_container_fifo_write ---
+
+// AVContainerFifoWrite wraps av_container_fifo_write.
+/*
+  Write the contents of obj to the FIFO.
+
+  The fifo_transfer() callback previously provided to av_container_fifo_alloc()
+  will be called with obj as src in order to perform the actual transfer.
+*/
+func AVContainerFifoWrite(cf *AVContainerFifo, obj unsafe.Pointer, flags uint) (int, error) {
+	var tmpcf *C.AVContainerFifo
+	if cf != nil {
+		tmpcf = cf.ptr
+	}
+	ret := C.av_container_fifo_write(tmpcf, obj, C.uint(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_container_fifo_read ---
+
+// AVContainerFifoRead wraps av_container_fifo_read.
+/*
+  Read the next available object from the FIFO into obj.
+
+  The fifo_read() callback previously provided to av_container_fifo_alloc()
+  will be called with obj as dst in order to perform the actual transfer.
+*/
+func AVContainerFifoRead(cf *AVContainerFifo, obj unsafe.Pointer, flags uint) (int, error) {
+	var tmpcf *C.AVContainerFifo
+	if cf != nil {
+		tmpcf = cf.ptr
+	}
+	ret := C.av_container_fifo_read(tmpcf, obj, C.uint(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_container_fifo_peek ---
+
+// av_container_fifo_peek skipped due to pobj
+
+// --- Function av_container_fifo_drain ---
+
+// AVContainerFifoDrain wraps av_container_fifo_drain.
+/*
+  Discard the specified number of elements from the FIFO.
+
+  @param nb_elems number of elements to discard, MUST NOT be larger than
+                  av_fifo_can_read(f)
+*/
+func AVContainerFifoDrain(cf *AVContainerFifo, nbElems uint64) {
+	var tmpcf *C.AVContainerFifo
+	if cf != nil {
+		tmpcf = cf.ptr
+	}
+	C.av_container_fifo_drain(tmpcf, C.size_t(nbElems))
+}
+
+// --- Function av_container_fifo_can_read ---
+
+// AVContainerFifoCanRead wraps av_container_fifo_can_read.
+//
+//	@return number of objects available for reading
+func AVContainerFifoCanRead(cf *AVContainerFifo) uint64 {
+	var tmpcf *C.AVContainerFifo
+	if cf != nil {
+		tmpcf = cf.ptr
+	}
+	ret := C.av_container_fifo_can_read(tmpcf)
+	return uint64(ret)
+}
+
+// --- Function av_get_cpu_flags ---
+
+// AVGetCpuFlags wraps av_get_cpu_flags.
+/*
+  Return the flags which specify extensions supported by the CPU.
+  The returned value is affected by av_force_cpu_flags() if that was used
+  before. So av_get_cpu_flags() can easily be used in an application to
+  detect the enabled cpu flags.
+*/
+func AVGetCpuFlags() (int, error) {
+	ret := C.av_get_cpu_flags()
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_force_cpu_flags ---
+
+// AVForceCpuFlags wraps av_force_cpu_flags.
+/*
+  Disables cpu detection and forces the specified flags.
+  -1 is a special case that disables forcing of specific flags.
+*/
+func AVForceCpuFlags(flags int) {
+	C.av_force_cpu_flags(C.int(flags))
+}
+
+// --- Function av_parse_cpu_caps ---
+
+// av_parse_cpu_caps skipped due to flags
+
+// --- Function av_cpu_count ---
+
+// AVCpuCount wraps av_cpu_count.
+//
+//	@return the number of logical CPU cores present.
+func AVCpuCount() (int, error) {
+	ret := C.av_cpu_count()
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_cpu_force_count ---
+
+// AVCpuForceCount wraps av_cpu_force_count.
+/*
+  Overrides cpu count detection and forces the specified count.
+  Count < 1 disables forcing of specific count.
+*/
+func AVCpuForceCount(count int) {
+	C.av_cpu_force_count(C.int(count))
+}
+
+// --- Function av_cpu_max_align ---
+
+// AVCpuMaxAlign wraps av_cpu_max_align.
+/*
+  Get the maximum data alignment that may be required by FFmpeg.
+
+  Note that this is affected by the build configuration and the CPU flags mask,
+  so e.g. if the CPU supports AVX, but libavutil has been built with
+  --disable-avx or the AV_CPU_FLAG_AVX flag has been disabled through
+   av_set_cpu_flags_mask(), then this function will behave as if AVX is not
+   present.
+*/
+func AVCpuMaxAlign() uint64 {
+	ret := C.av_cpu_max_align()
+	return uint64(ret)
+}
+
 // --- Function av_dict_get ---
 
 // AVDictGet wraps av_dict_get.
@@ -8838,6 +8576,181 @@ func AVDictFree(m **AVDictionary) {
 
 // av_dict_get_string skipped due to buffer
 
+// --- Function av_display_rotation_get ---
+
+// av_display_rotation_get skipped due to const array param matrix
+
+// --- Function av_display_rotation_set ---
+
+// av_display_rotation_set skipped due to const array param matrix
+
+// --- Function av_display_matrix_flip ---
+
+// av_display_matrix_flip skipped due to const array param matrix
+
+// --- Function av_downmix_info_update_side_data ---
+
+// AVDownmixInfoUpdateSideData wraps av_downmix_info_update_side_data.
+/*
+  Get a frame's AV_FRAME_DATA_DOWNMIX_INFO side data for editing.
+
+  If the side data is absent, it is created and added to the frame.
+
+  @param frame the frame for which the side data is to be obtained or created
+
+  @return the AVDownmixInfo structure to be edited by the caller, or NULL if
+          the structure cannot be allocated.
+*/
+func AVDownmixInfoUpdateSideData(frame *AVFrame) *AVDownmixInfo {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_downmix_info_update_side_data(tmpframe)
+	var retMapped *AVDownmixInfo
+	if ret != nil {
+		retMapped = &AVDownmixInfo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_encryption_info_alloc ---
+
+// AVEncryptionInfoAlloc wraps av_encryption_info_alloc.
+/*
+  Allocates an AVEncryptionInfo structure and sub-pointers to hold the given
+  number of subsamples.  This will allocate pointers for the key ID, IV,
+  and subsample entries, set the size members, and zero-initialize the rest.
+
+  @param subsample_count The number of subsamples.
+  @param key_id_size The number of bytes in the key ID, should be 16.
+  @param iv_size The number of bytes in the IV, should be 16.
+
+  @return The new AVEncryptionInfo structure, or NULL on error.
+*/
+func AVEncryptionInfoAlloc(subsampleCount uint32, keyIdSize uint32, ivSize uint32) *AVEncryptionInfo {
+	ret := C.av_encryption_info_alloc(C.uint32_t(subsampleCount), C.uint32_t(keyIdSize), C.uint32_t(ivSize))
+	var retMapped *AVEncryptionInfo
+	if ret != nil {
+		retMapped = &AVEncryptionInfo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_encryption_info_clone ---
+
+// AVEncryptionInfoClone wraps av_encryption_info_clone.
+/*
+  Allocates an AVEncryptionInfo structure with a copy of the given data.
+  @return The new AVEncryptionInfo structure, or NULL on error.
+*/
+func AVEncryptionInfoClone(info *AVEncryptionInfo) *AVEncryptionInfo {
+	var tmpinfo *C.AVEncryptionInfo
+	if info != nil {
+		tmpinfo = info.ptr
+	}
+	ret := C.av_encryption_info_clone(tmpinfo)
+	var retMapped *AVEncryptionInfo
+	if ret != nil {
+		retMapped = &AVEncryptionInfo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_encryption_info_free ---
+
+// AVEncryptionInfoFree wraps av_encryption_info_free.
+/*
+  Frees the given encryption info object.  This MUST NOT be used to free the
+  side-data data pointer, that should use normal side-data methods.
+*/
+func AVEncryptionInfoFree(info *AVEncryptionInfo) {
+	var tmpinfo *C.AVEncryptionInfo
+	if info != nil {
+		tmpinfo = info.ptr
+	}
+	C.av_encryption_info_free(tmpinfo)
+}
+
+// --- Function av_encryption_info_get_side_data ---
+
+// AVEncryptionInfoGetSideData wraps av_encryption_info_get_side_data.
+/*
+  Creates a copy of the AVEncryptionInfo that is contained in the given side
+  data.  The resulting object should be passed to av_encryption_info_free()
+  when done.
+
+  @return The new AVEncryptionInfo structure, or NULL on error.
+*/
+func AVEncryptionInfoGetSideData(sideData unsafe.Pointer, sideDataSize uint64) *AVEncryptionInfo {
+	ret := C.av_encryption_info_get_side_data((*C.uint8_t)(sideData), C.size_t(sideDataSize))
+	var retMapped *AVEncryptionInfo
+	if ret != nil {
+		retMapped = &AVEncryptionInfo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_encryption_info_add_side_data ---
+
+// av_encryption_info_add_side_data skipped due to sideDataSize
+
+// --- Function av_encryption_init_info_alloc ---
+
+// AVEncryptionInitInfoAlloc wraps av_encryption_init_info_alloc.
+/*
+  Allocates an AVEncryptionInitInfo structure and sub-pointers to hold the
+  given sizes.  This will allocate pointers and set all the fields.
+
+  @return The new AVEncryptionInitInfo structure, or NULL on error.
+*/
+func AVEncryptionInitInfoAlloc(systemIdSize uint32, numKeyIds uint32, keyIdSize uint32, dataSize uint32) *AVEncryptionInitInfo {
+	ret := C.av_encryption_init_info_alloc(C.uint32_t(systemIdSize), C.uint32_t(numKeyIds), C.uint32_t(keyIdSize), C.uint32_t(dataSize))
+	var retMapped *AVEncryptionInitInfo
+	if ret != nil {
+		retMapped = &AVEncryptionInitInfo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_encryption_init_info_free ---
+
+// AVEncryptionInitInfoFree wraps av_encryption_init_info_free.
+/*
+  Frees the given encryption init info object.  This MUST NOT be used to free
+  the side-data data pointer, that should use normal side-data methods.
+*/
+func AVEncryptionInitInfoFree(info *AVEncryptionInitInfo) {
+	var tmpinfo *C.AVEncryptionInitInfo
+	if info != nil {
+		tmpinfo = info.ptr
+	}
+	C.av_encryption_init_info_free(tmpinfo)
+}
+
+// --- Function av_encryption_init_info_get_side_data ---
+
+// AVEncryptionInitInfoGetSideData wraps av_encryption_init_info_get_side_data.
+/*
+  Creates a copy of the AVEncryptionInitInfo that is contained in the given
+  side data.  The resulting object should be passed to
+  av_encryption_init_info_free() when done.
+
+  @return The new AVEncryptionInitInfo structure, or NULL on error.
+*/
+func AVEncryptionInitInfoGetSideData(sideData unsafe.Pointer, sideDataSize uint64) *AVEncryptionInitInfo {
+	ret := C.av_encryption_init_info_get_side_data((*C.uint8_t)(sideData), C.size_t(sideDataSize))
+	var retMapped *AVEncryptionInitInfo
+	if ret != nil {
+		retMapped = &AVEncryptionInitInfo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_encryption_init_info_add_side_data ---
+
+// av_encryption_init_info_add_side_data skipped due to sideDataSize
+
 // --- Function av_strerror ---
 
 // AVStrerror wraps av_strerror.
@@ -8882,6 +8795,377 @@ func AVMakeErrorString(errbuf *CStr, errbufSize uint64, errnum int) *CStr {
 	}
 	ret := C.av_make_error_string(tmperrbuf, C.size_t(errbufSize), C.int(errnum))
 	return wrapCStr(ret)
+}
+
+// --- Function av_expr_parse_and_eval ---
+
+// av_expr_parse_and_eval skipped due to res
+
+// --- Function av_expr_parse ---
+
+// av_expr_parse skipped due to constNames
+
+// --- Function av_expr_eval ---
+
+// av_expr_eval skipped due to constValues
+
+// --- Function av_expr_count_vars ---
+
+// av_expr_count_vars skipped due to counter
+
+// --- Function av_expr_count_func ---
+
+// av_expr_count_func skipped due to counter
+
+// --- Function av_expr_free ---
+
+// AVExprFree wraps av_expr_free.
+//
+//	Free a parsed expression previously created with av_expr_parse().
+func AVExprFree(e *AVExpr) {
+	var tmpe *C.AVExpr
+	if e != nil {
+		tmpe = e.ptr
+	}
+	C.av_expr_free(tmpe)
+}
+
+// --- Function av_strtod ---
+
+// av_strtod skipped due to tail
+
+// --- Function av_executor_alloc ---
+
+// AVExecutorAlloc wraps av_executor_alloc.
+/*
+  Alloc executor
+  @param callbacks callback structure for executor
+  @param thread_count worker thread number, 0 for run on caller's thread directly
+  @return return the executor
+*/
+func AVExecutorAlloc(callbacks *AVTaskCallbacks, threadCount int) *AVExecutor {
+	var tmpcallbacks *C.AVTaskCallbacks
+	if callbacks != nil {
+		tmpcallbacks = callbacks.ptr
+	}
+	ret := C.av_executor_alloc(tmpcallbacks, C.int(threadCount))
+	var retMapped *AVExecutor
+	if ret != nil {
+		retMapped = &AVExecutor{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_executor_free ---
+
+// AVExecutorFree wraps av_executor_free.
+/*
+  Free executor
+  @param e  pointer to executor
+*/
+func AVExecutorFree(e **AVExecutor) {
+	var ptre **C.AVExecutor
+	var tmpe *C.AVExecutor
+	var oldTmpe *C.AVExecutor
+	if e != nil {
+		innere := *e
+		if innere != nil {
+			tmpe = innere.ptr
+			oldTmpe = tmpe
+		}
+		ptre = &tmpe
+	}
+	C.av_executor_free(ptre)
+	if tmpe != oldTmpe && e != nil {
+		if tmpe != nil {
+			*e = &AVExecutor{ptr: tmpe}
+		} else {
+			*e = nil
+		}
+	}
+}
+
+// --- Function av_executor_execute ---
+
+// AVExecutorExecute wraps av_executor_execute.
+/*
+  Add task to executor
+  @param e pointer to executor
+  @param t pointer to task. If NULL, it will wakeup one work thread
+*/
+func AVExecutorExecute(e *AVExecutor, t *AVTask) {
+	var tmpe *C.AVExecutor
+	if e != nil {
+		tmpe = e.ptr
+	}
+	var tmpt *C.AVTask
+	if t != nil {
+		tmpt = t.ptr
+	}
+	C.av_executor_execute(tmpe, tmpt)
+}
+
+// --- Function av_fifo_alloc2 ---
+
+// AVFifoAlloc2 wraps av_fifo_alloc2.
+/*
+  Allocate and initialize an AVFifo with a given element size.
+
+  @param elems     initial number of elements that can be stored in the FIFO
+  @param elem_size Size in bytes of a single element. Further operations on
+                   the returned FIFO will implicitly use this element size.
+  @param flags a combination of AV_FIFO_FLAG_*
+
+  @return newly-allocated AVFifo on success, a negative error code on failure
+*/
+func AVFifoAlloc2(elems uint64, elemSize uint64, flags uint) *AVFifo {
+	ret := C.av_fifo_alloc2(C.size_t(elems), C.size_t(elemSize), C.uint(flags))
+	var retMapped *AVFifo
+	if ret != nil {
+		retMapped = &AVFifo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_fifo_elem_size ---
+
+// AVFifoElemSize wraps av_fifo_elem_size.
+/*
+  @return Element size for FIFO operations. This element size is set at
+          FIFO allocation and remains constant during its lifetime
+*/
+func AVFifoElemSize(f *AVFifo) uint64 {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_elem_size(tmpf)
+	return uint64(ret)
+}
+
+// --- Function av_fifo_auto_grow_limit ---
+
+// AVFifoAutoGrowLimit wraps av_fifo_auto_grow_limit.
+/*
+  Set the maximum size (in elements) to which the FIFO can be resized
+  automatically. Has no effect unless AV_FIFO_FLAG_AUTO_GROW is used.
+*/
+func AVFifoAutoGrowLimit(f *AVFifo, maxElems uint64) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	C.av_fifo_auto_grow_limit(tmpf, C.size_t(maxElems))
+}
+
+// --- Function av_fifo_can_read ---
+
+// AVFifoCanRead wraps av_fifo_can_read.
+//
+//	@return number of elements available for reading from the given FIFO.
+func AVFifoCanRead(f *AVFifo) uint64 {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_can_read(tmpf)
+	return uint64(ret)
+}
+
+// --- Function av_fifo_can_write ---
+
+// AVFifoCanWrite wraps av_fifo_can_write.
+/*
+  @return Number of elements that can be written into the given FIFO without
+          growing it.
+
+          In other words, this number of elements or less is guaranteed to fit
+          into the FIFO. More data may be written when the
+          AV_FIFO_FLAG_AUTO_GROW flag was specified at FIFO creation, but this
+          may involve memory allocation, which can fail.
+*/
+func AVFifoCanWrite(f *AVFifo) uint64 {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_can_write(tmpf)
+	return uint64(ret)
+}
+
+// --- Function av_fifo_grow2 ---
+
+// AVFifoGrow2 wraps av_fifo_grow2.
+/*
+  Enlarge an AVFifo.
+
+  On success, the FIFO will be large enough to hold exactly
+  inc + av_fifo_can_read() + av_fifo_can_write()
+  elements. In case of failure, the old FIFO is kept unchanged.
+
+  @param f AVFifo to resize
+  @param inc number of elements to allocate for, in addition to the current
+             allocated size
+  @return a non-negative number on success, a negative error code on failure
+*/
+func AVFifoGrow2(f *AVFifo, inc uint64) (int, error) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_grow2(tmpf, C.size_t(inc))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_fifo_write ---
+
+// AVFifoWrite wraps av_fifo_write.
+/*
+  Write data into a FIFO.
+
+  In case nb_elems > av_fifo_can_write(f) and the AV_FIFO_FLAG_AUTO_GROW flag
+  was not specified at FIFO creation, nothing is written and an error
+  is returned.
+
+  Calling function is guaranteed to succeed if nb_elems <= av_fifo_can_write(f).
+
+  @param f the FIFO buffer
+  @param buf Data to be written. nb_elems * av_fifo_elem_size(f) bytes will be
+             read from buf on success.
+  @param nb_elems number of elements to write into FIFO
+
+  @return a non-negative number on success, a negative error code on failure
+*/
+func AVFifoWrite(f *AVFifo, buf unsafe.Pointer, nbElems uint64) (int, error) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_write(tmpf, buf, C.size_t(nbElems))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_fifo_write_from_cb ---
+
+// av_fifo_write_from_cb skipped due to nbElems
+
+// --- Function av_fifo_read ---
+
+// AVFifoRead wraps av_fifo_read.
+/*
+  Read data from a FIFO.
+
+  In case nb_elems > av_fifo_can_read(f), nothing is read and an error
+  is returned.
+
+  @param f the FIFO buffer
+  @param buf Buffer to store the data. nb_elems * av_fifo_elem_size(f) bytes
+             will be written into buf on success.
+  @param nb_elems number of elements to read from FIFO
+
+  @return a non-negative number on success, a negative error code on failure
+*/
+func AVFifoRead(f *AVFifo, buf unsafe.Pointer, nbElems uint64) (int, error) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_read(tmpf, buf, C.size_t(nbElems))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_fifo_read_to_cb ---
+
+// av_fifo_read_to_cb skipped due to nbElems
+
+// --- Function av_fifo_peek ---
+
+// AVFifoPeek wraps av_fifo_peek.
+/*
+  Read data from a FIFO without modifying FIFO state.
+
+  Returns an error if an attempt is made to peek to nonexistent elements
+  (i.e. if offset + nb_elems is larger than av_fifo_can_read(f)).
+
+  @param f the FIFO buffer
+  @param buf Buffer to store the data. nb_elems * av_fifo_elem_size(f) bytes
+             will be written into buf.
+  @param nb_elems number of elements to read from FIFO
+  @param offset number of initial elements to skip.
+
+  @return a non-negative number on success, a negative error code on failure
+*/
+func AVFifoPeek(f *AVFifo, buf unsafe.Pointer, nbElems uint64, offset uint64) (int, error) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	ret := C.av_fifo_peek(tmpf, buf, C.size_t(nbElems), C.size_t(offset))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_fifo_peek_to_cb ---
+
+// av_fifo_peek_to_cb skipped due to nbElems
+
+// --- Function av_fifo_drain2 ---
+
+// AVFifoDrain2 wraps av_fifo_drain2.
+/*
+  Discard the specified amount of data from an AVFifo.
+  @param size number of elements to discard, MUST NOT be larger than
+              av_fifo_can_read(f)
+*/
+func AVFifoDrain2(f *AVFifo, size uint64) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	C.av_fifo_drain2(tmpf, C.size_t(size))
+}
+
+// --- Function av_fifo_reset2 ---
+
+// AVFifoReset2 wraps av_fifo_reset2.
+/*
+  Empty the AVFifo.
+  @param f AVFifo to reset
+*/
+func AVFifoReset2(f *AVFifo) {
+	var tmpf *C.AVFifo
+	if f != nil {
+		tmpf = f.ptr
+	}
+	C.av_fifo_reset2(tmpf)
+}
+
+// --- Function av_fifo_freep2 ---
+
+// AVFifoFreep2 wraps av_fifo_freep2.
+/*
+  Free an AVFifo and reset pointer to NULL.
+  @param f Pointer to an AVFifo to free. *f == NULL is allowed.
+*/
+func AVFifoFreep2(f **AVFifo) {
+	var ptrf **C.AVFifo
+	var tmpf *C.AVFifo
+	var oldTmpf *C.AVFifo
+	if f != nil {
+		innerf := *f
+		if innerf != nil {
+			tmpf = innerf.ptr
+			oldTmpf = tmpf
+		}
+		ptrf = &tmpf
+	}
+	C.av_fifo_freep2(ptrf)
+	if tmpf != oldTmpf && f != nil {
+		if tmpf != nil {
+			*f = &AVFifo{ptr: tmpf}
+		} else {
+			*f = nil
+		}
+	}
 }
 
 // --- Function av_frame_alloc ---
@@ -11548,6 +11832,95 @@ func AVOptQueryRangesDefault(param0 **AVOptionRanges, obj unsafe.Pointer, key *C
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_parse_ratio ---
+
+// av_parse_ratio skipped due to q
+
+// --- Function av_parse_video_size ---
+
+// av_parse_video_size skipped due to widthPtr
+
+// --- Function av_parse_video_rate ---
+
+// av_parse_video_rate skipped due to rate
+
+// --- Function av_parse_color ---
+
+// AVParseColor wraps av_parse_color.
+/*
+  Put the RGBA values that correspond to color_string in rgba_color.
+
+  @param rgba_color 4-elements array of uint8_t values, where the respective
+  red, green, blue and alpha component values are written.
+  @param color_string a string specifying a color. It can be the name of
+  a color (case insensitive match) or a [0x|#]RRGGBB[AA] sequence,
+  possibly followed by "@" and a string representing the alpha
+  component.
+  The alpha component may be a string composed by "0x" followed by an
+  hexadecimal number or a decimal number between 0.0 and 1.0, which
+  represents the opacity value (0x00/0.0 means completely transparent,
+  0xff/1.0 completely opaque).
+  If the alpha component is not specified then 0xff is assumed.
+  The string "random" will result in a random color.
+  @param slen length of the initial part of color_string containing the
+  color. It can be set to -1 if color_string is a null terminated string
+  containing nothing else than the color.
+  @param log_ctx a pointer to an arbitrary struct of which the first field
+  is a pointer to an AVClass struct (used for av_log()). Can be NULL.
+  @return >= 0 in case of success, a negative value in case of
+  failure (for example if color_string cannot be parsed).
+*/
+func AVParseColor(rgbaColor unsafe.Pointer, colorString *CStr, slen int, logCtx unsafe.Pointer) (int, error) {
+	var tmpcolorString *C.char
+	if colorString != nil {
+		tmpcolorString = colorString.ptr
+	}
+	ret := C.av_parse_color((*C.uint8_t)(rgbaColor), tmpcolorString, C.int(slen), logCtx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_get_known_color_name ---
+
+// av_get_known_color_name skipped due to rgb
+
+// --- Function av_parse_time ---
+
+// av_parse_time skipped due to timeval
+
+// --- Function av_find_info_tag ---
+
+// AVFindInfoTag wraps av_find_info_tag.
+/*
+  Attempt to find a specific tag in a URL.
+
+  syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
+  Return 1 if found.
+*/
+func AVFindInfoTag(arg *CStr, argSize int, tag1 *CStr, info *CStr) (int, error) {
+	var tmparg *C.char
+	if arg != nil {
+		tmparg = arg.ptr
+	}
+	var tmptag1 *C.char
+	if tag1 != nil {
+		tmptag1 = tag1.ptr
+	}
+	var tmpinfo *C.char
+	if info != nil {
+		tmpinfo = info.ptr
+	}
+	ret := C.av_find_info_tag(tmparg, C.int(argSize), tmptag1, tmpinfo)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_small_strptime ---
+
+// av_small_strptime skipped due to dt
+
+// --- Function av_timegm ---
+
+// av_timegm skipped due to tm
+
 // --- Function av_make_q ---
 
 // AVMakeQ wraps av_make_q.
@@ -11898,6 +12271,461 @@ func AVSampleFmtIsPlanar(sampleFmt AVSampleFormat) (int, error) {
 // --- Function av_samples_set_silence ---
 
 // av_samples_set_silence skipped due to audioData
+
+// --- Function av_gettime ---
+
+// AVGettime wraps av_gettime.
+//
+//	Get the current time in microseconds.
+func AVGettime() int64 {
+	ret := C.av_gettime()
+	return int64(ret)
+}
+
+// --- Function av_gettime_relative ---
+
+// AVGettimeRelative wraps av_gettime_relative.
+/*
+  Get the current time in microseconds since some unspecified starting point.
+  On platforms that support it, the time comes from a monotonic clock
+  This property makes this time source ideal for measuring relative time.
+  The returned values may not be monotonic on platforms where a monotonic
+  clock is not available.
+*/
+func AVGettimeRelative() int64 {
+	ret := C.av_gettime_relative()
+	return int64(ret)
+}
+
+// --- Function av_gettime_relative_is_monotonic ---
+
+// AVGettimeRelativeIsMonotonic wraps av_gettime_relative_is_monotonic.
+/*
+  Indicates with a boolean result if the av_gettime_relative() time source
+  is monotonic.
+*/
+func AVGettimeRelativeIsMonotonic() (int, error) {
+	ret := C.av_gettime_relative_is_monotonic()
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_usleep ---
+
+// AVUsleep wraps av_usleep.
+/*
+  Sleep for a period of time.  Although the duration is expressed in
+  microseconds, the actual delay may be rounded to the precision of the
+  system timer.
+
+  @param  usec Number of microseconds to sleep.
+  @return zero on success or (negative) error code.
+*/
+func AVUsleep(usec uint) (int, error) {
+	ret := C.av_usleep(C.uint(usec))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_timecode_adjust_ntsc_framenum2 ---
+
+// AVTimecodeAdjustNtscFramenum2 wraps av_timecode_adjust_ntsc_framenum2.
+/*
+  Adjust frame number for NTSC drop frame time code.
+
+  @param framenum frame number to adjust
+  @param fps      frame per second, multiples of 30
+  @return         adjusted frame number
+  @warning        adjustment is only valid for multiples of NTSC 29.97
+*/
+func AVTimecodeAdjustNtscFramenum2(framenum int, fps int) (int, error) {
+	ret := C.av_timecode_adjust_ntsc_framenum2(C.int(framenum), C.int(fps))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_timecode_get_smpte_from_framenum ---
+
+// AVTimecodeGetSmpteFromFramenum wraps av_timecode_get_smpte_from_framenum.
+/*
+  Convert frame number to SMPTE 12M binary representation.
+
+  @param tc       timecode data correctly initialized
+  @param framenum frame number
+  @return         the SMPTE binary representation
+
+  See SMPTE ST 314M-2005 Sec 4.4.2.2.1 "Time code pack (TC)"
+  the format description as follows:
+  bits 0-5:   hours, in BCD(6bits)
+  bits 6:     BGF1
+  bits 7:     BGF2 (NTSC) or FIELD (PAL)
+  bits 8-14:  minutes, in BCD(7bits)
+  bits 15:    BGF0 (NTSC) or BGF2 (PAL)
+  bits 16-22: seconds, in BCD(7bits)
+  bits 23:    FIELD (NTSC) or BGF0 (PAL)
+  bits 24-29: frames, in BCD(6bits)
+  bits 30:    drop  frame flag (0: non drop,    1: drop)
+  bits 31:    color frame flag (0: unsync mode, 1: sync mode)
+  @note BCD numbers (6 or 7 bits): 4 or 5 lower bits for units, 2 higher bits for tens.
+  @note Frame number adjustment is automatically done in case of drop timecode,
+        you do NOT have to call av_timecode_adjust_ntsc_framenum2().
+  @note The frame number is relative to tc->start.
+  @note Color frame (CF) and binary group flags (BGF) bits are set to zero.
+*/
+func AVTimecodeGetSmpteFromFramenum(tc *AVTimecode, framenum int) uint32 {
+	var tmptc *C.AVTimecode
+	if tc != nil {
+		tmptc = tc.ptr
+	}
+	ret := C.av_timecode_get_smpte_from_framenum(tmptc, C.int(framenum))
+	return uint32(ret)
+}
+
+// --- Function av_timecode_get_smpte ---
+
+// AVTimecodeGetSmpte wraps av_timecode_get_smpte.
+/*
+  Convert sei info to SMPTE 12M binary representation.
+
+  @param rate     frame rate in rational form
+  @param drop     drop flag
+  @param hh       hour
+  @param mm       minute
+  @param ss       second
+  @param ff       frame number
+  @return         the SMPTE binary representation
+*/
+func AVTimecodeGetSmpte(rate *AVRational, drop int, hh int, mm int, ss int, ff int) uint32 {
+	ret := C.av_timecode_get_smpte(rate.value, C.int(drop), C.int(hh), C.int(mm), C.int(ss), C.int(ff))
+	return uint32(ret)
+}
+
+// --- Function av_timecode_make_string ---
+
+// AVTimecodeMakeString wraps av_timecode_make_string.
+/*
+  Load timecode string in buf.
+
+  @param tc       timecode data correctly initialized
+  @param buf      destination buffer, must be at least AV_TIMECODE_STR_SIZE long
+  @param framenum frame number
+  @return         the buf parameter
+
+  @note Timecode representation can be a negative timecode and have more than
+        24 hours, but will only be honored if the flags are correctly set.
+  @note The frame number is relative to tc->start.
+*/
+func AVTimecodeMakeString(tc *AVTimecode, buf *CStr, framenum int) *CStr {
+	var tmptc *C.AVTimecode
+	if tc != nil {
+		tmptc = tc.ptr
+	}
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_timecode_make_string(tmptc, tmpbuf, C.int(framenum))
+	return wrapCStr(ret)
+}
+
+// --- Function av_timecode_make_smpte_tc_string2 ---
+
+// AVTimecodeMakeSmpteTcString2 wraps av_timecode_make_smpte_tc_string2.
+/*
+  Get the timecode string from the SMPTE timecode format.
+
+  In contrast to av_timecode_make_smpte_tc_string this function supports 50/60
+  fps timecodes by using the field bit.
+
+  @param buf        destination buffer, must be at least AV_TIMECODE_STR_SIZE long
+  @param rate       frame rate of the timecode
+  @param tcsmpte    the 32-bit SMPTE timecode
+  @param prevent_df prevent the use of a drop flag when it is known the DF bit
+                    is arbitrary
+  @param skip_field prevent the use of a field flag when it is known the field
+                    bit is arbitrary (e.g. because it is used as PC flag)
+  @return           the buf parameter
+*/
+func AVTimecodeMakeSmpteTcString2(buf *CStr, rate *AVRational, tcsmpte uint32, preventDf int, skipField int) *CStr {
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_timecode_make_smpte_tc_string2(tmpbuf, rate.value, C.uint32_t(tcsmpte), C.int(preventDf), C.int(skipField))
+	return wrapCStr(ret)
+}
+
+// --- Function av_timecode_make_smpte_tc_string ---
+
+// AVTimecodeMakeSmpteTcString wraps av_timecode_make_smpte_tc_string.
+/*
+  Get the timecode string from the SMPTE timecode format.
+
+  @param buf        destination buffer, must be at least AV_TIMECODE_STR_SIZE long
+  @param tcsmpte    the 32-bit SMPTE timecode
+  @param prevent_df prevent the use of a drop flag when it is known the DF bit
+                    is arbitrary
+  @return           the buf parameter
+*/
+func AVTimecodeMakeSmpteTcString(buf *CStr, tcsmpte uint32, preventDf int) *CStr {
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_timecode_make_smpte_tc_string(tmpbuf, C.uint32_t(tcsmpte), C.int(preventDf))
+	return wrapCStr(ret)
+}
+
+// --- Function av_timecode_make_mpeg_tc_string ---
+
+// AVTimecodeMakeMpegTcString wraps av_timecode_make_mpeg_tc_string.
+/*
+  Get the timecode string from the 25-bit timecode format (MPEG GOP format).
+
+  @param buf     destination buffer, must be at least AV_TIMECODE_STR_SIZE long
+  @param tc25bit the 25-bits timecode
+  @return        the buf parameter
+*/
+func AVTimecodeMakeMpegTcString(buf *CStr, tc25Bit uint32) *CStr {
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_timecode_make_mpeg_tc_string(tmpbuf, C.uint32_t(tc25Bit))
+	return wrapCStr(ret)
+}
+
+// --- Function av_timecode_init ---
+
+// AVTimecodeInit wraps av_timecode_init.
+/*
+  Init a timecode struct with the passed parameters.
+
+  @param tc          pointer to an allocated AVTimecode
+  @param rate        frame rate in rational form
+  @param flags       miscellaneous flags such as drop frame, +24 hours, ...
+                     (see AVTimecodeFlag)
+  @param frame_start the first frame number
+  @param log_ctx     a pointer to an arbitrary struct of which the first field
+                     is a pointer to an AVClass struct (used for av_log)
+  @return            0 on success, AVERROR otherwise
+*/
+func AVTimecodeInit(tc *AVTimecode, rate *AVRational, flags int, frameStart int, logCtx unsafe.Pointer) (int, error) {
+	var tmptc *C.AVTimecode
+	if tc != nil {
+		tmptc = tc.ptr
+	}
+	ret := C.av_timecode_init(tmptc, rate.value, C.int(flags), C.int(frameStart), logCtx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_timecode_init_from_components ---
+
+// AVTimecodeInitFromComponents wraps av_timecode_init_from_components.
+/*
+  Init a timecode struct from the passed timecode components.
+
+  @param tc          pointer to an allocated AVTimecode
+  @param rate        frame rate in rational form
+  @param flags       miscellaneous flags such as drop frame, +24 hours, ...
+                     (see AVTimecodeFlag)
+  @param hh          hours
+  @param mm          minutes
+  @param ss          seconds
+  @param ff          frames
+  @param log_ctx     a pointer to an arbitrary struct of which the first field
+                     is a pointer to an AVClass struct (used for av_log)
+  @return            0 on success, AVERROR otherwise
+*/
+func AVTimecodeInitFromComponents(tc *AVTimecode, rate *AVRational, flags int, hh int, mm int, ss int, ff int, logCtx unsafe.Pointer) (int, error) {
+	var tmptc *C.AVTimecode
+	if tc != nil {
+		tmptc = tc.ptr
+	}
+	ret := C.av_timecode_init_from_components(tmptc, rate.value, C.int(flags), C.int(hh), C.int(mm), C.int(ss), C.int(ff), logCtx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_timecode_init_from_string ---
+
+// AVTimecodeInitFromString wraps av_timecode_init_from_string.
+/*
+  Parse timecode representation (hh:mm:ss[:;.]ff).
+
+  @param tc      pointer to an allocated AVTimecode
+  @param rate    frame rate in rational form
+  @param str     timecode string which will determine the frame start
+  @param log_ctx a pointer to an arbitrary struct of which the first field is a
+                 pointer to an AVClass struct (used for av_log).
+  @return        0 on success, AVERROR otherwise
+*/
+func AVTimecodeInitFromString(tc *AVTimecode, rate *AVRational, str *CStr, logCtx unsafe.Pointer) (int, error) {
+	var tmptc *C.AVTimecode
+	if tc != nil {
+		tmptc = tc.ptr
+	}
+	var tmpstr *C.char
+	if str != nil {
+		tmpstr = str.ptr
+	}
+	ret := C.av_timecode_init_from_string(tmptc, rate.value, tmpstr, logCtx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_timecode_check_frame_rate ---
+
+// AVTimecodeCheckFrameRate wraps av_timecode_check_frame_rate.
+/*
+  Check if the timecode feature is available for the given frame rate
+
+  @return 0 if supported, <0 otherwise
+*/
+func AVTimecodeCheckFrameRate(rate *AVRational) (int, error) {
+	ret := C.av_timecode_check_frame_rate(rate.value)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_ts_make_string ---
+
+// AVTsMakeString wraps av_ts_make_string.
+/*
+  Fill the provided buffer with a string containing a timestamp
+  representation.
+
+  @param buf a buffer with size in bytes of at least AV_TS_MAX_STRING_SIZE
+  @param ts the timestamp to represent
+  @return the buffer in input
+*/
+func AVTsMakeString(buf *CStr, ts int64) *CStr {
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_ts_make_string(tmpbuf, C.int64_t(ts))
+	return wrapCStr(ret)
+}
+
+// --- Function av_ts_make_time_string2 ---
+
+// AVTsMakeTimeString2 wraps av_ts_make_time_string2.
+/*
+  Fill the provided buffer with a string containing a timestamp time
+  representation.
+
+  @param buf a buffer with size in bytes of at least AV_TS_MAX_STRING_SIZE
+  @param ts the timestamp to represent
+  @param tb the timebase of the timestamp
+  @return the buffer in input
+*/
+func AVTsMakeTimeString2(buf *CStr, ts int64, tb *AVRational) *CStr {
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_ts_make_time_string2(tmpbuf, C.int64_t(ts), tb.value)
+	return wrapCStr(ret)
+}
+
+// --- Function av_ts_make_time_string ---
+
+// av_ts_make_time_string skipped due to tb
+
+// --- Function av_video_enc_params_block ---
+
+// AVVideoEncParamsBlock wraps av_video_enc_params_block.
+//
+//	Get the block at the specified {@code idx}. Must be between 0 and nb_blocks - 1.
+func AVVideoEncParamsBlock(par *AVVideoEncParams, idx uint) *AVVideoBlockParams {
+	var tmppar *C.AVVideoEncParams
+	if par != nil {
+		tmppar = par.ptr
+	}
+	ret := C.av_video_enc_params_block(tmppar, C.uint(idx))
+	var retMapped *AVVideoBlockParams
+	if ret != nil {
+		retMapped = &AVVideoBlockParams{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_video_enc_params_alloc ---
+
+// av_video_enc_params_alloc skipped due to outSize
+
+// --- Function av_video_enc_params_create_side_data ---
+
+// AVVideoEncParamsCreateSideData wraps av_video_enc_params_create_side_data.
+/*
+  Allocates memory for AVEncodeInfoFrame plus an array of
+  {@code nb_blocks} AVEncodeInfoBlock in the given AVFrame {@code frame}
+  as AVFrameSideData of type AV_FRAME_DATA_VIDEO_ENC_PARAMS
+  and initializes the variables.
+*/
+func AVVideoEncParamsCreateSideData(frame *AVFrame, _type AVVideoEncParamsType, nbBlocks uint) *AVVideoEncParams {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_video_enc_params_create_side_data(tmpframe, C.enum_AVVideoEncParamsType(_type), C.uint(nbBlocks))
+	var retMapped *AVVideoEncParams
+	if ret != nil {
+		retMapped = &AVVideoEncParams{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_video_hint_rects ---
+
+// AVVideoHintRects wraps av_video_hint_rects.
+func AVVideoHintRects(hints *AVVideoHint) *AVVideoRect {
+	var tmphints *C.AVVideoHint
+	if hints != nil {
+		tmphints = hints.ptr
+	}
+	ret := C.av_video_hint_rects(tmphints)
+	var retMapped *AVVideoRect
+	if ret != nil {
+		retMapped = &AVVideoRect{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_video_hint_get_rect ---
+
+// AVVideoHintGetRect wraps av_video_hint_get_rect.
+func AVVideoHintGetRect(hints *AVVideoHint, idx uint64) *AVVideoRect {
+	var tmphints *C.AVVideoHint
+	if hints != nil {
+		tmphints = hints.ptr
+	}
+	ret := C.av_video_hint_get_rect(tmphints, C.size_t(idx))
+	var retMapped *AVVideoRect
+	if ret != nil {
+		retMapped = &AVVideoRect{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_video_hint_alloc ---
+
+// av_video_hint_alloc skipped due to outSize
+
+// --- Function av_video_hint_create_side_data ---
+
+// AVVideoHintCreateSideData wraps av_video_hint_create_side_data.
+/*
+  Same as av_video_hint_alloc(), except newly-allocated AVVideoHint is attached
+  as side data of type AV_FRAME_DATA_VIDEO_HINT_INFO to frame.
+*/
+func AVVideoHintCreateSideData(frame *AVFrame, nbRects uint64) *AVVideoHint {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_video_hint_create_side_data(tmpframe, C.size_t(nbRects))
+	var retMapped *AVVideoHint
+	if ret != nil {
+		retMapped = &AVVideoHint{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function swr_get_class ---
 
@@ -12683,7 +13511,7 @@ func SwsScaleFrame(c *SwsContext, dst *AVFrame, src *AVFrame) (int, error) {
 */
 func SwsGetcoefficients(colorspace int) *int {
 	ret := C.sws_getCoefficients(C.int(colorspace))
-	return ret
+	return (*int)(unsafe.Pointer(ret))
 }
 
 // --- Function sws_isSupportedInput ---
