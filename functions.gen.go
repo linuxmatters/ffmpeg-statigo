@@ -39,6 +39,7 @@ import "unsafe"
 // #include <libavutil/camellia.h>
 // #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/common.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
 // #include <libavutil/crc.h>
@@ -77,6 +78,7 @@ import "unsafe"
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
@@ -9179,6 +9181,338 @@ func AVChannelLayoutRetype(channelLayout *AVChannelLayout, order AVChannelOrder,
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_log2 ---
+
+// AVLog2 wraps av_log2.
+func AVLog2(v uint) (int, error) {
+	ret := C.av_log2(C.uint(v))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_log2_16bit ---
+
+// AVLog216Bit wraps av_log2_16bit.
+func AVLog216Bit(v uint) (int, error) {
+	ret := C.av_log2_16bit(C.uint(v))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_clip_c ---
+
+// AVClipC wraps av_clip_c.
+/*
+  Clip a signed integer value into the amin-amax range.
+  @param a value to clip
+  @param amin minimum value of the clip range
+  @param amax maximum value of the clip range
+  @return clipped value
+*/
+func AVClipC(a int, amin int, amax int) (int, error) {
+	ret := C.av_clip_c(C.int(a), C.int(amin), C.int(amax))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_clip64_c ---
+
+// AVClip64C wraps av_clip64_c.
+/*
+  Clip a signed 64bit integer value into the amin-amax range.
+  @param a value to clip
+  @param amin minimum value of the clip range
+  @param amax maximum value of the clip range
+  @return clipped value
+*/
+func AVClip64C(a int64, amin int64, amax int64) int64 {
+	ret := C.av_clip64_c(C.int64_t(a), C.int64_t(amin), C.int64_t(amax))
+	return int64(ret)
+}
+
+// --- Function av_clip_uint8_c ---
+
+// AVClipUint8C wraps av_clip_uint8_c.
+/*
+  Clip a signed integer value into the 0-255 range.
+  @param a value to clip
+  @return clipped value
+*/
+func AVClipUint8C(a int) uint8 {
+	ret := C.av_clip_uint8_c(C.int(a))
+	return uint8(ret)
+}
+
+// --- Function av_clip_int8_c ---
+
+// AVClipInt8C wraps av_clip_int8_c.
+/*
+  Clip a signed integer value into the -128,127 range.
+  @param a value to clip
+  @return clipped value
+*/
+func AVClipInt8C(a int) int8 {
+	ret := C.av_clip_int8_c(C.int(a))
+	return int8(ret)
+}
+
+// --- Function av_clip_uint16_c ---
+
+// AVClipUint16C wraps av_clip_uint16_c.
+/*
+  Clip a signed integer value into the 0-65535 range.
+  @param a value to clip
+  @return clipped value
+*/
+func AVClipUint16C(a int) uint16 {
+	ret := C.av_clip_uint16_c(C.int(a))
+	return uint16(ret)
+}
+
+// --- Function av_clip_int16_c ---
+
+// AVClipInt16C wraps av_clip_int16_c.
+/*
+  Clip a signed integer value into the -32768,32767 range.
+  @param a value to clip
+  @return clipped value
+*/
+func AVClipInt16C(a int) int16 {
+	ret := C.av_clip_int16_c(C.int(a))
+	return int16(ret)
+}
+
+// --- Function av_clipl_int32_c ---
+
+// AVCliplInt32C wraps av_clipl_int32_c.
+/*
+  Clip a signed 64-bit integer value into the -2147483648,2147483647 range.
+  @param a value to clip
+  @return clipped value
+*/
+func AVCliplInt32C(a int64) int32 {
+	ret := C.av_clipl_int32_c(C.int64_t(a))
+	return int32(ret)
+}
+
+// --- Function av_clip_intp2_c ---
+
+// AVClipIntp2C wraps av_clip_intp2_c.
+/*
+  Clip a signed integer into the -(2^p),(2^p-1) range.
+  @param  a value to clip
+  @param  p bit position to clip at
+  @return clipped value
+*/
+func AVClipIntp2C(a int, p int) (int, error) {
+	ret := C.av_clip_intp2_c(C.int(a), C.int(p))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_clip_uintp2_c ---
+
+// AVClipUintp2C wraps av_clip_uintp2_c.
+/*
+  Clip a signed integer to an unsigned power of two range.
+  @param  a value to clip
+  @param  p bit position to clip at
+  @return clipped value
+*/
+func AVClipUintp2C(a int, p int) uint {
+	ret := C.av_clip_uintp2_c(C.int(a), C.int(p))
+	return uint(ret)
+}
+
+// --- Function av_zero_extend_c ---
+
+// AVZeroExtendC wraps av_zero_extend_c.
+/*
+  Clear high bits from an unsigned integer starting with specific bit position
+  @param  a value to clip
+  @param  p bit position to clip at. Must be between 0 and 31.
+  @return clipped value
+*/
+func AVZeroExtendC(a uint, p uint) uint {
+	ret := C.av_zero_extend_c(C.uint(a), C.uint(p))
+	return uint(ret)
+}
+
+// --- Function av_mod_uintp2_c ---
+
+// AVModUintp2C wraps av_mod_uintp2_c.
+func AVModUintp2C(a uint, p uint) uint {
+	ret := C.av_mod_uintp2_c(C.uint(a), C.uint(p))
+	return uint(ret)
+}
+
+// --- Function av_sat_add32_c ---
+
+// AVSatAdd32C wraps av_sat_add32_c.
+/*
+  Add two signed 32-bit values with saturation.
+
+  @param  a one value
+  @param  b another value
+  @return sum with signed saturation
+*/
+func AVSatAdd32C(a int, b int) (int, error) {
+	ret := C.av_sat_add32_c(C.int(a), C.int(b))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sat_dadd32_c ---
+
+// AVSatDadd32C wraps av_sat_dadd32_c.
+/*
+  Add a doubled value to another value with saturation at both stages.
+
+  @param  a first value
+  @param  b value doubled and added to a
+  @return sum sat(a + sat(2*b)) with signed saturation
+*/
+func AVSatDadd32C(a int, b int) (int, error) {
+	ret := C.av_sat_dadd32_c(C.int(a), C.int(b))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sat_sub32_c ---
+
+// AVSatSub32C wraps av_sat_sub32_c.
+/*
+  Subtract two signed 32-bit values with saturation.
+
+  @param  a one value
+  @param  b another value
+  @return difference with signed saturation
+*/
+func AVSatSub32C(a int, b int) (int, error) {
+	ret := C.av_sat_sub32_c(C.int(a), C.int(b))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sat_dsub32_c ---
+
+// AVSatDsub32C wraps av_sat_dsub32_c.
+/*
+  Subtract a doubled value from another value with saturation at both stages.
+
+  @param  a first value
+  @param  b value doubled and subtracted from a
+  @return difference sat(a - sat(2*b)) with signed saturation
+*/
+func AVSatDsub32C(a int, b int) (int, error) {
+	ret := C.av_sat_dsub32_c(C.int(a), C.int(b))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sat_add64_c ---
+
+// AVSatAdd64C wraps av_sat_add64_c.
+/*
+  Add two signed 64-bit values with saturation.
+
+  @param  a one value
+  @param  b another value
+  @return sum with signed saturation
+*/
+func AVSatAdd64C(a int64, b int64) int64 {
+	ret := C.av_sat_add64_c(C.int64_t(a), C.int64_t(b))
+	return int64(ret)
+}
+
+// --- Function av_sat_sub64_c ---
+
+// AVSatSub64C wraps av_sat_sub64_c.
+/*
+  Subtract two signed 64-bit values with saturation.
+
+  @param  a one value
+  @param  b another value
+  @return difference with signed saturation
+*/
+func AVSatSub64C(a int64, b int64) int64 {
+	ret := C.av_sat_sub64_c(C.int64_t(a), C.int64_t(b))
+	return int64(ret)
+}
+
+// --- Function av_clipf_c ---
+
+// AVClipfC wraps av_clipf_c.
+/*
+  Clip a float value into the amin-amax range.
+  If a is nan or -inf amin will be returned.
+  If a is +inf amax will be returned.
+  @param a value to clip
+  @param amin minimum value of the clip range
+  @param amax maximum value of the clip range
+  @return clipped value
+*/
+func AVClipfC(a float32, amin float32, amax float32) float32 {
+	ret := C.av_clipf_c(C.float(a), C.float(amin), C.float(amax))
+	return float32(ret)
+}
+
+// --- Function av_clipd_c ---
+
+// AVClipdC wraps av_clipd_c.
+/*
+  Clip a double value into the amin-amax range.
+  If a is nan or -inf amin will be returned.
+  If a is +inf amax will be returned.
+  @param a value to clip
+  @param amin minimum value of the clip range
+  @param amax maximum value of the clip range
+  @return clipped value
+*/
+func AVClipdC(a float64, amin float64, amax float64) float64 {
+	ret := C.av_clipd_c(C.double(a), C.double(amin), C.double(amax))
+	return float64(ret)
+}
+
+// --- Function av_ceil_log2_c ---
+
+// AVCeilLog2C wraps av_ceil_log2_c.
+/*
+  Compute ceil(log2(x)).
+  @param x value used to compute ceil(log2(x))
+  @return computed ceiling of log2(x)
+*/
+func AVCeilLog2C(x int) (int, error) {
+	ret := C.av_ceil_log2_c(C.int(x))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_popcount_c ---
+
+// AVPopcountC wraps av_popcount_c.
+/*
+  Count number of bits set to one in x
+  @param x value to count bits of
+  @return the number of bits set to one in x
+*/
+func AVPopcountC(x uint32) (int, error) {
+	ret := C.av_popcount_c(C.uint32_t(x))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_popcount64_c ---
+
+// AVPopcount64C wraps av_popcount64_c.
+/*
+  Count number of bits set to one in x
+  @param x value to count bits of
+  @return the number of bits set to one in x
+*/
+func AVPopcount64C(x uint64) (int, error) {
+	ret := C.av_popcount64_c(C.uint64_t(x))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_parity_c ---
+
+// AVParityC wraps av_parity_c.
+func AVParityC(v uint32) (int, error) {
+	ret := C.av_parity_c(C.uint32_t(v))
+	return int(ret), WrapErr(int(ret))
+}
+
 // --- Function av_container_fifo_alloc ---
 
 // av_container_fifo_alloc skipped due to container_alloc.
@@ -14679,6 +15013,31 @@ func AVFindInfoTag(arg *CStr, argSize int, tag1 *CStr, info *CStr) (int, error) 
 // --- Function av_timegm ---
 
 // av_timegm skipped due to tm.
+
+// --- Function av_pixelutils_get_sad_fn ---
+
+// AVPixelutilsGetSadFn wraps av_pixelutils_get_sad_fn.
+/*
+  Get a potentially optimized pointer to a Sum-of-absolute-differences
+  function (see the av_pixelutils_sad_fn prototype).
+
+  @param w_bits  1<<w_bits is the requested width of the block size
+  @param h_bits  1<<h_bits is the requested height of the block size
+  @param aligned If set to 2, the returned sad function will assume src1 and
+                 src2 addresses are aligned on the block size.
+                 If set to 1, the returned sad function will assume src1 is
+                 aligned on the block size.
+                 If set to 0, the returned sad function assume no particular
+                 alignment.
+  @param log_ctx context used for logging, can be NULL
+
+  @return a pointer to the SAD function or NULL in case of error (because of
+          invalid parameters)
+*/
+func AVPixelutilsGetSadFn(wBits int, hBits int, aligned int, logCtx unsafe.Pointer) AVPixelutilsSadFn {
+	ret := C.av_pixelutils_get_sad_fn(C.int(wBits), C.int(hBits), C.int(aligned), logCtx)
+	return AVPixelutilsSadFn(ret)
+}
 
 // --- Function av_get_random_seed ---
 

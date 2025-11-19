@@ -251,6 +251,25 @@ func ToUint8Array(ptr unsafe.Pointer) *Array[uint8] {
 	}
 }
 
+func ToInt8Array(ptr unsafe.Pointer) *Array[int8] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[int8]{
+		elemSize: int8Size,
+		loadPtr: func(pointer unsafe.Pointer) int8 {
+			ptr := (*C.int8_t)(pointer)
+			return int8(*ptr)
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value int8) {
+			ptr := (*C.int8_t)(pointer)
+			*ptr = C.int8_t(value)
+		},
+	}
+}
+
 func ToUint16Array(ptr unsafe.Pointer) *Array[uint16] {
 	if ptr == nil {
 		return nil
@@ -270,6 +289,25 @@ func ToUint16Array(ptr unsafe.Pointer) *Array[uint16] {
 	}
 }
 
+func ToInt16Array(ptr unsafe.Pointer) *Array[int16] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[int16]{
+		elemSize: int16Size,
+		loadPtr: func(pointer unsafe.Pointer) int16 {
+			ptr := (*C.int16_t)(pointer)
+			return int16(*ptr)
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value int16) {
+			ptr := (*C.int16_t)(pointer)
+			*ptr = C.int16_t(value)
+		},
+	}
+}
+
 func ToUint32Array(ptr unsafe.Pointer) *Array[uint32] {
 	if ptr == nil {
 		return nil
@@ -285,6 +323,25 @@ func ToUint32Array(ptr unsafe.Pointer) *Array[uint32] {
 		storePtr: func(pointer unsafe.Pointer, value uint32) {
 			ptr := (*C.uint32_t)(pointer)
 			*ptr = C.uint32_t(value)
+		},
+	}
+}
+
+func ToInt32Array(ptr unsafe.Pointer) *Array[int32] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[int32]{
+		elemSize: intSize,
+		loadPtr: func(pointer unsafe.Pointer) int32 {
+			ptr := (*C.int32_t)(pointer)
+			return int32(*ptr)
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value int32) {
+			ptr := (*C.int32_t)(pointer)
+			*ptr = C.int32_t(value)
 		},
 	}
 }

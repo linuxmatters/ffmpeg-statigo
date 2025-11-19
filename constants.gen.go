@@ -37,6 +37,7 @@ package ffmpeg
 // #include <libavutil/camellia.h>
 // #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/common.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
 // #include <libavutil/crc.h>
@@ -75,6 +76,7 @@ package ffmpeg
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
