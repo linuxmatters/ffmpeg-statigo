@@ -391,7 +391,14 @@ func (g *Generator) generateStructs() {
 						tgt.Op("=").Params(jen.Qual("C", e.CName())).Params(jen.Id("value")),
 					)
 				} else {
-					log.Panicln("unexpected")
+					structName := st.Name
+					fieldName := field.Name
+					typeName := v.Name
+
+					log.Printf("unexpected IdentType in struct field - struct: %v, field: %v, type: %v\n", structName, fieldName, typeName)
+					o.Commentf("%v skipped due to unexpected IdentType %v", fieldName, typeName)
+					o.Line()
+					continue fieldLoop
 				}
 
 			case *PointerType:
@@ -495,7 +502,14 @@ func (g *Generator) generateStructs() {
 							),
 						)
 					} else {
-						log.Panicln("unexpected ", iv.Name)
+						structName := st.Name
+						fieldName := field.Name
+						typeName := iv.Name
+
+						log.Printf("unexpected IdentType in struct setter - struct: %v, field: %v, type: %v\n", structName, fieldName, typeName)
+						o.Commentf("%v skipped due to unexpected IdentType %v", fieldName, typeName)
+						o.Line()
+						continue fieldLoop
 					}
 
 				case *FuncType:
@@ -1069,6 +1083,17 @@ outer:
 					body = append(
 						body,
 						jen.Return(jen.Qual("unsafe", "Pointer").Params(jen.Id("ret"))),
+					)
+				} else if m, ok := primTypes[iv.Name]; ok {
+					// Handle pointer to primitive type (e.g., *int, *float64)
+					retType = []jen.Code{
+						jen.Op("*").Id(m),
+					}
+					body = append(
+						body,
+						jen.Return(jen.Params(jen.Op("*").Id(m)).Params(
+							jen.Qual("unsafe", "Pointer").Params(jen.Id("ret")),
+						)),
 					)
 				} else if _, ok := g.input.structs[iv.Name]; ok {
 					retType = []jen.Code{
