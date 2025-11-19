@@ -28,10 +28,11 @@ import (
 import "C"
 
 const (
-	ptrSize   = uintptr(C.sizeof_size_t)
-	intSize   = uintptr(C.sizeof_int)
-	int8Size  = uintptr(C.sizeof_int8_t)
-	int64Size = uintptr(C.sizeof_int64_t)
+	ptrSize     = uintptr(C.sizeof_size_t)
+	intSize     = uintptr(C.sizeof_int)
+	int8Size    = uintptr(C.sizeof_int8_t)
+	int64Size   = uintptr(C.sizeof_int64_t)
+	float64Size = uintptr(C.sizeof_double)
 )
 
 var AVTimeBaseQ = &AVRational{value: C.AV_TIME_BASE_Q}
@@ -264,6 +265,25 @@ func ToUint64Array(ptr unsafe.Pointer) *Array[uint64] {
 		storePtr: func(pointer unsafe.Pointer, value uint64) {
 			ptr := (*C.uint64_t)(pointer)
 			*ptr = C.uint64_t(value)
+		},
+	}
+}
+
+func ToFloat64Array(ptr unsafe.Pointer) *Array[float64] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[float64]{
+		elemSize: float64Size,
+		loadPtr: func(pointer unsafe.Pointer) float64 {
+			ptr := (*C.double)(pointer)
+			return float64(*ptr)
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value float64) {
+			ptr := (*C.double)(pointer)
+			*ptr = C.double(value)
 		},
 	}
 }
