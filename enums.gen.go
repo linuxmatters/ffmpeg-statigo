@@ -32,6 +32,7 @@ import "unsafe"
 // #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
+// #include <libavutil/blowfish.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -43,6 +44,7 @@ import "unsafe"
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
+// #include <libavutil/dovi_meta.h>
 // #include <libavutil/downmix_info.h>
 // #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
@@ -51,6 +53,7 @@ import "unsafe"
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
 // #include <libavutil/file.h>
+// #include <libavutil/film_grain_params.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hash.h>
 // #include <libavutil/hdr_dynamic_metadata.h>
@@ -59,6 +62,7 @@ import "unsafe"
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/intfloat.h>
+// #include <libavutil/lfg.h>
 // #include <libavutil/log.h>
 // #include <libavutil/lzo.h>
 // #include <libavutil/macros.h>
@@ -92,6 +96,7 @@ import "unsafe"
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
+// #include <libavutil/xtea.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -3319,6 +3324,121 @@ const (
 	AVContainerFifoFlagUser AVContainerFifoFlags = C.AV_CONTAINER_FIFO_FLAG_USER
 )
 
+// --- Enum AVDOVICompression ---
+
+// AVDOVICompression wraps AVDOVICompression.
+type AVDOVICompression C.enum_AVDOVICompression
+
+const SizeOfAVDOVICompression = C.sizeof_enum_AVDOVICompression
+
+func ToAVDOVICompressionArray(ptr unsafe.Pointer) *Array[AVDOVICompression] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVDOVICompression]{
+		elemSize: SizeOfAVDOVICompression,
+		loadPtr: func(pointer unsafe.Pointer) AVDOVICompression {
+			ptr := (*AVDOVICompression)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVDOVICompression) {
+			ptr := (*AVDOVICompression)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVDOVICompressionArray(size uint64) *Array[AVDOVICompression] {
+	return ToAVDOVICompressionArray(AVCalloc(size, SizeOfAVDOVICompression))
+}
+
+const (
+	// AVDoviCompressionNone wraps AV_DOVI_COMPRESSION_NONE.
+	AVDoviCompressionNone AVDOVICompression = C.AV_DOVI_COMPRESSION_NONE
+	// AVDoviCompressionLimited wraps AV_DOVI_COMPRESSION_LIMITED.
+	AVDoviCompressionLimited AVDOVICompression = C.AV_DOVI_COMPRESSION_LIMITED
+	// AVDoviCompressionReserved wraps AV_DOVI_COMPRESSION_RESERVED.
+	AVDoviCompressionReserved AVDOVICompression = C.AV_DOVI_COMPRESSION_RESERVED
+	// AVDoviCompressionExtended wraps AV_DOVI_COMPRESSION_EXTENDED.
+	AVDoviCompressionExtended AVDOVICompression = C.AV_DOVI_COMPRESSION_EXTENDED
+)
+
+// --- Enum AVDOVIMappingMethod ---
+
+// AVDOVIMappingMethod wraps AVDOVIMappingMethod.
+type AVDOVIMappingMethod C.enum_AVDOVIMappingMethod
+
+const SizeOfAVDOVIMappingMethod = C.sizeof_enum_AVDOVIMappingMethod
+
+func ToAVDOVIMappingMethodArray(ptr unsafe.Pointer) *Array[AVDOVIMappingMethod] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVDOVIMappingMethod]{
+		elemSize: SizeOfAVDOVIMappingMethod,
+		loadPtr: func(pointer unsafe.Pointer) AVDOVIMappingMethod {
+			ptr := (*AVDOVIMappingMethod)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVDOVIMappingMethod) {
+			ptr := (*AVDOVIMappingMethod)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVDOVIMappingMethodArray(size uint64) *Array[AVDOVIMappingMethod] {
+	return ToAVDOVIMappingMethodArray(AVCalloc(size, SizeOfAVDOVIMappingMethod))
+}
+
+const (
+	// AVDoviMappingPolynomial wraps AV_DOVI_MAPPING_POLYNOMIAL.
+	AVDoviMappingPolynomial AVDOVIMappingMethod = C.AV_DOVI_MAPPING_POLYNOMIAL
+	// AVDoviMappingMmr wraps AV_DOVI_MAPPING_MMR.
+	AVDoviMappingMmr AVDOVIMappingMethod = C.AV_DOVI_MAPPING_MMR
+)
+
+// --- Enum AVDOVINLQMethod ---
+
+// AVDOVINLQMethod wraps AVDOVINLQMethod.
+type AVDOVINLQMethod C.enum_AVDOVINLQMethod
+
+const SizeOfAVDOVINLQMethod = C.sizeof_enum_AVDOVINLQMethod
+
+func ToAVDOVINLQMethodArray(ptr unsafe.Pointer) *Array[AVDOVINLQMethod] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVDOVINLQMethod]{
+		elemSize: SizeOfAVDOVINLQMethod,
+		loadPtr: func(pointer unsafe.Pointer) AVDOVINLQMethod {
+			ptr := (*AVDOVINLQMethod)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVDOVINLQMethod) {
+			ptr := (*AVDOVINLQMethod)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVDOVINLQMethodArray(size uint64) *Array[AVDOVINLQMethod] {
+	return ToAVDOVINLQMethodArray(AVCalloc(size, SizeOfAVDOVINLQMethod))
+}
+
+const (
+	// AVDoviNlqNone wraps AV_DOVI_NLQ_NONE.
+	AVDoviNlqNone AVDOVINLQMethod = C.AV_DOVI_NLQ_NONE
+	// AVDoviNlqLinearDz wraps AV_DOVI_NLQ_LINEAR_DZ.
+	AVDoviNlqLinearDz AVDOVINLQMethod = C.AV_DOVI_NLQ_LINEAR_DZ
+)
+
 // --- Enum AVDownmixType ---
 
 // AVDownmixType wraps AVDownmixType.
@@ -3372,6 +3492,49 @@ const (
 	//
 	//	Number of downmix types. Not part of ABI.
 	AVDownmixTypeNb AVDownmixType = C.AV_DOWNMIX_TYPE_NB
+)
+
+// --- Enum AVFilmGrainParamsType ---
+
+// AVFilmGrainParamsType wraps AVFilmGrainParamsType.
+type AVFilmGrainParamsType C.enum_AVFilmGrainParamsType
+
+const SizeOfAVFilmGrainParamsType = C.sizeof_enum_AVFilmGrainParamsType
+
+func ToAVFilmGrainParamsTypeArray(ptr unsafe.Pointer) *Array[AVFilmGrainParamsType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVFilmGrainParamsType]{
+		elemSize: SizeOfAVFilmGrainParamsType,
+		loadPtr: func(pointer unsafe.Pointer) AVFilmGrainParamsType {
+			ptr := (*AVFilmGrainParamsType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVFilmGrainParamsType) {
+			ptr := (*AVFilmGrainParamsType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVFilmGrainParamsTypeArray(size uint64) *Array[AVFilmGrainParamsType] {
+	return ToAVFilmGrainParamsTypeArray(AVCalloc(size, SizeOfAVFilmGrainParamsType))
+}
+
+const (
+	// AVFilmGrainParamsNone wraps AV_FILM_GRAIN_PARAMS_NONE.
+	AVFilmGrainParamsNone AVFilmGrainParamsType = C.AV_FILM_GRAIN_PARAMS_NONE
+	// AVFilmGrainParamsAV1 wraps AV_FILM_GRAIN_PARAMS_AV1.
+	//
+	//	The union is valid when interpreted as AVFilmGrainAOMParams (codec.aom)
+	AVFilmGrainParamsAV1 AVFilmGrainParamsType = C.AV_FILM_GRAIN_PARAMS_AV1
+	// AVFilmGrainParamsH274 wraps AV_FILM_GRAIN_PARAMS_H274.
+	//
+	//	The union is valid when interpreted as AVFilmGrainH274Params (codec.h274)
+	AVFilmGrainParamsH274 AVFilmGrainParamsType = C.AV_FILM_GRAIN_PARAMS_H274
 )
 
 // --- Enum AVFrameSideDataType ---

@@ -32,6 +32,7 @@ import "unsafe"
 // #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
+// #include <libavutil/blowfish.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -43,6 +44,7 @@ import "unsafe"
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
+// #include <libavutil/dovi_meta.h>
 // #include <libavutil/downmix_info.h>
 // #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
@@ -51,6 +53,7 @@ import "unsafe"
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
 // #include <libavutil/file.h>
+// #include <libavutil/film_grain_params.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hash.h>
 // #include <libavutil/hdr_dynamic_metadata.h>
@@ -59,6 +62,7 @@ import "unsafe"
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/intfloat.h>
+// #include <libavutil/lfg.h>
 // #include <libavutil/log.h>
 // #include <libavutil/lzo.h>
 // #include <libavutil/macros.h>
@@ -92,6 +96,7 @@ import "unsafe"
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
+// #include <libavutil/xtea.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -14443,6 +14448,53 @@ func ToAVAudioFifoArray(ptr unsafe.Pointer) *Array[*AVAudioFifo] {
 	}
 }
 
+// --- Struct AVBlowfish ---
+
+// AVBlowfish wraps AVBlowfish.
+type AVBlowfish struct {
+	ptr *C.AVBlowfish
+}
+
+func (s *AVBlowfish) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVBlowfishArray(ptr unsafe.Pointer) *Array[*AVBlowfish] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVBlowfish]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVBlowfish {
+			ptr := (**C.AVBlowfish)(pointer)
+			value := *ptr
+			var valueMapped *AVBlowfish
+			if value != nil {
+				valueMapped = &AVBlowfish{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVBlowfish) {
+			ptr := (**C.AVBlowfish)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// P gets the p field.
+func (s *AVBlowfish) P() *Array[uint32] {
+	value := &s.ptr.p
+	return ToUint32Array(unsafe.Pointer(value))
+}
+
+// s skipped due to multi dim const array
+
 // --- Struct AVBuffer ---
 
 // AVBuffer wraps AVBuffer.
@@ -15347,6 +15399,2188 @@ func ToAVDictionaryArray(ptr unsafe.Pointer) *Array[*AVDictionary] {
 	}
 }
 
+// --- Struct AVDOVIDecoderConfigurationRecord ---
+
+// AVDOVIDecoderConfigurationRecord wraps AVDOVIDecoderConfigurationRecord.
+/*
+  DOVI configuration
+  ref: dolby-vision-bitstreams-within-the-iso-base-media-file-format-v2.1.2
+  dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2
+  @code
+  uint8_t  dv_version_major, the major version number that the stream complies with
+  uint8_t  dv_version_minor, the minor version number that the stream complies with
+  uint8_t  dv_profile, the Dolby Vision profile
+  uint8_t  dv_level, the Dolby Vision level
+  uint8_t  rpu_present_flag
+  uint8_t  el_present_flag
+  uint8_t  bl_present_flag
+  uint8_t  dv_bl_signal_compatibility_id
+  uint8_t  dv_md_compression, the compression method in use
+  @endcode
+
+  @note The struct must be allocated with av_dovi_alloc() and
+        its size is not a part of the public ABI.
+*/
+type AVDOVIDecoderConfigurationRecord struct {
+	ptr *C.AVDOVIDecoderConfigurationRecord
+}
+
+func (s *AVDOVIDecoderConfigurationRecord) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDecoderConfigurationRecordArray(ptr unsafe.Pointer) *Array[*AVDOVIDecoderConfigurationRecord] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDecoderConfigurationRecord]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDecoderConfigurationRecord {
+			ptr := (**C.AVDOVIDecoderConfigurationRecord)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDecoderConfigurationRecord
+			if value != nil {
+				valueMapped = &AVDOVIDecoderConfigurationRecord{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDecoderConfigurationRecord) {
+			ptr := (**C.AVDOVIDecoderConfigurationRecord)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// DvVersionMajor gets the dv_version_major field.
+func (s *AVDOVIDecoderConfigurationRecord) DvVersionMajor() uint8 {
+	value := s.ptr.dv_version_major
+	return uint8(value)
+}
+
+// SetDvVersionMajor sets the dv_version_major field.
+func (s *AVDOVIDecoderConfigurationRecord) SetDvVersionMajor(value uint8) {
+	s.ptr.dv_version_major = (C.uint8_t)(value)
+}
+
+// DvVersionMinor gets the dv_version_minor field.
+func (s *AVDOVIDecoderConfigurationRecord) DvVersionMinor() uint8 {
+	value := s.ptr.dv_version_minor
+	return uint8(value)
+}
+
+// SetDvVersionMinor sets the dv_version_minor field.
+func (s *AVDOVIDecoderConfigurationRecord) SetDvVersionMinor(value uint8) {
+	s.ptr.dv_version_minor = (C.uint8_t)(value)
+}
+
+// DvProfile gets the dv_profile field.
+func (s *AVDOVIDecoderConfigurationRecord) DvProfile() uint8 {
+	value := s.ptr.dv_profile
+	return uint8(value)
+}
+
+// SetDvProfile sets the dv_profile field.
+func (s *AVDOVIDecoderConfigurationRecord) SetDvProfile(value uint8) {
+	s.ptr.dv_profile = (C.uint8_t)(value)
+}
+
+// DvLevel gets the dv_level field.
+func (s *AVDOVIDecoderConfigurationRecord) DvLevel() uint8 {
+	value := s.ptr.dv_level
+	return uint8(value)
+}
+
+// SetDvLevel sets the dv_level field.
+func (s *AVDOVIDecoderConfigurationRecord) SetDvLevel(value uint8) {
+	s.ptr.dv_level = (C.uint8_t)(value)
+}
+
+// RpuPresentFlag gets the rpu_present_flag field.
+func (s *AVDOVIDecoderConfigurationRecord) RpuPresentFlag() uint8 {
+	value := s.ptr.rpu_present_flag
+	return uint8(value)
+}
+
+// SetRpuPresentFlag sets the rpu_present_flag field.
+func (s *AVDOVIDecoderConfigurationRecord) SetRpuPresentFlag(value uint8) {
+	s.ptr.rpu_present_flag = (C.uint8_t)(value)
+}
+
+// ElPresentFlag gets the el_present_flag field.
+func (s *AVDOVIDecoderConfigurationRecord) ElPresentFlag() uint8 {
+	value := s.ptr.el_present_flag
+	return uint8(value)
+}
+
+// SetElPresentFlag sets the el_present_flag field.
+func (s *AVDOVIDecoderConfigurationRecord) SetElPresentFlag(value uint8) {
+	s.ptr.el_present_flag = (C.uint8_t)(value)
+}
+
+// BlPresentFlag gets the bl_present_flag field.
+func (s *AVDOVIDecoderConfigurationRecord) BlPresentFlag() uint8 {
+	value := s.ptr.bl_present_flag
+	return uint8(value)
+}
+
+// SetBlPresentFlag sets the bl_present_flag field.
+func (s *AVDOVIDecoderConfigurationRecord) SetBlPresentFlag(value uint8) {
+	s.ptr.bl_present_flag = (C.uint8_t)(value)
+}
+
+// DvBlSignalCompatibilityId gets the dv_bl_signal_compatibility_id field.
+func (s *AVDOVIDecoderConfigurationRecord) DvBlSignalCompatibilityId() uint8 {
+	value := s.ptr.dv_bl_signal_compatibility_id
+	return uint8(value)
+}
+
+// SetDvBlSignalCompatibilityId sets the dv_bl_signal_compatibility_id field.
+func (s *AVDOVIDecoderConfigurationRecord) SetDvBlSignalCompatibilityId(value uint8) {
+	s.ptr.dv_bl_signal_compatibility_id = (C.uint8_t)(value)
+}
+
+// DvMdCompression gets the dv_md_compression field.
+func (s *AVDOVIDecoderConfigurationRecord) DvMdCompression() uint8 {
+	value := s.ptr.dv_md_compression
+	return uint8(value)
+}
+
+// SetDvMdCompression sets the dv_md_compression field.
+func (s *AVDOVIDecoderConfigurationRecord) SetDvMdCompression(value uint8) {
+	s.ptr.dv_md_compression = (C.uint8_t)(value)
+}
+
+// --- Struct AVDOVIRpuDataHeader ---
+
+// AVDOVIRpuDataHeader wraps AVDOVIRpuDataHeader.
+/*
+  Dolby Vision RPU data header.
+
+  @note sizeof(AVDOVIRpuDataHeader) is not part of the public ABI.
+*/
+type AVDOVIRpuDataHeader struct {
+	ptr *C.AVDOVIRpuDataHeader
+}
+
+func (s *AVDOVIRpuDataHeader) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIRpuDataHeaderArray(ptr unsafe.Pointer) *Array[*AVDOVIRpuDataHeader] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIRpuDataHeader]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIRpuDataHeader {
+			ptr := (**C.AVDOVIRpuDataHeader)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIRpuDataHeader
+			if value != nil {
+				valueMapped = &AVDOVIRpuDataHeader{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIRpuDataHeader) {
+			ptr := (**C.AVDOVIRpuDataHeader)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// RpuType gets the rpu_type field.
+func (s *AVDOVIRpuDataHeader) RpuType() uint8 {
+	value := s.ptr.rpu_type
+	return uint8(value)
+}
+
+// SetRpuType sets the rpu_type field.
+func (s *AVDOVIRpuDataHeader) SetRpuType(value uint8) {
+	s.ptr.rpu_type = (C.uint8_t)(value)
+}
+
+// RpuFormat gets the rpu_format field.
+func (s *AVDOVIRpuDataHeader) RpuFormat() uint16 {
+	value := s.ptr.rpu_format
+	return uint16(value)
+}
+
+// SetRpuFormat sets the rpu_format field.
+func (s *AVDOVIRpuDataHeader) SetRpuFormat(value uint16) {
+	s.ptr.rpu_format = (C.uint16_t)(value)
+}
+
+// VdrRpuProfile gets the vdr_rpu_profile field.
+func (s *AVDOVIRpuDataHeader) VdrRpuProfile() uint8 {
+	value := s.ptr.vdr_rpu_profile
+	return uint8(value)
+}
+
+// SetVdrRpuProfile sets the vdr_rpu_profile field.
+func (s *AVDOVIRpuDataHeader) SetVdrRpuProfile(value uint8) {
+	s.ptr.vdr_rpu_profile = (C.uint8_t)(value)
+}
+
+// VdrRpuLevel gets the vdr_rpu_level field.
+func (s *AVDOVIRpuDataHeader) VdrRpuLevel() uint8 {
+	value := s.ptr.vdr_rpu_level
+	return uint8(value)
+}
+
+// SetVdrRpuLevel sets the vdr_rpu_level field.
+func (s *AVDOVIRpuDataHeader) SetVdrRpuLevel(value uint8) {
+	s.ptr.vdr_rpu_level = (C.uint8_t)(value)
+}
+
+// ChromaResamplingExplicitFilterFlag gets the chroma_resampling_explicit_filter_flag field.
+func (s *AVDOVIRpuDataHeader) ChromaResamplingExplicitFilterFlag() uint8 {
+	value := s.ptr.chroma_resampling_explicit_filter_flag
+	return uint8(value)
+}
+
+// SetChromaResamplingExplicitFilterFlag sets the chroma_resampling_explicit_filter_flag field.
+func (s *AVDOVIRpuDataHeader) SetChromaResamplingExplicitFilterFlag(value uint8) {
+	s.ptr.chroma_resampling_explicit_filter_flag = (C.uint8_t)(value)
+}
+
+// CoefDataType gets the coef_data_type field.
+//
+//	informative, lavc always converts to fixed
+func (s *AVDOVIRpuDataHeader) CoefDataType() uint8 {
+	value := s.ptr.coef_data_type
+	return uint8(value)
+}
+
+// SetCoefDataType sets the coef_data_type field.
+//
+//	informative, lavc always converts to fixed
+func (s *AVDOVIRpuDataHeader) SetCoefDataType(value uint8) {
+	s.ptr.coef_data_type = (C.uint8_t)(value)
+}
+
+// CoefLog2Denom gets the coef_log2_denom field.
+func (s *AVDOVIRpuDataHeader) CoefLog2Denom() uint8 {
+	value := s.ptr.coef_log2_denom
+	return uint8(value)
+}
+
+// SetCoefLog2Denom sets the coef_log2_denom field.
+func (s *AVDOVIRpuDataHeader) SetCoefLog2Denom(value uint8) {
+	s.ptr.coef_log2_denom = (C.uint8_t)(value)
+}
+
+// VdrRpuNormalizedIdc gets the vdr_rpu_normalized_idc field.
+func (s *AVDOVIRpuDataHeader) VdrRpuNormalizedIdc() uint8 {
+	value := s.ptr.vdr_rpu_normalized_idc
+	return uint8(value)
+}
+
+// SetVdrRpuNormalizedIdc sets the vdr_rpu_normalized_idc field.
+func (s *AVDOVIRpuDataHeader) SetVdrRpuNormalizedIdc(value uint8) {
+	s.ptr.vdr_rpu_normalized_idc = (C.uint8_t)(value)
+}
+
+// BlVideoFullRangeFlag gets the bl_video_full_range_flag field.
+func (s *AVDOVIRpuDataHeader) BlVideoFullRangeFlag() uint8 {
+	value := s.ptr.bl_video_full_range_flag
+	return uint8(value)
+}
+
+// SetBlVideoFullRangeFlag sets the bl_video_full_range_flag field.
+func (s *AVDOVIRpuDataHeader) SetBlVideoFullRangeFlag(value uint8) {
+	s.ptr.bl_video_full_range_flag = (C.uint8_t)(value)
+}
+
+// BlBitDepth gets the bl_bit_depth field.
+//
+//	[8, 16]
+func (s *AVDOVIRpuDataHeader) BlBitDepth() uint8 {
+	value := s.ptr.bl_bit_depth
+	return uint8(value)
+}
+
+// SetBlBitDepth sets the bl_bit_depth field.
+//
+//	[8, 16]
+func (s *AVDOVIRpuDataHeader) SetBlBitDepth(value uint8) {
+	s.ptr.bl_bit_depth = (C.uint8_t)(value)
+}
+
+// ElBitDepth gets the el_bit_depth field.
+//
+//	[8, 16]
+func (s *AVDOVIRpuDataHeader) ElBitDepth() uint8 {
+	value := s.ptr.el_bit_depth
+	return uint8(value)
+}
+
+// SetElBitDepth sets the el_bit_depth field.
+//
+//	[8, 16]
+func (s *AVDOVIRpuDataHeader) SetElBitDepth(value uint8) {
+	s.ptr.el_bit_depth = (C.uint8_t)(value)
+}
+
+// VdrBitDepth gets the vdr_bit_depth field.
+//
+//	[8, 16]
+func (s *AVDOVIRpuDataHeader) VdrBitDepth() uint8 {
+	value := s.ptr.vdr_bit_depth
+	return uint8(value)
+}
+
+// SetVdrBitDepth sets the vdr_bit_depth field.
+//
+//	[8, 16]
+func (s *AVDOVIRpuDataHeader) SetVdrBitDepth(value uint8) {
+	s.ptr.vdr_bit_depth = (C.uint8_t)(value)
+}
+
+// SpatialResamplingFilterFlag gets the spatial_resampling_filter_flag field.
+func (s *AVDOVIRpuDataHeader) SpatialResamplingFilterFlag() uint8 {
+	value := s.ptr.spatial_resampling_filter_flag
+	return uint8(value)
+}
+
+// SetSpatialResamplingFilterFlag sets the spatial_resampling_filter_flag field.
+func (s *AVDOVIRpuDataHeader) SetSpatialResamplingFilterFlag(value uint8) {
+	s.ptr.spatial_resampling_filter_flag = (C.uint8_t)(value)
+}
+
+// ElSpatialResamplingFilterFlag gets the el_spatial_resampling_filter_flag field.
+func (s *AVDOVIRpuDataHeader) ElSpatialResamplingFilterFlag() uint8 {
+	value := s.ptr.el_spatial_resampling_filter_flag
+	return uint8(value)
+}
+
+// SetElSpatialResamplingFilterFlag sets the el_spatial_resampling_filter_flag field.
+func (s *AVDOVIRpuDataHeader) SetElSpatialResamplingFilterFlag(value uint8) {
+	s.ptr.el_spatial_resampling_filter_flag = (C.uint8_t)(value)
+}
+
+// DisableResidualFlag gets the disable_residual_flag field.
+func (s *AVDOVIRpuDataHeader) DisableResidualFlag() uint8 {
+	value := s.ptr.disable_residual_flag
+	return uint8(value)
+}
+
+// SetDisableResidualFlag sets the disable_residual_flag field.
+func (s *AVDOVIRpuDataHeader) SetDisableResidualFlag(value uint8) {
+	s.ptr.disable_residual_flag = (C.uint8_t)(value)
+}
+
+// ExtMappingIdc04 gets the ext_mapping_idc_0_4 field.
+//
+//	extended base layer inverse mapping indicator
+func (s *AVDOVIRpuDataHeader) ExtMappingIdc04() uint8 {
+	value := s.ptr.ext_mapping_idc_0_4
+	return uint8(value)
+}
+
+// SetExtMappingIdc04 sets the ext_mapping_idc_0_4 field.
+//
+//	extended base layer inverse mapping indicator
+func (s *AVDOVIRpuDataHeader) SetExtMappingIdc04(value uint8) {
+	s.ptr.ext_mapping_idc_0_4 = (C.uint8_t)(value)
+}
+
+// ExtMappingIdc57 gets the ext_mapping_idc_5_7 field.
+//
+//	reserved
+func (s *AVDOVIRpuDataHeader) ExtMappingIdc57() uint8 {
+	value := s.ptr.ext_mapping_idc_5_7
+	return uint8(value)
+}
+
+// SetExtMappingIdc57 sets the ext_mapping_idc_5_7 field.
+//
+//	reserved
+func (s *AVDOVIRpuDataHeader) SetExtMappingIdc57(value uint8) {
+	s.ptr.ext_mapping_idc_5_7 = (C.uint8_t)(value)
+}
+
+// --- Struct AVDOVIReshapingCurve ---
+
+// AVDOVIReshapingCurve wraps AVDOVIReshapingCurve.
+type AVDOVIReshapingCurve struct {
+	ptr *C.AVDOVIReshapingCurve
+}
+
+func (s *AVDOVIReshapingCurve) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIReshapingCurveArray(ptr unsafe.Pointer) *Array[*AVDOVIReshapingCurve] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIReshapingCurve]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIReshapingCurve {
+			ptr := (**C.AVDOVIReshapingCurve)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIReshapingCurve
+			if value != nil {
+				valueMapped = &AVDOVIReshapingCurve{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIReshapingCurve) {
+			ptr := (**C.AVDOVIReshapingCurve)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// NumPivots gets the num_pivots field.
+//
+//	[2, 9]
+func (s *AVDOVIReshapingCurve) NumPivots() uint8 {
+	value := s.ptr.num_pivots
+	return uint8(value)
+}
+
+// SetNumPivots sets the num_pivots field.
+//
+//	[2, 9]
+func (s *AVDOVIReshapingCurve) SetNumPivots(value uint8) {
+	s.ptr.num_pivots = (C.uint8_t)(value)
+}
+
+// Pivots gets the pivots field.
+//
+//	sorted ascending
+func (s *AVDOVIReshapingCurve) Pivots() *Array[uint16] {
+	value := &s.ptr.pivots
+	return ToUint16Array(unsafe.Pointer(value))
+}
+
+// mapping_idc skipped due to unknown const array
+
+// PolyOrder gets the poly_order field.
+//
+//	[1, 2]
+func (s *AVDOVIReshapingCurve) PolyOrder() *Array[uint8] {
+	value := &s.ptr.poly_order
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// poly_coef skipped due to multi dim const array
+
+// MmrOrder gets the mmr_order field.
+//
+//	[1, 3]
+func (s *AVDOVIReshapingCurve) MmrOrder() *Array[uint8] {
+	value := &s.ptr.mmr_order
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// MmrConstant gets the mmr_constant field.
+func (s *AVDOVIReshapingCurve) MmrConstant() *Array[int64] {
+	value := &s.ptr.mmr_constant
+	return ToInt64Array(unsafe.Pointer(value))
+}
+
+// mmr_coef skipped due to multi dim const array
+
+// --- Struct AVDOVINLQParams ---
+
+// AVDOVINLQParams wraps AVDOVINLQParams.
+/*
+  Coefficients of the non-linear inverse quantization. For the interpretation
+  of these, see ETSI GS CCM 001.
+*/
+type AVDOVINLQParams struct {
+	ptr *C.AVDOVINLQParams
+}
+
+func (s *AVDOVINLQParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVINLQParamsArray(ptr unsafe.Pointer) *Array[*AVDOVINLQParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVINLQParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVINLQParams {
+			ptr := (**C.AVDOVINLQParams)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVINLQParams
+			if value != nil {
+				valueMapped = &AVDOVINLQParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVINLQParams) {
+			ptr := (**C.AVDOVINLQParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// NlqOffset gets the nlq_offset field.
+func (s *AVDOVINLQParams) NlqOffset() uint16 {
+	value := s.ptr.nlq_offset
+	return uint16(value)
+}
+
+// SetNlqOffset sets the nlq_offset field.
+func (s *AVDOVINLQParams) SetNlqOffset(value uint16) {
+	s.ptr.nlq_offset = (C.uint16_t)(value)
+}
+
+// VdrInMax gets the vdr_in_max field.
+func (s *AVDOVINLQParams) VdrInMax() uint64 {
+	value := s.ptr.vdr_in_max
+	return uint64(value)
+}
+
+// SetVdrInMax sets the vdr_in_max field.
+func (s *AVDOVINLQParams) SetVdrInMax(value uint64) {
+	s.ptr.vdr_in_max = (C.uint64_t)(value)
+}
+
+// LinearDeadzoneSlope gets the linear_deadzone_slope field.
+//
+//	AV_DOVI_NLQ_LINEAR_DZ
+func (s *AVDOVINLQParams) LinearDeadzoneSlope() uint64 {
+	value := s.ptr.linear_deadzone_slope
+	return uint64(value)
+}
+
+// SetLinearDeadzoneSlope sets the linear_deadzone_slope field.
+//
+//	AV_DOVI_NLQ_LINEAR_DZ
+func (s *AVDOVINLQParams) SetLinearDeadzoneSlope(value uint64) {
+	s.ptr.linear_deadzone_slope = (C.uint64_t)(value)
+}
+
+// LinearDeadzoneThreshold gets the linear_deadzone_threshold field.
+func (s *AVDOVINLQParams) LinearDeadzoneThreshold() uint64 {
+	value := s.ptr.linear_deadzone_threshold
+	return uint64(value)
+}
+
+// SetLinearDeadzoneThreshold sets the linear_deadzone_threshold field.
+func (s *AVDOVINLQParams) SetLinearDeadzoneThreshold(value uint64) {
+	s.ptr.linear_deadzone_threshold = (C.uint64_t)(value)
+}
+
+// --- Struct AVDOVIDataMapping ---
+
+// AVDOVIDataMapping wraps AVDOVIDataMapping.
+/*
+  Dolby Vision RPU data mapping parameters.
+
+  @note sizeof(AVDOVIDataMapping) is not part of the public ABI.
+*/
+type AVDOVIDataMapping struct {
+	ptr *C.AVDOVIDataMapping
+}
+
+func (s *AVDOVIDataMapping) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDataMappingArray(ptr unsafe.Pointer) *Array[*AVDOVIDataMapping] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDataMapping]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDataMapping {
+			ptr := (**C.AVDOVIDataMapping)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDataMapping
+			if value != nil {
+				valueMapped = &AVDOVIDataMapping{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDataMapping) {
+			ptr := (**C.AVDOVIDataMapping)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// VdrRpuId gets the vdr_rpu_id field.
+func (s *AVDOVIDataMapping) VdrRpuId() uint8 {
+	value := s.ptr.vdr_rpu_id
+	return uint8(value)
+}
+
+// SetVdrRpuId sets the vdr_rpu_id field.
+func (s *AVDOVIDataMapping) SetVdrRpuId(value uint8) {
+	s.ptr.vdr_rpu_id = (C.uint8_t)(value)
+}
+
+// MappingColorSpace gets the mapping_color_space field.
+func (s *AVDOVIDataMapping) MappingColorSpace() uint8 {
+	value := s.ptr.mapping_color_space
+	return uint8(value)
+}
+
+// SetMappingColorSpace sets the mapping_color_space field.
+func (s *AVDOVIDataMapping) SetMappingColorSpace(value uint8) {
+	s.ptr.mapping_color_space = (C.uint8_t)(value)
+}
+
+// MappingChromaFormatIdc gets the mapping_chroma_format_idc field.
+func (s *AVDOVIDataMapping) MappingChromaFormatIdc() uint8 {
+	value := s.ptr.mapping_chroma_format_idc
+	return uint8(value)
+}
+
+// SetMappingChromaFormatIdc sets the mapping_chroma_format_idc field.
+func (s *AVDOVIDataMapping) SetMappingChromaFormatIdc(value uint8) {
+	s.ptr.mapping_chroma_format_idc = (C.uint8_t)(value)
+}
+
+// curves skipped due to unknown const array
+
+// NlqMethodIdc gets the nlq_method_idc field.
+//
+//	Non-linear inverse quantization
+func (s *AVDOVIDataMapping) NlqMethodIdc() AVDOVINLQMethod {
+	value := s.ptr.nlq_method_idc
+	return AVDOVINLQMethod(value)
+}
+
+// SetNlqMethodIdc sets the nlq_method_idc field.
+//
+//	Non-linear inverse quantization
+func (s *AVDOVIDataMapping) SetNlqMethodIdc(value AVDOVINLQMethod) {
+	s.ptr.nlq_method_idc = (C.enum_AVDOVINLQMethod)(value)
+}
+
+// NumXPartitions gets the num_x_partitions field.
+func (s *AVDOVIDataMapping) NumXPartitions() uint32 {
+	value := s.ptr.num_x_partitions
+	return uint32(value)
+}
+
+// SetNumXPartitions sets the num_x_partitions field.
+func (s *AVDOVIDataMapping) SetNumXPartitions(value uint32) {
+	s.ptr.num_x_partitions = (C.uint32_t)(value)
+}
+
+// NumYPartitions gets the num_y_partitions field.
+func (s *AVDOVIDataMapping) NumYPartitions() uint32 {
+	value := s.ptr.num_y_partitions
+	return uint32(value)
+}
+
+// SetNumYPartitions sets the num_y_partitions field.
+func (s *AVDOVIDataMapping) SetNumYPartitions(value uint32) {
+	s.ptr.num_y_partitions = (C.uint32_t)(value)
+}
+
+// nlq skipped due to unknown const array
+
+// NlqPivots gets the nlq_pivots field.
+func (s *AVDOVIDataMapping) NlqPivots() *Array[uint16] {
+	value := &s.ptr.nlq_pivots
+	return ToUint16Array(unsafe.Pointer(value))
+}
+
+// --- Struct AVDOVIColorMetadata ---
+
+// AVDOVIColorMetadata wraps AVDOVIColorMetadata.
+/*
+  Dolby Vision RPU colorspace metadata parameters.
+
+  @note sizeof(AVDOVIColorMetadata) is not part of the public ABI.
+*/
+type AVDOVIColorMetadata struct {
+	ptr *C.AVDOVIColorMetadata
+}
+
+func (s *AVDOVIColorMetadata) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIColorMetadataArray(ptr unsafe.Pointer) *Array[*AVDOVIColorMetadata] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIColorMetadata]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIColorMetadata {
+			ptr := (**C.AVDOVIColorMetadata)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIColorMetadata
+			if value != nil {
+				valueMapped = &AVDOVIColorMetadata{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIColorMetadata) {
+			ptr := (**C.AVDOVIColorMetadata)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// DmMetadataId gets the dm_metadata_id field.
+func (s *AVDOVIColorMetadata) DmMetadataId() uint8 {
+	value := s.ptr.dm_metadata_id
+	return uint8(value)
+}
+
+// SetDmMetadataId sets the dm_metadata_id field.
+func (s *AVDOVIColorMetadata) SetDmMetadataId(value uint8) {
+	s.ptr.dm_metadata_id = (C.uint8_t)(value)
+}
+
+// SceneRefreshFlag gets the scene_refresh_flag field.
+func (s *AVDOVIColorMetadata) SceneRefreshFlag() uint8 {
+	value := s.ptr.scene_refresh_flag
+	return uint8(value)
+}
+
+// SetSceneRefreshFlag sets the scene_refresh_flag field.
+func (s *AVDOVIColorMetadata) SetSceneRefreshFlag(value uint8) {
+	s.ptr.scene_refresh_flag = (C.uint8_t)(value)
+}
+
+// ycc_to_rgb_matrix skipped due to unknown const array
+
+// ycc_to_rgb_offset skipped due to unknown const array
+
+// rgb_to_lms_matrix skipped due to unknown const array
+
+// SignalEotf gets the signal_eotf field.
+//
+//	Extra signal metadata (see Dolby patents for more info).
+func (s *AVDOVIColorMetadata) SignalEotf() uint16 {
+	value := s.ptr.signal_eotf
+	return uint16(value)
+}
+
+// SetSignalEotf sets the signal_eotf field.
+//
+//	Extra signal metadata (see Dolby patents for more info).
+func (s *AVDOVIColorMetadata) SetSignalEotf(value uint16) {
+	s.ptr.signal_eotf = (C.uint16_t)(value)
+}
+
+// SignalEotfParam0 gets the signal_eotf_param0 field.
+func (s *AVDOVIColorMetadata) SignalEotfParam0() uint16 {
+	value := s.ptr.signal_eotf_param0
+	return uint16(value)
+}
+
+// SetSignalEotfParam0 sets the signal_eotf_param0 field.
+func (s *AVDOVIColorMetadata) SetSignalEotfParam0(value uint16) {
+	s.ptr.signal_eotf_param0 = (C.uint16_t)(value)
+}
+
+// SignalEotfParam1 gets the signal_eotf_param1 field.
+func (s *AVDOVIColorMetadata) SignalEotfParam1() uint16 {
+	value := s.ptr.signal_eotf_param1
+	return uint16(value)
+}
+
+// SetSignalEotfParam1 sets the signal_eotf_param1 field.
+func (s *AVDOVIColorMetadata) SetSignalEotfParam1(value uint16) {
+	s.ptr.signal_eotf_param1 = (C.uint16_t)(value)
+}
+
+// SignalEotfParam2 gets the signal_eotf_param2 field.
+func (s *AVDOVIColorMetadata) SignalEotfParam2() uint32 {
+	value := s.ptr.signal_eotf_param2
+	return uint32(value)
+}
+
+// SetSignalEotfParam2 sets the signal_eotf_param2 field.
+func (s *AVDOVIColorMetadata) SetSignalEotfParam2(value uint32) {
+	s.ptr.signal_eotf_param2 = (C.uint32_t)(value)
+}
+
+// SignalBitDepth gets the signal_bit_depth field.
+func (s *AVDOVIColorMetadata) SignalBitDepth() uint8 {
+	value := s.ptr.signal_bit_depth
+	return uint8(value)
+}
+
+// SetSignalBitDepth sets the signal_bit_depth field.
+func (s *AVDOVIColorMetadata) SetSignalBitDepth(value uint8) {
+	s.ptr.signal_bit_depth = (C.uint8_t)(value)
+}
+
+// SignalColorSpace gets the signal_color_space field.
+func (s *AVDOVIColorMetadata) SignalColorSpace() uint8 {
+	value := s.ptr.signal_color_space
+	return uint8(value)
+}
+
+// SetSignalColorSpace sets the signal_color_space field.
+func (s *AVDOVIColorMetadata) SetSignalColorSpace(value uint8) {
+	s.ptr.signal_color_space = (C.uint8_t)(value)
+}
+
+// SignalChromaFormat gets the signal_chroma_format field.
+func (s *AVDOVIColorMetadata) SignalChromaFormat() uint8 {
+	value := s.ptr.signal_chroma_format
+	return uint8(value)
+}
+
+// SetSignalChromaFormat sets the signal_chroma_format field.
+func (s *AVDOVIColorMetadata) SetSignalChromaFormat(value uint8) {
+	s.ptr.signal_chroma_format = (C.uint8_t)(value)
+}
+
+// SignalFullRangeFlag gets the signal_full_range_flag field.
+//
+//	[0, 3]
+func (s *AVDOVIColorMetadata) SignalFullRangeFlag() uint8 {
+	value := s.ptr.signal_full_range_flag
+	return uint8(value)
+}
+
+// SetSignalFullRangeFlag sets the signal_full_range_flag field.
+//
+//	[0, 3]
+func (s *AVDOVIColorMetadata) SetSignalFullRangeFlag(value uint8) {
+	s.ptr.signal_full_range_flag = (C.uint8_t)(value)
+}
+
+// SourceMinPq gets the source_min_pq field.
+func (s *AVDOVIColorMetadata) SourceMinPq() uint16 {
+	value := s.ptr.source_min_pq
+	return uint16(value)
+}
+
+// SetSourceMinPq sets the source_min_pq field.
+func (s *AVDOVIColorMetadata) SetSourceMinPq(value uint16) {
+	s.ptr.source_min_pq = (C.uint16_t)(value)
+}
+
+// SourceMaxPq gets the source_max_pq field.
+func (s *AVDOVIColorMetadata) SourceMaxPq() uint16 {
+	value := s.ptr.source_max_pq
+	return uint16(value)
+}
+
+// SetSourceMaxPq sets the source_max_pq field.
+func (s *AVDOVIColorMetadata) SetSourceMaxPq(value uint16) {
+	s.ptr.source_max_pq = (C.uint16_t)(value)
+}
+
+// SourceDiagonal gets the source_diagonal field.
+func (s *AVDOVIColorMetadata) SourceDiagonal() uint16 {
+	value := s.ptr.source_diagonal
+	return uint16(value)
+}
+
+// SetSourceDiagonal sets the source_diagonal field.
+func (s *AVDOVIColorMetadata) SetSourceDiagonal(value uint16) {
+	s.ptr.source_diagonal = (C.uint16_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel1 ---
+
+// AVDOVIDmLevel1 wraps AVDOVIDmLevel1.
+type AVDOVIDmLevel1 struct {
+	ptr *C.AVDOVIDmLevel1
+}
+
+func (s *AVDOVIDmLevel1) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel1Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel1] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel1]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel1 {
+			ptr := (**C.AVDOVIDmLevel1)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel1
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel1{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel1) {
+			ptr := (**C.AVDOVIDmLevel1)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// MinPq gets the min_pq field.
+//
+//	Per-frame brightness metadata
+func (s *AVDOVIDmLevel1) MinPq() uint16 {
+	value := s.ptr.min_pq
+	return uint16(value)
+}
+
+// SetMinPq sets the min_pq field.
+//
+//	Per-frame brightness metadata
+func (s *AVDOVIDmLevel1) SetMinPq(value uint16) {
+	s.ptr.min_pq = (C.uint16_t)(value)
+}
+
+// MaxPq gets the max_pq field.
+func (s *AVDOVIDmLevel1) MaxPq() uint16 {
+	value := s.ptr.max_pq
+	return uint16(value)
+}
+
+// SetMaxPq sets the max_pq field.
+func (s *AVDOVIDmLevel1) SetMaxPq(value uint16) {
+	s.ptr.max_pq = (C.uint16_t)(value)
+}
+
+// AvgPq gets the avg_pq field.
+func (s *AVDOVIDmLevel1) AvgPq() uint16 {
+	value := s.ptr.avg_pq
+	return uint16(value)
+}
+
+// SetAvgPq sets the avg_pq field.
+func (s *AVDOVIDmLevel1) SetAvgPq(value uint16) {
+	s.ptr.avg_pq = (C.uint16_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel2 ---
+
+// AVDOVIDmLevel2 wraps AVDOVIDmLevel2.
+type AVDOVIDmLevel2 struct {
+	ptr *C.AVDOVIDmLevel2
+}
+
+func (s *AVDOVIDmLevel2) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel2Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel2] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel2]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel2 {
+			ptr := (**C.AVDOVIDmLevel2)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel2
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel2{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel2) {
+			ptr := (**C.AVDOVIDmLevel2)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// TargetMaxPq gets the target_max_pq field.
+//
+//	Usually derived from level 8 (at different levels)
+func (s *AVDOVIDmLevel2) TargetMaxPq() uint16 {
+	value := s.ptr.target_max_pq
+	return uint16(value)
+}
+
+// SetTargetMaxPq sets the target_max_pq field.
+//
+//	Usually derived from level 8 (at different levels)
+func (s *AVDOVIDmLevel2) SetTargetMaxPq(value uint16) {
+	s.ptr.target_max_pq = (C.uint16_t)(value)
+}
+
+// TrimSlope gets the trim_slope field.
+func (s *AVDOVIDmLevel2) TrimSlope() uint16 {
+	value := s.ptr.trim_slope
+	return uint16(value)
+}
+
+// SetTrimSlope sets the trim_slope field.
+func (s *AVDOVIDmLevel2) SetTrimSlope(value uint16) {
+	s.ptr.trim_slope = (C.uint16_t)(value)
+}
+
+// TrimOffset gets the trim_offset field.
+func (s *AVDOVIDmLevel2) TrimOffset() uint16 {
+	value := s.ptr.trim_offset
+	return uint16(value)
+}
+
+// SetTrimOffset sets the trim_offset field.
+func (s *AVDOVIDmLevel2) SetTrimOffset(value uint16) {
+	s.ptr.trim_offset = (C.uint16_t)(value)
+}
+
+// TrimPower gets the trim_power field.
+func (s *AVDOVIDmLevel2) TrimPower() uint16 {
+	value := s.ptr.trim_power
+	return uint16(value)
+}
+
+// SetTrimPower sets the trim_power field.
+func (s *AVDOVIDmLevel2) SetTrimPower(value uint16) {
+	s.ptr.trim_power = (C.uint16_t)(value)
+}
+
+// TrimChromaWeight gets the trim_chroma_weight field.
+func (s *AVDOVIDmLevel2) TrimChromaWeight() uint16 {
+	value := s.ptr.trim_chroma_weight
+	return uint16(value)
+}
+
+// SetTrimChromaWeight sets the trim_chroma_weight field.
+func (s *AVDOVIDmLevel2) SetTrimChromaWeight(value uint16) {
+	s.ptr.trim_chroma_weight = (C.uint16_t)(value)
+}
+
+// TrimSaturationGain gets the trim_saturation_gain field.
+func (s *AVDOVIDmLevel2) TrimSaturationGain() uint16 {
+	value := s.ptr.trim_saturation_gain
+	return uint16(value)
+}
+
+// SetTrimSaturationGain sets the trim_saturation_gain field.
+func (s *AVDOVIDmLevel2) SetTrimSaturationGain(value uint16) {
+	s.ptr.trim_saturation_gain = (C.uint16_t)(value)
+}
+
+// ms_weight skipped due to unexpected IdentType int16_t
+
+// --- Struct AVDOVIDmLevel3 ---
+
+// AVDOVIDmLevel3 wraps AVDOVIDmLevel3.
+type AVDOVIDmLevel3 struct {
+	ptr *C.AVDOVIDmLevel3
+}
+
+func (s *AVDOVIDmLevel3) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel3Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel3] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel3]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel3 {
+			ptr := (**C.AVDOVIDmLevel3)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel3
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel3{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel3) {
+			ptr := (**C.AVDOVIDmLevel3)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// MinPqOffset gets the min_pq_offset field.
+func (s *AVDOVIDmLevel3) MinPqOffset() uint16 {
+	value := s.ptr.min_pq_offset
+	return uint16(value)
+}
+
+// SetMinPqOffset sets the min_pq_offset field.
+func (s *AVDOVIDmLevel3) SetMinPqOffset(value uint16) {
+	s.ptr.min_pq_offset = (C.uint16_t)(value)
+}
+
+// MaxPqOffset gets the max_pq_offset field.
+func (s *AVDOVIDmLevel3) MaxPqOffset() uint16 {
+	value := s.ptr.max_pq_offset
+	return uint16(value)
+}
+
+// SetMaxPqOffset sets the max_pq_offset field.
+func (s *AVDOVIDmLevel3) SetMaxPqOffset(value uint16) {
+	s.ptr.max_pq_offset = (C.uint16_t)(value)
+}
+
+// AvgPqOffset gets the avg_pq_offset field.
+func (s *AVDOVIDmLevel3) AvgPqOffset() uint16 {
+	value := s.ptr.avg_pq_offset
+	return uint16(value)
+}
+
+// SetAvgPqOffset sets the avg_pq_offset field.
+func (s *AVDOVIDmLevel3) SetAvgPqOffset(value uint16) {
+	s.ptr.avg_pq_offset = (C.uint16_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel4 ---
+
+// AVDOVIDmLevel4 wraps AVDOVIDmLevel4.
+type AVDOVIDmLevel4 struct {
+	ptr *C.AVDOVIDmLevel4
+}
+
+func (s *AVDOVIDmLevel4) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel4Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel4] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel4]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel4 {
+			ptr := (**C.AVDOVIDmLevel4)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel4
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel4{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel4) {
+			ptr := (**C.AVDOVIDmLevel4)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AnchorPq gets the anchor_pq field.
+func (s *AVDOVIDmLevel4) AnchorPq() uint16 {
+	value := s.ptr.anchor_pq
+	return uint16(value)
+}
+
+// SetAnchorPq sets the anchor_pq field.
+func (s *AVDOVIDmLevel4) SetAnchorPq(value uint16) {
+	s.ptr.anchor_pq = (C.uint16_t)(value)
+}
+
+// AnchorPower gets the anchor_power field.
+func (s *AVDOVIDmLevel4) AnchorPower() uint16 {
+	value := s.ptr.anchor_power
+	return uint16(value)
+}
+
+// SetAnchorPower sets the anchor_power field.
+func (s *AVDOVIDmLevel4) SetAnchorPower(value uint16) {
+	s.ptr.anchor_power = (C.uint16_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel5 ---
+
+// AVDOVIDmLevel5 wraps AVDOVIDmLevel5.
+type AVDOVIDmLevel5 struct {
+	ptr *C.AVDOVIDmLevel5
+}
+
+func (s *AVDOVIDmLevel5) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel5Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel5] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel5]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel5 {
+			ptr := (**C.AVDOVIDmLevel5)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel5
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel5{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel5) {
+			ptr := (**C.AVDOVIDmLevel5)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// LeftOffset gets the left_offset field.
+//
+//	Active area definition
+func (s *AVDOVIDmLevel5) LeftOffset() uint16 {
+	value := s.ptr.left_offset
+	return uint16(value)
+}
+
+// SetLeftOffset sets the left_offset field.
+//
+//	Active area definition
+func (s *AVDOVIDmLevel5) SetLeftOffset(value uint16) {
+	s.ptr.left_offset = (C.uint16_t)(value)
+}
+
+// RightOffset gets the right_offset field.
+func (s *AVDOVIDmLevel5) RightOffset() uint16 {
+	value := s.ptr.right_offset
+	return uint16(value)
+}
+
+// SetRightOffset sets the right_offset field.
+func (s *AVDOVIDmLevel5) SetRightOffset(value uint16) {
+	s.ptr.right_offset = (C.uint16_t)(value)
+}
+
+// TopOffset gets the top_offset field.
+func (s *AVDOVIDmLevel5) TopOffset() uint16 {
+	value := s.ptr.top_offset
+	return uint16(value)
+}
+
+// SetTopOffset sets the top_offset field.
+func (s *AVDOVIDmLevel5) SetTopOffset(value uint16) {
+	s.ptr.top_offset = (C.uint16_t)(value)
+}
+
+// BottomOffset gets the bottom_offset field.
+func (s *AVDOVIDmLevel5) BottomOffset() uint16 {
+	value := s.ptr.bottom_offset
+	return uint16(value)
+}
+
+// SetBottomOffset sets the bottom_offset field.
+func (s *AVDOVIDmLevel5) SetBottomOffset(value uint16) {
+	s.ptr.bottom_offset = (C.uint16_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel6 ---
+
+// AVDOVIDmLevel6 wraps AVDOVIDmLevel6.
+type AVDOVIDmLevel6 struct {
+	ptr *C.AVDOVIDmLevel6
+}
+
+func (s *AVDOVIDmLevel6) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel6Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel6] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel6]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel6 {
+			ptr := (**C.AVDOVIDmLevel6)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel6
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel6{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel6) {
+			ptr := (**C.AVDOVIDmLevel6)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// MaxLuminance gets the max_luminance field.
+//
+//	Static HDR10 metadata
+func (s *AVDOVIDmLevel6) MaxLuminance() uint16 {
+	value := s.ptr.max_luminance
+	return uint16(value)
+}
+
+// SetMaxLuminance sets the max_luminance field.
+//
+//	Static HDR10 metadata
+func (s *AVDOVIDmLevel6) SetMaxLuminance(value uint16) {
+	s.ptr.max_luminance = (C.uint16_t)(value)
+}
+
+// MinLuminance gets the min_luminance field.
+func (s *AVDOVIDmLevel6) MinLuminance() uint16 {
+	value := s.ptr.min_luminance
+	return uint16(value)
+}
+
+// SetMinLuminance sets the min_luminance field.
+func (s *AVDOVIDmLevel6) SetMinLuminance(value uint16) {
+	s.ptr.min_luminance = (C.uint16_t)(value)
+}
+
+// MaxCll gets the max_cll field.
+func (s *AVDOVIDmLevel6) MaxCll() uint16 {
+	value := s.ptr.max_cll
+	return uint16(value)
+}
+
+// SetMaxCll sets the max_cll field.
+func (s *AVDOVIDmLevel6) SetMaxCll(value uint16) {
+	s.ptr.max_cll = (C.uint16_t)(value)
+}
+
+// MaxFall gets the max_fall field.
+func (s *AVDOVIDmLevel6) MaxFall() uint16 {
+	value := s.ptr.max_fall
+	return uint16(value)
+}
+
+// SetMaxFall sets the max_fall field.
+func (s *AVDOVIDmLevel6) SetMaxFall(value uint16) {
+	s.ptr.max_fall = (C.uint16_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel8 ---
+
+// AVDOVIDmLevel8 wraps AVDOVIDmLevel8.
+type AVDOVIDmLevel8 struct {
+	ptr *C.AVDOVIDmLevel8
+}
+
+func (s *AVDOVIDmLevel8) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel8Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel8] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel8]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel8 {
+			ptr := (**C.AVDOVIDmLevel8)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel8
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel8{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel8) {
+			ptr := (**C.AVDOVIDmLevel8)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// TargetDisplayIndex gets the target_display_index field.
+//
+//	Extended version of level 2
+func (s *AVDOVIDmLevel8) TargetDisplayIndex() uint8 {
+	value := s.ptr.target_display_index
+	return uint8(value)
+}
+
+// SetTargetDisplayIndex sets the target_display_index field.
+//
+//	Extended version of level 2
+func (s *AVDOVIDmLevel8) SetTargetDisplayIndex(value uint8) {
+	s.ptr.target_display_index = (C.uint8_t)(value)
+}
+
+// TrimSlope gets the trim_slope field.
+func (s *AVDOVIDmLevel8) TrimSlope() uint16 {
+	value := s.ptr.trim_slope
+	return uint16(value)
+}
+
+// SetTrimSlope sets the trim_slope field.
+func (s *AVDOVIDmLevel8) SetTrimSlope(value uint16) {
+	s.ptr.trim_slope = (C.uint16_t)(value)
+}
+
+// TrimOffset gets the trim_offset field.
+func (s *AVDOVIDmLevel8) TrimOffset() uint16 {
+	value := s.ptr.trim_offset
+	return uint16(value)
+}
+
+// SetTrimOffset sets the trim_offset field.
+func (s *AVDOVIDmLevel8) SetTrimOffset(value uint16) {
+	s.ptr.trim_offset = (C.uint16_t)(value)
+}
+
+// TrimPower gets the trim_power field.
+func (s *AVDOVIDmLevel8) TrimPower() uint16 {
+	value := s.ptr.trim_power
+	return uint16(value)
+}
+
+// SetTrimPower sets the trim_power field.
+func (s *AVDOVIDmLevel8) SetTrimPower(value uint16) {
+	s.ptr.trim_power = (C.uint16_t)(value)
+}
+
+// TrimChromaWeight gets the trim_chroma_weight field.
+func (s *AVDOVIDmLevel8) TrimChromaWeight() uint16 {
+	value := s.ptr.trim_chroma_weight
+	return uint16(value)
+}
+
+// SetTrimChromaWeight sets the trim_chroma_weight field.
+func (s *AVDOVIDmLevel8) SetTrimChromaWeight(value uint16) {
+	s.ptr.trim_chroma_weight = (C.uint16_t)(value)
+}
+
+// TrimSaturationGain gets the trim_saturation_gain field.
+func (s *AVDOVIDmLevel8) TrimSaturationGain() uint16 {
+	value := s.ptr.trim_saturation_gain
+	return uint16(value)
+}
+
+// SetTrimSaturationGain sets the trim_saturation_gain field.
+func (s *AVDOVIDmLevel8) SetTrimSaturationGain(value uint16) {
+	s.ptr.trim_saturation_gain = (C.uint16_t)(value)
+}
+
+// MsWeight gets the ms_weight field.
+func (s *AVDOVIDmLevel8) MsWeight() uint16 {
+	value := s.ptr.ms_weight
+	return uint16(value)
+}
+
+// SetMsWeight sets the ms_weight field.
+func (s *AVDOVIDmLevel8) SetMsWeight(value uint16) {
+	s.ptr.ms_weight = (C.uint16_t)(value)
+}
+
+// TargetMidContrast gets the target_mid_contrast field.
+func (s *AVDOVIDmLevel8) TargetMidContrast() uint16 {
+	value := s.ptr.target_mid_contrast
+	return uint16(value)
+}
+
+// SetTargetMidContrast sets the target_mid_contrast field.
+func (s *AVDOVIDmLevel8) SetTargetMidContrast(value uint16) {
+	s.ptr.target_mid_contrast = (C.uint16_t)(value)
+}
+
+// ClipTrim gets the clip_trim field.
+func (s *AVDOVIDmLevel8) ClipTrim() uint16 {
+	value := s.ptr.clip_trim
+	return uint16(value)
+}
+
+// SetClipTrim sets the clip_trim field.
+func (s *AVDOVIDmLevel8) SetClipTrim(value uint16) {
+	s.ptr.clip_trim = (C.uint16_t)(value)
+}
+
+// SaturationVectorField gets the saturation_vector_field field.
+func (s *AVDOVIDmLevel8) SaturationVectorField() *Array[uint8] {
+	value := &s.ptr.saturation_vector_field
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// HueVectorField gets the hue_vector_field field.
+func (s *AVDOVIDmLevel8) HueVectorField() *Array[uint8] {
+	value := &s.ptr.hue_vector_field
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// --- Struct AVDOVIDmLevel9 ---
+
+// AVDOVIDmLevel9 wraps AVDOVIDmLevel9.
+type AVDOVIDmLevel9 struct {
+	ptr *C.AVDOVIDmLevel9
+}
+
+func (s *AVDOVIDmLevel9) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel9Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel9] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel9]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel9 {
+			ptr := (**C.AVDOVIDmLevel9)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel9
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel9{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel9) {
+			ptr := (**C.AVDOVIDmLevel9)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// SourcePrimaryIndex gets the source_primary_index field.
+//
+//	Source display characteristics
+func (s *AVDOVIDmLevel9) SourcePrimaryIndex() uint8 {
+	value := s.ptr.source_primary_index
+	return uint8(value)
+}
+
+// SetSourcePrimaryIndex sets the source_primary_index field.
+//
+//	Source display characteristics
+func (s *AVDOVIDmLevel9) SetSourcePrimaryIndex(value uint8) {
+	s.ptr.source_primary_index = (C.uint8_t)(value)
+}
+
+// source_display_primaries skipped due to unexpected IdentType AVColorPrimariesDesc
+
+// --- Struct AVDOVIDmLevel10 ---
+
+// AVDOVIDmLevel10 wraps AVDOVIDmLevel10.
+type AVDOVIDmLevel10 struct {
+	ptr *C.AVDOVIDmLevel10
+}
+
+func (s *AVDOVIDmLevel10) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel10Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel10] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel10]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel10 {
+			ptr := (**C.AVDOVIDmLevel10)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel10
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel10{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel10) {
+			ptr := (**C.AVDOVIDmLevel10)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// TargetDisplayIndex gets the target_display_index field.
+//
+//	Target display characteristics
+func (s *AVDOVIDmLevel10) TargetDisplayIndex() uint8 {
+	value := s.ptr.target_display_index
+	return uint8(value)
+}
+
+// SetTargetDisplayIndex sets the target_display_index field.
+//
+//	Target display characteristics
+func (s *AVDOVIDmLevel10) SetTargetDisplayIndex(value uint8) {
+	s.ptr.target_display_index = (C.uint8_t)(value)
+}
+
+// TargetMaxPq gets the target_max_pq field.
+func (s *AVDOVIDmLevel10) TargetMaxPq() uint16 {
+	value := s.ptr.target_max_pq
+	return uint16(value)
+}
+
+// SetTargetMaxPq sets the target_max_pq field.
+func (s *AVDOVIDmLevel10) SetTargetMaxPq(value uint16) {
+	s.ptr.target_max_pq = (C.uint16_t)(value)
+}
+
+// TargetMinPq gets the target_min_pq field.
+func (s *AVDOVIDmLevel10) TargetMinPq() uint16 {
+	value := s.ptr.target_min_pq
+	return uint16(value)
+}
+
+// SetTargetMinPq sets the target_min_pq field.
+func (s *AVDOVIDmLevel10) SetTargetMinPq(value uint16) {
+	s.ptr.target_min_pq = (C.uint16_t)(value)
+}
+
+// TargetPrimaryIndex gets the target_primary_index field.
+func (s *AVDOVIDmLevel10) TargetPrimaryIndex() uint8 {
+	value := s.ptr.target_primary_index
+	return uint8(value)
+}
+
+// SetTargetPrimaryIndex sets the target_primary_index field.
+func (s *AVDOVIDmLevel10) SetTargetPrimaryIndex(value uint8) {
+	s.ptr.target_primary_index = (C.uint8_t)(value)
+}
+
+// target_display_primaries skipped due to unexpected IdentType AVColorPrimariesDesc
+
+// --- Struct AVDOVIDmLevel11 ---
+
+// AVDOVIDmLevel11 wraps AVDOVIDmLevel11.
+type AVDOVIDmLevel11 struct {
+	ptr *C.AVDOVIDmLevel11
+}
+
+func (s *AVDOVIDmLevel11) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel11Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel11] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel11]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel11 {
+			ptr := (**C.AVDOVIDmLevel11)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel11
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel11{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel11) {
+			ptr := (**C.AVDOVIDmLevel11)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// ContentType gets the content_type field.
+func (s *AVDOVIDmLevel11) ContentType() uint8 {
+	value := s.ptr.content_type
+	return uint8(value)
+}
+
+// SetContentType sets the content_type field.
+func (s *AVDOVIDmLevel11) SetContentType(value uint8) {
+	s.ptr.content_type = (C.uint8_t)(value)
+}
+
+// Whitepoint gets the whitepoint field.
+func (s *AVDOVIDmLevel11) Whitepoint() uint8 {
+	value := s.ptr.whitepoint
+	return uint8(value)
+}
+
+// SetWhitepoint sets the whitepoint field.
+func (s *AVDOVIDmLevel11) SetWhitepoint(value uint8) {
+	s.ptr.whitepoint = (C.uint8_t)(value)
+}
+
+// ReferenceModeFlag gets the reference_mode_flag field.
+func (s *AVDOVIDmLevel11) ReferenceModeFlag() uint8 {
+	value := s.ptr.reference_mode_flag
+	return uint8(value)
+}
+
+// SetReferenceModeFlag sets the reference_mode_flag field.
+func (s *AVDOVIDmLevel11) SetReferenceModeFlag(value uint8) {
+	s.ptr.reference_mode_flag = (C.uint8_t)(value)
+}
+
+// Sharpness gets the sharpness field.
+func (s *AVDOVIDmLevel11) Sharpness() uint8 {
+	value := s.ptr.sharpness
+	return uint8(value)
+}
+
+// SetSharpness sets the sharpness field.
+func (s *AVDOVIDmLevel11) SetSharpness(value uint8) {
+	s.ptr.sharpness = (C.uint8_t)(value)
+}
+
+// NoiseReduction gets the noise_reduction field.
+func (s *AVDOVIDmLevel11) NoiseReduction() uint8 {
+	value := s.ptr.noise_reduction
+	return uint8(value)
+}
+
+// SetNoiseReduction sets the noise_reduction field.
+func (s *AVDOVIDmLevel11) SetNoiseReduction(value uint8) {
+	s.ptr.noise_reduction = (C.uint8_t)(value)
+}
+
+// MpegNoiseReduction gets the mpeg_noise_reduction field.
+func (s *AVDOVIDmLevel11) MpegNoiseReduction() uint8 {
+	value := s.ptr.mpeg_noise_reduction
+	return uint8(value)
+}
+
+// SetMpegNoiseReduction sets the mpeg_noise_reduction field.
+func (s *AVDOVIDmLevel11) SetMpegNoiseReduction(value uint8) {
+	s.ptr.mpeg_noise_reduction = (C.uint8_t)(value)
+}
+
+// FrameRateConversion gets the frame_rate_conversion field.
+func (s *AVDOVIDmLevel11) FrameRateConversion() uint8 {
+	value := s.ptr.frame_rate_conversion
+	return uint8(value)
+}
+
+// SetFrameRateConversion sets the frame_rate_conversion field.
+func (s *AVDOVIDmLevel11) SetFrameRateConversion(value uint8) {
+	s.ptr.frame_rate_conversion = (C.uint8_t)(value)
+}
+
+// Brightness gets the brightness field.
+func (s *AVDOVIDmLevel11) Brightness() uint8 {
+	value := s.ptr.brightness
+	return uint8(value)
+}
+
+// SetBrightness sets the brightness field.
+func (s *AVDOVIDmLevel11) SetBrightness(value uint8) {
+	s.ptr.brightness = (C.uint8_t)(value)
+}
+
+// Color gets the color field.
+func (s *AVDOVIDmLevel11) Color() uint8 {
+	value := s.ptr.color
+	return uint8(value)
+}
+
+// SetColor sets the color field.
+func (s *AVDOVIDmLevel11) SetColor(value uint8) {
+	s.ptr.color = (C.uint8_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel254 ---
+
+// AVDOVIDmLevel254 wraps AVDOVIDmLevel254.
+type AVDOVIDmLevel254 struct {
+	ptr *C.AVDOVIDmLevel254
+}
+
+func (s *AVDOVIDmLevel254) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel254Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel254] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel254]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel254 {
+			ptr := (**C.AVDOVIDmLevel254)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel254
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel254{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel254) {
+			ptr := (**C.AVDOVIDmLevel254)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// DmMode gets the dm_mode field.
+//
+//	DMv2 info block, always present in samples with DMv2 metadata
+func (s *AVDOVIDmLevel254) DmMode() uint8 {
+	value := s.ptr.dm_mode
+	return uint8(value)
+}
+
+// SetDmMode sets the dm_mode field.
+//
+//	DMv2 info block, always present in samples with DMv2 metadata
+func (s *AVDOVIDmLevel254) SetDmMode(value uint8) {
+	s.ptr.dm_mode = (C.uint8_t)(value)
+}
+
+// DmVersionIndex gets the dm_version_index field.
+func (s *AVDOVIDmLevel254) DmVersionIndex() uint8 {
+	value := s.ptr.dm_version_index
+	return uint8(value)
+}
+
+// SetDmVersionIndex sets the dm_version_index field.
+func (s *AVDOVIDmLevel254) SetDmVersionIndex(value uint8) {
+	s.ptr.dm_version_index = (C.uint8_t)(value)
+}
+
+// --- Struct AVDOVIDmLevel255 ---
+
+// AVDOVIDmLevel255 wraps AVDOVIDmLevel255.
+type AVDOVIDmLevel255 struct {
+	ptr *C.AVDOVIDmLevel255
+}
+
+func (s *AVDOVIDmLevel255) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmLevel255Array(ptr unsafe.Pointer) *Array[*AVDOVIDmLevel255] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmLevel255]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmLevel255 {
+			ptr := (**C.AVDOVIDmLevel255)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmLevel255
+			if value != nil {
+				valueMapped = &AVDOVIDmLevel255{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmLevel255) {
+			ptr := (**C.AVDOVIDmLevel255)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// DmRunMode gets the dm_run_mode field.
+//
+//	Debug block, not really used in samples
+func (s *AVDOVIDmLevel255) DmRunMode() uint8 {
+	value := s.ptr.dm_run_mode
+	return uint8(value)
+}
+
+// SetDmRunMode sets the dm_run_mode field.
+//
+//	Debug block, not really used in samples
+func (s *AVDOVIDmLevel255) SetDmRunMode(value uint8) {
+	s.ptr.dm_run_mode = (C.uint8_t)(value)
+}
+
+// DmRunVersion gets the dm_run_version field.
+func (s *AVDOVIDmLevel255) DmRunVersion() uint8 {
+	value := s.ptr.dm_run_version
+	return uint8(value)
+}
+
+// SetDmRunVersion sets the dm_run_version field.
+func (s *AVDOVIDmLevel255) SetDmRunVersion(value uint8) {
+	s.ptr.dm_run_version = (C.uint8_t)(value)
+}
+
+// DmDebug gets the dm_debug field.
+func (s *AVDOVIDmLevel255) DmDebug() *Array[uint8] {
+	value := &s.ptr.dm_debug
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// --- Struct AVDOVIDmData ---
+
+// AVDOVIDmData wraps AVDOVIDmData.
+/*
+  Dolby Vision metadata extension block. Dynamic extension blocks may change
+  from frame to frame, while static blocks are constant throughout the entire
+  sequence.
+
+  @note sizeof(AVDOVIDmData) is not part of the public API.
+*/
+type AVDOVIDmData struct {
+	ptr *C.AVDOVIDmData
+}
+
+func (s *AVDOVIDmData) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIDmDataArray(ptr unsafe.Pointer) *Array[*AVDOVIDmData] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIDmData]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIDmData {
+			ptr := (**C.AVDOVIDmData)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIDmData
+			if value != nil {
+				valueMapped = &AVDOVIDmData{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIDmData) {
+			ptr := (**C.AVDOVIDmData)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Level gets the level field.
+//
+//	[1, 255]
+func (s *AVDOVIDmData) Level() uint8 {
+	value := s.ptr.level
+	return uint8(value)
+}
+
+// SetLevel sets the level field.
+//
+//	[1, 255]
+func (s *AVDOVIDmData) SetLevel(value uint8) {
+	s.ptr.level = (C.uint8_t)(value)
+}
+
+// --- Struct AVDOVIMetadata ---
+
+// AVDOVIMetadata wraps AVDOVIMetadata.
+/*
+  Combined struct representing a combination of header, mapping and color
+  metadata, for attaching to frames as side data.
+
+  @note The struct must be allocated with av_dovi_metadata_alloc() and
+        its size is not a part of the public ABI.
+*/
+type AVDOVIMetadata struct {
+	ptr *C.AVDOVIMetadata
+}
+
+func (s *AVDOVIMetadata) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDOVIMetadataArray(ptr unsafe.Pointer) *Array[*AVDOVIMetadata] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDOVIMetadata]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDOVIMetadata {
+			ptr := (**C.AVDOVIMetadata)(pointer)
+			value := *ptr
+			var valueMapped *AVDOVIMetadata
+			if value != nil {
+				valueMapped = &AVDOVIMetadata{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDOVIMetadata) {
+			ptr := (**C.AVDOVIMetadata)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// HeaderOffset gets the header_offset field.
+//
+//	AVDOVIRpuDataHeader
+func (s *AVDOVIMetadata) HeaderOffset() uint64 {
+	value := s.ptr.header_offset
+	return uint64(value)
+}
+
+// SetHeaderOffset sets the header_offset field.
+//
+//	AVDOVIRpuDataHeader
+func (s *AVDOVIMetadata) SetHeaderOffset(value uint64) {
+	s.ptr.header_offset = (C.size_t)(value)
+}
+
+// MappingOffset gets the mapping_offset field.
+//
+//	AVDOVIDataMapping
+func (s *AVDOVIMetadata) MappingOffset() uint64 {
+	value := s.ptr.mapping_offset
+	return uint64(value)
+}
+
+// SetMappingOffset sets the mapping_offset field.
+//
+//	AVDOVIDataMapping
+func (s *AVDOVIMetadata) SetMappingOffset(value uint64) {
+	s.ptr.mapping_offset = (C.size_t)(value)
+}
+
+// ColorOffset gets the color_offset field.
+//
+//	AVDOVIColorMetadata
+func (s *AVDOVIMetadata) ColorOffset() uint64 {
+	value := s.ptr.color_offset
+	return uint64(value)
+}
+
+// SetColorOffset sets the color_offset field.
+//
+//	AVDOVIColorMetadata
+func (s *AVDOVIMetadata) SetColorOffset(value uint64) {
+	s.ptr.color_offset = (C.size_t)(value)
+}
+
+// ExtBlockOffset gets the ext_block_offset field.
+//
+//	offset to start of ext blocks array
+func (s *AVDOVIMetadata) ExtBlockOffset() uint64 {
+	value := s.ptr.ext_block_offset
+	return uint64(value)
+}
+
+// SetExtBlockOffset sets the ext_block_offset field.
+//
+//	offset to start of ext blocks array
+func (s *AVDOVIMetadata) SetExtBlockOffset(value uint64) {
+	s.ptr.ext_block_offset = (C.size_t)(value)
+}
+
+// ExtBlockSize gets the ext_block_size field.
+//
+//	size per element
+func (s *AVDOVIMetadata) ExtBlockSize() uint64 {
+	value := s.ptr.ext_block_size
+	return uint64(value)
+}
+
+// SetExtBlockSize sets the ext_block_size field.
+//
+//	size per element
+func (s *AVDOVIMetadata) SetExtBlockSize(value uint64) {
+	s.ptr.ext_block_size = (C.size_t)(value)
+}
+
+// NumExtBlocks gets the num_ext_blocks field.
+//
+//	number of extension blocks
+func (s *AVDOVIMetadata) NumExtBlocks() int {
+	value := s.ptr.num_ext_blocks
+	return int(value)
+}
+
+// SetNumExtBlocks sets the num_ext_blocks field.
+//
+//	number of extension blocks
+func (s *AVDOVIMetadata) SetNumExtBlocks(value int) {
+	s.ptr.num_ext_blocks = (C.int)(value)
+}
+
 // --- Struct AVDownmixInfo ---
 
 // AVDownmixInfo wraps AVDownmixInfo.
@@ -16187,6 +18421,595 @@ func ToAVFifoArray(ptr unsafe.Pointer) *Array[*AVFifo] {
 		},
 	}
 }
+
+// --- Struct AVFilmGrainAOMParams ---
+
+// AVFilmGrainAOMParams wraps AVFilmGrainAOMParams.
+/*
+  This structure describes how to handle film grain synthesis for AOM codecs.
+
+  @note The struct must be allocated as part of AVFilmGrainParams using
+        av_film_grain_params_alloc(). Its size is not a part of the public ABI.
+*/
+type AVFilmGrainAOMParams struct {
+	ptr *C.AVFilmGrainAOMParams
+}
+
+func (s *AVFilmGrainAOMParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVFilmGrainAOMParamsArray(ptr unsafe.Pointer) *Array[*AVFilmGrainAOMParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVFilmGrainAOMParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVFilmGrainAOMParams {
+			ptr := (**C.AVFilmGrainAOMParams)(pointer)
+			value := *ptr
+			var valueMapped *AVFilmGrainAOMParams
+			if value != nil {
+				valueMapped = &AVFilmGrainAOMParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVFilmGrainAOMParams) {
+			ptr := (**C.AVFilmGrainAOMParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// NumYPoints gets the num_y_points field.
+/*
+  Number of points, and the scale and value for each point of the
+  piecewise linear scaling function for the uma plane.
+*/
+func (s *AVFilmGrainAOMParams) NumYPoints() int {
+	value := s.ptr.num_y_points
+	return int(value)
+}
+
+// SetNumYPoints sets the num_y_points field.
+/*
+  Number of points, and the scale and value for each point of the
+  piecewise linear scaling function for the uma plane.
+*/
+func (s *AVFilmGrainAOMParams) SetNumYPoints(value int) {
+	s.ptr.num_y_points = (C.int)(value)
+}
+
+// y_points skipped due to multi dim const array
+
+// ChromaScalingFromLuma gets the chroma_scaling_from_luma field.
+/*
+  Signals whether to derive the chroma scaling function from the luma.
+  Not equivalent to copying the luma values and scales.
+*/
+func (s *AVFilmGrainAOMParams) ChromaScalingFromLuma() int {
+	value := s.ptr.chroma_scaling_from_luma
+	return int(value)
+}
+
+// SetChromaScalingFromLuma sets the chroma_scaling_from_luma field.
+/*
+  Signals whether to derive the chroma scaling function from the luma.
+  Not equivalent to copying the luma values and scales.
+*/
+func (s *AVFilmGrainAOMParams) SetChromaScalingFromLuma(value int) {
+	s.ptr.chroma_scaling_from_luma = (C.int)(value)
+}
+
+// NumUvPoints gets the num_uv_points field.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) NumUvPoints() *Array[int] {
+	value := &s.ptr.num_uv_points
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// uv_points skipped due to multi dim const array
+
+// ScalingShift gets the scaling_shift field.
+/*
+  Specifies the shift applied to the chroma components. For AV1, its within
+  [8; 11] and determines the range and quantization of the film grain.
+*/
+func (s *AVFilmGrainAOMParams) ScalingShift() int {
+	value := s.ptr.scaling_shift
+	return int(value)
+}
+
+// SetScalingShift sets the scaling_shift field.
+/*
+  Specifies the shift applied to the chroma components. For AV1, its within
+  [8; 11] and determines the range and quantization of the film grain.
+*/
+func (s *AVFilmGrainAOMParams) SetScalingShift(value int) {
+	s.ptr.scaling_shift = (C.int)(value)
+}
+
+// ArCoeffLag gets the ar_coeff_lag field.
+//
+//	Specifies the auto-regression lag.
+func (s *AVFilmGrainAOMParams) ArCoeffLag() int {
+	value := s.ptr.ar_coeff_lag
+	return int(value)
+}
+
+// SetArCoeffLag sets the ar_coeff_lag field.
+//
+//	Specifies the auto-regression lag.
+func (s *AVFilmGrainAOMParams) SetArCoeffLag(value int) {
+	s.ptr.ar_coeff_lag = (C.int)(value)
+}
+
+// ar_coeffs_y skipped due to unknown const array
+
+// ar_coeffs_uv skipped due to multi dim const array
+
+// ArCoeffShift gets the ar_coeff_shift field.
+/*
+  Specifies the range of the auto-regressive coefficients. Values of 6,
+  7, 8 and so on represent a range of [-2, 2), [-1, 1), [-0.5, 0.5) and
+  so on. For AV1 must be between 6 and 9.
+*/
+func (s *AVFilmGrainAOMParams) ArCoeffShift() int {
+	value := s.ptr.ar_coeff_shift
+	return int(value)
+}
+
+// SetArCoeffShift sets the ar_coeff_shift field.
+/*
+  Specifies the range of the auto-regressive coefficients. Values of 6,
+  7, 8 and so on represent a range of [-2, 2), [-1, 1), [-0.5, 0.5) and
+  so on. For AV1 must be between 6 and 9.
+*/
+func (s *AVFilmGrainAOMParams) SetArCoeffShift(value int) {
+	s.ptr.ar_coeff_shift = (C.int)(value)
+}
+
+// GrainScaleShift gets the grain_scale_shift field.
+/*
+  Signals the down shift applied to the generated gaussian numbers during
+  synthesis.
+*/
+func (s *AVFilmGrainAOMParams) GrainScaleShift() int {
+	value := s.ptr.grain_scale_shift
+	return int(value)
+}
+
+// SetGrainScaleShift sets the grain_scale_shift field.
+/*
+  Signals the down shift applied to the generated gaussian numbers during
+  synthesis.
+*/
+func (s *AVFilmGrainAOMParams) SetGrainScaleShift(value int) {
+	s.ptr.grain_scale_shift = (C.int)(value)
+}
+
+// UvMult gets the uv_mult field.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) UvMult() *Array[int] {
+	value := &s.ptr.uv_mult
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// UvMultLuma gets the uv_mult_luma field.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) UvMultLuma() *Array[int] {
+	value := &s.ptr.uv_mult_luma
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// UvOffset gets the uv_offset field.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) UvOffset() *Array[int] {
+	value := &s.ptr.uv_offset
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// OverlapFlag gets the overlap_flag field.
+//
+//	Signals whether to overlap film grain blocks.
+func (s *AVFilmGrainAOMParams) OverlapFlag() int {
+	value := s.ptr.overlap_flag
+	return int(value)
+}
+
+// SetOverlapFlag sets the overlap_flag field.
+//
+//	Signals whether to overlap film grain blocks.
+func (s *AVFilmGrainAOMParams) SetOverlapFlag(value int) {
+	s.ptr.overlap_flag = (C.int)(value)
+}
+
+// LimitOutputRange gets the limit_output_range field.
+//
+//	Signals to clip to limited color levels after film grain application.
+func (s *AVFilmGrainAOMParams) LimitOutputRange() int {
+	value := s.ptr.limit_output_range
+	return int(value)
+}
+
+// SetLimitOutputRange sets the limit_output_range field.
+//
+//	Signals to clip to limited color levels after film grain application.
+func (s *AVFilmGrainAOMParams) SetLimitOutputRange(value int) {
+	s.ptr.limit_output_range = (C.int)(value)
+}
+
+// --- Struct AVFilmGrainH274Params ---
+
+// AVFilmGrainH274Params wraps AVFilmGrainH274Params.
+/*
+  This structure describes how to handle film grain synthesis for codecs using
+  the ITU-T H.274 Versatile supplemental enhancement information message.
+
+  @note The struct must be allocated as part of AVFilmGrainParams using
+        av_film_grain_params_alloc(). Its size is not a part of the public ABI.
+*/
+type AVFilmGrainH274Params struct {
+	ptr *C.AVFilmGrainH274Params
+}
+
+func (s *AVFilmGrainH274Params) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVFilmGrainH274ParamsArray(ptr unsafe.Pointer) *Array[*AVFilmGrainH274Params] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVFilmGrainH274Params]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVFilmGrainH274Params {
+			ptr := (**C.AVFilmGrainH274Params)(pointer)
+			value := *ptr
+			var valueMapped *AVFilmGrainH274Params
+			if value != nil {
+				valueMapped = &AVFilmGrainH274Params{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVFilmGrainH274Params) {
+			ptr := (**C.AVFilmGrainH274Params)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// ModelId gets the model_id field.
+/*
+  Specifies the film grain simulation mode.
+  0 = Frequency filtering, 1 = Auto-regression
+*/
+func (s *AVFilmGrainH274Params) ModelId() int {
+	value := s.ptr.model_id
+	return int(value)
+}
+
+// SetModelId sets the model_id field.
+/*
+  Specifies the film grain simulation mode.
+  0 = Frequency filtering, 1 = Auto-regression
+*/
+func (s *AVFilmGrainH274Params) SetModelId(value int) {
+	s.ptr.model_id = (C.int)(value)
+}
+
+// BlendingModeId gets the blending_mode_id field.
+/*
+  Specifies the blending mode used to blend the simulated film grain
+  with the decoded images.
+
+  0 = Additive, 1 = Multiplicative
+*/
+func (s *AVFilmGrainH274Params) BlendingModeId() int {
+	value := s.ptr.blending_mode_id
+	return int(value)
+}
+
+// SetBlendingModeId sets the blending_mode_id field.
+/*
+  Specifies the blending mode used to blend the simulated film grain
+  with the decoded images.
+
+  0 = Additive, 1 = Multiplicative
+*/
+func (s *AVFilmGrainH274Params) SetBlendingModeId(value int) {
+	s.ptr.blending_mode_id = (C.int)(value)
+}
+
+// Log2ScaleFactor gets the log2_scale_factor field.
+//
+//	Specifies a scale factor used in the film grain characterization equations.
+func (s *AVFilmGrainH274Params) Log2ScaleFactor() int {
+	value := s.ptr.log2_scale_factor
+	return int(value)
+}
+
+// SetLog2ScaleFactor sets the log2_scale_factor field.
+//
+//	Specifies a scale factor used in the film grain characterization equations.
+func (s *AVFilmGrainH274Params) SetLog2ScaleFactor(value int) {
+	s.ptr.log2_scale_factor = (C.int)(value)
+}
+
+// ComponentModelPresent gets the component_model_present field.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) ComponentModelPresent() *Array[int] {
+	value := &s.ptr.component_model_present
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// NumIntensityIntervals gets the num_intensity_intervals field.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) NumIntensityIntervals() *Array[uint16] {
+	value := &s.ptr.num_intensity_intervals
+	return ToUint16Array(unsafe.Pointer(value))
+}
+
+// NumModelValues gets the num_model_values field.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) NumModelValues() *Array[uint8] {
+	value := &s.ptr.num_model_values
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// intensity_interval_lower_bound skipped due to multi dim const array
+
+// intensity_interval_upper_bound skipped due to multi dim const array
+
+// comp_model_value skipped due to multi dim const array
+
+// --- Struct AVFilmGrainParams ---
+
+// AVFilmGrainParams wraps AVFilmGrainParams.
+/*
+  This structure describes how to handle film grain synthesis in video
+  for specific codecs. Must be present on every frame where film grain is
+  meant to be synthesised for correct presentation.
+
+  @note The struct must be allocated with av_film_grain_params_alloc() and
+        its size is not a part of the public ABI.
+*/
+type AVFilmGrainParams struct {
+	ptr *C.AVFilmGrainParams
+}
+
+func (s *AVFilmGrainParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVFilmGrainParamsArray(ptr unsafe.Pointer) *Array[*AVFilmGrainParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVFilmGrainParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVFilmGrainParams {
+			ptr := (**C.AVFilmGrainParams)(pointer)
+			value := *ptr
+			var valueMapped *AVFilmGrainParams
+			if value != nil {
+				valueMapped = &AVFilmGrainParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVFilmGrainParams) {
+			ptr := (**C.AVFilmGrainParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Type gets the type field.
+//
+//	Specifies the codec for which this structure is valid.
+func (s *AVFilmGrainParams) Type() AVFilmGrainParamsType {
+	value := s.ptr._type
+	return AVFilmGrainParamsType(value)
+}
+
+// SetType sets the type field.
+//
+//	Specifies the codec for which this structure is valid.
+func (s *AVFilmGrainParams) SetType(value AVFilmGrainParamsType) {
+	s.ptr._type = (C.enum_AVFilmGrainParamsType)(value)
+}
+
+// Seed gets the seed field.
+/*
+  Seed to use for the synthesis process, if the codec allows for it.
+
+  @note For H.264, this refers to `pic_offset` as defined in
+        SMPTE RDD 5-2006.
+*/
+func (s *AVFilmGrainParams) Seed() uint64 {
+	value := s.ptr.seed
+	return uint64(value)
+}
+
+// SetSeed sets the seed field.
+/*
+  Seed to use for the synthesis process, if the codec allows for it.
+
+  @note For H.264, this refers to `pic_offset` as defined in
+        SMPTE RDD 5-2006.
+*/
+func (s *AVFilmGrainParams) SetSeed(value uint64) {
+	s.ptr.seed = (C.uint64_t)(value)
+}
+
+// Width gets the width field.
+/*
+  Intended display resolution. May be 0 if the codec does not specify
+  any restrictions.
+*/
+func (s *AVFilmGrainParams) Width() int {
+	value := s.ptr.width
+	return int(value)
+}
+
+// SetWidth sets the width field.
+/*
+  Intended display resolution. May be 0 if the codec does not specify
+  any restrictions.
+*/
+func (s *AVFilmGrainParams) SetWidth(value int) {
+	s.ptr.width = (C.int)(value)
+}
+
+// Height gets the height field.
+/*
+  Intended display resolution. May be 0 if the codec does not specify
+  any restrictions.
+*/
+func (s *AVFilmGrainParams) Height() int {
+	value := s.ptr.height
+	return int(value)
+}
+
+// SetHeight sets the height field.
+/*
+  Intended display resolution. May be 0 if the codec does not specify
+  any restrictions.
+*/
+func (s *AVFilmGrainParams) SetHeight(value int) {
+	s.ptr.height = (C.int)(value)
+}
+
+// SubsamplingX gets the subsampling_x field.
+//
+//	Intended subsampling ratio, or 0 for luma-only streams.
+func (s *AVFilmGrainParams) SubsamplingX() int {
+	value := s.ptr.subsampling_x
+	return int(value)
+}
+
+// SetSubsamplingX sets the subsampling_x field.
+//
+//	Intended subsampling ratio, or 0 for luma-only streams.
+func (s *AVFilmGrainParams) SetSubsamplingX(value int) {
+	s.ptr.subsampling_x = (C.int)(value)
+}
+
+// SubsamplingY gets the subsampling_y field.
+//
+//	Intended subsampling ratio, or 0 for luma-only streams.
+func (s *AVFilmGrainParams) SubsamplingY() int {
+	value := s.ptr.subsampling_y
+	return int(value)
+}
+
+// SetSubsamplingY sets the subsampling_y field.
+//
+//	Intended subsampling ratio, or 0 for luma-only streams.
+func (s *AVFilmGrainParams) SetSubsamplingY(value int) {
+	s.ptr.subsampling_y = (C.int)(value)
+}
+
+// ColorRange gets the color_range field.
+//
+//	Intended video signal characteristics.
+func (s *AVFilmGrainParams) ColorRange() AVColorRange {
+	value := s.ptr.color_range
+	return AVColorRange(value)
+}
+
+// SetColorRange sets the color_range field.
+//
+//	Intended video signal characteristics.
+func (s *AVFilmGrainParams) SetColorRange(value AVColorRange) {
+	s.ptr.color_range = (C.enum_AVColorRange)(value)
+}
+
+// ColorPrimaries gets the color_primaries field.
+func (s *AVFilmGrainParams) ColorPrimaries() AVColorPrimaries {
+	value := s.ptr.color_primaries
+	return AVColorPrimaries(value)
+}
+
+// SetColorPrimaries sets the color_primaries field.
+func (s *AVFilmGrainParams) SetColorPrimaries(value AVColorPrimaries) {
+	s.ptr.color_primaries = (C.enum_AVColorPrimaries)(value)
+}
+
+// ColorTrc gets the color_trc field.
+func (s *AVFilmGrainParams) ColorTrc() AVColorTransferCharacteristic {
+	value := s.ptr.color_trc
+	return AVColorTransferCharacteristic(value)
+}
+
+// SetColorTrc sets the color_trc field.
+func (s *AVFilmGrainParams) SetColorTrc(value AVColorTransferCharacteristic) {
+	s.ptr.color_trc = (C.enum_AVColorTransferCharacteristic)(value)
+}
+
+// ColorSpace gets the color_space field.
+func (s *AVFilmGrainParams) ColorSpace() AVColorSpace {
+	value := s.ptr.color_space
+	return AVColorSpace(value)
+}
+
+// SetColorSpace sets the color_space field.
+func (s *AVFilmGrainParams) SetColorSpace(value AVColorSpace) {
+	s.ptr.color_space = (C.enum_AVColorSpace)(value)
+}
+
+// BitDepthLuma gets the bit_depth_luma field.
+//
+//	Intended bit depth, or 0 for unknown/unspecified.
+func (s *AVFilmGrainParams) BitDepthLuma() int {
+	value := s.ptr.bit_depth_luma
+	return int(value)
+}
+
+// SetBitDepthLuma sets the bit_depth_luma field.
+//
+//	Intended bit depth, or 0 for unknown/unspecified.
+func (s *AVFilmGrainParams) SetBitDepthLuma(value int) {
+	s.ptr.bit_depth_luma = (C.int)(value)
+}
+
+// BitDepthChroma gets the bit_depth_chroma field.
+func (s *AVFilmGrainParams) BitDepthChroma() int {
+	value := s.ptr.bit_depth_chroma
+	return int(value)
+}
+
+// SetBitDepthChroma sets the bit_depth_chroma field.
+func (s *AVFilmGrainParams) SetBitDepthChroma(value int) {
+	s.ptr.bit_depth_chroma = (C.int)(value)
+}
+
+// codec skipped due to union type
 
 // --- Struct AVFrameSideData ---
 
@@ -21433,6 +24256,68 @@ func (s *AVIAMFMixPresentation) SetAnnotations(value *AVDictionary) {
 	}
 }
 
+// --- Struct AVLFG ---
+
+// AVLFG wraps AVLFG.
+/*
+  Context structure for the Lagged Fibonacci PRNG.
+  The exact layout, types and content of this struct may change and should
+  not be accessed directly. Only its `sizeof()` is guaranteed to stay the same
+  to allow easy instantiation.
+*/
+type AVLFG struct {
+	ptr *C.AVLFG
+}
+
+func (s *AVLFG) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVLFGArray(ptr unsafe.Pointer) *Array[*AVLFG] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVLFG]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVLFG {
+			ptr := (**C.AVLFG)(pointer)
+			value := *ptr
+			var valueMapped *AVLFG
+			if value != nil {
+				valueMapped = &AVLFG{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVLFG) {
+			ptr := (**C.AVLFG)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// State gets the state field.
+func (s *AVLFG) State() *Array[uint] {
+	value := &s.ptr.state
+	return ToUintArray(unsafe.Pointer(value))
+}
+
+// Index gets the index field.
+func (s *AVLFG) Index() int {
+	value := s.ptr.index
+	return int(value)
+}
+
+// SetIndex sets the index field.
+func (s *AVLFG) SetIndex(value int) {
+	s.ptr.index = (C.int)(value)
+}
+
 // --- Struct AVClass ---
 
 // AVClass wraps AVClass.
@@ -24431,6 +27316,51 @@ func (s *AVVideoHint) Type() AVVideoHintType {
 // SetType sets the type field.
 func (s *AVVideoHint) SetType(value AVVideoHintType) {
 	s.ptr._type = (C.AVVideoHintType)(value)
+}
+
+// --- Struct AVXTEA ---
+
+// AVXTEA wraps AVXTEA.
+type AVXTEA struct {
+	ptr *C.AVXTEA
+}
+
+func (s *AVXTEA) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVXTEAArray(ptr unsafe.Pointer) *Array[*AVXTEA] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVXTEA]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVXTEA {
+			ptr := (**C.AVXTEA)(pointer)
+			value := *ptr
+			var valueMapped *AVXTEA
+			if value != nil {
+				valueMapped = &AVXTEA{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVXTEA) {
+			ptr := (**C.AVXTEA)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Key gets the key field.
+func (s *AVXTEA) Key() *Array[uint32] {
+	value := &s.ptr.key
+	return ToUint32Array(unsafe.Pointer(value))
 }
 
 // --- Struct SwrContext ---
