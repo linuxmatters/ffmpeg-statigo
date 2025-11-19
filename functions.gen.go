@@ -819,11 +819,23 @@ func AVCodecPixFmtToCodecTag(pixFmt AVPixelFormat) uint {
 
 // --- Function avcodec_find_best_pix_fmt_of_list ---
 
-// avcodec_find_best_pix_fmt_of_list skipped due to pixFmtList
+// avcodec_find_best_pix_fmt_of_list skipped due to lossPtr
 
 // --- Function avcodec_default_get_format ---
 
-// avcodec_default_get_format skipped due to fmt
+// AVCodecDefaultGetFormat wraps avcodec_default_get_format.
+func AVCodecDefaultGetFormat(s *AVCodecContext, fmt *AVPixelFormat) AVPixelFormat {
+	var tmps *C.AVCodecContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	var tmpfmt *C.enum_AVPixelFormat
+	if fmt != nil {
+		tmpfmt = (*C.enum_AVPixelFormat)(unsafe.Pointer(fmt))
+	}
+	ret := C.avcodec_default_get_format(tmps, tmpfmt)
+	return AVPixelFormat(ret)
+}
 
 // --- Function avcodec_string ---
 
@@ -9353,7 +9365,31 @@ func AVCpuMaxAlign() uint64 {
 
 // --- Function av_crc_init ---
 
-// av_crc_init skipped due to ctx
+// AVCrcInit wraps av_crc_init.
+/*
+  Initialize a CRC table.
+  @param ctx must be an array of size sizeof(AVCRC)*257 or sizeof(AVCRC)*1024
+  @param le If 1, the lowest bit represents the coefficient for the highest
+            exponent of the corresponding polynomial (both for poly and
+            actual CRC).
+            If 0, you must swap the CRC parameter and the result of av_crc
+            if you need the standard representation (can be simplified in
+            most cases to e.g. bswap16):
+            av_bswap32(crc << (32-bits))
+  @param bits number of bits for the CRC
+  @param poly generator polynomial without the x**bits coefficient, in the
+              representation as specified by le
+  @param ctx_size size of ctx in bytes
+  @return <0 on failure
+*/
+func AVCrcInit(ctx *AVCRC, le int, bits int, poly uint32, ctxSize int) (int, error) {
+	var tmpctx *C.AVCRC
+	if ctx != nil {
+		tmpctx = (*C.AVCRC)(unsafe.Pointer(ctx))
+	}
+	ret := C.av_crc_init(tmpctx, C.int(le), C.int(bits), C.uint32_t(poly), C.int(ctxSize))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_crc_get_table ---
 
@@ -9370,7 +9406,25 @@ func AVCrcGetTable(crcId AVCRCId) *AVCRC {
 
 // --- Function av_crc ---
 
-// av_crc skipped due to ctx
+// AVCrc wraps av_crc.
+/*
+  Calculate the CRC of a block.
+  @param ctx initialized AVCRC array (see av_crc_init())
+  @param crc CRC of previous blocks if any or initial value for CRC
+  @param buffer buffer whose CRC to calculate
+  @param length length of the buffer
+  @return CRC updated with the data from the given block
+
+  @see av_crc_init() "le" parameter
+*/
+func AVCrc(ctx *AVCRC, crc uint32, buffer unsafe.Pointer, length uint64) uint32 {
+	var tmpctx *C.AVCRC
+	if ctx != nil {
+		tmpctx = (*C.AVCRC)(unsafe.Pointer(ctx))
+	}
+	ret := C.av_crc(tmpctx, C.uint32_t(crc), (*C.uint8_t)(buffer), C.size_t(length))
+	return uint32(ret)
+}
 
 // --- Function av_csp_luma_coeffs_from_avcsp ---
 
@@ -13977,11 +14031,35 @@ func AVOptSetArray(obj unsafe.Pointer, name *CStr, searchFlags int, startElem ui
 
 // --- Function av_opt_get_pixel_fmt ---
 
-// av_opt_get_pixel_fmt skipped due to outFmt
+// AVOptGetPixelFmt wraps av_opt_get_pixel_fmt.
+func AVOptGetPixelFmt(obj unsafe.Pointer, name *CStr, searchFlags int, outFmt *AVPixelFormat) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	var tmpoutFmt *C.enum_AVPixelFormat
+	if outFmt != nil {
+		tmpoutFmt = (*C.enum_AVPixelFormat)(unsafe.Pointer(outFmt))
+	}
+	ret := C.av_opt_get_pixel_fmt(obj, tmpname, C.int(searchFlags), tmpoutFmt)
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_get_sample_fmt ---
 
-// av_opt_get_sample_fmt skipped due to outFmt
+// AVOptGetSampleFmt wraps av_opt_get_sample_fmt.
+func AVOptGetSampleFmt(obj unsafe.Pointer, name *CStr, searchFlags int, outFmt *AVSampleFormat) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	var tmpoutFmt *C.enum_AVSampleFormat
+	if outFmt != nil {
+		tmpoutFmt = (*C.enum_AVSampleFormat)(unsafe.Pointer(outFmt))
+	}
+	ret := C.av_opt_get_sample_fmt(obj, tmpname, C.int(searchFlags), tmpoutFmt)
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_get_video_rate ---
 
@@ -14412,11 +14490,11 @@ func AVFindInfoTag(arg *CStr, argSize int, tag1 *CStr, info *CStr) (int, error) 
 
 // --- Function av_small_strptime ---
 
-// av_small_strptime skipped due to dt
+// av_small_strptime skipped due to dt.
 
 // --- Function av_timegm ---
 
-// av_timegm skipped due to tm
+// av_timegm skipped due to tm.
 
 // --- Function av_get_random_seed ---
 
@@ -15934,7 +16012,47 @@ func AVTwofishCrypt(ctx *AVTWOFISH, dst unsafe.Pointer, src unsafe.Pointer, coun
 
 // --- Function av_tx_init ---
 
-// av_tx_init skipped due to tx
+// AVTxInit wraps av_tx_init.
+/*
+  Initialize a transform context with the given configuration
+  (i)MDCTs with an odd length are currently not supported.
+
+  @param ctx the context to allocate, will be NULL on error
+  @param tx pointer to the transform function pointer to set
+  @param type type the type of transform
+  @param inv whether to do an inverse or a forward transform
+  @param len the size of the transform in samples
+  @param scale pointer to the value to scale the output if supported by type
+  @param flags a bitmask of AVTXFlags or 0
+
+  @return 0 on success, negative error code on failure
+*/
+func AVTxInit(ctx **AVTXContext, tx *AVTxFn, _type AVTXType, inv int, len int, scale unsafe.Pointer, flags uint64) (int, error) {
+	var ptrctx **C.AVTXContext
+	var tmpctx *C.AVTXContext
+	var oldTmpctx *C.AVTXContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	var tmptx *C.av_tx_fn
+	if tx != nil {
+		tmptx = (*C.av_tx_fn)(unsafe.Pointer(tx))
+	}
+	ret := C.av_tx_init(ptrctx, tmptx, C.enum_AVTXType(_type), C.int(inv), C.int(len), scale, C.uint64_t(flags))
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &AVTXContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_tx_uninit ---
 

@@ -767,6 +767,7 @@ var (
 		Inner: &IdentType{Name: "_IO_FILE"},
 	}
 	vaListType = &IdentType{Name: "va_list"}
+	tmType     = &IdentType{Name: "tm"}
 )
 
 func (g *Generator) generateFuncs() {
@@ -808,15 +809,20 @@ outer:
 		for _, arg := range fn.Args {
 			skip := false
 
-			if typeEquals(arg.Type, fileType) || typeEquals(arg.Type, fileType2) || typeEquals(arg.Type, vaListType) {
+			if typeEquals(arg.Type, fileType) || typeEquals(arg.Type, fileType2) || typeEquals(arg.Type, vaListType) || typeEquals(arg.Type, tmType) {
 				skip = true
 			}
 
 			switch v := arg.Type.(type) {
 			case *PointerType:
-				switch v.Inner.(type) {
+				switch iv := v.Inner.(type) {
 				case *FuncType:
 					skip = true
+				case *IdentType:
+					// Skip pointer to tm (C standard library type)
+					if iv.Name == "tm" {
+						skip = true
+					}
 				}
 			}
 
@@ -906,6 +912,8 @@ outer:
 					} else {
 
 						if m, ok := primTypes[iv.Name]; ok {
+							// Pointer to primitive type - skip for now as these are usually output parameters
+							// that would need special handling
 							params = append(params, jen.Id(pName).Op("*").Id(m))
 
 							o.Commentf("%v skipped due to %v", fn.Name, pName)
@@ -932,14 +940,54 @@ outer:
 							)
 
 							args = append(args, jen.Id(convName))
-						} else {
-							//goType = jen.Id(iv.Name)
-
+						} else if e, ok := g.input.enums[iv.Name]; ok {
+							// Pointer to enum type
 							params = append(params, jen.Id(pName).Op("*").Id(iv.Name))
 
-							o.Commentf("%v skipped due to %v", fn.Name, pName)
-							o.Line()
-							continue outer
+							convName := fmt.Sprintf("tmp%v", pName)
+
+							body = append(
+								body,
+								jen.Var().Id(convName).Op("*").Qual("C", e.CName()),
+								jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+									jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", e.CName())).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
+								),
+							)
+
+							args = append(args, jen.Id(convName))
+						} else if _, ok := g.input.callbacks[iv.Name]; ok {
+							// Pointer to callback type - use Go callback type name
+							goTypeName := g.convCamel(iv.Name)
+							params = append(params, jen.Id(pName).Op("*").Id(goTypeName))
+
+							convName := fmt.Sprintf("tmp%v", pName)
+
+							body = append(
+								body,
+								jen.Var().Id(convName).Op("*").Qual("C", iv.Name),
+								jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+									jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
+								),
+							)
+
+							args = append(args, jen.Id(convName))
+						} else {
+							// Unknown IdentType - could be a typedef alias defined in custom.go
+							// Try to use it directly (e.g., AVCRC, AVAdler)
+							// Cast through C type for the call
+							params = append(params, jen.Id(pName).Op("*").Id(iv.Name))
+
+							convName := fmt.Sprintf("tmp%v", pName)
+
+							body = append(
+								body,
+								jen.Var().Id(convName).Op("*").Qual("C", iv.Name),
+								jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+									jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
+								),
+							)
+
+							args = append(args, jen.Id(convName))
 						}
 
 						//retType = []jen.Code{
