@@ -12,6 +12,7 @@ import "unsafe"
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
 // #include <libavfilter/avfilter.h>
@@ -2311,6 +2312,347 @@ func AVContainerFifoAllocAVPacket(flags uint) *AVContainerFifo {
 		retMapped = &AVContainerFifo{ptr: ret}
 	}
 	return retMapped
+}
+
+// --- Function avdevice_version ---
+
+// AVDeviceVersion wraps avdevice_version.
+//
+//	Return the LIBAVDEVICE_VERSION_INT constant.
+func AVDeviceVersion() uint {
+	ret := C.avdevice_version()
+	return uint(ret)
+}
+
+// --- Function avdevice_configuration ---
+
+// AVDeviceConfiguration wraps avdevice_configuration.
+//
+//	Return the libavdevice build-time configuration.
+func AVDeviceConfiguration() *CStr {
+	ret := C.avdevice_configuration()
+	return wrapCStr(ret)
+}
+
+// --- Function avdevice_license ---
+
+// AVDeviceLicense wraps avdevice_license.
+//
+//	Return the libavdevice license.
+func AVDeviceLicense() *CStr {
+	ret := C.avdevice_license()
+	return wrapCStr(ret)
+}
+
+// --- Function avdevice_register_all ---
+
+// AVDeviceRegisterAll wraps avdevice_register_all.
+//
+//	Initialize libavdevice and register all the input and output devices.
+func AVDeviceRegisterAll() {
+	C.avdevice_register_all()
+}
+
+// --- Function av_input_audio_device_next ---
+
+// AVInputAudioDeviceNext wraps av_input_audio_device_next.
+/*
+  Audio input devices iterator.
+
+  If d is NULL, returns the first registered input audio/video device,
+  if d is non-NULL, returns the next registered input audio/video device after d
+  or NULL if d is the last one.
+*/
+func AVInputAudioDeviceNext(d *AVInputFormat) *AVInputFormat {
+	var tmpd *C.AVInputFormat
+	if d != nil {
+		tmpd = d.ptr
+	}
+	ret := C.av_input_audio_device_next(tmpd)
+	var retMapped *AVInputFormat
+	if ret != nil {
+		retMapped = &AVInputFormat{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_input_video_device_next ---
+
+// AVInputVideoDeviceNext wraps av_input_video_device_next.
+/*
+  Video input devices iterator.
+
+  If d is NULL, returns the first registered input audio/video device,
+  if d is non-NULL, returns the next registered input audio/video device after d
+  or NULL if d is the last one.
+*/
+func AVInputVideoDeviceNext(d *AVInputFormat) *AVInputFormat {
+	var tmpd *C.AVInputFormat
+	if d != nil {
+		tmpd = d.ptr
+	}
+	ret := C.av_input_video_device_next(tmpd)
+	var retMapped *AVInputFormat
+	if ret != nil {
+		retMapped = &AVInputFormat{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_output_audio_device_next ---
+
+// AVOutputAudioDeviceNext wraps av_output_audio_device_next.
+/*
+  Audio output devices iterator.
+
+  If d is NULL, returns the first registered output audio/video device,
+  if d is non-NULL, returns the next registered output audio/video device after d
+  or NULL if d is the last one.
+*/
+func AVOutputAudioDeviceNext(d *AVOutputFormat) *AVOutputFormat {
+	var tmpd *C.AVOutputFormat
+	if d != nil {
+		tmpd = d.ptr
+	}
+	ret := C.av_output_audio_device_next(tmpd)
+	var retMapped *AVOutputFormat
+	if ret != nil {
+		retMapped = &AVOutputFormat{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_output_video_device_next ---
+
+// AVOutputVideoDeviceNext wraps av_output_video_device_next.
+/*
+  Video output devices iterator.
+
+  If d is NULL, returns the first registered output audio/video device,
+  if d is non-NULL, returns the next registered output audio/video device after d
+  or NULL if d is the last one.
+*/
+func AVOutputVideoDeviceNext(d *AVOutputFormat) *AVOutputFormat {
+	var tmpd *C.AVOutputFormat
+	if d != nil {
+		tmpd = d.ptr
+	}
+	ret := C.av_output_video_device_next(tmpd)
+	var retMapped *AVOutputFormat
+	if ret != nil {
+		retMapped = &AVOutputFormat{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function avdevice_app_to_dev_control_message ---
+
+// AVDeviceAppToDevControlMessage wraps avdevice_app_to_dev_control_message.
+/*
+  Send control message from application to device.
+
+  @param s         device context.
+  @param type      message type.
+  @param data      message data. Exact type depends on message type.
+  @param data_size size of message data.
+  @return >= 0 on success, negative on error.
+          AVERROR(ENOSYS) when device doesn't implement handler of the message.
+*/
+func AVDeviceAppToDevControlMessage(s *AVFormatContext, _type AVAppToDevMessageType, data unsafe.Pointer, dataSize uint64) (int, error) {
+	var tmps *C.AVFormatContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.avdevice_app_to_dev_control_message(tmps, C.enum_AVAppToDevMessageType(_type), data, C.size_t(dataSize))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avdevice_dev_to_app_control_message ---
+
+// AVDeviceDevToAppControlMessage wraps avdevice_dev_to_app_control_message.
+/*
+  Send control message from device to application.
+
+  @param s         device context.
+  @param type      message type.
+  @param data      message data. Can be NULL.
+  @param data_size size of message data.
+  @return >= 0 on success, negative on error.
+          AVERROR(ENOSYS) when application doesn't implement handler of the message.
+*/
+func AVDeviceDevToAppControlMessage(s *AVFormatContext, _type AVDevToAppMessageType, data unsafe.Pointer, dataSize uint64) (int, error) {
+	var tmps *C.AVFormatContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.avdevice_dev_to_app_control_message(tmps, C.enum_AVDevToAppMessageType(_type), data, C.size_t(dataSize))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avdevice_list_devices ---
+
+// AVDeviceListDevices wraps avdevice_list_devices.
+/*
+  List devices.
+
+  Returns available device names and their parameters.
+
+  @note: Some devices may accept system-dependent device names that cannot be
+         autodetected. The list returned by this function cannot be assumed to
+         be always completed.
+
+  @param s                device context.
+  @param[out] device_list list of autodetected devices.
+  @return count of autodetected devices, negative on error.
+*/
+func AVDeviceListDevices(s *AVFormatContext, deviceList **AVDeviceInfoList) (int, error) {
+	var tmps *C.AVFormatContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	var ptrdeviceList **C.AVDeviceInfoList
+	var tmpdeviceList *C.AVDeviceInfoList
+	var oldTmpdeviceList *C.AVDeviceInfoList
+	if deviceList != nil {
+		innerdeviceList := *deviceList
+		if innerdeviceList != nil {
+			tmpdeviceList = innerdeviceList.ptr
+			oldTmpdeviceList = tmpdeviceList
+		}
+		ptrdeviceList = &tmpdeviceList
+	}
+	ret := C.avdevice_list_devices(tmps, ptrdeviceList)
+	if tmpdeviceList != oldTmpdeviceList && deviceList != nil {
+		if tmpdeviceList != nil {
+			*deviceList = &AVDeviceInfoList{ptr: tmpdeviceList}
+		} else {
+			*deviceList = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avdevice_free_list_devices ---
+
+// AVDeviceFreeListDevices wraps avdevice_free_list_devices.
+/*
+  Convenient function to free result of avdevice_list_devices().
+
+  @param device_list device list to be freed.
+*/
+func AVDeviceFreeListDevices(deviceList **AVDeviceInfoList) {
+	var ptrdeviceList **C.AVDeviceInfoList
+	var tmpdeviceList *C.AVDeviceInfoList
+	var oldTmpdeviceList *C.AVDeviceInfoList
+	if deviceList != nil {
+		innerdeviceList := *deviceList
+		if innerdeviceList != nil {
+			tmpdeviceList = innerdeviceList.ptr
+			oldTmpdeviceList = tmpdeviceList
+		}
+		ptrdeviceList = &tmpdeviceList
+	}
+	C.avdevice_free_list_devices(ptrdeviceList)
+	if tmpdeviceList != oldTmpdeviceList && deviceList != nil {
+		if tmpdeviceList != nil {
+			*deviceList = &AVDeviceInfoList{ptr: tmpdeviceList}
+		} else {
+			*deviceList = nil
+		}
+	}
+}
+
+// --- Function avdevice_list_input_sources ---
+
+// AVDeviceListInputSources wraps avdevice_list_input_sources.
+/*
+  List devices.
+
+  Returns available device names and their parameters.
+  These are convenient wrappers for avdevice_list_devices().
+  Device context is allocated and deallocated internally.
+
+  @param device           device format. May be NULL if device name is set.
+  @param device_name      device name. May be NULL if device format is set.
+  @param device_options   An AVDictionary filled with device-private options. May be NULL.
+                          The same options must be passed later to avformat_write_header() for output
+                          devices or avformat_open_input() for input devices, or at any other place
+                          that affects device-private options.
+  @param[out] device_list list of autodetected devices
+  @return count of autodetected devices, negative on error.
+  @note device argument takes precedence over device_name when both are set.
+*/
+func AVDeviceListInputSources(device *AVInputFormat, deviceName *CStr, deviceOptions *AVDictionary, deviceList **AVDeviceInfoList) (int, error) {
+	var tmpdevice *C.AVInputFormat
+	if device != nil {
+		tmpdevice = device.ptr
+	}
+	var tmpdeviceName *C.char
+	if deviceName != nil {
+		tmpdeviceName = deviceName.ptr
+	}
+	var tmpdeviceOptions *C.AVDictionary
+	if deviceOptions != nil {
+		tmpdeviceOptions = deviceOptions.ptr
+	}
+	var ptrdeviceList **C.AVDeviceInfoList
+	var tmpdeviceList *C.AVDeviceInfoList
+	var oldTmpdeviceList *C.AVDeviceInfoList
+	if deviceList != nil {
+		innerdeviceList := *deviceList
+		if innerdeviceList != nil {
+			tmpdeviceList = innerdeviceList.ptr
+			oldTmpdeviceList = tmpdeviceList
+		}
+		ptrdeviceList = &tmpdeviceList
+	}
+	ret := C.avdevice_list_input_sources(tmpdevice, tmpdeviceName, tmpdeviceOptions, ptrdeviceList)
+	if tmpdeviceList != oldTmpdeviceList && deviceList != nil {
+		if tmpdeviceList != nil {
+			*deviceList = &AVDeviceInfoList{ptr: tmpdeviceList}
+		} else {
+			*deviceList = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avdevice_list_output_sinks ---
+
+// AVDeviceListOutputSinks wraps avdevice_list_output_sinks.
+func AVDeviceListOutputSinks(device *AVOutputFormat, deviceName *CStr, deviceOptions *AVDictionary, deviceList **AVDeviceInfoList) (int, error) {
+	var tmpdevice *C.AVOutputFormat
+	if device != nil {
+		tmpdevice = device.ptr
+	}
+	var tmpdeviceName *C.char
+	if deviceName != nil {
+		tmpdeviceName = deviceName.ptr
+	}
+	var tmpdeviceOptions *C.AVDictionary
+	if deviceOptions != nil {
+		tmpdeviceOptions = deviceOptions.ptr
+	}
+	var ptrdeviceList **C.AVDeviceInfoList
+	var tmpdeviceList *C.AVDeviceInfoList
+	var oldTmpdeviceList *C.AVDeviceInfoList
+	if deviceList != nil {
+		innerdeviceList := *deviceList
+		if innerdeviceList != nil {
+			tmpdeviceList = innerdeviceList.ptr
+			oldTmpdeviceList = tmpdeviceList
+		}
+		ptrdeviceList = &tmpdeviceList
+	}
+	ret := C.avdevice_list_output_sinks(tmpdevice, tmpdeviceName, tmpdeviceOptions, ptrdeviceList)
+	if tmpdeviceList != oldTmpdeviceList && deviceList != nil {
+		if tmpdeviceList != nil {
+			*deviceList = &AVDeviceInfoList{ptr: tmpdeviceList}
+		} else {
+			*deviceList = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
 }
 
 // --- Function avfilter_version ---

@@ -27,6 +27,7 @@ var files = []string{
 	"libavcodec/packet.h",
 	"libavcodec/version.h",
 	"libavcodec/version_major.h",
+	"libavdevice/avdevice.h",
 	"libavdevice/version.h",
 	"libavdevice/version_major.h",
 	"libavfilter/avfilter.h",

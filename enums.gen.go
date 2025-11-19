@@ -12,6 +12,7 @@ import "unsafe"
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
 // #include <libavfilter/avfilter.h>
@@ -2077,6 +2078,313 @@ const (
 	AVSideDataParamChangeSampleRate AVSideDataParamChangeFlags = C.AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE
 	// AVSideDataParamChangeDimensions wraps AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS.
 	AVSideDataParamChangeDimensions AVSideDataParamChangeFlags = C.AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS
+)
+
+// --- Enum AVAppToDevMessageType ---
+
+// AVAppToDevMessageType wraps AVAppToDevMessageType.
+//
+//	Message types used by avdevice_app_to_dev_control_message().
+type AVAppToDevMessageType C.enum_AVAppToDevMessageType
+
+const SizeOfAVAppToDevMessageType = C.sizeof_enum_AVAppToDevMessageType
+
+func ToAVAppToDevMessageTypeArray(ptr unsafe.Pointer) *Array[AVAppToDevMessageType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVAppToDevMessageType]{
+		elemSize: SizeOfAVAppToDevMessageType,
+		loadPtr: func(pointer unsafe.Pointer) AVAppToDevMessageType {
+			ptr := (*AVAppToDevMessageType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVAppToDevMessageType) {
+			ptr := (*AVAppToDevMessageType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVAppToDevMessageTypeArray(size uint64) *Array[AVAppToDevMessageType] {
+	return ToAVAppToDevMessageTypeArray(AVCalloc(size, SizeOfAVAppToDevMessageType))
+}
+
+const (
+	// AVAppToDevNone wraps AV_APP_TO_DEV_NONE.
+	//
+	//	Dummy message.
+	AVAppToDevNone AVAppToDevMessageType = C.AV_APP_TO_DEV_NONE
+	// AVAppToDevWindowSize wraps AV_APP_TO_DEV_WINDOW_SIZE.
+	/*
+	   Window size change message.
+
+	   Message is sent to the device every time the application changes the size
+	   of the window device renders to.
+	   Message should also be sent right after window is created.
+
+	   data: AVDeviceRect: new window size.
+	*/
+	AVAppToDevWindowSize AVAppToDevMessageType = C.AV_APP_TO_DEV_WINDOW_SIZE
+	// AVAppToDevWindowRepaint wraps AV_APP_TO_DEV_WINDOW_REPAINT.
+	/*
+	   Repaint request message.
+
+	   Message is sent to the device when window has to be repainted.
+
+	   data: AVDeviceRect: area required to be repainted.
+	         NULL: whole area is required to be repainted.
+	*/
+	AVAppToDevWindowRepaint AVAppToDevMessageType = C.AV_APP_TO_DEV_WINDOW_REPAINT
+	// AVAppToDevPause wraps AV_APP_TO_DEV_PAUSE.
+	/*
+	   Request pause/play.
+
+	   Application requests pause/unpause playback.
+	   Mostly usable with devices that have internal buffer.
+	   By default devices are not paused.
+
+	   data: NULL
+	*/
+	AVAppToDevPause AVAppToDevMessageType = C.AV_APP_TO_DEV_PAUSE
+	// AVAppToDevPlay wraps AV_APP_TO_DEV_PLAY.
+	/*
+	   Request pause/play.
+
+	   Application requests pause/unpause playback.
+	   Mostly usable with devices that have internal buffer.
+	   By default devices are not paused.
+
+	   data: NULL
+	*/
+	AVAppToDevPlay AVAppToDevMessageType = C.AV_APP_TO_DEV_PLAY
+	// AVAppToDevTogglePause wraps AV_APP_TO_DEV_TOGGLE_PAUSE.
+	/*
+	   Request pause/play.
+
+	   Application requests pause/unpause playback.
+	   Mostly usable with devices that have internal buffer.
+	   By default devices are not paused.
+
+	   data: NULL
+	*/
+	AVAppToDevTogglePause AVAppToDevMessageType = C.AV_APP_TO_DEV_TOGGLE_PAUSE
+	// AVAppToDevSetVolume wraps AV_APP_TO_DEV_SET_VOLUME.
+	/*
+	   Volume control message.
+
+	   Set volume level. It may be device-dependent if volume
+	   is changed per stream or system wide. Per stream volume
+	   change is expected when possible.
+
+	   data: double: new volume with range of 0.0 - 1.0.
+	*/
+	AVAppToDevSetVolume AVAppToDevMessageType = C.AV_APP_TO_DEV_SET_VOLUME
+	// AVAppToDevMute wraps AV_APP_TO_DEV_MUTE.
+	/*
+	   Mute control messages.
+
+	   Change mute state. It may be device-dependent if mute status
+	   is changed per stream or system wide. Per stream mute status
+	   change is expected when possible.
+
+	   data: NULL.
+	*/
+	AVAppToDevMute AVAppToDevMessageType = C.AV_APP_TO_DEV_MUTE
+	// AVAppToDevUnmute wraps AV_APP_TO_DEV_UNMUTE.
+	/*
+	   Mute control messages.
+
+	   Change mute state. It may be device-dependent if mute status
+	   is changed per stream or system wide. Per stream mute status
+	   change is expected when possible.
+
+	   data: NULL.
+	*/
+	AVAppToDevUnmute AVAppToDevMessageType = C.AV_APP_TO_DEV_UNMUTE
+	// AVAppToDevToggleMute wraps AV_APP_TO_DEV_TOGGLE_MUTE.
+	/*
+	   Mute control messages.
+
+	   Change mute state. It may be device-dependent if mute status
+	   is changed per stream or system wide. Per stream mute status
+	   change is expected when possible.
+
+	   data: NULL.
+	*/
+	AVAppToDevToggleMute AVAppToDevMessageType = C.AV_APP_TO_DEV_TOGGLE_MUTE
+	// AVAppToDevGetVolume wraps AV_APP_TO_DEV_GET_VOLUME.
+	/*
+	   Get volume/mute messages.
+
+	   Force the device to send AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED or
+	   AV_DEV_TO_APP_MUTE_STATE_CHANGED command respectively.
+
+	   data: NULL.
+	*/
+	AVAppToDevGetVolume AVAppToDevMessageType = C.AV_APP_TO_DEV_GET_VOLUME
+	// AVAppToDevGetMute wraps AV_APP_TO_DEV_GET_MUTE.
+	/*
+	   Get volume/mute messages.
+
+	   Force the device to send AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED or
+	   AV_DEV_TO_APP_MUTE_STATE_CHANGED command respectively.
+
+	   data: NULL.
+	*/
+	AVAppToDevGetMute AVAppToDevMessageType = C.AV_APP_TO_DEV_GET_MUTE
+)
+
+// --- Enum AVDevToAppMessageType ---
+
+// AVDevToAppMessageType wraps AVDevToAppMessageType.
+//
+//	Message types used by avdevice_dev_to_app_control_message().
+type AVDevToAppMessageType C.enum_AVDevToAppMessageType
+
+const SizeOfAVDevToAppMessageType = C.sizeof_enum_AVDevToAppMessageType
+
+func ToAVDevToAppMessageTypeArray(ptr unsafe.Pointer) *Array[AVDevToAppMessageType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVDevToAppMessageType]{
+		elemSize: SizeOfAVDevToAppMessageType,
+		loadPtr: func(pointer unsafe.Pointer) AVDevToAppMessageType {
+			ptr := (*AVDevToAppMessageType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVDevToAppMessageType) {
+			ptr := (*AVDevToAppMessageType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVDevToAppMessageTypeArray(size uint64) *Array[AVDevToAppMessageType] {
+	return ToAVDevToAppMessageTypeArray(AVCalloc(size, SizeOfAVDevToAppMessageType))
+}
+
+const (
+	// AVDevToAppNone wraps AV_DEV_TO_APP_NONE.
+	//
+	//	Dummy message.
+	AVDevToAppNone AVDevToAppMessageType = C.AV_DEV_TO_APP_NONE
+	// AVDevToAppCreateWindowBuffer wraps AV_DEV_TO_APP_CREATE_WINDOW_BUFFER.
+	/*
+	   Create window buffer message.
+
+	   Device requests to create a window buffer. Exact meaning is device-
+	   and application-dependent. Message is sent before rendering first
+	   frame and all one-shot initializations should be done here.
+	   Application is allowed to ignore preferred window buffer size.
+
+	   @note: Application is obligated to inform about window buffer size
+	          with AV_APP_TO_DEV_WINDOW_SIZE message.
+
+	   data: AVDeviceRect: preferred size of the window buffer.
+	         NULL: no preferred size of the window buffer.
+	*/
+	AVDevToAppCreateWindowBuffer AVDevToAppMessageType = C.AV_DEV_TO_APP_CREATE_WINDOW_BUFFER
+	// AVDevToAppPrepareWindowBuffer wraps AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER.
+	/*
+	   Prepare window buffer message.
+
+	   Device requests to prepare a window buffer for rendering.
+	   Exact meaning is device- and application-dependent.
+	   Message is sent before rendering of each frame.
+
+	   data: NULL.
+	*/
+	AVDevToAppPrepareWindowBuffer AVDevToAppMessageType = C.AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER
+	// AVDevToAppDisplayWindowBuffer wraps AV_DEV_TO_APP_DISPLAY_WINDOW_BUFFER.
+	/*
+	   Display window buffer message.
+
+	   Device requests to display a window buffer.
+	   Message is sent when new frame is ready to be displayed.
+	   Usually buffers need to be swapped in handler of this message.
+
+	   data: NULL.
+	*/
+	AVDevToAppDisplayWindowBuffer AVDevToAppMessageType = C.AV_DEV_TO_APP_DISPLAY_WINDOW_BUFFER
+	// AVDevToAppDestroyWindowBuffer wraps AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER.
+	/*
+	   Destroy window buffer message.
+
+	   Device requests to destroy a window buffer.
+	   Message is sent when device is about to be destroyed and window
+	   buffer is not required anymore.
+
+	   data: NULL.
+	*/
+	AVDevToAppDestroyWindowBuffer AVDevToAppMessageType = C.AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER
+	// AVDevToAppBufferOverflow wraps AV_DEV_TO_APP_BUFFER_OVERFLOW.
+	/*
+	   Buffer fullness status messages.
+
+	   Device signals buffer overflow/underflow.
+
+	   data: NULL.
+	*/
+	AVDevToAppBufferOverflow AVDevToAppMessageType = C.AV_DEV_TO_APP_BUFFER_OVERFLOW
+	// AVDevToAppBufferUnderflow wraps AV_DEV_TO_APP_BUFFER_UNDERFLOW.
+	/*
+	   Buffer fullness status messages.
+
+	   Device signals buffer overflow/underflow.
+
+	   data: NULL.
+	*/
+	AVDevToAppBufferUnderflow AVDevToAppMessageType = C.AV_DEV_TO_APP_BUFFER_UNDERFLOW
+	// AVDevToAppBufferReadable wraps AV_DEV_TO_APP_BUFFER_READABLE.
+	/*
+	   Buffer readable/writable.
+
+	   Device informs that buffer is readable/writable.
+	   When possible, device informs how many bytes can be read/write.
+
+	   @warning Device may not inform when number of bytes than can be read/write changes.
+
+	   data: int64_t: amount of bytes available to read/write.
+	         NULL: amount of bytes available to read/write is not known.
+	*/
+	AVDevToAppBufferReadable AVDevToAppMessageType = C.AV_DEV_TO_APP_BUFFER_READABLE
+	// AVDevToAppBufferWritable wraps AV_DEV_TO_APP_BUFFER_WRITABLE.
+	/*
+	   Buffer readable/writable.
+
+	   Device informs that buffer is readable/writable.
+	   When possible, device informs how many bytes can be read/write.
+
+	   @warning Device may not inform when number of bytes than can be read/write changes.
+
+	   data: int64_t: amount of bytes available to read/write.
+	         NULL: amount of bytes available to read/write is not known.
+	*/
+	AVDevToAppBufferWritable AVDevToAppMessageType = C.AV_DEV_TO_APP_BUFFER_WRITABLE
+	// AVDevToAppMuteStateChanged wraps AV_DEV_TO_APP_MUTE_STATE_CHANGED.
+	/*
+	   Mute state change message.
+
+	   Device informs that mute state has changed.
+
+	   data: int: 0 for not muted state, non-zero for muted state.
+	*/
+	AVDevToAppMuteStateChanged AVDevToAppMessageType = C.AV_DEV_TO_APP_MUTE_STATE_CHANGED
+	// AVDevToAppVolumeLevelChanged wraps AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED.
+	/*
+	   Volume level change message.
+
+	   Device informs that volume level has changed.
+
+	   data: double: new volume with range of 0.0 - 1.0.
+	*/
+	AVDevToAppVolumeLevelChanged AVDevToAppMessageType = C.AV_DEV_TO_APP_VOLUME_LEVEL_CHANGED
 )
 
 // --- Enum AVStreamParseType ---

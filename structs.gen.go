@@ -12,6 +12,7 @@ import "unsafe"
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
 // #include <libavfilter/avfilter.h>
@@ -7249,6 +7250,300 @@ func ToAVContainerFifoArray(ptr unsafe.Pointer) *Array[*AVContainerFifo] {
 			}
 		},
 	}
+}
+
+// --- Struct AVDeviceRect ---
+
+// AVDeviceRect wraps AVDeviceRect.
+type AVDeviceRect struct {
+	ptr *C.AVDeviceRect
+}
+
+func (s *AVDeviceRect) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDeviceRectArray(ptr unsafe.Pointer) *Array[*AVDeviceRect] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDeviceRect]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDeviceRect {
+			ptr := (**C.AVDeviceRect)(pointer)
+			value := *ptr
+			var valueMapped *AVDeviceRect
+			if value != nil {
+				valueMapped = &AVDeviceRect{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDeviceRect) {
+			ptr := (**C.AVDeviceRect)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// X gets the x field.
+//
+//	x coordinate of top left corner
+func (s *AVDeviceRect) X() int {
+	value := s.ptr.x
+	return int(value)
+}
+
+// SetX sets the x field.
+//
+//	x coordinate of top left corner
+func (s *AVDeviceRect) SetX(value int) {
+	s.ptr.x = (C.int)(value)
+}
+
+// Y gets the y field.
+//
+//	y coordinate of top left corner
+func (s *AVDeviceRect) Y() int {
+	value := s.ptr.y
+	return int(value)
+}
+
+// SetY sets the y field.
+//
+//	y coordinate of top left corner
+func (s *AVDeviceRect) SetY(value int) {
+	s.ptr.y = (C.int)(value)
+}
+
+// Width gets the width field.
+//
+//	width
+func (s *AVDeviceRect) Width() int {
+	value := s.ptr.width
+	return int(value)
+}
+
+// SetWidth sets the width field.
+//
+//	width
+func (s *AVDeviceRect) SetWidth(value int) {
+	s.ptr.width = (C.int)(value)
+}
+
+// Height gets the height field.
+//
+//	height
+func (s *AVDeviceRect) Height() int {
+	value := s.ptr.height
+	return int(value)
+}
+
+// SetHeight sets the height field.
+//
+//	height
+func (s *AVDeviceRect) SetHeight(value int) {
+	s.ptr.height = (C.int)(value)
+}
+
+// --- Struct AVDeviceInfo ---
+
+// AVDeviceInfo wraps AVDeviceInfo.
+//
+//	Structure describes basic parameters of the device.
+type AVDeviceInfo struct {
+	ptr *C.AVDeviceInfo
+}
+
+func (s *AVDeviceInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDeviceInfoArray(ptr unsafe.Pointer) *Array[*AVDeviceInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDeviceInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDeviceInfo {
+			ptr := (**C.AVDeviceInfo)(pointer)
+			value := *ptr
+			var valueMapped *AVDeviceInfo
+			if value != nil {
+				valueMapped = &AVDeviceInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDeviceInfo) {
+			ptr := (**C.AVDeviceInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// DeviceName gets the device_name field.
+//
+//	device name, format depends on device
+func (s *AVDeviceInfo) DeviceName() *CStr {
+	value := s.ptr.device_name
+	return wrapCStr(value)
+}
+
+// SetDeviceName sets the device_name field.
+//
+//	device name, format depends on device
+func (s *AVDeviceInfo) SetDeviceName(value *CStr) {
+	s.ptr.device_name = value.ptr
+}
+
+// DeviceDescription gets the device_description field.
+//
+//	human friendly name
+func (s *AVDeviceInfo) DeviceDescription() *CStr {
+	value := s.ptr.device_description
+	return wrapCStr(value)
+}
+
+// SetDeviceDescription sets the device_description field.
+//
+//	human friendly name
+func (s *AVDeviceInfo) SetDeviceDescription(value *CStr) {
+	s.ptr.device_description = value.ptr
+}
+
+// MediaTypes gets the media_types field.
+//
+//	array indicating what media types(s), if any, a device can provide. If null, cannot provide any
+func (s *AVDeviceInfo) MediaTypes() *Array[AVMediaType] {
+	value := s.ptr.media_types
+	return ToAVMediaTypeArray(unsafe.Pointer(value))
+}
+
+// SetMediaTypes sets the media_types field.
+//
+//	array indicating what media types(s), if any, a device can provide. If null, cannot provide any
+func (s *AVDeviceInfo) SetMediaTypes(value *Array[AVMediaType]) {
+	if value != nil {
+		s.ptr.media_types = (*C.enum_AVMediaType)(value.ptr)
+	} else {
+		s.ptr.media_types = nil
+	}
+}
+
+// NbMediaTypes gets the nb_media_types field.
+//
+//	length of media_types array, 0 if device cannot provide any media types
+func (s *AVDeviceInfo) NbMediaTypes() int {
+	value := s.ptr.nb_media_types
+	return int(value)
+}
+
+// SetNbMediaTypes sets the nb_media_types field.
+//
+//	length of media_types array, 0 if device cannot provide any media types
+func (s *AVDeviceInfo) SetNbMediaTypes(value int) {
+	s.ptr.nb_media_types = (C.int)(value)
+}
+
+// --- Struct AVDeviceInfoList ---
+
+// AVDeviceInfoList wraps AVDeviceInfoList.
+//
+//	List of devices.
+type AVDeviceInfoList struct {
+	ptr *C.AVDeviceInfoList
+}
+
+func (s *AVDeviceInfoList) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDeviceInfoListArray(ptr unsafe.Pointer) *Array[*AVDeviceInfoList] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDeviceInfoList]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDeviceInfoList {
+			ptr := (**C.AVDeviceInfoList)(pointer)
+			value := *ptr
+			var valueMapped *AVDeviceInfoList
+			if value != nil {
+				valueMapped = &AVDeviceInfoList{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDeviceInfoList) {
+			ptr := (**C.AVDeviceInfoList)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Devices gets the devices field.
+//
+//	list of autodetected devices
+func (s *AVDeviceInfoList) Devices() *Array[*AVDeviceInfo] {
+	value := s.ptr.devices
+	return ToAVDeviceInfoArray(unsafe.Pointer(value))
+}
+
+// SetDevices sets the devices field.
+//
+//	list of autodetected devices
+func (s *AVDeviceInfoList) SetDevices(value *Array[AVDeviceInfo]) {
+	if value != nil {
+		s.ptr.devices = (**C.AVDeviceInfo)(value.ptr)
+	} else {
+		s.ptr.devices = nil
+	}
+}
+
+// NbDevices gets the nb_devices field.
+//
+//	number of autodetected devices
+func (s *AVDeviceInfoList) NbDevices() int {
+	value := s.ptr.nb_devices
+	return int(value)
+}
+
+// SetNbDevices sets the nb_devices field.
+//
+//	number of autodetected devices
+func (s *AVDeviceInfoList) SetNbDevices(value int) {
+	s.ptr.nb_devices = (C.int)(value)
+}
+
+// DefaultDevice gets the default_device field.
+//
+//	index of default device or -1 if no default
+func (s *AVDeviceInfoList) DefaultDevice() int {
+	value := s.ptr.default_device
+	return int(value)
+}
+
+// SetDefaultDevice sets the default_device field.
+//
+//	index of default device or -1 if no default
+func (s *AVDeviceInfoList) SetDefaultDevice(value int) {
+	s.ptr.default_device = (C.int)(value)
 }
 
 // --- Struct AVFilterLink ---
