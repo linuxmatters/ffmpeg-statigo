@@ -64,6 +64,7 @@ import "unsafe"
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/iamf.h>
+// #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>
 // #include <libavutil/lfg.h>
 // #include <libavutil/log.h>
@@ -12583,6 +12584,188 @@ func AVIamfMixPresentationFree(mixPresentation **AVIAMFMixPresentation) {
 		}
 	}
 }
+
+// --- Function av_image_fill_max_pixsteps ---
+
+// av_image_fill_max_pixsteps skipped due to const array param maxPixsteps
+
+// --- Function av_image_get_linesize ---
+
+// AVImageGetLinesize wraps av_image_get_linesize.
+/*
+  Compute the size of an image line with format pix_fmt and width
+  width for the plane plane.
+
+  @return the computed size in bytes
+*/
+func AVImageGetLinesize(pixFmt AVPixelFormat, width int, plane int) (int, error) {
+	ret := C.av_image_get_linesize(C.enum_AVPixelFormat(pixFmt), C.int(width), C.int(plane))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_image_fill_linesizes ---
+
+// av_image_fill_linesizes skipped due to const array param linesizes
+
+// --- Function av_image_fill_plane_sizes ---
+
+// av_image_fill_plane_sizes skipped due to const array param size
+
+// --- Function av_image_fill_pointers ---
+
+// av_image_fill_pointers skipped due to const array param data
+
+// --- Function av_image_alloc ---
+
+// av_image_alloc skipped due to const array param pointers
+
+// --- Function av_image_copy_plane ---
+
+// AVImageCopyPlane wraps av_image_copy_plane.
+/*
+  Copy image plane from src to dst.
+  That is, copy "height" number of lines of "bytewidth" bytes each.
+  The first byte of each successive line is separated by *_linesize
+  bytes.
+
+  bytewidth must be contained by both absolute values of dst_linesize
+  and src_linesize, otherwise the function behavior is undefined.
+
+  @param dst          destination plane to copy to
+  @param dst_linesize linesize for the image plane in dst
+  @param src          source plane to copy from
+  @param src_linesize linesize for the image plane in src
+  @param height       height (number of lines) of the plane
+*/
+func AVImageCopyPlane(dst unsafe.Pointer, dstLinesize int, src unsafe.Pointer, srcLinesize int, bytewidth int, height int) {
+	C.av_image_copy_plane((*C.uint8_t)(dst), C.int(dstLinesize), (*C.uint8_t)(src), C.int(srcLinesize), C.int(bytewidth), C.int(height))
+}
+
+// --- Function av_image_copy_plane_uc_from ---
+
+// AVImageCopyPlaneUcFrom wraps av_image_copy_plane_uc_from.
+/*
+  Copy image data located in uncacheable (e.g. GPU mapped) memory. Where
+  available, this function will use special functionality for reading from such
+  memory, which may result in greatly improved performance compared to plain
+  av_image_copy_plane().
+
+  bytewidth must be contained by both absolute values of dst_linesize
+  and src_linesize, otherwise the function behavior is undefined.
+
+  @note The linesize parameters have the type ptrdiff_t here, while they are
+        int for av_image_copy_plane().
+  @note On x86, the linesizes currently need to be aligned to the cacheline
+        size (i.e. 64) to get improved performance.
+*/
+func AVImageCopyPlaneUcFrom(dst unsafe.Pointer, dstLinesize int64, src unsafe.Pointer, srcLinesize int64, bytewidth int64, height int) {
+	C.av_image_copy_plane_uc_from((*C.uint8_t)(dst), C.ptrdiff_t(dstLinesize), (*C.uint8_t)(src), C.ptrdiff_t(srcLinesize), C.ptrdiff_t(bytewidth), C.int(height))
+}
+
+// --- Function av_image_copy ---
+
+// av_image_copy skipped due to const array param dstData
+
+// --- Function av_image_copy2 ---
+
+// av_image_copy2 skipped due to const array param dstData
+
+// --- Function av_image_copy_uc_from ---
+
+// av_image_copy_uc_from skipped due to const array param dstData
+
+// --- Function av_image_fill_arrays ---
+
+// av_image_fill_arrays skipped due to const array param dstData
+
+// --- Function av_image_get_buffer_size ---
+
+// AVImageGetBufferSize wraps av_image_get_buffer_size.
+/*
+  Return the size in bytes of the amount of data required to store an
+  image with the given parameters.
+
+  @param pix_fmt  the pixel format of the image
+  @param width    the width of the image in pixels
+  @param height   the height of the image in pixels
+  @param align    the assumed linesize alignment
+  @return the buffer size in bytes, a negative error code in case of failure
+*/
+func AVImageGetBufferSize(pixFmt AVPixelFormat, width int, height int, align int) (int, error) {
+	ret := C.av_image_get_buffer_size(C.enum_AVPixelFormat(pixFmt), C.int(width), C.int(height), C.int(align))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_image_copy_to_buffer ---
+
+// av_image_copy_to_buffer skipped due to const array param srcData
+
+// --- Function av_image_check_size ---
+
+// AVImageCheckSize wraps av_image_check_size.
+/*
+  Check if the given dimension of an image is valid, meaning that all
+  bytes of the image can be addressed with a signed int.
+
+  @param w the width of the picture
+  @param h the height of the picture
+  @param log_offset the offset to sum to the log level for logging with log_ctx
+  @param log_ctx the parent logging context, it may be NULL
+  @return >= 0 if valid, a negative error code otherwise
+*/
+func AVImageCheckSize(w uint, h uint, logOffset int, logCtx unsafe.Pointer) (int, error) {
+	ret := C.av_image_check_size(C.uint(w), C.uint(h), C.int(logOffset), logCtx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_image_check_size2 ---
+
+// AVImageCheckSize2 wraps av_image_check_size2.
+/*
+  Check if the given dimension of an image is valid, meaning that all
+  bytes of a plane of an image with the specified pix_fmt can be addressed
+  with a signed int.
+
+  @param w the width of the picture
+  @param h the height of the picture
+  @param max_pixels the maximum number of pixels the user wants to accept
+  @param pix_fmt the pixel format, can be AV_PIX_FMT_NONE if unknown.
+  @param log_offset the offset to sum to the log level for logging with log_ctx
+  @param log_ctx the parent logging context, it may be NULL
+  @return >= 0 if valid, a negative error code otherwise
+*/
+func AVImageCheckSize2(w uint, h uint, maxPixels int64, pixFmt AVPixelFormat, logOffset int, logCtx unsafe.Pointer) (int, error) {
+	ret := C.av_image_check_size2(C.uint(w), C.uint(h), C.int64_t(maxPixels), C.enum_AVPixelFormat(pixFmt), C.int(logOffset), logCtx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_image_check_sar ---
+
+// AVImageCheckSar wraps av_image_check_sar.
+/*
+  Check if the given sample aspect ratio of an image is valid.
+
+  It is considered invalid if the denominator is 0 or if applying the ratio
+  to the image size would make the smaller dimension less than 1. If the
+  sar numerator is 0, it is considered unknown and will return as valid.
+
+  @param w width of the image
+  @param h height of the image
+  @param sar sample aspect ratio of the image
+  @return 0 if valid, a negative AVERROR code otherwise
+*/
+func AVImageCheckSar(w uint, h uint, sar *AVRational) (int, error) {
+	ret := C.av_image_check_sar(C.uint(w), C.uint(h), sar.value)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_image_fill_black ---
+
+// av_image_fill_black skipped due to const array param dstData
+
+// --- Function av_image_fill_color ---
+
+// av_image_fill_color skipped due to const array param dstData
 
 // --- Function av_int2float ---
 

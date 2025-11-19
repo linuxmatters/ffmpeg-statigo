@@ -14,21 +14,22 @@ import (
 )
 
 var primTypes = map[string]string{
-	"int":      "int",
-	"uint":     "uint",
-	"char":     "uint8",
-	"uchar":    "uint8",
-	"ulong":    "uint32",
-	"int16_t":  "int16",
-	"int32_t":  "int32",
-	"uint8_t":  "uint8",
-	"uint16_t": "uint16",
-	"uint32_t": "uint32",
-	"int64_t":  "int64",
-	"uint64_t": "uint64",
-	"size_t":   "uint64",
-	"float":    "float32",
-	"double":   "float64",
+	"int":       "int",
+	"uint":      "uint",
+	"char":      "uint8",
+	"uchar":     "uint8",
+	"ulong":     "uint32",
+	"int16_t":   "int16",
+	"int32_t":   "int32",
+	"uint8_t":   "uint8",
+	"uint16_t":  "uint16",
+	"uint32_t":  "uint32",
+	"int64_t":   "int64",
+	"uint64_t":  "uint64",
+	"size_t":    "uint64",
+	"ptrdiff_t": "int64",
+	"float":     "float32",
+	"double":    "float64",
 }
 
 // getCType returns the correct C type name to use in C.xxx() conversions.

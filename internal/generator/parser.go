@@ -87,7 +87,7 @@ var files = []string{
 	////"libavutil/hwcontext_videotoolbox.h",
 	////"libavutil/hwcontext_vulkan.h",
 	"libavutil/iamf.h",
-	////"libavutil/imgutils.h", // undefined: ptrdiff_t
+	"libavutil/imgutils.h",
 	"libavutil/intfloat.h",
 	////"libavutil/intreadwrite.h", //Unknown typedef kind UnionDecl
 	"libavutil/lfg.h",
