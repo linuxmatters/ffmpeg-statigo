@@ -96,6 +96,7 @@ import "unsafe"
 // #include <libavutil/tree.h>
 // #include <libavutil/twofish.h>
 // #include <libavutil/tx.h>
+// #include <libavutil/uuid.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
@@ -16080,6 +16081,34 @@ func AVTxUninit(ctx **AVTXContext) {
 		}
 	}
 }
+
+// --- Function av_uuid_parse ---
+
+// av_uuid_parse skipped due to array typedef (manually wrapped in custom.go)
+
+// --- Function av_uuid_urn_parse ---
+
+// av_uuid_urn_parse skipped due to array typedef (manually wrapped in custom.go)
+
+// --- Function av_uuid_parse_range ---
+
+// av_uuid_parse_range skipped due to array typedef (manually wrapped in custom.go)
+
+// --- Function av_uuid_unparse ---
+
+// av_uuid_unparse skipped due to array typedef (manually wrapped in custom.go)
+
+// --- Function av_uuid_equal ---
+
+// av_uuid_equal skipped due to array typedef (manually wrapped in custom.go)
+
+// --- Function av_uuid_copy ---
+
+// av_uuid_copy skipped due to array typedef (manually wrapped in custom.go)
+
+// --- Function av_uuid_nil ---
+
+// av_uuid_nil skipped due to array typedef (manually wrapped in custom.go)
 
 // --- Function av_video_enc_params_block ---
 

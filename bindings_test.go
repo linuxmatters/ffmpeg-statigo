@@ -268,3 +268,87 @@ func TestGeneratorErrorHandling(t *testing.T) {
 		t.Logf("Error handling test passed: AVERROR_EOF = %d", AVErrorEofConst)
 	})
 }
+
+// TestUUID tests the UUID functionality from libavutil/uuid.h
+func TestUUID(t *testing.T) {
+	t.Run("Parse and Unparse", func(t *testing.T) {
+		// Parse a UUID string
+		uuidStr := "550e8400-e29b-41d4-a716-446655440000"
+		var uuid AVUUID
+
+		cStr := ToCStr(uuidStr)
+		defer cStr.Free()
+
+		ret, err := AVUuidParse(cStr, &uuid)
+		if ret != 0 || err != nil {
+			t.Fatalf("Failed to parse UUID: %v", err)
+		}
+
+		// Unparse it back to string
+		outStr := AllocCStr(37)
+		defer outStr.Free()
+		AVUuidUnparse(&uuid, outStr)
+
+		result := outStr.String()
+		if result != uuidStr {
+			t.Fatalf("UUID mismatch: expected %s, got %s", uuidStr, result)
+		}
+
+		t.Logf("UUID parse/unparse test passed: %s", result)
+	})
+
+	t.Run("UUID Operations", func(t *testing.T) {
+		// Create two identical UUIDs
+		var uuid1, uuid2 AVUUID
+		uuidStr := "550e8400-e29b-41d4-a716-446655440000"
+		cStr := ToCStr(uuidStr)
+		defer cStr.Free()
+
+		AVUuidParse(cStr, &uuid1)
+		AVUuidCopy(&uuid2, &uuid1)
+
+		// Test equality
+		equal, _ := AVUuidEqual(&uuid1, &uuid2)
+		if equal == 0 {
+			t.Fatal("UUIDs should be equal")
+		}
+
+		// Test nil UUID
+		var nilUuid AVUUID
+		AVUuidNil(&nilUuid)
+
+		equal, _ = AVUuidEqual(&uuid1, &nilUuid)
+		if equal != 0 {
+			t.Fatal("UUID should not equal nil UUID")
+		}
+
+		t.Logf("UUID operations test passed")
+	})
+
+	t.Run("URN Parsing", func(t *testing.T) {
+		// Parse a UUID URN
+		urnStr := "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
+		var uuid AVUUID
+
+		cStr := ToCStr(urnStr)
+		defer cStr.Free()
+
+		ret, err := AVUuidUrnParse(cStr, &uuid)
+		if ret != 0 || err != nil {
+			t.Fatalf("Failed to parse UUID URN: %v", err)
+		}
+
+		// Verify by unparsing
+		outStr := AllocCStr(37)
+		defer outStr.Free()
+		AVUuidUnparse(&uuid, outStr)
+
+		result := outStr.String()
+		expected := "550e8400-e29b-41d4-a716-446655440000"
+		if result != expected {
+			t.Fatalf("UUID mismatch: expected %s, got %s", expected, result)
+		}
+
+		t.Logf("UUID URN parse test passed: %s", result)
+	})
+}

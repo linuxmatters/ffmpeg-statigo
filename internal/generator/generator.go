@@ -799,6 +799,16 @@ outer:
 			continue outer
 		}
 
+		// WORKAROUND: UUID functions use AVUUID (array typedef) which requires pointer conversion in CGO
+		// These are manually wrapped in custom.go with proper pointer handling
+		if fn.Name == "av_uuid_parse" || fn.Name == "av_uuid_urn_parse" || fn.Name == "av_uuid_parse_range" ||
+			fn.Name == "av_uuid_unparse" || fn.Name == "av_uuid_equal" || fn.Name == "av_uuid_copy" || fn.Name == "av_uuid_nil" {
+			o.Commentf("%v skipped due to array typedef (manually wrapped in custom.go)", fn.Name)
+			o.Line()
+
+			continue outer
+		}
+
 		if typeEquals(fn.Result, fileType) || typeEquals(fn.Result, fileType2) {
 			o.Commentf("%v skipped due to return", fn.Name)
 			o.Line()

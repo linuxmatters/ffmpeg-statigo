@@ -94,6 +94,7 @@ package ffmpeg
 // #include <libavutil/tree.h>
 // #include <libavutil/twofish.h>
 // #include <libavutil/tx.h>
+// #include <libavutil/uuid.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
@@ -2652,6 +2653,15 @@ const AVTimecodeStrSize = C.AV_TIMECODE_STR_SIZE
 
 // AVTsMaxStringSize wraps AV_TS_MAX_STRING_SIZE.
 const AVTsMaxStringSize = C.AV_TS_MAX_STRING_SIZE
+
+// AVPriUuid wraps AV_PRI_UUID.
+const AVPriUuid = C.AV_PRI_UUID
+
+// AVPriUrnUuid wraps AV_PRI_URN_UUID.
+const AVPriUrnUuid = C.AV_PRI_URN_UUID
+
+// AVUuidLen wraps AV_UUID_LEN.
+const AVUuidLen = C.AV_UUID_LEN
 
 // LIBAVUtilVersionMajor wraps LIBAVUTIL_VERSION_MAJOR.
 const LIBAVUtilVersionMajor = C.LIBAVUTIL_VERSION_MAJOR

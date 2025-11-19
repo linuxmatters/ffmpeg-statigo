@@ -124,7 +124,7 @@ var files = []string{
 	"libavutil/tree.h",
 	"libavutil/twofish.h",
 	"libavutil/tx.h",
-	////"libavutil/uuid.h", //Unknown typedef kind NoDeclFound
+	"libavutil/uuid.h",
 	"libavutil/version.h",
 	"libavutil/video_enc_params.h",
 	"libavutil/video_hint.h",
