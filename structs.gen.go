@@ -39,6 +39,7 @@ import "unsafe"
 // #include <libavutil/camellia.h>
 // #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/common.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
 // #include <libavutil/crc.h>
@@ -77,6 +78,7 @@ import "unsafe"
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
@@ -18830,7 +18832,15 @@ func (s *AVFilmGrainAOMParams) SetArCoeffLag(value int) {
 	s.ptr.ar_coeff_lag = (C.int)(value)
 }
 
-// ar_coeffs_y skipped due to unknown const array
+// ArCoeffsY gets the ar_coeffs_y field.
+/*
+  Luma auto-regression coefficients. The number of coefficients is given by
+  2 * ar_coeff_lag * (ar_coeff_lag + 1).
+*/
+func (s *AVFilmGrainAOMParams) ArCoeffsY() *Array[int8] {
+	value := &s.ptr.ar_coeffs_y
+	return ToInt8Array(unsafe.Pointer(value))
+}
 
 // ar_coeffs_uv skipped due to multi dim const array
 

@@ -57,7 +57,7 @@ var files = []string{
 	"libavutil/camellia.h",
 	"libavutil/cast5.h",
 	"libavutil/channel_layout.h",
-	////"libavutil/common.h", //undefined: int8_t int16_t int32_t
+	"libavutil/common.h",
 	"libavutil/container_fifo.h",
 	"libavutil/cpu.h",
 	"libavutil/crc.h",
@@ -101,8 +101,8 @@ var files = []string{
 	"libavutil/murmur3.h",
 	"libavutil/opt.h",
 	"libavutil/parseutils.h",
-	////"libavutil/pixdesc.h",  // segfault on parsing
-	////"libavutil/pixelutils.h", // undefined: av_pixelutils_sad_fn
+	//"libavutil/pixdesc.h", // segfault on parsing
+	"libavutil/pixelutils.h",
 	"libavutil/pixfmt.h",
 	"libavutil/random_seed.h",
 	"libavutil/rational.h",

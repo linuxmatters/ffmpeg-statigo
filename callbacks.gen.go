@@ -39,6 +39,7 @@ import "unsafe"
 // #include <libavutil/camellia.h>
 // #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/common.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
 // #include <libavutil/crc.h>
@@ -77,6 +78,7 @@ import "unsafe"
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
@@ -130,6 +132,9 @@ type AVCspEotfFunction unsafe.Pointer
 
 // AVFifocb is a function pointer typedef for AVFifoCB.
 type AVFifocb unsafe.Pointer
+
+// AVPixelutilsSadFn is a function pointer typedef for av_pixelutils_sad_fn.
+type AVPixelutilsSadFn unsafe.Pointer
 
 // AVTxFn is a function pointer typedef for av_tx_fn.
 type AVTxFn unsafe.Pointer
