@@ -12,6 +12,12 @@
   - https://ffmpeg.martin-riedl.de/
   - https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg
 
+## From the original author
+
+- [x] Expose more headers.
+- [ ] Expose platform specific headers.
+- [ ] Cleanup internal packages.
+
 ## More headers
 
 ### Adding Headers to the Generator
@@ -63,12 +69,6 @@ just generate
   - Creating adaptive bitrate ladders - scaling from a single 1080p input to 720p, 480p, 360p variants
   - Audio normalisation - resampling between 44.1kHz and 48kHz, converting 5.1 to stereo
   - Pixel format conversion - converting between YUV420P, NV12, and platform-specific requirements
-
-## From the original author
-
-- [ ] Expose more headers.
-- [ ] Expose platform specific headers.
-- [ ] Cleanup internal packages.
 
 ## Testing
 

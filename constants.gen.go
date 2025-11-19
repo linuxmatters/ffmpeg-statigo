@@ -21,13 +21,24 @@ package ffmpeg
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/aes.h>
+// #include <libavutil/aes_ctr.h>
+// #include <libavutil/ambient_viewing_environment.h>
+// #include <libavutil/audio_fifo.h>
 // #include <libavutil/avassert.h>
 // #include <libavutil/avconfig.h>
+// #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
+// #include <libavutil/base64.h>
+// #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
+// #include <libavutil/camellia.h>
+// #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/des.h>
+// #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
 // #include <libavutil/downmix_info.h>
@@ -37,20 +48,45 @@ package ffmpeg
 // #include <libavutil/executor.h>
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
+// #include <libavutil/file.h>
 // #include <libavutil/frame.h>
+// #include <libavutil/hash.h>
+// #include <libavutil/hdr_dynamic_metadata.h>
+// #include <libavutil/hdr_dynamic_vivid_metadata.h>
+// #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/iamf.h>
+// #include <libavutil/intfloat.h>
 // #include <libavutil/log.h>
+// #include <libavutil/lzo.h>
+// #include <libavutil/macros.h>
+// #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
+// #include <libavutil/motion_vector.h>
+// #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
+// #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/rc4.h>
 // #include <libavutil/replaygain.h>
+// #include <libavutil/ripemd.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/sha.h>
+// #include <libavutil/sha512.h>
+// #include <libavutil/spherical.h>
+// #include <libavutil/stereo3d.h>
+// #include <libavutil/tdrdi.h>
+// #include <libavutil/tea.h>
+// #include <libavutil/threadmessage.h>
 // #include <libavutil/time.h>
 // #include <libavutil/timecode.h>
 // #include <libavutil/timestamp.h>
+// #include <libavutil/tree.h>
+// #include <libavutil/twofish.h>
+// #include <libavutil/tx.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
@@ -1397,11 +1433,44 @@ const FFAPINoDefaultTlsVerify = C.FF_API_NO_DEFAULT_TLS_VERIFY
 // FFAPIRFrameRate wraps FF_API_R_FRAME_RATE.
 const FFAPIRFrameRate = C.FF_API_R_FRAME_RATE
 
+// AesCtrKeySize wraps AES_CTR_KEY_SIZE.
+const AesCtrKeySize = C.AES_CTR_KEY_SIZE
+
+// AesCtrIvSize wraps AES_CTR_IV_SIZE.
+const AesCtrIvSize = C.AES_CTR_IV_SIZE
+
 // AVHaveBigendian wraps AV_HAVE_BIGENDIAN.
 const AVHaveBigendian = C.AV_HAVE_BIGENDIAN
 
 // AVHaveFastUnaligned wraps AV_HAVE_FAST_UNALIGNED.
 const AVHaveFastUnaligned = C.AV_HAVE_FAST_UNALIGNED
+
+// AVEscapeFlagWhitespace wraps AV_ESCAPE_FLAG_WHITESPACE.
+const AVEscapeFlagWhitespace = C.AV_ESCAPE_FLAG_WHITESPACE
+
+// AVEscapeFlagStrict wraps AV_ESCAPE_FLAG_STRICT.
+const AVEscapeFlagStrict = C.AV_ESCAPE_FLAG_STRICT
+
+// AVEscapeFlagXmlSingleQuotes wraps AV_ESCAPE_FLAG_XML_SINGLE_QUOTES.
+const AVEscapeFlagXmlSingleQuotes = C.AV_ESCAPE_FLAG_XML_SINGLE_QUOTES
+
+// AVEscapeFlagXmlDoubleQuotes wraps AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES.
+const AVEscapeFlagXmlDoubleQuotes = C.AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES
+
+// AVUtf8FlagAcceptInvalidBigCodes wraps AV_UTF8_FLAG_ACCEPT_INVALID_BIG_CODES.
+const AVUtf8FlagAcceptInvalidBigCodes = C.AV_UTF8_FLAG_ACCEPT_INVALID_BIG_CODES
+
+// AVUtf8FlagAcceptNonCharacters wraps AV_UTF8_FLAG_ACCEPT_NON_CHARACTERS.
+const AVUtf8FlagAcceptNonCharacters = C.AV_UTF8_FLAG_ACCEPT_NON_CHARACTERS
+
+// AVUtf8FlagAcceptSurrogates wraps AV_UTF8_FLAG_ACCEPT_SURROGATES.
+const AVUtf8FlagAcceptSurrogates = C.AV_UTF8_FLAG_ACCEPT_SURROGATES
+
+// AVUtf8FlagExcludeXmlInvalidControlCodes wraps AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES.
+const AVUtf8FlagExcludeXmlInvalidControlCodes = C.AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES
+
+// AVUtf8FlagAcceptAll wraps AV_UTF8_FLAG_ACCEPT_ALL.
+const AVUtf8FlagAcceptAll = C.AV_UTF8_FLAG_ACCEPT_ALL
 
 // FFLambdaShift wraps FF_LAMBDA_SHIFT.
 const FFLambdaShift = C.FF_LAMBDA_SHIFT
@@ -1847,6 +1916,12 @@ const AVCpuFlagRvb = C.AV_CPU_FLAG_RVB
 // AVCpuFlagSimd128 wraps AV_CPU_FLAG_SIMD128.
 const AVCpuFlagSimd128 = C.AV_CPU_FLAG_SIMD128
 
+// AVDetectionBboxLabelNameMaxSize wraps AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE.
+const AVDetectionBboxLabelNameMaxSize = C.AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE
+
+// AVNumDetectionBboxClassify wraps AV_NUM_DETECTION_BBOX_CLASSIFY.
+const AVNumDetectionBboxClassify = C.AV_NUM_DETECTION_BBOX_CLASSIFY
+
 // AVDictMatchCase wraps AV_DICT_MATCH_CASE.
 const AVDictMatchCase = C.AV_DICT_MATCH_CASE
 
@@ -2006,6 +2081,12 @@ const AVFrameSideDataFlagNewRef = C.AV_FRAME_SIDE_DATA_FLAG_NEW_REF
 // AVFrameCropUnaligned wraps AV_FRAME_CROP_UNALIGNED.
 const AVFrameCropUnaligned = C.AV_FRAME_CROP_UNALIGNED
 
+// AVHashMaxSize wraps AV_HASH_MAX_SIZE.
+const AVHashMaxSize = C.AV_HASH_MAX_SIZE
+
+// AVHdrPlusMaxPayloadSize wraps AV_HDR_PLUS_MAX_PAYLOAD_SIZE.
+const AVHdrPlusMaxPayloadSize = C.AV_HDR_PLUS_MAX_PAYLOAD_SIZE
+
 // AVHWFrameMapRead wraps AV_HWFRAME_MAP_READ.
 const AVHWFrameMapRead = C.AV_HWFRAME_MAP_READ
 
@@ -2017,6 +2098,9 @@ const AVHWFrameMapOverwrite = C.AV_HWFRAME_MAP_OVERWRITE
 
 // AVHWFrameMapDirect wraps AV_HWFRAME_MAP_DIRECT.
 const AVHWFrameMapDirect = C.AV_HWFRAME_MAP_DIRECT
+
+// AVIamfLayerFlagReconGain wraps AV_IAMF_LAYER_FLAG_RECON_GAIN.
+const AVIamfLayerFlagReconGain = C.AV_IAMF_LAYER_FLAG_RECON_GAIN
 
 // AVLogQuiet wraps AV_LOG_QUIET.
 const AVLogQuiet = C.AV_LOG_QUIET
@@ -2059,6 +2143,24 @@ const AVLogPrintTime = C.AV_LOG_PRINT_TIME
 
 // AVLogPrintDatetime wraps AV_LOG_PRINT_DATETIME.
 const AVLogPrintDatetime = C.AV_LOG_PRINT_DATETIME
+
+// AVLzoInputDepleted wraps AV_LZO_INPUT_DEPLETED.
+const AVLzoInputDepleted = C.AV_LZO_INPUT_DEPLETED
+
+// AVLzoOutputFull wraps AV_LZO_OUTPUT_FULL.
+const AVLzoOutputFull = C.AV_LZO_OUTPUT_FULL
+
+// AVLzoInvalidBackptr wraps AV_LZO_INVALID_BACKPTR.
+const AVLzoInvalidBackptr = C.AV_LZO_INVALID_BACKPTR
+
+// AVLzoError wraps AV_LZO_ERROR.
+const AVLzoError = C.AV_LZO_ERROR
+
+// AVLzoInputPadding wraps AV_LZO_INPUT_PADDING.
+const AVLzoInputPadding = C.AV_LZO_INPUT_PADDING
+
+// AVLzoOutputPadding wraps AV_LZO_OUTPUT_PADDING.
+const AVLzoOutputPadding = C.AV_LZO_OUTPUT_PADDING
 
 // ME wraps M_E.
 const ME = C.M_E
@@ -2521,6 +2623,12 @@ const AVPixFmtRgb96 = C.AV_PIX_FMT_RGB96
 
 // AVPixFmtRgba128 wraps AV_PIX_FMT_RGBA128.
 const AVPixFmtRgba128 = C.AV_PIX_FMT_RGBA128
+
+// AVStereo3DFlagInvert wraps AV_STEREO3D_FLAG_INVERT.
+const AVStereo3DFlagInvert = C.AV_STEREO3D_FLAG_INVERT
+
+// AVTdrdiMaxNumRefDisplay wraps AV_TDRDI_MAX_NUM_REF_DISPLAY.
+const AVTdrdiMaxNumRefDisplay = C.AV_TDRDI_MAX_NUM_REF_DISPLAY
 
 // AVTimecodeStrSize wraps AV_TIMECODE_STR_SIZE.
 const AVTimecodeStrSize = C.AV_TIMECODE_STR_SIZE

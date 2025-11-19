@@ -23,13 +23,24 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/aes.h>
+// #include <libavutil/aes_ctr.h>
+// #include <libavutil/ambient_viewing_environment.h>
+// #include <libavutil/audio_fifo.h>
 // #include <libavutil/avassert.h>
 // #include <libavutil/avconfig.h>
+// #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
+// #include <libavutil/base64.h>
+// #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
+// #include <libavutil/camellia.h>
+// #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/des.h>
+// #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
 // #include <libavutil/downmix_info.h>
@@ -39,20 +50,45 @@ import "unsafe"
 // #include <libavutil/executor.h>
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
+// #include <libavutil/file.h>
 // #include <libavutil/frame.h>
+// #include <libavutil/hash.h>
+// #include <libavutil/hdr_dynamic_metadata.h>
+// #include <libavutil/hdr_dynamic_vivid_metadata.h>
+// #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/iamf.h>
+// #include <libavutil/intfloat.h>
 // #include <libavutil/log.h>
+// #include <libavutil/lzo.h>
+// #include <libavutil/macros.h>
+// #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
+// #include <libavutil/motion_vector.h>
+// #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
+// #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/rc4.h>
 // #include <libavutil/replaygain.h>
+// #include <libavutil/ripemd.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/sha.h>
+// #include <libavutil/sha512.h>
+// #include <libavutil/spherical.h>
+// #include <libavutil/stereo3d.h>
+// #include <libavutil/tdrdi.h>
+// #include <libavutil/tea.h>
+// #include <libavutil/threadmessage.h>
 // #include <libavutil/time.h>
 // #include <libavutil/timecode.h>
 // #include <libavutil/timestamp.h>
+// #include <libavutil/tree.h>
+// #include <libavutil/twofish.h>
+// #include <libavutil/tx.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
@@ -2729,6 +2765,55 @@ const (
 	AVIODataMarkerFlushPoint AVIODataMarkerType = C.AVIO_DATA_MARKER_FLUSH_POINT
 )
 
+// --- Enum AVEscapeMode ---
+
+// AVEscapeMode wraps AVEscapeMode.
+type AVEscapeMode C.enum_AVEscapeMode
+
+const SizeOfAVEscapeMode = C.sizeof_enum_AVEscapeMode
+
+func ToAVEscapeModeArray(ptr unsafe.Pointer) *Array[AVEscapeMode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVEscapeMode]{
+		elemSize: SizeOfAVEscapeMode,
+		loadPtr: func(pointer unsafe.Pointer) AVEscapeMode {
+			ptr := (*AVEscapeMode)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVEscapeMode) {
+			ptr := (*AVEscapeMode)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVEscapeModeArray(size uint64) *Array[AVEscapeMode] {
+	return ToAVEscapeModeArray(AVCalloc(size, SizeOfAVEscapeMode))
+}
+
+const (
+	// AVEscapeModeAuto wraps AV_ESCAPE_MODE_AUTO.
+	//
+	//	Use auto-selected escaping mode.
+	AVEscapeModeAuto AVEscapeMode = C.AV_ESCAPE_MODE_AUTO
+	// AVEscapeModeBackslash wraps AV_ESCAPE_MODE_BACKSLASH.
+	//
+	//	Use backslash escaping.
+	AVEscapeModeBackslash AVEscapeMode = C.AV_ESCAPE_MODE_BACKSLASH
+	// AVEscapeModeQuote wraps AV_ESCAPE_MODE_QUOTE.
+	//
+	//	Use single-quote escaping.
+	AVEscapeModeQuote AVEscapeMode = C.AV_ESCAPE_MODE_QUOTE
+	// AVEscapeModeXml wraps AV_ESCAPE_MODE_XML.
+	//
+	//	Use XML non-markup character data escaping.
+	AVEscapeModeXml AVEscapeMode = C.AV_ESCAPE_MODE_XML
+)
+
 // --- Enum AVMediaType ---
 
 // AVMediaType wraps AVMediaType.
@@ -3653,6 +3738,90 @@ const (
 	AVSideDataPropChannelDependent AVSideDataProps = C.AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT
 )
 
+// --- Enum AVHDRPlusOverlapProcessOption ---
+
+// AVHDRPlusOverlapProcessOption wraps AVHDRPlusOverlapProcessOption.
+//
+//	Option for overlapping elliptical pixel selectors in an image.
+type AVHDRPlusOverlapProcessOption C.enum_AVHDRPlusOverlapProcessOption
+
+const SizeOfAVHDRPlusOverlapProcessOption = C.sizeof_enum_AVHDRPlusOverlapProcessOption
+
+func ToAVHDRPlusOverlapProcessOptionArray(ptr unsafe.Pointer) *Array[AVHDRPlusOverlapProcessOption] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVHDRPlusOverlapProcessOption]{
+		elemSize: SizeOfAVHDRPlusOverlapProcessOption,
+		loadPtr: func(pointer unsafe.Pointer) AVHDRPlusOverlapProcessOption {
+			ptr := (*AVHDRPlusOverlapProcessOption)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVHDRPlusOverlapProcessOption) {
+			ptr := (*AVHDRPlusOverlapProcessOption)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVHDRPlusOverlapProcessOptionArray(size uint64) *Array[AVHDRPlusOverlapProcessOption] {
+	return ToAVHDRPlusOverlapProcessOptionArray(AVCalloc(size, SizeOfAVHDRPlusOverlapProcessOption))
+}
+
+const (
+	// AVHdrPlusOverlapProcessWeightedAVEraging wraps AV_HDR_PLUS_OVERLAP_PROCESS_WEIGHTED_AVERAGING.
+	AVHdrPlusOverlapProcessWeightedAVEraging AVHDRPlusOverlapProcessOption = C.AV_HDR_PLUS_OVERLAP_PROCESS_WEIGHTED_AVERAGING
+	// AVHdrPlusOverlapProcessLayering wraps AV_HDR_PLUS_OVERLAP_PROCESS_LAYERING.
+	AVHdrPlusOverlapProcessLayering AVHDRPlusOverlapProcessOption = C.AV_HDR_PLUS_OVERLAP_PROCESS_LAYERING
+)
+
+// --- Enum AVHMACType ---
+
+// AVHMACType wraps AVHMACType.
+type AVHMACType C.enum_AVHMACType
+
+const SizeOfAVHMACType = C.sizeof_enum_AVHMACType
+
+func ToAVHMACTypeArray(ptr unsafe.Pointer) *Array[AVHMACType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVHMACType]{
+		elemSize: SizeOfAVHMACType,
+		loadPtr: func(pointer unsafe.Pointer) AVHMACType {
+			ptr := (*AVHMACType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVHMACType) {
+			ptr := (*AVHMACType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVHMACTypeArray(size uint64) *Array[AVHMACType] {
+	return ToAVHMACTypeArray(AVCalloc(size, SizeOfAVHMACType))
+}
+
+const (
+	// AVHmacMd5 wraps AV_HMAC_MD5.
+	AVHmacMd5 AVHMACType = C.AV_HMAC_MD5
+	// AVHmacSha1 wraps AV_HMAC_SHA1.
+	AVHmacSha1 AVHMACType = C.AV_HMAC_SHA1
+	// AVHmacSha224 wraps AV_HMAC_SHA224.
+	AVHmacSha224 AVHMACType = C.AV_HMAC_SHA224
+	// AVHmacSha256 wraps AV_HMAC_SHA256.
+	AVHmacSha256 AVHMACType = C.AV_HMAC_SHA256
+	// AVHmacSha384 wraps AV_HMAC_SHA384.
+	AVHmacSha384 AVHMACType = C.AV_HMAC_SHA384
+	// AVHmacSha512 wraps AV_HMAC_SHA512.
+	AVHmacSha512 AVHMACType = C.AV_HMAC_SHA512
+)
+
 // --- Enum AVHWDeviceType ---
 
 // AVHWDeviceType wraps AVHWDeviceType.
@@ -3757,6 +3926,252 @@ const (
 	//
 	//	Transfer the data to the queried hw frame.
 	AVHWFrameTransferDirectionTo AVHWFrameTransferDirection = C.AV_HWFRAME_TRANSFER_DIRECTION_TO
+)
+
+// --- Enum AVIAMFAnimationType ---
+
+// AVIAMFAnimationType wraps AVIAMFAnimationType.
+type AVIAMFAnimationType C.enum_AVIAMFAnimationType
+
+const SizeOfAVIAMFAnimationType = C.sizeof_enum_AVIAMFAnimationType
+
+func ToAVIAMFAnimationTypeArray(ptr unsafe.Pointer) *Array[AVIAMFAnimationType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVIAMFAnimationType]{
+		elemSize: SizeOfAVIAMFAnimationType,
+		loadPtr: func(pointer unsafe.Pointer) AVIAMFAnimationType {
+			ptr := (*AVIAMFAnimationType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVIAMFAnimationType) {
+			ptr := (*AVIAMFAnimationType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVIAMFAnimationTypeArray(size uint64) *Array[AVIAMFAnimationType] {
+	return ToAVIAMFAnimationTypeArray(AVCalloc(size, SizeOfAVIAMFAnimationType))
+}
+
+const (
+	// AVIamfAnimationTypeStep wraps AV_IAMF_ANIMATION_TYPE_STEP.
+	AVIamfAnimationTypeStep AVIAMFAnimationType = C.AV_IAMF_ANIMATION_TYPE_STEP
+	// AVIamfAnimationTypeLinear wraps AV_IAMF_ANIMATION_TYPE_LINEAR.
+	AVIamfAnimationTypeLinear AVIAMFAnimationType = C.AV_IAMF_ANIMATION_TYPE_LINEAR
+	// AVIamfAnimationTypeBezier wraps AV_IAMF_ANIMATION_TYPE_BEZIER.
+	AVIamfAnimationTypeBezier AVIAMFAnimationType = C.AV_IAMF_ANIMATION_TYPE_BEZIER
+)
+
+// --- Enum AVIAMFParamDefinitionType ---
+
+// AVIAMFParamDefinitionType wraps AVIAMFParamDefinitionType.
+type AVIAMFParamDefinitionType C.enum_AVIAMFParamDefinitionType
+
+const SizeOfAVIAMFParamDefinitionType = C.sizeof_enum_AVIAMFParamDefinitionType
+
+func ToAVIAMFParamDefinitionTypeArray(ptr unsafe.Pointer) *Array[AVIAMFParamDefinitionType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVIAMFParamDefinitionType]{
+		elemSize: SizeOfAVIAMFParamDefinitionType,
+		loadPtr: func(pointer unsafe.Pointer) AVIAMFParamDefinitionType {
+			ptr := (*AVIAMFParamDefinitionType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVIAMFParamDefinitionType) {
+			ptr := (*AVIAMFParamDefinitionType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVIAMFParamDefinitionTypeArray(size uint64) *Array[AVIAMFParamDefinitionType] {
+	return ToAVIAMFParamDefinitionTypeArray(AVCalloc(size, SizeOfAVIAMFParamDefinitionType))
+}
+
+const (
+	// AVIamfParameterDefinitionMixGain wraps AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN.
+	//
+	//	Subblocks are of struct type AVIAMFMixGain
+	AVIamfParameterDefinitionMixGain AVIAMFParamDefinitionType = C.AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN
+	// AVIamfParameterDefinitionDemixing wraps AV_IAMF_PARAMETER_DEFINITION_DEMIXING.
+	//
+	//	Subblocks are of struct type AVIAMFDemixingInfo
+	AVIamfParameterDefinitionDemixing AVIAMFParamDefinitionType = C.AV_IAMF_PARAMETER_DEFINITION_DEMIXING
+	// AVIamfParameterDefinitionReconGain wraps AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN.
+	//
+	//	Subblocks are of struct type AVIAMFReconGain
+	AVIamfParameterDefinitionReconGain AVIAMFParamDefinitionType = C.AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN
+)
+
+// --- Enum AVIAMFAmbisonicsMode ---
+
+// AVIAMFAmbisonicsMode wraps AVIAMFAmbisonicsMode.
+type AVIAMFAmbisonicsMode C.enum_AVIAMFAmbisonicsMode
+
+const SizeOfAVIAMFAmbisonicsMode = C.sizeof_enum_AVIAMFAmbisonicsMode
+
+func ToAVIAMFAmbisonicsModeArray(ptr unsafe.Pointer) *Array[AVIAMFAmbisonicsMode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVIAMFAmbisonicsMode]{
+		elemSize: SizeOfAVIAMFAmbisonicsMode,
+		loadPtr: func(pointer unsafe.Pointer) AVIAMFAmbisonicsMode {
+			ptr := (*AVIAMFAmbisonicsMode)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVIAMFAmbisonicsMode) {
+			ptr := (*AVIAMFAmbisonicsMode)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVIAMFAmbisonicsModeArray(size uint64) *Array[AVIAMFAmbisonicsMode] {
+	return ToAVIAMFAmbisonicsModeArray(AVCalloc(size, SizeOfAVIAMFAmbisonicsMode))
+}
+
+const (
+	// AVIamfAmbisonicsModeMono wraps AV_IAMF_AMBISONICS_MODE_MONO.
+	AVIamfAmbisonicsModeMono AVIAMFAmbisonicsMode = C.AV_IAMF_AMBISONICS_MODE_MONO
+	// AVIamfAmbisonicsModeProjection wraps AV_IAMF_AMBISONICS_MODE_PROJECTION.
+	AVIamfAmbisonicsModeProjection AVIAMFAmbisonicsMode = C.AV_IAMF_AMBISONICS_MODE_PROJECTION
+)
+
+// --- Enum AVIAMFAudioElementType ---
+
+// AVIAMFAudioElementType wraps AVIAMFAudioElementType.
+type AVIAMFAudioElementType C.enum_AVIAMFAudioElementType
+
+const SizeOfAVIAMFAudioElementType = C.sizeof_enum_AVIAMFAudioElementType
+
+func ToAVIAMFAudioElementTypeArray(ptr unsafe.Pointer) *Array[AVIAMFAudioElementType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVIAMFAudioElementType]{
+		elemSize: SizeOfAVIAMFAudioElementType,
+		loadPtr: func(pointer unsafe.Pointer) AVIAMFAudioElementType {
+			ptr := (*AVIAMFAudioElementType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVIAMFAudioElementType) {
+			ptr := (*AVIAMFAudioElementType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVIAMFAudioElementTypeArray(size uint64) *Array[AVIAMFAudioElementType] {
+	return ToAVIAMFAudioElementTypeArray(AVCalloc(size, SizeOfAVIAMFAudioElementType))
+}
+
+const (
+	// AVIamfAudioElementTypeChannel wraps AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL.
+	AVIamfAudioElementTypeChannel AVIAMFAudioElementType = C.AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL
+	// AVIamfAudioElementTypeScene wraps AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE.
+	AVIamfAudioElementTypeScene AVIAMFAudioElementType = C.AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE
+)
+
+// --- Enum AVIAMFHeadphonesMode ---
+
+// AVIAMFHeadphonesMode wraps AVIAMFHeadphonesMode.
+type AVIAMFHeadphonesMode C.enum_AVIAMFHeadphonesMode
+
+const SizeOfAVIAMFHeadphonesMode = C.sizeof_enum_AVIAMFHeadphonesMode
+
+func ToAVIAMFHeadphonesModeArray(ptr unsafe.Pointer) *Array[AVIAMFHeadphonesMode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVIAMFHeadphonesMode]{
+		elemSize: SizeOfAVIAMFHeadphonesMode,
+		loadPtr: func(pointer unsafe.Pointer) AVIAMFHeadphonesMode {
+			ptr := (*AVIAMFHeadphonesMode)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVIAMFHeadphonesMode) {
+			ptr := (*AVIAMFHeadphonesMode)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVIAMFHeadphonesModeArray(size uint64) *Array[AVIAMFHeadphonesMode] {
+	return ToAVIAMFHeadphonesModeArray(AVCalloc(size, SizeOfAVIAMFHeadphonesMode))
+}
+
+const (
+	// AVIamfHeadphonesModeStereo wraps AV_IAMF_HEADPHONES_MODE_STEREO.
+	//
+	//	The referenced Audio Element shall be rendered to stereo loudspeakers.
+	AVIamfHeadphonesModeStereo AVIAMFHeadphonesMode = C.AV_IAMF_HEADPHONES_MODE_STEREO
+	// AVIamfHeadphonesModeBinaural wraps AV_IAMF_HEADPHONES_MODE_BINAURAL.
+	//
+	//	The referenced Audio Element shall be rendered with a binaural renderer.
+	AVIamfHeadphonesModeBinaural AVIAMFHeadphonesMode = C.AV_IAMF_HEADPHONES_MODE_BINAURAL
+)
+
+// --- Enum AVIAMFSubmixLayoutType ---
+
+// AVIAMFSubmixLayoutType wraps AVIAMFSubmixLayoutType.
+type AVIAMFSubmixLayoutType C.enum_AVIAMFSubmixLayoutType
+
+const SizeOfAVIAMFSubmixLayoutType = C.sizeof_enum_AVIAMFSubmixLayoutType
+
+func ToAVIAMFSubmixLayoutTypeArray(ptr unsafe.Pointer) *Array[AVIAMFSubmixLayoutType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVIAMFSubmixLayoutType]{
+		elemSize: SizeOfAVIAMFSubmixLayoutType,
+		loadPtr: func(pointer unsafe.Pointer) AVIAMFSubmixLayoutType {
+			ptr := (*AVIAMFSubmixLayoutType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVIAMFSubmixLayoutType) {
+			ptr := (*AVIAMFSubmixLayoutType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVIAMFSubmixLayoutTypeArray(size uint64) *Array[AVIAMFSubmixLayoutType] {
+	return ToAVIAMFSubmixLayoutTypeArray(AVCalloc(size, SizeOfAVIAMFSubmixLayoutType))
+}
+
+const (
+	// AVIamfSubmixLayoutTypeLoudspeakers wraps AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS.
+	/*
+	   The layout follows the loudspeaker sound system convention of ITU-2051-3.
+	   @ref AVIAMFSubmixLayout.sound_system must be set.
+	*/
+	AVIamfSubmixLayoutTypeLoudspeakers AVIAMFSubmixLayoutType = C.AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS
+	// AVIamfSubmixLayoutTypeBinaural wraps AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL.
+	/*
+	   The layout is binaural.
+
+	   @note @ref AVIAMFSubmixLayout.sound_system may be set to
+	   AV_CHANNEL_LAYOUT_BINAURAL to simplify API usage, but it's not mandatory.
+	*/
+	AVIamfSubmixLayoutTypeBinaural AVIAMFSubmixLayoutType = C.AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL
 )
 
 // --- Enum AVClassCategory ---
@@ -5878,6 +6293,350 @@ const (
 	AVSampleFmtNb AVSampleFormat = C.AV_SAMPLE_FMT_NB
 )
 
+// --- Enum AVSphericalProjection ---
+
+// AVSphericalProjection wraps AVSphericalProjection.
+//
+//	Projection of the video surface(s) on a sphere.
+type AVSphericalProjection C.enum_AVSphericalProjection
+
+const SizeOfAVSphericalProjection = C.sizeof_enum_AVSphericalProjection
+
+func ToAVSphericalProjectionArray(ptr unsafe.Pointer) *Array[AVSphericalProjection] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVSphericalProjection]{
+		elemSize: SizeOfAVSphericalProjection,
+		loadPtr: func(pointer unsafe.Pointer) AVSphericalProjection {
+			ptr := (*AVSphericalProjection)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVSphericalProjection) {
+			ptr := (*AVSphericalProjection)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVSphericalProjectionArray(size uint64) *Array[AVSphericalProjection] {
+	return ToAVSphericalProjectionArray(AVCalloc(size, SizeOfAVSphericalProjection))
+}
+
+const (
+	// AVSphericalEquirectangular wraps AV_SPHERICAL_EQUIRECTANGULAR.
+	/*
+	   Video represents a sphere mapped on a flat surface using
+	   equirectangular projection.
+	*/
+	AVSphericalEquirectangular AVSphericalProjection = C.AV_SPHERICAL_EQUIRECTANGULAR
+	// AVSphericalCubemap wraps AV_SPHERICAL_CUBEMAP.
+	/*
+	   Video frame is split into 6 faces of a cube, and arranged on a
+	   3x2 layout. Faces are oriented upwards for the front, left, right,
+	   and back faces. The up face is oriented so the top of the face is
+	   forwards and the down face is oriented so the top of the face is
+	   to the back.
+	*/
+	AVSphericalCubemap AVSphericalProjection = C.AV_SPHERICAL_CUBEMAP
+	// AVSphericalEquirectangularTile wraps AV_SPHERICAL_EQUIRECTANGULAR_TILE.
+	/*
+	   Video represents a portion of a sphere mapped on a flat surface
+	   using equirectangular projection. The @ref bounding fields indicate
+	   the position of the current video in a larger surface.
+	*/
+	AVSphericalEquirectangularTile AVSphericalProjection = C.AV_SPHERICAL_EQUIRECTANGULAR_TILE
+	// AVSphericalHalfEquirectangular wraps AV_SPHERICAL_HALF_EQUIRECTANGULAR.
+	//
+	//	Video frame displays as a 180 degree equirectangular projection.
+	AVSphericalHalfEquirectangular AVSphericalProjection = C.AV_SPHERICAL_HALF_EQUIRECTANGULAR
+	// AVSphericalRectilinear wraps AV_SPHERICAL_RECTILINEAR.
+	//
+	//	Video frame displays on a flat, rectangular 2D surface.
+	AVSphericalRectilinear AVSphericalProjection = C.AV_SPHERICAL_RECTILINEAR
+	// AVSphericalFisheye wraps AV_SPHERICAL_FISHEYE.
+	/*
+	   Fisheye projection (Apple).
+	   See: https://developer.apple.com/documentation/coremedia/cmprojectiontype/fisheye
+	*/
+	AVSphericalFisheye AVSphericalProjection = C.AV_SPHERICAL_FISHEYE
+	// AVSphericalParametricImmersive wraps AV_SPHERICAL_PARAMETRIC_IMMERSIVE.
+	/*
+	   Parametric Immersive projection (Apple).
+	   See: https://developer.apple.com/documentation/coremedia/cmprojectiontype/parametricimmersive
+	*/
+	AVSphericalParametricImmersive AVSphericalProjection = C.AV_SPHERICAL_PARAMETRIC_IMMERSIVE
+)
+
+// --- Enum AVStereo3DType ---
+
+// AVStereo3DType wraps AVStereo3DType.
+//
+//	List of possible 3D Types
+type AVStereo3DType C.enum_AVStereo3DType
+
+const SizeOfAVStereo3DType = C.sizeof_enum_AVStereo3DType
+
+func ToAVStereo3DTypeArray(ptr unsafe.Pointer) *Array[AVStereo3DType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVStereo3DType]{
+		elemSize: SizeOfAVStereo3DType,
+		loadPtr: func(pointer unsafe.Pointer) AVStereo3DType {
+			ptr := (*AVStereo3DType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVStereo3DType) {
+			ptr := (*AVStereo3DType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVStereo3DTypeArray(size uint64) *Array[AVStereo3DType] {
+	return ToAVStereo3DTypeArray(AVCalloc(size, SizeOfAVStereo3DType))
+}
+
+const (
+	// AVStereo3D2D wraps AV_STEREO3D_2D.
+	//
+	//	Video is not stereoscopic (and metadata has to be there).
+	AVStereo3D2D AVStereo3DType = C.AV_STEREO3D_2D
+	// AVStereo3DSidebyside wraps AV_STEREO3D_SIDEBYSIDE.
+	/*
+	   Views are next to each other.
+
+	   @code{.unparsed}
+	      LLLLRRRR
+	      LLLLRRRR
+	      LLLLRRRR
+	      ...
+	   @endcode
+	*/
+	AVStereo3DSidebyside AVStereo3DType = C.AV_STEREO3D_SIDEBYSIDE
+	// AVStereo3DTopbottom wraps AV_STEREO3D_TOPBOTTOM.
+	/*
+	   Views are on top of each other.
+
+	   @code{.unparsed}
+	      LLLLLLLL
+	      LLLLLLLL
+	      RRRRRRRR
+	      RRRRRRRR
+	   @endcode
+	*/
+	AVStereo3DTopbottom AVStereo3DType = C.AV_STEREO3D_TOPBOTTOM
+	// AVStereo3DFramesequence wraps AV_STEREO3D_FRAMESEQUENCE.
+	/*
+	   Views are alternated temporally.
+
+	   @code{.unparsed}
+	       frame0   frame1   frame2   ...
+	      LLLLLLLL RRRRRRRR LLLLLLLL
+	      LLLLLLLL RRRRRRRR LLLLLLLL
+	      LLLLLLLL RRRRRRRR LLLLLLLL
+	      ...      ...      ...
+	   @endcode
+	*/
+	AVStereo3DFramesequence AVStereo3DType = C.AV_STEREO3D_FRAMESEQUENCE
+	// AVStereo3DCheckerboard wraps AV_STEREO3D_CHECKERBOARD.
+	/*
+	   Views are packed in a checkerboard-like structure per pixel.
+
+	   @code{.unparsed}
+	      LRLRLRLR
+	      RLRLRLRL
+	      LRLRLRLR
+	      ...
+	   @endcode
+	*/
+	AVStereo3DCheckerboard AVStereo3DType = C.AV_STEREO3D_CHECKERBOARD
+	// AVStereo3DSidebysideQuincunx wraps AV_STEREO3D_SIDEBYSIDE_QUINCUNX.
+	/*
+	   Views are next to each other, but when upscaling
+	   apply a checkerboard pattern.
+
+	   @code{.unparsed}
+	       LLLLRRRR          L L L L    R R R R
+	       LLLLRRRR    =>     L L L L  R R R R
+	       LLLLRRRR          L L L L    R R R R
+	       LLLLRRRR           L L L L  R R R R
+	   @endcode
+	*/
+	AVStereo3DSidebysideQuincunx AVStereo3DType = C.AV_STEREO3D_SIDEBYSIDE_QUINCUNX
+	// AVStereo3DLines wraps AV_STEREO3D_LINES.
+	/*
+	   Views are packed per line, as if interlaced.
+
+	   @code{.unparsed}
+	      LLLLLLLL
+	      RRRRRRRR
+	      LLLLLLLL
+	      ...
+	   @endcode
+	*/
+	AVStereo3DLines AVStereo3DType = C.AV_STEREO3D_LINES
+	// AVStereo3DColumns wraps AV_STEREO3D_COLUMNS.
+	/*
+	   Views are packed per column.
+
+	   @code{.unparsed}
+	      LRLRLRLR
+	      LRLRLRLR
+	      LRLRLRLR
+	      ...
+	   @endcode
+	*/
+	AVStereo3DColumns AVStereo3DType = C.AV_STEREO3D_COLUMNS
+	// AVStereo3DUnspec wraps AV_STEREO3D_UNSPEC.
+	//
+	//	Video is stereoscopic but the packing is unspecified.
+	AVStereo3DUnspec AVStereo3DType = C.AV_STEREO3D_UNSPEC
+)
+
+// --- Enum AVStereo3DView ---
+
+// AVStereo3DView wraps AVStereo3DView.
+//
+//	List of possible view types.
+type AVStereo3DView C.enum_AVStereo3DView
+
+const SizeOfAVStereo3DView = C.sizeof_enum_AVStereo3DView
+
+func ToAVStereo3DViewArray(ptr unsafe.Pointer) *Array[AVStereo3DView] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVStereo3DView]{
+		elemSize: SizeOfAVStereo3DView,
+		loadPtr: func(pointer unsafe.Pointer) AVStereo3DView {
+			ptr := (*AVStereo3DView)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVStereo3DView) {
+			ptr := (*AVStereo3DView)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVStereo3DViewArray(size uint64) *Array[AVStereo3DView] {
+	return ToAVStereo3DViewArray(AVCalloc(size, SizeOfAVStereo3DView))
+}
+
+const (
+	// AVStereo3DViewPacked wraps AV_STEREO3D_VIEW_PACKED.
+	//
+	//	Frame contains two packed views.
+	AVStereo3DViewPacked AVStereo3DView = C.AV_STEREO3D_VIEW_PACKED
+	// AVStereo3DViewLeft wraps AV_STEREO3D_VIEW_LEFT.
+	//
+	//	Frame contains only the left view.
+	AVStereo3DViewLeft AVStereo3DView = C.AV_STEREO3D_VIEW_LEFT
+	// AVStereo3DViewRight wraps AV_STEREO3D_VIEW_RIGHT.
+	//
+	//	Frame contains only the right view.
+	AVStereo3DViewRight AVStereo3DView = C.AV_STEREO3D_VIEW_RIGHT
+	// AVStereo3DViewUnspec wraps AV_STEREO3D_VIEW_UNSPEC.
+	//
+	//	Content is unspecified.
+	AVStereo3DViewUnspec AVStereo3DView = C.AV_STEREO3D_VIEW_UNSPEC
+)
+
+// --- Enum AVStereo3DPrimaryEye ---
+
+// AVStereo3DPrimaryEye wraps AVStereo3DPrimaryEye.
+//
+//	List of possible primary eyes.
+type AVStereo3DPrimaryEye C.enum_AVStereo3DPrimaryEye
+
+const SizeOfAVStereo3DPrimaryEye = C.sizeof_enum_AVStereo3DPrimaryEye
+
+func ToAVStereo3DPrimaryEyeArray(ptr unsafe.Pointer) *Array[AVStereo3DPrimaryEye] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVStereo3DPrimaryEye]{
+		elemSize: SizeOfAVStereo3DPrimaryEye,
+		loadPtr: func(pointer unsafe.Pointer) AVStereo3DPrimaryEye {
+			ptr := (*AVStereo3DPrimaryEye)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVStereo3DPrimaryEye) {
+			ptr := (*AVStereo3DPrimaryEye)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVStereo3DPrimaryEyeArray(size uint64) *Array[AVStereo3DPrimaryEye] {
+	return ToAVStereo3DPrimaryEyeArray(AVCalloc(size, SizeOfAVStereo3DPrimaryEye))
+}
+
+const (
+	// AVPrimaryEyeNone wraps AV_PRIMARY_EYE_NONE.
+	//
+	//	Neither eye.
+	AVPrimaryEyeNone AVStereo3DPrimaryEye = C.AV_PRIMARY_EYE_NONE
+	// AVPrimaryEyeLeft wraps AV_PRIMARY_EYE_LEFT.
+	//
+	//	Left eye.
+	AVPrimaryEyeLeft AVStereo3DPrimaryEye = C.AV_PRIMARY_EYE_LEFT
+	// AVPrimaryEyeRight wraps AV_PRIMARY_EYE_RIGHT.
+	//
+	//	Right eye
+	AVPrimaryEyeRight AVStereo3DPrimaryEye = C.AV_PRIMARY_EYE_RIGHT
+)
+
+// --- Enum AVThreadMessageFlags ---
+
+// AVThreadMessageFlags wraps AVThreadMessageFlags.
+type AVThreadMessageFlags C.AVThreadMessageFlags
+
+const SizeOfAVThreadMessageFlags = C.sizeof_AVThreadMessageFlags
+
+func ToAVThreadMessageFlagsArray(ptr unsafe.Pointer) *Array[AVThreadMessageFlags] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVThreadMessageFlags]{
+		elemSize: SizeOfAVThreadMessageFlags,
+		loadPtr: func(pointer unsafe.Pointer) AVThreadMessageFlags {
+			ptr := (*AVThreadMessageFlags)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVThreadMessageFlags) {
+			ptr := (*AVThreadMessageFlags)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVThreadMessageFlagsArray(size uint64) *Array[AVThreadMessageFlags] {
+	return ToAVThreadMessageFlagsArray(AVCalloc(size, SizeOfAVThreadMessageFlags))
+}
+
+const (
+	// AVThreadMessageNonblock wraps AV_THREAD_MESSAGE_NONBLOCK.
+	/*
+	   Perform non-blocking operation.
+	   If this flag is set, send and recv operations are non-blocking and
+	   return AVERROR(EAGAIN) immediately if they can not proceed.
+	*/
+	AVThreadMessageNonblock AVThreadMessageFlags = C.AV_THREAD_MESSAGE_NONBLOCK
+)
+
 // --- Enum AVTimecodeFlag ---
 
 // AVTimecodeFlag wraps AVTimecodeFlag.
@@ -5921,6 +6680,356 @@ const (
 	//
 	//	negative time values are allowed
 	AVTimecodeFlagAllownegative AVTimecodeFlag = C.AV_TIMECODE_FLAG_ALLOWNEGATIVE
+)
+
+// --- Enum AVTXType ---
+
+// AVTXType wraps AVTXType.
+type AVTXType C.enum_AVTXType
+
+const SizeOfAVTXType = C.sizeof_enum_AVTXType
+
+func ToAVTXTypeArray(ptr unsafe.Pointer) *Array[AVTXType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVTXType]{
+		elemSize: SizeOfAVTXType,
+		loadPtr: func(pointer unsafe.Pointer) AVTXType {
+			ptr := (*AVTXType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVTXType) {
+			ptr := (*AVTXType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVTXTypeArray(size uint64) *Array[AVTXType] {
+	return ToAVTXTypeArray(AVCalloc(size, SizeOfAVTXType))
+}
+
+const (
+	// AVTxFloatFFT wraps AV_TX_FLOAT_FFT.
+	/*
+	   Standard complex to complex FFT with sample data type of AVComplexFloat,
+	   AVComplexDouble or AVComplexInt32, for each respective variant.
+
+	   Output is not 1/len normalized. Scaling currently unsupported.
+	   The stride parameter must be set to the size of a single sample in bytes.
+	*/
+	AVTxFloatFFT AVTXType = C.AV_TX_FLOAT_FFT
+	// AVTxDoubleFFT wraps AV_TX_DOUBLE_FFT.
+	/*
+	   Standard complex to complex FFT with sample data type of AVComplexFloat,
+	   AVComplexDouble or AVComplexInt32, for each respective variant.
+
+	   Output is not 1/len normalized. Scaling currently unsupported.
+	   The stride parameter must be set to the size of a single sample in bytes.
+	*/
+	AVTxDoubleFFT AVTXType = C.AV_TX_DOUBLE_FFT
+	// AVTxInt32FFT wraps AV_TX_INT32_FFT.
+	/*
+	   Standard complex to complex FFT with sample data type of AVComplexFloat,
+	   AVComplexDouble or AVComplexInt32, for each respective variant.
+
+	   Output is not 1/len normalized. Scaling currently unsupported.
+	   The stride parameter must be set to the size of a single sample in bytes.
+	*/
+	AVTxInt32FFT AVTXType = C.AV_TX_INT32_FFT
+	// AVTxFloatMdct wraps AV_TX_FLOAT_MDCT.
+	/*
+	   Standard MDCT with a sample data type of float, double or int32_t,
+	   respectively. For the float and int32 variants, the scale type is
+	   'float', while for the double variant, it's 'double'.
+	   If scale is NULL, 1.0 will be used as a default.
+
+	   Length is the frame size, not the window size (which is 2x frame).
+	   For forward transforms, the stride specifies the spacing between each
+	   sample in the output array in bytes. The input must be a flat array.
+
+	   For inverse transforms, the stride specifies the spacing between each
+	   sample in the input array in bytes. The output must be a flat array.
+
+	   NOTE: the inverse transform is half-length, meaning the output will not
+	   contain redundant data. This is what most codecs work with. To do a full
+	   inverse transform, set the AV_TX_FULL_IMDCT flag on init.
+	*/
+	AVTxFloatMdct AVTXType = C.AV_TX_FLOAT_MDCT
+	// AVTxDoubleMdct wraps AV_TX_DOUBLE_MDCT.
+	/*
+	   Standard MDCT with a sample data type of float, double or int32_t,
+	   respectively. For the float and int32 variants, the scale type is
+	   'float', while for the double variant, it's 'double'.
+	   If scale is NULL, 1.0 will be used as a default.
+
+	   Length is the frame size, not the window size (which is 2x frame).
+	   For forward transforms, the stride specifies the spacing between each
+	   sample in the output array in bytes. The input must be a flat array.
+
+	   For inverse transforms, the stride specifies the spacing between each
+	   sample in the input array in bytes. The output must be a flat array.
+
+	   NOTE: the inverse transform is half-length, meaning the output will not
+	   contain redundant data. This is what most codecs work with. To do a full
+	   inverse transform, set the AV_TX_FULL_IMDCT flag on init.
+	*/
+	AVTxDoubleMdct AVTXType = C.AV_TX_DOUBLE_MDCT
+	// AVTxInt32Mdct wraps AV_TX_INT32_MDCT.
+	/*
+	   Standard MDCT with a sample data type of float, double or int32_t,
+	   respectively. For the float and int32 variants, the scale type is
+	   'float', while for the double variant, it's 'double'.
+	   If scale is NULL, 1.0 will be used as a default.
+
+	   Length is the frame size, not the window size (which is 2x frame).
+	   For forward transforms, the stride specifies the spacing between each
+	   sample in the output array in bytes. The input must be a flat array.
+
+	   For inverse transforms, the stride specifies the spacing between each
+	   sample in the input array in bytes. The output must be a flat array.
+
+	   NOTE: the inverse transform is half-length, meaning the output will not
+	   contain redundant data. This is what most codecs work with. To do a full
+	   inverse transform, set the AV_TX_FULL_IMDCT flag on init.
+	*/
+	AVTxInt32Mdct AVTXType = C.AV_TX_INT32_MDCT
+	// AVTxFloatRdft wraps AV_TX_FLOAT_RDFT.
+	/*
+	   Real to complex and complex to real DFTs.
+	   For the float and int32 variants, the scale type is 'float', while for
+	   the double variant, it's a 'double'. If scale is NULL, 1.0 will be used
+	   as a default.
+
+	   For forward transforms (R2C), stride must be the spacing between two
+	   samples in bytes. For inverse transforms, the stride must be set
+	   to the spacing between two complex values in bytes.
+
+	   The forward transform performs a real-to-complex DFT of N samples to
+	   N/2+1 complex values.
+
+	   The inverse transform performs a complex-to-real DFT of N/2+1 complex
+	   values to N real samples. The output is not normalized, but can be
+	   made so by setting the scale value to 1.0/len.
+	   NOTE: the inverse transform always overwrites the input.
+	*/
+	AVTxFloatRdft AVTXType = C.AV_TX_FLOAT_RDFT
+	// AVTxDoubleRdft wraps AV_TX_DOUBLE_RDFT.
+	/*
+	   Real to complex and complex to real DFTs.
+	   For the float and int32 variants, the scale type is 'float', while for
+	   the double variant, it's a 'double'. If scale is NULL, 1.0 will be used
+	   as a default.
+
+	   For forward transforms (R2C), stride must be the spacing between two
+	   samples in bytes. For inverse transforms, the stride must be set
+	   to the spacing between two complex values in bytes.
+
+	   The forward transform performs a real-to-complex DFT of N samples to
+	   N/2+1 complex values.
+
+	   The inverse transform performs a complex-to-real DFT of N/2+1 complex
+	   values to N real samples. The output is not normalized, but can be
+	   made so by setting the scale value to 1.0/len.
+	   NOTE: the inverse transform always overwrites the input.
+	*/
+	AVTxDoubleRdft AVTXType = C.AV_TX_DOUBLE_RDFT
+	// AVTxInt32Rdft wraps AV_TX_INT32_RDFT.
+	/*
+	   Real to complex and complex to real DFTs.
+	   For the float and int32 variants, the scale type is 'float', while for
+	   the double variant, it's a 'double'. If scale is NULL, 1.0 will be used
+	   as a default.
+
+	   For forward transforms (R2C), stride must be the spacing between two
+	   samples in bytes. For inverse transforms, the stride must be set
+	   to the spacing between two complex values in bytes.
+
+	   The forward transform performs a real-to-complex DFT of N samples to
+	   N/2+1 complex values.
+
+	   The inverse transform performs a complex-to-real DFT of N/2+1 complex
+	   values to N real samples. The output is not normalized, but can be
+	   made so by setting the scale value to 1.0/len.
+	   NOTE: the inverse transform always overwrites the input.
+	*/
+	AVTxInt32Rdft AVTXType = C.AV_TX_INT32_RDFT
+	// AVTxFloatDct wraps AV_TX_FLOAT_DCT.
+	/*
+	   Real to real (DCT) transforms.
+
+	   The forward transform is a DCT-II.
+	   The inverse transform is a DCT-III.
+
+	   The input array is always overwritten. DCT-III requires that the
+	   input be padded with 2 extra samples. Stride must be set to the
+	   spacing between two samples in bytes.
+	*/
+	AVTxFloatDct AVTXType = C.AV_TX_FLOAT_DCT
+	// AVTxDoubleDct wraps AV_TX_DOUBLE_DCT.
+	/*
+	   Real to real (DCT) transforms.
+
+	   The forward transform is a DCT-II.
+	   The inverse transform is a DCT-III.
+
+	   The input array is always overwritten. DCT-III requires that the
+	   input be padded with 2 extra samples. Stride must be set to the
+	   spacing between two samples in bytes.
+	*/
+	AVTxDoubleDct AVTXType = C.AV_TX_DOUBLE_DCT
+	// AVTxInt32Dct wraps AV_TX_INT32_DCT.
+	/*
+	   Real to real (DCT) transforms.
+
+	   The forward transform is a DCT-II.
+	   The inverse transform is a DCT-III.
+
+	   The input array is always overwritten. DCT-III requires that the
+	   input be padded with 2 extra samples. Stride must be set to the
+	   spacing between two samples in bytes.
+	*/
+	AVTxInt32Dct AVTXType = C.AV_TX_INT32_DCT
+	// AVTxFloatDctI wraps AV_TX_FLOAT_DCT_I.
+	/*
+	   Discrete Cosine Transform I
+
+	   The forward transform is a DCT-I.
+	   The inverse transform is a DCT-I multiplied by 2/(N + 1).
+
+	   The input array is always overwritten.
+	*/
+	AVTxFloatDctI AVTXType = C.AV_TX_FLOAT_DCT_I
+	// AVTxDoubleDctI wraps AV_TX_DOUBLE_DCT_I.
+	/*
+	   Discrete Cosine Transform I
+
+	   The forward transform is a DCT-I.
+	   The inverse transform is a DCT-I multiplied by 2/(N + 1).
+
+	   The input array is always overwritten.
+	*/
+	AVTxDoubleDctI AVTXType = C.AV_TX_DOUBLE_DCT_I
+	// AVTxInt32DctI wraps AV_TX_INT32_DCT_I.
+	/*
+	   Discrete Cosine Transform I
+
+	   The forward transform is a DCT-I.
+	   The inverse transform is a DCT-I multiplied by 2/(N + 1).
+
+	   The input array is always overwritten.
+	*/
+	AVTxInt32DctI AVTXType = C.AV_TX_INT32_DCT_I
+	// AVTxFloatDstI wraps AV_TX_FLOAT_DST_I.
+	/*
+	   Discrete Sine Transform I
+
+	   The forward transform is a DST-I.
+	   The inverse transform is a DST-I multiplied by 2/(N + 1).
+
+	   The input array is always overwritten.
+	*/
+	AVTxFloatDstI AVTXType = C.AV_TX_FLOAT_DST_I
+	// AVTxDoubleDstI wraps AV_TX_DOUBLE_DST_I.
+	/*
+	   Discrete Sine Transform I
+
+	   The forward transform is a DST-I.
+	   The inverse transform is a DST-I multiplied by 2/(N + 1).
+
+	   The input array is always overwritten.
+	*/
+	AVTxDoubleDstI AVTXType = C.AV_TX_DOUBLE_DST_I
+	// AVTxInt32DstI wraps AV_TX_INT32_DST_I.
+	/*
+	   Discrete Sine Transform I
+
+	   The forward transform is a DST-I.
+	   The inverse transform is a DST-I multiplied by 2/(N + 1).
+
+	   The input array is always overwritten.
+	*/
+	AVTxInt32DstI AVTXType = C.AV_TX_INT32_DST_I
+	// AVTxNb wraps AV_TX_NB.
+	//
+	//	Not part of the API, do not use
+	AVTxNb AVTXType = C.AV_TX_NB
+)
+
+// --- Enum AVTXFlags ---
+
+// AVTXFlags wraps AVTXFlags.
+//
+//	Flags for av_tx_init()
+type AVTXFlags C.enum_AVTXFlags
+
+const SizeOfAVTXFlags = C.sizeof_enum_AVTXFlags
+
+func ToAVTXFlagsArray(ptr unsafe.Pointer) *Array[AVTXFlags] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVTXFlags]{
+		elemSize: SizeOfAVTXFlags,
+		loadPtr: func(pointer unsafe.Pointer) AVTXFlags {
+			ptr := (*AVTXFlags)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVTXFlags) {
+			ptr := (*AVTXFlags)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVTXFlagsArray(size uint64) *Array[AVTXFlags] {
+	return ToAVTXFlagsArray(AVCalloc(size, SizeOfAVTXFlags))
+}
+
+const (
+	// AVTxInplace wraps AV_TX_INPLACE.
+	/*
+	   Allows for in-place transformations, where input == output.
+	   May be unsupported or slower for some transform types.
+	*/
+	AVTxInplace AVTXFlags = C.AV_TX_INPLACE
+	// AVTxUnaligned wraps AV_TX_UNALIGNED.
+	/*
+	   Relaxes alignment requirement for the in and out arrays of av_tx_fn().
+	   May be slower with certain transform types.
+	*/
+	AVTxUnaligned AVTXFlags = C.AV_TX_UNALIGNED
+	// AVTxFullImdct wraps AV_TX_FULL_IMDCT.
+	/*
+	   Performs a full inverse MDCT rather than leaving out samples that can be
+	   derived through symmetry. Requires an output array of 'len' floats,
+	   rather than the usual 'len/2' floats.
+	   Ignored for all transforms but inverse MDCTs.
+	*/
+	AVTxFullImdct AVTXFlags = C.AV_TX_FULL_IMDCT
+	// AVTxRealToReal wraps AV_TX_REAL_TO_REAL.
+	/*
+	   Perform a real to half-complex RDFT.
+	   Only the real, or imaginary coefficients will
+	   be output, depending on the flag used. Only available for forward RDFTs.
+	   Output array must have enough space to hold N complex values
+	   (regular size for a real to complex transform).
+	*/
+	AVTxRealToReal AVTXFlags = C.AV_TX_REAL_TO_REAL
+	// AVTxRealToImaginary wraps AV_TX_REAL_TO_IMAGINARY.
+	/*
+	   Perform a real to half-complex RDFT.
+	   Only the real, or imaginary coefficients will
+	   be output, depending on the flag used. Only available for forward RDFTs.
+	   Output array must have enough space to hold N complex values
+	   (regular size for a real to complex transform).
+	*/
+	AVTxRealToImaginary AVTXFlags = C.AV_TX_REAL_TO_IMAGINARY
 )
 
 // --- Enum AVVideoEncParamsType ---

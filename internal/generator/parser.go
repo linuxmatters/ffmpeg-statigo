@@ -39,24 +39,34 @@ var files = []string{
 	"libavformat/avio.h",
 	"libavformat/version.h",
 	"libavformat/version_major.h",
-	//"libavutil/ambient_viewing_environment.h",
-	////"libavutil/attributes.h", // includecs object-like macros
-	////"libavutil/audio_fifo.h", // includecs object-like macros
+	////"libavutil/adler32.h", // Unknown typedef kind TypedefDecl
+	"libavutil/aes.h",
+	"libavutil/aes_ctr.h",
+	"libavutil/ambient_viewing_environment.h",
+	////"libavutil/attributes.h", // could not determine what C.attribute_deprecated refers to
+	"libavutil/audio_fifo.h",
 	"libavutil/avassert.h",
 	"libavutil/avconfig.h",
-	////"libavutil/avstring.h", // includecs object-like macros
+	"libavutil/avstring.h",
 	"libavutil/avutil.h",
-	//"libavutil/bprint.h",
-	////"libavutil/bswap.h", // includecs object-like macros
+	"libavutil/base64.h",
+	////"libavutil/blowfish.h", // undefined: ToUint32Array
+	////"libavutil/bprint.h", // could not determine what C.AVEscapeMode refers to
+	"libavutil/bswap.h",
 	"libavutil/buffer.h",
+	"libavutil/camellia.h",
+	"libavutil/cast5.h",
 	"libavutil/channel_layout.h",
-	////"libavutil/common.h", // includecs object-like macros
+	////"libavutil/common.h", //undefined: int8_t int16_t int32_t
 	"libavutil/container_fifo.h",
 	"libavutil/cpu.h",
-	////"libavutil/detection_bbox.h", // includecs object-like macros
+	////"libavutil/crc.h", // Unknown typedef kind TypedefDecl
+	////"libavutil/csp.h", // Unknown typedef kind TypedefDecl
+	"libavutil/des.h",
+	"libavutil/detection_bbox.h",
 	"libavutil/dict.h",
 	"libavutil/display.h",
-	////"libavutil/dovi_meta.h", // includecs object-like macros
+	////"libavutil/dovi_meta.h", // undefined: ToUint16Array
 	"libavutil/downmix_info.h",
 	"libavutil/encryption_info.h",
 	"libavutil/error.h",
@@ -64,43 +74,61 @@ var files = []string{
 	"libavutil/executor.h",
 	"libavutil/ffversion.h",
 	"libavutil/fifo.h",
-	////"libavutil/file.h", // includecs object-like macros
-	//"libavutil/film_grain_params.h",
+	"libavutil/file.h",
+	////"libavutil/film_grain_params.h", // undefined: ToUint16Array
 	"libavutil/frame.h",
-	//"libavutil/hdr_dynamic_metadata.h",
-	//"libavutil/hdr_dynamic_vivid_metadata.h",
+	"libavutil/hash.h",
+	"libavutil/hdr_dynamic_metadata.h",
+	"libavutil/hdr_dynamic_vivid_metadata.h",
+	"libavutil/hmac.h",
 	"libavutil/hwcontext.h",
 	////"libavutil/hwcontext_cuda.h",
 	////"libavutil/hwcontext_qsv.h",
 	////"libavutil/hwcontext_videotoolbox.h",
 	////"libavutil/hwcontext_vulkan.h",
-	////"libavutil/iamf.h", // includecs object-like macros
-	//"libavutil/imgutils.h", // undefined: ptrdiff_t
-	////"libavutil/intfloat.h", // includecs object-like macros
-	////"libavutil/intreadwrite.h",
-	////"libavutil/lfg.h",
+	"libavutil/iamf.h",
+	////"libavutil/imgutils.h", // undefined: ptrdiff_t
+	"libavutil/intfloat.h",
+	////"libavutil/intreadwrite.h", //Unknown typedef kind UnionDecl
+	////"libavutil/lfg.h", //undefined: ToUintArray
 	"libavutil/log.h",
-	////"libavutil/macros.h", // includes object-like macros
-	//"libavutil/mastering_display_metadata.h",
+	"libavutil/lzo.h",
+	"libavutil/macros.h",
+	"libavutil/mastering_display_metadata.h",
 	"libavutil/mathematics.h",
 	"libavutil/mem.h",
-	//"libavutil/motion_vector.h",
+	"libavutil/motion_vector.h",
+	"libavutil/murmur3.h",
 	"libavutil/opt.h",
 	"libavutil/parseutils.h",
-	////"libavutil/pixdesc.h",
-	//"libavutil/pixelutils.h", // undefined: av_pixelutils_sad_fn
+	////"libavutil/pixdesc.h",  // segfault on parsing
+	////"libavutil/pixelutils.h", // undefined: av_pixelutils_sad_fn
 	"libavutil/pixfmt.h",
-	//"libavutil/random_seed.h",
+	"libavutil/random_seed.h",
 	"libavutil/rational.h",
-	//"libavutil/refstruct.h", //typedef name AVRefStructOpaque
+	"libavutil/rc4.h",
+	////"libavutil/refstruct.h", //typedef name AVRefStructOpaque
 	"libavutil/replaygain.h",
+	"libavutil/ripemd.h",
 	"libavutil/samplefmt.h",
+	"libavutil/sha.h",
+	"libavutil/sha512.h",
+	"libavutil/spherical.h",
+	"libavutil/stereo3d.h",
+	"libavutil/tdrdi.h",
+	"libavutil/tea.h",
+	"libavutil/threadmessage.h",
 	"libavutil/time.h",
 	"libavutil/timecode.h",
 	"libavutil/timestamp.h",
+	"libavutil/tree.h",
+	"libavutil/twofish.h",
+	"libavutil/tx.h",
+	////"libavutil/uuid.h", //Unknown typedef kind NoDeclFound
 	"libavutil/version.h",
 	"libavutil/video_enc_params.h",
 	"libavutil/video_hint.h",
+	////"libavutil/xtea.h", // undefined: ToUint32Array
 	"libswresample/version.h",
 	"libswresample/version_major.h",
 	"libswresample/swresample.h",
