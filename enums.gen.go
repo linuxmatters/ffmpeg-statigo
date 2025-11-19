@@ -23,6 +23,7 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/adler32.h>
 // #include <libavutil/aes.h>
 // #include <libavutil/aes_ctr.h>
 // #include <libavutil/ambient_viewing_environment.h>
@@ -40,6 +41,8 @@ import "unsafe"
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/crc.h>
+// #include <libavutil/csp.h>
 // #include <libavutil/des.h>
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
@@ -3322,6 +3325,63 @@ const (
 	   and not be interpreted by AVContainerFifo code.
 	*/
 	AVContainerFifoFlagUser AVContainerFifoFlags = C.AV_CONTAINER_FIFO_FLAG_USER
+)
+
+// --- Enum AVCRCId ---
+
+// AVCRCId wraps AVCRCId.
+type AVCRCId C.AVCRCId
+
+const SizeOfAVCRCId = C.sizeof_AVCRCId
+
+func ToAVCRCIdArray(ptr unsafe.Pointer) *Array[AVCRCId] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVCRCId]{
+		elemSize: SizeOfAVCRCId,
+		loadPtr: func(pointer unsafe.Pointer) AVCRCId {
+			ptr := (*AVCRCId)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVCRCId) {
+			ptr := (*AVCRCId)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVCRCIdArray(size uint64) *Array[AVCRCId] {
+	return ToAVCRCIdArray(AVCalloc(size, SizeOfAVCRCId))
+}
+
+const (
+	// AVCrc8Atm wraps AV_CRC_8_ATM.
+	AVCrc8Atm AVCRCId = C.AV_CRC_8_ATM
+	// AVCrc16Ansi wraps AV_CRC_16_ANSI.
+	AVCrc16Ansi AVCRCId = C.AV_CRC_16_ANSI
+	// AVCrc16Ccitt wraps AV_CRC_16_CCITT.
+	AVCrc16Ccitt AVCRCId = C.AV_CRC_16_CCITT
+	// AVCrc32Ieee wraps AV_CRC_32_IEEE.
+	AVCrc32Ieee AVCRCId = C.AV_CRC_32_IEEE
+	// AVCrc32IeeeLe wraps AV_CRC_32_IEEE_LE.
+	//
+	//	reversed bitorder version of AV_CRC_32_IEEE
+	AVCrc32IeeeLe AVCRCId = C.AV_CRC_32_IEEE_LE
+	// AVCrc16AnsiLe wraps AV_CRC_16_ANSI_LE.
+	//
+	//	reversed bitorder version of AV_CRC_16_ANSI
+	AVCrc16AnsiLe AVCRCId = C.AV_CRC_16_ANSI_LE
+	// AVCrc24Ieee wraps AV_CRC_24_IEEE.
+	AVCrc24Ieee AVCRCId = C.AV_CRC_24_IEEE
+	// AVCrc8Ebu wraps AV_CRC_8_EBU.
+	AVCrc8Ebu AVCRCId = C.AV_CRC_8_EBU
+	// AVCrcMax wraps AV_CRC_MAX.
+	//
+	//	Not part of public API! Do not use outside libavutil.
+	AVCrcMax AVCRCId = C.AV_CRC_MAX
 )
 
 // --- Enum AVDOVICompression ---

@@ -23,6 +23,7 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/adler32.h>
 // #include <libavutil/aes.h>
 // #include <libavutil/aes_ctr.h>
 // #include <libavutil/ambient_viewing_environment.h>
@@ -40,6 +41,8 @@ import "unsafe"
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/crc.h>
+// #include <libavutil/csp.h>
 // #include <libavutil/des.h>
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
@@ -15024,6 +15027,263 @@ func ToAVContainerFifoArray(ptr unsafe.Pointer) *Array[*AVContainerFifo] {
 	}
 }
 
+// --- Struct AVLumaCoefficients ---
+
+// AVLumaCoefficients wraps AVLumaCoefficients.
+/*
+  Struct containing luma coefficients to be used for RGB to YUV/YCoCg, or similar
+  calculations.
+*/
+type AVLumaCoefficients struct {
+	ptr *C.AVLumaCoefficients
+}
+
+func (s *AVLumaCoefficients) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVLumaCoefficientsArray(ptr unsafe.Pointer) *Array[*AVLumaCoefficients] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVLumaCoefficients]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVLumaCoefficients {
+			ptr := (**C.AVLumaCoefficients)(pointer)
+			value := *ptr
+			var valueMapped *AVLumaCoefficients
+			if value != nil {
+				valueMapped = &AVLumaCoefficients{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVLumaCoefficients) {
+			ptr := (**C.AVLumaCoefficients)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Cr gets the cr field.
+func (s *AVLumaCoefficients) Cr() *AVRational {
+	value := s.ptr.cr
+	return &AVRational{value: value}
+}
+
+// SetCr sets the cr field.
+func (s *AVLumaCoefficients) SetCr(value *AVRational) {
+	s.ptr.cr = value.value
+}
+
+// Cg gets the cg field.
+func (s *AVLumaCoefficients) Cg() *AVRational {
+	value := s.ptr.cg
+	return &AVRational{value: value}
+}
+
+// SetCg sets the cg field.
+func (s *AVLumaCoefficients) SetCg(value *AVRational) {
+	s.ptr.cg = value.value
+}
+
+// Cb gets the cb field.
+func (s *AVLumaCoefficients) Cb() *AVRational {
+	value := s.ptr.cb
+	return &AVRational{value: value}
+}
+
+// SetCb sets the cb field.
+func (s *AVLumaCoefficients) SetCb(value *AVRational) {
+	s.ptr.cb = value.value
+}
+
+// --- Struct AVCIExy ---
+
+// AVCIExy wraps AVCIExy.
+/*
+  Struct containing chromaticity x and y values for the standard CIE 1931
+  chromaticity definition.
+*/
+type AVCIExy struct {
+	ptr *C.AVCIExy
+}
+
+func (s *AVCIExy) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVCIExyArray(ptr unsafe.Pointer) *Array[*AVCIExy] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVCIExy]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVCIExy {
+			ptr := (**C.AVCIExy)(pointer)
+			value := *ptr
+			var valueMapped *AVCIExy
+			if value != nil {
+				valueMapped = &AVCIExy{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVCIExy) {
+			ptr := (**C.AVCIExy)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// X gets the x field.
+func (s *AVCIExy) X() *AVRational {
+	value := s.ptr.x
+	return &AVRational{value: value}
+}
+
+// SetX sets the x field.
+func (s *AVCIExy) SetX(value *AVRational) {
+	s.ptr.x = value.value
+}
+
+// Y gets the y field.
+func (s *AVCIExy) Y() *AVRational {
+	value := s.ptr.y
+	return &AVRational{value: value}
+}
+
+// SetY sets the y field.
+func (s *AVCIExy) SetY(value *AVRational) {
+	s.ptr.y = value.value
+}
+
+// --- Struct AVPrimaryCoefficients ---
+
+// AVPrimaryCoefficients wraps AVPrimaryCoefficients.
+/*
+  Struct defining the red, green, and blue primary locations in terms of CIE
+  1931 chromaticity x and y.
+*/
+type AVPrimaryCoefficients struct {
+	ptr *C.AVPrimaryCoefficients
+}
+
+func (s *AVPrimaryCoefficients) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVPrimaryCoefficientsArray(ptr unsafe.Pointer) *Array[*AVPrimaryCoefficients] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVPrimaryCoefficients]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVPrimaryCoefficients {
+			ptr := (**C.AVPrimaryCoefficients)(pointer)
+			value := *ptr
+			var valueMapped *AVPrimaryCoefficients
+			if value != nil {
+				valueMapped = &AVPrimaryCoefficients{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVPrimaryCoefficients) {
+			ptr := (**C.AVPrimaryCoefficients)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// R gets the r field.
+func (s *AVPrimaryCoefficients) R() *AVCIExy {
+	value := &s.ptr.r
+	return &AVCIExy{ptr: value}
+}
+
+// G gets the g field.
+func (s *AVPrimaryCoefficients) G() *AVCIExy {
+	value := &s.ptr.g
+	return &AVCIExy{ptr: value}
+}
+
+// B gets the b field.
+func (s *AVPrimaryCoefficients) B() *AVCIExy {
+	value := &s.ptr.b
+	return &AVCIExy{ptr: value}
+}
+
+// --- Struct AVColorPrimariesDesc ---
+
+// AVColorPrimariesDesc wraps AVColorPrimariesDesc.
+/*
+  Struct that contains both white point location and primaries location, providing
+  the complete description of a color gamut.
+*/
+type AVColorPrimariesDesc struct {
+	ptr *C.AVColorPrimariesDesc
+}
+
+func (s *AVColorPrimariesDesc) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVColorPrimariesDescArray(ptr unsafe.Pointer) *Array[*AVColorPrimariesDesc] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVColorPrimariesDesc]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVColorPrimariesDesc {
+			ptr := (**C.AVColorPrimariesDesc)(pointer)
+			value := *ptr
+			var valueMapped *AVColorPrimariesDesc
+			if value != nil {
+				valueMapped = &AVColorPrimariesDesc{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVColorPrimariesDesc) {
+			ptr := (**C.AVColorPrimariesDesc)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Wp gets the wp field.
+func (s *AVColorPrimariesDesc) Wp() *AVWhitepointCoefficients {
+	value := &s.ptr.wp
+	return &AVWhitepointCoefficients{ptr: value}
+}
+
+// Prim gets the prim field.
+func (s *AVColorPrimariesDesc) Prim() *AVPrimaryCoefficients {
+	value := &s.ptr.prim
+	return &AVPrimaryCoefficients{ptr: value}
+}
+
 // --- Struct AVDES ---
 
 // AVDES wraps AVDES.
@@ -16502,7 +16762,16 @@ func (s *AVDOVIDmLevel2) SetTrimSaturationGain(value uint16) {
 	s.ptr.trim_saturation_gain = (C.uint16_t)(value)
 }
 
-// ms_weight skipped due to unexpected IdentType int16_t
+// MsWeight gets the ms_weight field.
+func (s *AVDOVIDmLevel2) MsWeight() int16 {
+	value := s.ptr.ms_weight
+	return int16(value)
+}
+
+// SetMsWeight sets the ms_weight field.
+func (s *AVDOVIDmLevel2) SetMsWeight(value int16) {
+	s.ptr.ms_weight = (C.int16_t)(value)
+}
 
 // --- Struct AVDOVIDmLevel3 ---
 
@@ -17019,7 +17288,11 @@ func (s *AVDOVIDmLevel9) SetSourcePrimaryIndex(value uint8) {
 	s.ptr.source_primary_index = (C.uint8_t)(value)
 }
 
-// source_display_primaries skipped due to unexpected IdentType AVColorPrimariesDesc
+// SourceDisplayPrimaries gets the source_display_primaries field.
+func (s *AVDOVIDmLevel9) SourceDisplayPrimaries() *AVColorPrimariesDesc {
+	value := &s.ptr.source_display_primaries
+	return &AVColorPrimariesDesc{ptr: value}
+}
 
 // --- Struct AVDOVIDmLevel10 ---
 
@@ -17108,7 +17381,11 @@ func (s *AVDOVIDmLevel10) SetTargetPrimaryIndex(value uint8) {
 	s.ptr.target_primary_index = (C.uint8_t)(value)
 }
 
-// target_display_primaries skipped due to unexpected IdentType AVColorPrimariesDesc
+// TargetDisplayPrimaries gets the target_display_primaries field.
+func (s *AVDOVIDmLevel10) TargetDisplayPrimaries() *AVColorPrimariesDesc {
+	value := &s.ptr.target_display_primaries
+	return &AVColorPrimariesDesc{ptr: value}
+}
 
 // --- Struct AVDOVIDmLevel11 ---
 
@@ -24779,7 +25056,26 @@ func ToAVMotionVectorArray(ptr unsafe.Pointer) *Array[*AVMotionVector] {
 	}
 }
 
-// source skipped due to unexpected IdentType int32_t
+// Source gets the source field.
+/*
+  Where the current macroblock comes from; negative value when it comes
+  from the past, positive value when it comes from the future.
+  XXX: set exact relative ref frame reference instead of a +/- 1 "direction".
+*/
+func (s *AVMotionVector) Source() int32 {
+	value := s.ptr.source
+	return int32(value)
+}
+
+// SetSource sets the source field.
+/*
+  Where the current macroblock comes from; negative value when it comes
+  from the past, positive value when it comes from the future.
+  XXX: set exact relative ref frame reference instead of a +/- 1 "direction".
+*/
+func (s *AVMotionVector) SetSource(value int32) {
+	s.ptr.source = (C.int32_t)(value)
+}
 
 // W gets the w field.
 //
@@ -24811,13 +25107,65 @@ func (s *AVMotionVector) SetH(value uint8) {
 	s.ptr.h = (C.uint8_t)(value)
 }
 
-// src_x skipped due to unexpected IdentType int16_t
+// SrcX gets the src_x field.
+//
+//	Absolute source position. Can be outside the frame area.
+func (s *AVMotionVector) SrcX() int16 {
+	value := s.ptr.src_x
+	return int16(value)
+}
 
-// src_y skipped due to unexpected IdentType int16_t
+// SetSrcX sets the src_x field.
+//
+//	Absolute source position. Can be outside the frame area.
+func (s *AVMotionVector) SetSrcX(value int16) {
+	s.ptr.src_x = (C.int16_t)(value)
+}
 
-// dst_x skipped due to unexpected IdentType int16_t
+// SrcY gets the src_y field.
+//
+//	Absolute source position. Can be outside the frame area.
+func (s *AVMotionVector) SrcY() int16 {
+	value := s.ptr.src_y
+	return int16(value)
+}
 
-// dst_y skipped due to unexpected IdentType int16_t
+// SetSrcY sets the src_y field.
+//
+//	Absolute source position. Can be outside the frame area.
+func (s *AVMotionVector) SetSrcY(value int16) {
+	s.ptr.src_y = (C.int16_t)(value)
+}
+
+// DstX gets the dst_x field.
+//
+//	Absolute destination position. Can be outside the frame area.
+func (s *AVMotionVector) DstX() int16 {
+	value := s.ptr.dst_x
+	return int16(value)
+}
+
+// SetDstX sets the dst_x field.
+//
+//	Absolute destination position. Can be outside the frame area.
+func (s *AVMotionVector) SetDstX(value int16) {
+	s.ptr.dst_x = (C.int16_t)(value)
+}
+
+// DstY gets the dst_y field.
+//
+//	Absolute destination position. Can be outside the frame area.
+func (s *AVMotionVector) DstY() int16 {
+	value := s.ptr.dst_y
+	return int16(value)
+}
+
+// SetDstY sets the dst_y field.
+//
+//	Absolute destination position. Can be outside the frame area.
+func (s *AVMotionVector) SetDstY(value int16) {
+	s.ptr.dst_y = (C.int16_t)(value)
+}
 
 // Flags gets the flags field.
 /*
@@ -24838,9 +25186,47 @@ func (s *AVMotionVector) SetFlags(value uint64) {
 	s.ptr.flags = (C.uint64_t)(value)
 }
 
-// motion_x skipped due to unexpected IdentType int32_t
+// MotionX gets the motion_x field.
+/*
+  Motion vector
+  src_x = dst_x + motion_x / motion_scale
+  src_y = dst_y + motion_y / motion_scale
+*/
+func (s *AVMotionVector) MotionX() int32 {
+	value := s.ptr.motion_x
+	return int32(value)
+}
 
-// motion_y skipped due to unexpected IdentType int32_t
+// SetMotionX sets the motion_x field.
+/*
+  Motion vector
+  src_x = dst_x + motion_x / motion_scale
+  src_y = dst_y + motion_y / motion_scale
+*/
+func (s *AVMotionVector) SetMotionX(value int32) {
+	s.ptr.motion_x = (C.int32_t)(value)
+}
+
+// MotionY gets the motion_y field.
+/*
+  Motion vector
+  src_x = dst_x + motion_x / motion_scale
+  src_y = dst_y + motion_y / motion_scale
+*/
+func (s *AVMotionVector) MotionY() int32 {
+	value := s.ptr.motion_y
+	return int32(value)
+}
+
+// SetMotionY sets the motion_y field.
+/*
+  Motion vector
+  src_x = dst_x + motion_x / motion_scale
+  src_y = dst_y + motion_y / motion_scale
+*/
+func (s *AVMotionVector) SetMotionY(value int32) {
+	s.ptr.motion_y = (C.int32_t)(value)
+}
 
 // MotionScale gets the motion_scale field.
 func (s *AVMotionVector) MotionScale() uint16 {
@@ -25639,7 +26025,24 @@ func ToAVReplayGainArray(ptr unsafe.Pointer) *Array[*AVReplayGain] {
 	}
 }
 
-// track_gain skipped due to unexpected IdentType int32_t
+// TrackGain gets the track_gain field.
+/*
+  Track replay gain in microbels (divide by 100000 to get the value in dB).
+  Should be set to INT32_MIN when unknown.
+*/
+func (s *AVReplayGain) TrackGain() int32 {
+	value := s.ptr.track_gain
+	return int32(value)
+}
+
+// SetTrackGain sets the track_gain field.
+/*
+  Track replay gain in microbels (divide by 100000 to get the value in dB).
+  Should be set to INT32_MIN when unknown.
+*/
+func (s *AVReplayGain) SetTrackGain(value int32) {
+	s.ptr.track_gain = (C.int32_t)(value)
+}
 
 // TrackPeak gets the track_peak field.
 /*
@@ -25660,7 +26063,20 @@ func (s *AVReplayGain) SetTrackPeak(value uint32) {
 	s.ptr.track_peak = (C.uint32_t)(value)
 }
 
-// album_gain skipped due to unexpected IdentType int32_t
+// AlbumGain gets the album_gain field.
+//
+//	Same as track_gain, but for the whole album.
+func (s *AVReplayGain) AlbumGain() int32 {
+	value := s.ptr.album_gain
+	return int32(value)
+}
+
+// SetAlbumGain sets the album_gain field.
+//
+//	Same as track_gain, but for the whole album.
+func (s *AVReplayGain) SetAlbumGain(value int32) {
+	s.ptr.album_gain = (C.int32_t)(value)
+}
 
 // AlbumPeak gets the album_peak field.
 //
@@ -25855,11 +26271,50 @@ func (s *AVSphericalMapping) SetProjection(value AVSphericalProjection) {
 	s.ptr.projection = (C.enum_AVSphericalProjection)(value)
 }
 
-// yaw skipped due to unexpected IdentType int32_t
+// Yaw gets the yaw field.
+//
+//	Rotation around the up vector [-180, 180].
+func (s *AVSphericalMapping) Yaw() int32 {
+	value := s.ptr.yaw
+	return int32(value)
+}
 
-// pitch skipped due to unexpected IdentType int32_t
+// SetYaw sets the yaw field.
+//
+//	Rotation around the up vector [-180, 180].
+func (s *AVSphericalMapping) SetYaw(value int32) {
+	s.ptr.yaw = (C.int32_t)(value)
+}
 
-// roll skipped due to unexpected IdentType int32_t
+// Pitch gets the pitch field.
+//
+//	Rotation around the right vector [-90, 90].
+func (s *AVSphericalMapping) Pitch() int32 {
+	value := s.ptr.pitch
+	return int32(value)
+}
+
+// SetPitch sets the pitch field.
+//
+//	Rotation around the right vector [-90, 90].
+func (s *AVSphericalMapping) SetPitch(value int32) {
+	s.ptr.pitch = (C.int32_t)(value)
+}
+
+// Roll gets the roll field.
+//
+//	Rotation around the forward vector [-180, 180].
+func (s *AVSphericalMapping) Roll() int32 {
+	value := s.ptr.roll
+	return int32(value)
+}
+
+// SetRoll sets the roll field.
+//
+//	Rotation around the forward vector [-180, 180].
+func (s *AVSphericalMapping) SetRoll(value int32) {
+	s.ptr.roll = (C.int32_t)(value)
+}
 
 // BoundLeft gets the bound_left field.
 //
@@ -26422,7 +26877,24 @@ func (s *AV3DReferenceDisplay) SetAdditionalShiftPresentFlag(value uint8) {
 	s.ptr.additional_shift_present_flag = (C.uint8_t)(value)
 }
 
-// num_sample_shift skipped due to unexpected IdentType int16_t
+// NumSampleShift gets the num_sample_shift field.
+/*
+  The recommended additional horizontal shift for a stereo pair corresponding to the n-th
+  reference baseline and the n-th reference display.
+*/
+func (s *AV3DReferenceDisplay) NumSampleShift() int16 {
+	value := s.ptr.num_sample_shift
+	return int16(value)
+}
+
+// SetNumSampleShift sets the num_sample_shift field.
+/*
+  The recommended additional horizontal shift for a stereo pair corresponding to the n-th
+  reference baseline and the n-th reference display.
+*/
+func (s *AV3DReferenceDisplay) SetNumSampleShift(value int16) {
+	s.ptr.num_sample_shift = (C.int16_t)(value)
+}
 
 // --- Struct AVTEA ---
 
@@ -26879,9 +27351,27 @@ func ToAVComplexInt32Array(ptr unsafe.Pointer) *Array[*AVComplexInt32] {
 	}
 }
 
-// re skipped due to unexpected IdentType int32_t
+// Re gets the re field.
+func (s *AVComplexInt32) Re() int32 {
+	value := s.ptr.re
+	return int32(value)
+}
 
-// im skipped due to unexpected IdentType int32_t
+// SetRe sets the re field.
+func (s *AVComplexInt32) SetRe(value int32) {
+	s.ptr.re = (C.int32_t)(value)
+}
+
+// Im gets the im field.
+func (s *AVComplexInt32) Im() int32 {
+	value := s.ptr.im
+	return int32(value)
+}
+
+// SetIm sets the im field.
+func (s *AVComplexInt32) SetIm(value int32) {
+	s.ptr.im = (C.int32_t)(value)
+}
 
 // --- Struct AVVideoEncParams ---
 
@@ -27001,7 +27491,28 @@ func (s *AVVideoEncParams) SetType(value AVVideoEncParamsType) {
 	s.ptr._type = (C.enum_AVVideoEncParamsType)(value)
 }
 
-// qp skipped due to unexpected IdentType int32_t
+// Qp gets the qp field.
+/*
+  Base quantisation parameter for the frame. The final quantiser for a
+  given block in a given plane is obtained from this value, possibly
+  combined with {@code delta_qp} and the per-block delta in a manner
+  documented for each type.
+*/
+func (s *AVVideoEncParams) Qp() int32 {
+	value := s.ptr.qp
+	return int32(value)
+}
+
+// SetQp sets the qp field.
+/*
+  Base quantisation parameter for the frame. The final quantiser for a
+  given block in a given plane is obtained from this value, possibly
+  combined with {@code delta_qp} and the per-block delta in a manner
+  documented for each type.
+*/
+func (s *AVVideoEncParams) SetQp(value int32) {
+	s.ptr.qp = (C.int32_t)(value)
+}
 
 // delta_qp skipped due to multi dim const array
 
@@ -27124,7 +27635,24 @@ func (s *AVVideoBlockParams) SetH(value int) {
 	s.ptr.h = (C.int)(value)
 }
 
-// delta_qp skipped due to unexpected IdentType int32_t
+// DeltaQp gets the delta_qp field.
+/*
+  Difference between this block's final quantization parameter and the
+  corresponding per-frame value.
+*/
+func (s *AVVideoBlockParams) DeltaQp() int32 {
+	value := s.ptr.delta_qp
+	return int32(value)
+}
+
+// SetDeltaQp sets the delta_qp field.
+/*
+  Difference between this block's final quantization parameter and the
+  corresponding per-frame value.
+*/
+func (s *AVVideoBlockParams) SetDeltaQp(value int32) {
+	s.ptr.delta_qp = (C.int32_t)(value)
+}
 
 // --- Struct AVVideoRect ---
 

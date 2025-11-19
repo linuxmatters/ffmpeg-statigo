@@ -175,3 +175,15 @@ func (s *AVRational) String() string {
 func FFIOWFourCC(s *AVIOContext, a uint8, b uint8, c uint8, d uint8) {
 	AVIOWl32(s, uint(a)|(uint(b)<<8)|(uint(c)<<16)|(uint(d)<<24))
 }
+
+// AVWhitepointCoefficients is a typedef alias for AVCIExy in FFmpeg.
+// This represents white point chromaticity coordinates.
+type AVWhitepointCoefficients = AVCIExy
+
+// AVAdler is a typedef alias for uint32_t in FFmpeg.
+// This represents an Adler-32 checksum value.
+type AVAdler = uint32
+
+// AVCRC is a typedef alias for uint32_t in FFmpeg.
+// This represents a CRC (Cyclic Redundancy Check) value.
+type AVCRC = uint32
