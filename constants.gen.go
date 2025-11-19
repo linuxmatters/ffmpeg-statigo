@@ -21,6 +21,7 @@ package ffmpeg
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/adler32.h>
 // #include <libavutil/aes.h>
 // #include <libavutil/aes_ctr.h>
 // #include <libavutil/ambient_viewing_environment.h>
@@ -38,6 +39,8 @@ package ffmpeg
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/crc.h>
+// #include <libavutil/csp.h>
 // #include <libavutil/des.h>
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>

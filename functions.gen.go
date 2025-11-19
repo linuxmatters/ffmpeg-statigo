@@ -23,6 +23,7 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/adler32.h>
 // #include <libavutil/aes.h>
 // #include <libavutil/aes_ctr.h>
 // #include <libavutil/ambient_viewing_environment.h>
@@ -40,6 +41,8 @@ import "unsafe"
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/crc.h>
+// #include <libavutil/csp.h>
 // #include <libavutil/des.h>
 // #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
@@ -7095,6 +7098,26 @@ func AVIOHandshake(c *AVIOContext) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_adler32_update ---
+
+// AVAdler32Update wraps av_adler32_update.
+/*
+  Calculate the Adler32 checksum of a buffer.
+
+  Passing the return value to a subsequent av_adler32_update() call
+  allows the checksum of multiple buffers to be calculated as though
+  they were concatenated.
+
+  @param adler initial checksum value
+  @param buf   pointer to input buffer
+  @param len   size of input buffer
+  @return      updated checksum
+*/
+func AVAdler32Update(adler AVAdler, buf unsafe.Pointer, len uint64) AVAdler {
+	ret := C.av_adler32_update(C.AVAdler(adler), (*C.uint8_t)(buf), C.size_t(len))
+	return AVAdler(ret)
+}
+
 // --- Function av_aes_alloc ---
 
 // AVAesAlloc wraps av_aes_alloc.
@@ -9326,6 +9349,171 @@ func AVCpuForceCount(count int) {
 func AVCpuMaxAlign() uint64 {
 	ret := C.av_cpu_max_align()
 	return uint64(ret)
+}
+
+// --- Function av_crc_init ---
+
+// av_crc_init skipped due to ctx
+
+// --- Function av_crc_get_table ---
+
+// AVCrcGetTable wraps av_crc_get_table.
+/*
+  Get an initialized standard CRC table.
+  @param crc_id ID of a standard CRC
+  @return a pointer to the CRC table or NULL on failure
+*/
+func AVCrcGetTable(crcId AVCRCId) *AVCRC {
+	ret := C.av_crc_get_table(C.AVCRCId(crcId))
+	return (*AVCRC)(unsafe.Pointer(ret))
+}
+
+// --- Function av_crc ---
+
+// av_crc skipped due to ctx
+
+// --- Function av_csp_luma_coeffs_from_avcsp ---
+
+// AVCspLumaCoeffsFromAVCsp wraps av_csp_luma_coeffs_from_avcsp.
+/*
+  Retrieves the Luma coefficients necessary to construct a conversion matrix
+  from an enum constant describing the colorspace.
+  @param csp An enum constant indicating YUV or similar colorspace.
+  @return The Luma coefficients associated with that colorspace, or NULL
+      if the constant is unknown to libavutil.
+*/
+func AVCspLumaCoeffsFromAVCsp(csp AVColorSpace) *AVLumaCoefficients {
+	ret := C.av_csp_luma_coeffs_from_avcsp(C.enum_AVColorSpace(csp))
+	var retMapped *AVLumaCoefficients
+	if ret != nil {
+		retMapped = &AVLumaCoefficients{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_csp_primaries_desc_from_id ---
+
+// AVCspPrimariesDescFromId wraps av_csp_primaries_desc_from_id.
+/*
+  Retrieves a complete gamut description from an enum constant describing the
+  color primaries.
+  @param prm An enum constant indicating primaries
+  @return A description of the colorspace gamut associated with that enum
+      constant, or NULL if the constant is unknown to libavutil.
+*/
+func AVCspPrimariesDescFromId(prm AVColorPrimaries) *AVColorPrimariesDesc {
+	ret := C.av_csp_primaries_desc_from_id(C.enum_AVColorPrimaries(prm))
+	var retMapped *AVColorPrimariesDesc
+	if ret != nil {
+		retMapped = &AVColorPrimariesDesc{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_csp_primaries_id_from_desc ---
+
+// AVCspPrimariesIdFromDesc wraps av_csp_primaries_id_from_desc.
+/*
+  Detects which enum AVColorPrimaries constant corresponds to the given complete
+  gamut description.
+  @see enum AVColorPrimaries
+  @param prm A description of the colorspace gamut
+  @return The enum constant associated with this gamut, or
+      AVCOL_PRI_UNSPECIFIED if no clear match can be identified.
+*/
+func AVCspPrimariesIdFromDesc(prm *AVColorPrimariesDesc) AVColorPrimaries {
+	var tmpprm *C.AVColorPrimariesDesc
+	if prm != nil {
+		tmpprm = prm.ptr
+	}
+	ret := C.av_csp_primaries_id_from_desc(tmpprm)
+	return AVColorPrimaries(ret)
+}
+
+// --- Function av_csp_approximate_trc_gamma ---
+
+// AVCspApproximateTrcGamma wraps av_csp_approximate_trc_gamma.
+/*
+  Determine a suitable 'gamma' value to match the supplied
+  AVColorTransferCharacteristic.
+
+  See Apple Technical Note TN2257 (https://developer.apple.com/library/mac/technotes/tn2257/_index.html)
+
+  This function returns the gamma exponent for the OETF. For example, sRGB is approximated
+  by gamma 2.2, not by gamma 0.45455.
+
+  @return Will return an approximation to the simple gamma function matching
+          the supplied Transfer Characteristic, Will return 0.0 for any
+          we cannot reasonably match against.
+*/
+func AVCspApproximateTrcGamma(trc AVColorTransferCharacteristic) float64 {
+	ret := C.av_csp_approximate_trc_gamma(C.enum_AVColorTransferCharacteristic(trc))
+	return float64(ret)
+}
+
+// --- Function av_csp_trc_func_from_id ---
+
+// AVCspTrcFuncFromId wraps av_csp_trc_func_from_id.
+/*
+  Determine the function needed to apply the given
+  AVColorTransferCharacteristic to linear input.
+
+  The function returned should expect a nominal domain and range of [0.0-1.0]
+  values outside of this range maybe valid depending on the chosen
+  characteristic function.
+
+  @return Will return pointer to the function matching the
+          supplied Transfer Characteristic. If unspecified will
+          return NULL:
+*/
+func AVCspTrcFuncFromId(trc AVColorTransferCharacteristic) AVCspTrcFunction {
+	ret := C.av_csp_trc_func_from_id(C.enum_AVColorTransferCharacteristic(trc))
+	return AVCspTrcFunction(ret)
+}
+
+// --- Function av_csp_trc_func_inv_from_id ---
+
+// AVCspTrcFuncInvFromId wraps av_csp_trc_func_inv_from_id.
+//
+//	Returns the mathematical inverse of the corresponding TRC function.
+func AVCspTrcFuncInvFromId(trc AVColorTransferCharacteristic) AVCspTrcFunction {
+	ret := C.av_csp_trc_func_inv_from_id(C.enum_AVColorTransferCharacteristic(trc))
+	return AVCspTrcFunction(ret)
+}
+
+// --- Function av_csp_itu_eotf ---
+
+// AVCspItuEotf wraps av_csp_itu_eotf.
+/*
+  Returns the ITU EOTF corresponding to a given TRC. This converts from the
+  signal level [0,1] to the raw output display luminance in nits (cd/m^2).
+  This is done per channel in RGB space, except for AVCOL_TRC_SMPTE428, which
+  assumes CIE XYZ in- and output.
+
+  @return A pointer to the function implementing the given TRC, or NULL if no
+          such function is defined.
+
+  @note In general, the resulting function is defined (wherever possible) for
+        out-of-range values, even though these values do not have a physical
+        meaning on the given display. Users should clamp inputs (or outputs)
+        if this behavior is not desired.
+
+        This is also the case for functions like PQ, which are defined over an
+        absolute signal range independent of the target display capabilities.
+*/
+func AVCspItuEotf(trc AVColorTransferCharacteristic) AVCspEotfFunction {
+	ret := C.av_csp_itu_eotf(C.enum_AVColorTransferCharacteristic(trc))
+	return AVCspEotfFunction(ret)
+}
+
+// --- Function av_csp_itu_eotf_inv ---
+
+// AVCspItuEotfInv wraps av_csp_itu_eotf_inv.
+//
+//	Returns the mathematical inverse of the corresponding EOTF.
+func AVCspItuEotfInv(trc AVColorTransferCharacteristic) AVCspEotfFunction {
+	ret := C.av_csp_itu_eotf_inv(C.enum_AVColorTransferCharacteristic(trc))
+	return AVCspEotfFunction(ret)
 }
 
 // --- Function av_des_alloc ---

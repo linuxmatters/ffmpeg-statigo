@@ -39,7 +39,7 @@ var files = []string{
 	"libavformat/avio.h",
 	"libavformat/version.h",
 	"libavformat/version_major.h",
-	////"libavutil/adler32.h", // Unknown typedef kind TypedefDecl
+	"libavutil/adler32.h",
 	"libavutil/aes.h",
 	"libavutil/aes_ctr.h",
 	"libavutil/ambient_viewing_environment.h",
@@ -60,8 +60,8 @@ var files = []string{
 	////"libavutil/common.h", //undefined: int8_t int16_t int32_t
 	"libavutil/container_fifo.h",
 	"libavutil/cpu.h",
-	////"libavutil/crc.h", // Unknown typedef kind TypedefDecl
-	////"libavutil/csp.h", // Unknown typedef kind TypedefDecl
+	"libavutil/crc.h",
+	"libavutil/csp.h",
 	"libavutil/des.h",
 	"libavutil/detection_bbox.h",
 	"libavutil/dict.h",
@@ -296,6 +296,7 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 	log.Println("typedef", "name", c.Spelling())
 
 	var params []*Param
+	paramIndex := 0
 
 	c.Visit(func(cursor, parent clang.Cursor) (status clang.ChildVisitResult) {
 		log.Println("  --- ", "kind", cursor.Kind().String(), "name", cursor.Spelling())
@@ -303,8 +304,10 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 		if cursor.Kind() == clang.Cursor_ParmDecl {
 			name := cursor.Spelling()
 			if name == "" {
-				log.Fatal("no param name")
+				log.Println(indent, "no param name, generating one")
+				name = fmt.Sprintf("param%v", paramIndex)
 			}
+			paramIndex++
 
 			ty := p.parseType(fmt.Sprintf("%v[%v]", indent, name), cursor.Type())
 
@@ -372,6 +375,17 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 
 	case clang.Cursor_EnumDecl:
 		p.parseEnum(indent, dec, true)
+
+	case clang.Cursor_TypedefDecl:
+		// This is a typedef alias to another typedef (e.g., typedef AVCIExy AVWhitepointCoefficients)
+		// We don't need to generate anything for this, as the underlying type already exists
+		log.Println(indent, "Skipping typedef alias to", dec.Spelling())
+		return
+
+	case clang.Cursor_NoDeclFound:
+		// This can happen for built-in types or types defined elsewhere
+		log.Println(indent, "Skipping typedef with no declaration found")
+		return
 
 	default:
 		log.Panicln("Unknown typedef", "kind", dec.Kind())

@@ -19,6 +19,8 @@ var primTypes = map[string]string{
 	"char":     "uint8",
 	"uchar":    "uint8",
 	"ulong":    "uint32",
+	"int16_t":  "int16",
+	"int32_t":  "int32",
 	"uint8_t":  "uint8",
 	"uint16_t": "uint16",
 	"uint32_t": "uint32",
@@ -51,6 +53,7 @@ func Gen(i *Module) {
 
 	g.generateConstants()
 	g.generateEnums()
+	g.generateCallbacks()
 	g.generateStructs()
 	g.generateFuncs()
 }
@@ -191,6 +194,33 @@ func (g *Generator) generateEnums() {
 	}
 
 	err := o.Save("enums.gen.go")
+	if err != nil {
+		log.Panicln(err)
+	}
+}
+
+func (g *Generator) generateCallbacks() {
+	i := g.input
+
+	o := newFile()
+
+	for _, callbackName := range i.callbackOrder {
+		callback := i.callbacks[callbackName]
+
+		log.Println("Generating callback", callback.Name)
+
+		goName := g.convCamel(callback.Name)
+
+		// Generate as type alias to unsafe.Pointer since we can't represent C function pointers directly
+		o.Commentf("%v is a function pointer typedef for %v.", goName, callback.Name)
+		if callback.Comment != "" {
+			o.Comment(callback.Comment)
+		}
+		o.Type().Id(goName).Qual("unsafe", "Pointer")
+		o.Line()
+	}
+
+	err := o.Save("callbacks.gen.go")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -391,14 +421,27 @@ func (g *Generator) generateStructs() {
 						tgt.Op("=").Params(jen.Qual("C", e.CName())).Params(jen.Id("value")),
 					)
 				} else {
+					// Unknown IdentType - might be a typedef alias or external type
+					// Try to use it as-is, treating it like a struct passed by reference
 					structName := st.Name
 					fieldName := field.Name
 					typeName := v.Name
 
-					log.Printf("unexpected IdentType in struct field - struct: %v, field: %v, type: %v\n", structName, fieldName, typeName)
-					o.Commentf("%v skipped due to unexpected IdentType %v", fieldName, typeName)
-					o.Line()
-					continue fieldLoop
+					log.Printf("unexpected IdentType in struct field - struct: %v, field: %v, type: %v (treating as struct reference)\n", structName, fieldName, typeName)
+
+					// Treat as a struct passed by reference (like typedef aliases)
+					refField = true
+
+					getRetType = []jen.Code{
+						jen.Op("*").Id(typeName),
+					}
+
+					getBody = append(
+						getBody,
+						jen.Return(jen.Op("&").Id(typeName).Values(jen.Dict{
+							jen.Id("ptr"): jen.Id("value"),
+						})),
+					)
 				}
 
 			case *PointerType:
@@ -1051,6 +1094,11 @@ outer:
 					o.Line()
 					continue outer
 				}
+			} else if _, ok := g.input.callbacks[v.Name]; ok {
+				// Callback type - convert C name to Go name
+				goTypeName := g.convCamel(v.Name)
+				retType = []jen.Code{jen.Id(goTypeName)}
+				body = append(body, jen.Return(jen.Id(goTypeName).Params(jen.Id("ret"))))
 			} else {
 				retType = []jen.Code{jen.Id(v.Name)}
 				body = append(body, jen.Return(jen.Id(v.Name).Params(jen.Id("ret"))))
@@ -1111,10 +1159,17 @@ outer:
 						jen.Return(jen.Id("retMapped")),
 					)
 				} else {
+					// Unknown type - could be a typedef alias or enum
+					// Cast through unsafe.Pointer to handle typedef aliases correctly
 					retType = []jen.Code{
 						jen.Op("*").Id(iv.Name),
 					}
-					body = append(body, jen.Return(jen.Id("ret")))
+					body = append(
+						body,
+						jen.Return(jen.Params(jen.Op("*").Id(iv.Name)).Params(
+							jen.Qual("unsafe", "Pointer").Params(jen.Id("ret")),
+						)),
+					)
 				}
 
 			default:
