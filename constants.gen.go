@@ -62,6 +62,7 @@ package ffmpeg
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/iamf.h>
+// #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>
 // #include <libavutil/lfg.h>
 // #include <libavutil/log.h>
