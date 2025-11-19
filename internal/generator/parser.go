@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-clang/bootstrap/clang"
 	"log"
 	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 	"unicode"
+
+	"github.com/go-clang/bootstrap/clang"
 )
 
 var (
@@ -51,12 +52,12 @@ var files = []string{
 	"libavutil/rational.h",
 	"libavutil/samplefmt.h",
 	"libavutil/version.h",
-	"libpostproc/version.h",
-	"libpostproc/version_major.h",
 	"libswresample/version.h",
 	"libswresample/version_major.h",
+	"libswresample/swresample.h",
 	"libswscale/version.h",
 	"libswscale/version_major.h",
+	"libswscale/swscale.h",
 }
 
 func Parse() *Module {

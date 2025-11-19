@@ -37,12 +37,12 @@ import "unsafe"
 // #include <libavutil/rational.h>
 // #include <libavutil/samplefmt.h>
 // #include <libavutil/version.h>
-// #include <libpostproc/version.h>
-// #include <libpostproc/version_major.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
+// #include <libswresample/swresample.h>
 // #include <libswscale/version.h>
 // #include <libswscale/version_major.h>
+// #include <libswscale/swscale.h>
 import "C"
 
 // --- Struct RcOverride ---
@@ -17224,4 +17224,576 @@ func (s *AVRational) Den() int {
 //	Denominator
 func (s *AVRational) SetDen(value int) {
 	s.value.den = (C.int)(value)
+}
+
+// --- Struct SwrContext ---
+
+// SwrContext wraps SwrContext.
+type SwrContext struct {
+	ptr *C.SwrContext
+}
+
+func (s *SwrContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToSwrContextArray(ptr unsafe.Pointer) *Array[*SwrContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*SwrContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *SwrContext {
+			ptr := (**C.SwrContext)(pointer)
+			value := *ptr
+			var valueMapped *SwrContext
+			if value != nil {
+				valueMapped = &SwrContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *SwrContext) {
+			ptr := (**C.SwrContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct SwsContext ---
+
+// SwsContext wraps SwsContext.
+/*
+  Main external API structure. New fields can be added to the end with
+  minor version bumps. Removal, reordering and changes to existing fields
+  require a major version bump. sizeof(SwsContext) is not part of the ABI.
+*/
+type SwsContext struct {
+	ptr *C.SwsContext
+}
+
+func (s *SwsContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToSwsContextArray(ptr unsafe.Pointer) *Array[*SwsContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*SwsContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *SwsContext {
+			ptr := (**C.SwsContext)(pointer)
+			value := *ptr
+			var valueMapped *SwsContext
+			if value != nil {
+				valueMapped = &SwsContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *SwsContext) {
+			ptr := (**C.SwsContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *SwsContext) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *SwsContext) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// Opaque gets the opaque field.
+//
+//	Private data of the user, can be used to carry app specific stuff.
+func (s *SwsContext) Opaque() unsafe.Pointer {
+	value := s.ptr.opaque
+	return value
+}
+
+// SetOpaque sets the opaque field.
+//
+//	Private data of the user, can be used to carry app specific stuff.
+func (s *SwsContext) SetOpaque(value unsafe.Pointer) {
+	s.ptr.opaque = value
+}
+
+// Flags gets the flags field.
+//
+//	Bitmask of SWS_*. See `SwsFlags` for details.
+func (s *SwsContext) Flags() uint {
+	value := s.ptr.flags
+	return uint(value)
+}
+
+// SetFlags sets the flags field.
+//
+//	Bitmask of SWS_*. See `SwsFlags` for details.
+func (s *SwsContext) SetFlags(value uint) {
+	s.ptr.flags = (C.uint)(value)
+}
+
+// ScalerParams gets the scaler_params field.
+//
+//	Extra parameters for fine-tuning certain scalers.
+func (s *SwsContext) ScalerParams() *Array[float64] {
+	value := &s.ptr.scaler_params
+	return ToFloat64Array(unsafe.Pointer(value))
+}
+
+// Threads gets the threads field.
+//
+//	How many threads to use for processing, or 0 for automatic selection.
+func (s *SwsContext) Threads() int {
+	value := s.ptr.threads
+	return int(value)
+}
+
+// SetThreads sets the threads field.
+//
+//	How many threads to use for processing, or 0 for automatic selection.
+func (s *SwsContext) SetThreads(value int) {
+	s.ptr.threads = (C.int)(value)
+}
+
+// Dither gets the dither field.
+//
+//	Dither mode.
+func (s *SwsContext) Dither() SwsDither {
+	value := s.ptr.dither
+	return SwsDither(value)
+}
+
+// SetDither sets the dither field.
+//
+//	Dither mode.
+func (s *SwsContext) SetDither(value SwsDither) {
+	s.ptr.dither = (C.SwsDither)(value)
+}
+
+// AlphaBlend gets the alpha_blend field.
+//
+//	Alpha blending mode. See `SwsAlphaBlend` for details.
+func (s *SwsContext) AlphaBlend() SwsAlphaBlend {
+	value := s.ptr.alpha_blend
+	return SwsAlphaBlend(value)
+}
+
+// SetAlphaBlend sets the alpha_blend field.
+//
+//	Alpha blending mode. See `SwsAlphaBlend` for details.
+func (s *SwsContext) SetAlphaBlend(value SwsAlphaBlend) {
+	s.ptr.alpha_blend = (C.SwsAlphaBlend)(value)
+}
+
+// GammaFlag gets the gamma_flag field.
+//
+//	Use gamma correct scaling.
+func (s *SwsContext) GammaFlag() int {
+	value := s.ptr.gamma_flag
+	return int(value)
+}
+
+// SetGammaFlag sets the gamma_flag field.
+//
+//	Use gamma correct scaling.
+func (s *SwsContext) SetGammaFlag(value int) {
+	s.ptr.gamma_flag = (C.int)(value)
+}
+
+// SrcW gets the src_w field.
+//
+//	Width and height of the source frame
+func (s *SwsContext) SrcW() int {
+	value := s.ptr.src_w
+	return int(value)
+}
+
+// SetSrcW sets the src_w field.
+//
+//	Width and height of the source frame
+func (s *SwsContext) SetSrcW(value int) {
+	s.ptr.src_w = (C.int)(value)
+}
+
+// SrcH gets the src_h field.
+//
+//	Width and height of the source frame
+func (s *SwsContext) SrcH() int {
+	value := s.ptr.src_h
+	return int(value)
+}
+
+// SetSrcH sets the src_h field.
+//
+//	Width and height of the source frame
+func (s *SwsContext) SetSrcH(value int) {
+	s.ptr.src_h = (C.int)(value)
+}
+
+// DstW gets the dst_w field.
+//
+//	Width and height of the destination frame
+func (s *SwsContext) DstW() int {
+	value := s.ptr.dst_w
+	return int(value)
+}
+
+// SetDstW sets the dst_w field.
+//
+//	Width and height of the destination frame
+func (s *SwsContext) SetDstW(value int) {
+	s.ptr.dst_w = (C.int)(value)
+}
+
+// DstH gets the dst_h field.
+//
+//	Width and height of the destination frame
+func (s *SwsContext) DstH() int {
+	value := s.ptr.dst_h
+	return int(value)
+}
+
+// SetDstH sets the dst_h field.
+//
+//	Width and height of the destination frame
+func (s *SwsContext) SetDstH(value int) {
+	s.ptr.dst_h = (C.int)(value)
+}
+
+// SrcFormat gets the src_format field.
+//
+//	Source pixel format
+func (s *SwsContext) SrcFormat() int {
+	value := s.ptr.src_format
+	return int(value)
+}
+
+// SetSrcFormat sets the src_format field.
+//
+//	Source pixel format
+func (s *SwsContext) SetSrcFormat(value int) {
+	s.ptr.src_format = (C.int)(value)
+}
+
+// DstFormat gets the dst_format field.
+//
+//	Destination pixel format
+func (s *SwsContext) DstFormat() int {
+	value := s.ptr.dst_format
+	return int(value)
+}
+
+// SetDstFormat sets the dst_format field.
+//
+//	Destination pixel format
+func (s *SwsContext) SetDstFormat(value int) {
+	s.ptr.dst_format = (C.int)(value)
+}
+
+// SrcRange gets the src_range field.
+//
+//	Source is full range
+func (s *SwsContext) SrcRange() int {
+	value := s.ptr.src_range
+	return int(value)
+}
+
+// SetSrcRange sets the src_range field.
+//
+//	Source is full range
+func (s *SwsContext) SetSrcRange(value int) {
+	s.ptr.src_range = (C.int)(value)
+}
+
+// DstRange gets the dst_range field.
+//
+//	Destination is full range
+func (s *SwsContext) DstRange() int {
+	value := s.ptr.dst_range
+	return int(value)
+}
+
+// SetDstRange sets the dst_range field.
+//
+//	Destination is full range
+func (s *SwsContext) SetDstRange(value int) {
+	s.ptr.dst_range = (C.int)(value)
+}
+
+// SrcVChrPos gets the src_v_chr_pos field.
+//
+//	Source vertical chroma position in luma grid / 256
+func (s *SwsContext) SrcVChrPos() int {
+	value := s.ptr.src_v_chr_pos
+	return int(value)
+}
+
+// SetSrcVChrPos sets the src_v_chr_pos field.
+//
+//	Source vertical chroma position in luma grid / 256
+func (s *SwsContext) SetSrcVChrPos(value int) {
+	s.ptr.src_v_chr_pos = (C.int)(value)
+}
+
+// SrcHChrPos gets the src_h_chr_pos field.
+//
+//	Source horizontal chroma position
+func (s *SwsContext) SrcHChrPos() int {
+	value := s.ptr.src_h_chr_pos
+	return int(value)
+}
+
+// SetSrcHChrPos sets the src_h_chr_pos field.
+//
+//	Source horizontal chroma position
+func (s *SwsContext) SetSrcHChrPos(value int) {
+	s.ptr.src_h_chr_pos = (C.int)(value)
+}
+
+// DstVChrPos gets the dst_v_chr_pos field.
+//
+//	Destination vertical chroma position
+func (s *SwsContext) DstVChrPos() int {
+	value := s.ptr.dst_v_chr_pos
+	return int(value)
+}
+
+// SetDstVChrPos sets the dst_v_chr_pos field.
+//
+//	Destination vertical chroma position
+func (s *SwsContext) SetDstVChrPos(value int) {
+	s.ptr.dst_v_chr_pos = (C.int)(value)
+}
+
+// DstHChrPos gets the dst_h_chr_pos field.
+//
+//	Destination horizontal chroma position
+func (s *SwsContext) DstHChrPos() int {
+	value := s.ptr.dst_h_chr_pos
+	return int(value)
+}
+
+// SetDstHChrPos sets the dst_h_chr_pos field.
+//
+//	Destination horizontal chroma position
+func (s *SwsContext) SetDstHChrPos(value int) {
+	s.ptr.dst_h_chr_pos = (C.int)(value)
+}
+
+// Intent gets the intent field.
+//
+//	Desired ICC intent for color space conversions.
+func (s *SwsContext) Intent() int {
+	value := s.ptr.intent
+	return int(value)
+}
+
+// SetIntent sets the intent field.
+//
+//	Desired ICC intent for color space conversions.
+func (s *SwsContext) SetIntent(value int) {
+	s.ptr.intent = (C.int)(value)
+}
+
+// --- Struct SwsVector ---
+
+// SwsVector wraps SwsVector.
+/*
+  when used for filters they must have an odd number of elements
+  coeffs cannot be shared between vectors
+*/
+type SwsVector struct {
+	ptr *C.SwsVector
+}
+
+func (s *SwsVector) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToSwsVectorArray(ptr unsafe.Pointer) *Array[*SwsVector] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*SwsVector]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *SwsVector {
+			ptr := (**C.SwsVector)(pointer)
+			value := *ptr
+			var valueMapped *SwsVector
+			if value != nil {
+				valueMapped = &SwsVector{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *SwsVector) {
+			ptr := (**C.SwsVector)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// coeff skipped due to prim ptr
+
+// Length gets the length field.
+//
+//	number of coefficients in the vector
+func (s *SwsVector) Length() int {
+	value := s.ptr.length
+	return int(value)
+}
+
+// SetLength sets the length field.
+//
+//	number of coefficients in the vector
+func (s *SwsVector) SetLength(value int) {
+	s.ptr.length = (C.int)(value)
+}
+
+// --- Struct SwsFilter ---
+
+// SwsFilter wraps SwsFilter.
+//
+//	vectors can be shared
+type SwsFilter struct {
+	ptr *C.SwsFilter
+}
+
+func (s *SwsFilter) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToSwsFilterArray(ptr unsafe.Pointer) *Array[*SwsFilter] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*SwsFilter]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *SwsFilter {
+			ptr := (**C.SwsFilter)(pointer)
+			value := *ptr
+			var valueMapped *SwsFilter
+			if value != nil {
+				valueMapped = &SwsFilter{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *SwsFilter) {
+			ptr := (**C.SwsFilter)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// LumH gets the lumH field.
+func (s *SwsFilter) LumH() *SwsVector {
+	value := s.ptr.lumH
+	var valueMapped *SwsVector
+	if value != nil {
+		valueMapped = &SwsVector{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetLumH sets the lumH field.
+func (s *SwsFilter) SetLumH(value *SwsVector) {
+	if value != nil {
+		s.ptr.lumH = value.ptr
+	} else {
+		s.ptr.lumH = nil
+	}
+}
+
+// LumV gets the lumV field.
+func (s *SwsFilter) LumV() *SwsVector {
+	value := s.ptr.lumV
+	var valueMapped *SwsVector
+	if value != nil {
+		valueMapped = &SwsVector{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetLumV sets the lumV field.
+func (s *SwsFilter) SetLumV(value *SwsVector) {
+	if value != nil {
+		s.ptr.lumV = value.ptr
+	} else {
+		s.ptr.lumV = nil
+	}
+}
+
+// ChrH gets the chrH field.
+func (s *SwsFilter) ChrH() *SwsVector {
+	value := s.ptr.chrH
+	var valueMapped *SwsVector
+	if value != nil {
+		valueMapped = &SwsVector{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetChrH sets the chrH field.
+func (s *SwsFilter) SetChrH(value *SwsVector) {
+	if value != nil {
+		s.ptr.chrH = value.ptr
+	} else {
+		s.ptr.chrH = nil
+	}
+}
+
+// ChrV gets the chrV field.
+func (s *SwsFilter) ChrV() *SwsVector {
+	value := s.ptr.chrV
+	var valueMapped *SwsVector
+	if value != nil {
+		valueMapped = &SwsVector{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetChrV sets the chrV field.
+func (s *SwsFilter) SetChrV(value *SwsVector) {
+	if value != nil {
+		s.ptr.chrV = value.ptr
+	} else {
+		s.ptr.chrV = nil
+	}
 }

@@ -37,12 +37,12 @@ import "unsafe"
 // #include <libavutil/rational.h>
 // #include <libavutil/samplefmt.h>
 // #include <libavutil/version.h>
-// #include <libpostproc/version.h>
-// #include <libpostproc/version_major.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
+// #include <libswresample/swresample.h>
 // #include <libswscale/version.h>
 // #include <libswscale/version_major.h>
+// #include <libswscale/swscale.h>
 import "C"
 
 // --- Enum AVSubtitleType ---
@@ -5446,4 +5446,466 @@ const (
 	//
 	//	Number of sample formats. DO NOT USE if linking dynamically
 	AVSampleFmtNb AVSampleFormat = C.AV_SAMPLE_FMT_NB
+)
+
+// --- Enum SwrDitherType ---
+
+// SwrDitherType wraps SwrDitherType.
+//
+//	Dithering algorithms
+type SwrDitherType C.enum_SwrDitherType
+
+const SizeOfSwrDitherType = C.sizeof_enum_SwrDitherType
+
+func ToSwrDitherTypeArray(ptr unsafe.Pointer) *Array[SwrDitherType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwrDitherType]{
+		elemSize: SizeOfSwrDitherType,
+		loadPtr: func(pointer unsafe.Pointer) SwrDitherType {
+			ptr := (*SwrDitherType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwrDitherType) {
+			ptr := (*SwrDitherType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwrDitherTypeArray(size uint64) *Array[SwrDitherType] {
+	return ToSwrDitherTypeArray(AVCalloc(size, SizeOfSwrDitherType))
+}
+
+const (
+	// SwrDitherNone wraps SWR_DITHER_NONE.
+	SwrDitherNone SwrDitherType = C.SWR_DITHER_NONE
+	// SwrDitherRectangular wraps SWR_DITHER_RECTANGULAR.
+	SwrDitherRectangular SwrDitherType = C.SWR_DITHER_RECTANGULAR
+	// SwrDitherTriangular wraps SWR_DITHER_TRIANGULAR.
+	SwrDitherTriangular SwrDitherType = C.SWR_DITHER_TRIANGULAR
+	// SwrDitherTriangularHighpass wraps SWR_DITHER_TRIANGULAR_HIGHPASS.
+	SwrDitherTriangularHighpass SwrDitherType = C.SWR_DITHER_TRIANGULAR_HIGHPASS
+	// SwrDitherNs wraps SWR_DITHER_NS.
+	//
+	//	not part of API/ABI
+	SwrDitherNs SwrDitherType = C.SWR_DITHER_NS
+	// SwrDitherNsLipshitz wraps SWR_DITHER_NS_LIPSHITZ.
+	SwrDitherNsLipshitz SwrDitherType = C.SWR_DITHER_NS_LIPSHITZ
+	// SwrDitherNsFWeighted wraps SWR_DITHER_NS_F_WEIGHTED.
+	SwrDitherNsFWeighted SwrDitherType = C.SWR_DITHER_NS_F_WEIGHTED
+	// SwrDitherNsModifiedEWeighted wraps SWR_DITHER_NS_MODIFIED_E_WEIGHTED.
+	SwrDitherNsModifiedEWeighted SwrDitherType = C.SWR_DITHER_NS_MODIFIED_E_WEIGHTED
+	// SwrDitherNsImprovedEWeighted wraps SWR_DITHER_NS_IMPROVED_E_WEIGHTED.
+	SwrDitherNsImprovedEWeighted SwrDitherType = C.SWR_DITHER_NS_IMPROVED_E_WEIGHTED
+	// SwrDitherNsShibata wraps SWR_DITHER_NS_SHIBATA.
+	SwrDitherNsShibata SwrDitherType = C.SWR_DITHER_NS_SHIBATA
+	// SwrDitherNsLowShibata wraps SWR_DITHER_NS_LOW_SHIBATA.
+	SwrDitherNsLowShibata SwrDitherType = C.SWR_DITHER_NS_LOW_SHIBATA
+	// SwrDitherNsHighShibata wraps SWR_DITHER_NS_HIGH_SHIBATA.
+	SwrDitherNsHighShibata SwrDitherType = C.SWR_DITHER_NS_HIGH_SHIBATA
+	// SwrDitherNb wraps SWR_DITHER_NB.
+	//
+	//	not part of API/ABI
+	SwrDitherNb SwrDitherType = C.SWR_DITHER_NB
+)
+
+// --- Enum SwrEngine ---
+
+// SwrEngine wraps SwrEngine.
+//
+//	Resampling Engines
+type SwrEngine C.enum_SwrEngine
+
+const SizeOfSwrEngine = C.sizeof_enum_SwrEngine
+
+func ToSwrEngineArray(ptr unsafe.Pointer) *Array[SwrEngine] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwrEngine]{
+		elemSize: SizeOfSwrEngine,
+		loadPtr: func(pointer unsafe.Pointer) SwrEngine {
+			ptr := (*SwrEngine)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwrEngine) {
+			ptr := (*SwrEngine)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwrEngineArray(size uint64) *Array[SwrEngine] {
+	return ToSwrEngineArray(AVCalloc(size, SizeOfSwrEngine))
+}
+
+const (
+	// SwrEngineSwr wraps SWR_ENGINE_SWR.
+	//
+	//	SW Resampler
+	SwrEngineSwr SwrEngine = C.SWR_ENGINE_SWR
+	// SwrEngineSoxr wraps SWR_ENGINE_SOXR.
+	//
+	//	SoX Resampler
+	SwrEngineSoxr SwrEngine = C.SWR_ENGINE_SOXR
+	// SwrEngineNb wraps SWR_ENGINE_NB.
+	//
+	//	not part of API/ABI
+	SwrEngineNb SwrEngine = C.SWR_ENGINE_NB
+)
+
+// --- Enum SwrFilterType ---
+
+// SwrFilterType wraps SwrFilterType.
+//
+//	Resampling Filter Types
+type SwrFilterType C.enum_SwrFilterType
+
+const SizeOfSwrFilterType = C.sizeof_enum_SwrFilterType
+
+func ToSwrFilterTypeArray(ptr unsafe.Pointer) *Array[SwrFilterType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwrFilterType]{
+		elemSize: SizeOfSwrFilterType,
+		loadPtr: func(pointer unsafe.Pointer) SwrFilterType {
+			ptr := (*SwrFilterType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwrFilterType) {
+			ptr := (*SwrFilterType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwrFilterTypeArray(size uint64) *Array[SwrFilterType] {
+	return ToSwrFilterTypeArray(AVCalloc(size, SizeOfSwrFilterType))
+}
+
+const (
+	// SwrFilterTypeCubic wraps SWR_FILTER_TYPE_CUBIC.
+	//
+	//	Cubic
+	SwrFilterTypeCubic SwrFilterType = C.SWR_FILTER_TYPE_CUBIC
+	// SwrFilterTypeBlackmanNuttall wraps SWR_FILTER_TYPE_BLACKMAN_NUTTALL.
+	//
+	//	Blackman Nuttall windowed sinc
+	SwrFilterTypeBlackmanNuttall SwrFilterType = C.SWR_FILTER_TYPE_BLACKMAN_NUTTALL
+	// SwrFilterTypeKaiser wraps SWR_FILTER_TYPE_KAISER.
+	//
+	//	Kaiser windowed sinc
+	SwrFilterTypeKaiser SwrFilterType = C.SWR_FILTER_TYPE_KAISER
+)
+
+// --- Enum SwsDither ---
+
+// SwsDither wraps SwsDither.
+/*
+  ****************************
+  Flags and quality settings *
+  *****************************
+*/
+type SwsDither C.SwsDither
+
+const SizeOfSwsDither = C.sizeof_SwsDither
+
+func ToSwsDitherArray(ptr unsafe.Pointer) *Array[SwsDither] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwsDither]{
+		elemSize: SizeOfSwsDither,
+		loadPtr: func(pointer unsafe.Pointer) SwsDither {
+			ptr := (*SwsDither)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwsDither) {
+			ptr := (*SwsDither)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwsDitherArray(size uint64) *Array[SwsDither] {
+	return ToSwsDitherArray(AVCalloc(size, SizeOfSwsDither))
+}
+
+const (
+	// SwsDitherNone wraps SWS_DITHER_NONE.
+	//
+	//	disable dithering
+	SwsDitherNone SwsDither = C.SWS_DITHER_NONE
+	// SwsDitherAuto wraps SWS_DITHER_AUTO.
+	//
+	//	auto-select from preset
+	SwsDitherAuto SwsDither = C.SWS_DITHER_AUTO
+	// SwsDitherBayer wraps SWS_DITHER_BAYER.
+	//
+	//	ordered dither matrix
+	SwsDitherBayer SwsDither = C.SWS_DITHER_BAYER
+	// SwsDitherEd wraps SWS_DITHER_ED.
+	//
+	//	error diffusion
+	SwsDitherEd SwsDither = C.SWS_DITHER_ED
+	// SwsDitherADither wraps SWS_DITHER_A_DITHER.
+	//
+	//	arithmetic addition
+	SwsDitherADither SwsDither = C.SWS_DITHER_A_DITHER
+	// SwsDitherXDither wraps SWS_DITHER_X_DITHER.
+	//
+	//	arithmetic xor
+	SwsDitherXDither SwsDither = C.SWS_DITHER_X_DITHER
+	// SwsDitherNb wraps SWS_DITHER_NB.
+	//
+	//	not part of the ABI
+	SwsDitherNb SwsDither = C.SWS_DITHER_NB
+)
+
+// --- Enum SwsAlphaBlend ---
+
+// SwsAlphaBlend wraps SwsAlphaBlend.
+type SwsAlphaBlend C.SwsAlphaBlend
+
+const SizeOfSwsAlphaBlend = C.sizeof_SwsAlphaBlend
+
+func ToSwsAlphaBlendArray(ptr unsafe.Pointer) *Array[SwsAlphaBlend] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwsAlphaBlend]{
+		elemSize: SizeOfSwsAlphaBlend,
+		loadPtr: func(pointer unsafe.Pointer) SwsAlphaBlend {
+			ptr := (*SwsAlphaBlend)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwsAlphaBlend) {
+			ptr := (*SwsAlphaBlend)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwsAlphaBlendArray(size uint64) *Array[SwsAlphaBlend] {
+	return ToSwsAlphaBlendArray(AVCalloc(size, SizeOfSwsAlphaBlend))
+}
+
+const (
+	// SwsAlphaBlendNone wraps SWS_ALPHA_BLEND_NONE.
+	SwsAlphaBlendNone SwsAlphaBlend = C.SWS_ALPHA_BLEND_NONE
+	// SwsAlphaBlendUniform wraps SWS_ALPHA_BLEND_UNIFORM.
+	SwsAlphaBlendUniform SwsAlphaBlend = C.SWS_ALPHA_BLEND_UNIFORM
+	// SwsAlphaBlendCheckerboard wraps SWS_ALPHA_BLEND_CHECKERBOARD.
+	SwsAlphaBlendCheckerboard SwsAlphaBlend = C.SWS_ALPHA_BLEND_CHECKERBOARD
+	// SwsAlphaBlendNb wraps SWS_ALPHA_BLEND_NB.
+	//
+	//	not part of the ABI
+	SwsAlphaBlendNb SwsAlphaBlend = C.SWS_ALPHA_BLEND_NB
+)
+
+// --- Enum SwsFlags ---
+
+// SwsFlags wraps SwsFlags.
+type SwsFlags C.SwsFlags
+
+const SizeOfSwsFlags = C.sizeof_SwsFlags
+
+func ToSwsFlagsArray(ptr unsafe.Pointer) *Array[SwsFlags] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwsFlags]{
+		elemSize: SizeOfSwsFlags,
+		loadPtr: func(pointer unsafe.Pointer) SwsFlags {
+			ptr := (*SwsFlags)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwsFlags) {
+			ptr := (*SwsFlags)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwsFlagsArray(size uint64) *Array[SwsFlags] {
+	return ToSwsFlagsArray(AVCalloc(size, SizeOfSwsFlags))
+}
+
+const (
+	// SwsFastBilinear wraps SWS_FAST_BILINEAR.
+	//
+	//	fast bilinear filtering
+	SwsFastBilinear SwsFlags = C.SWS_FAST_BILINEAR
+	// SwsBilinear wraps SWS_BILINEAR.
+	//
+	//	bilinear filtering
+	SwsBilinear SwsFlags = C.SWS_BILINEAR
+	// SwsBicubic wraps SWS_BICUBIC.
+	//
+	//	2-tap cubic B-spline
+	SwsBicubic SwsFlags = C.SWS_BICUBIC
+	// SwsX wraps SWS_X.
+	//
+	//	experimental
+	SwsX SwsFlags = C.SWS_X
+	// SwsPoint wraps SWS_POINT.
+	//
+	//	nearest neighbor
+	SwsPoint SwsFlags = C.SWS_POINT
+	// SwsArea wraps SWS_AREA.
+	//
+	//	area averaging
+	SwsArea SwsFlags = C.SWS_AREA
+	// SwsBicublin wraps SWS_BICUBLIN.
+	//
+	//	bicubic luma, bilinear chroma
+	SwsBicublin SwsFlags = C.SWS_BICUBLIN
+	// SwsGauss wraps SWS_GAUSS.
+	//
+	//	gaussian approximation
+	SwsGauss SwsFlags = C.SWS_GAUSS
+	// SwsSinc wraps SWS_SINC.
+	//
+	//	unwindowed sinc
+	SwsSinc SwsFlags = C.SWS_SINC
+	// SwsLanczos wraps SWS_LANCZOS.
+	//
+	//	3-tap sinc/sinc
+	SwsLanczos SwsFlags = C.SWS_LANCZOS
+	// SwsSpline wraps SWS_SPLINE.
+	//
+	//	cubic Keys spline
+	SwsSpline SwsFlags = C.SWS_SPLINE
+	// SwsStrict wraps SWS_STRICT.
+	/*
+	   Return an error on underspecified conversions. Without this flag,
+	   unspecified fields are defaulted to sensible values.
+	*/
+	SwsStrict SwsFlags = C.SWS_STRICT
+	// SwsPrintInfo wraps SWS_PRINT_INFO.
+	//
+	//	Emit verbose log of scaling parameters.
+	SwsPrintInfo SwsFlags = C.SWS_PRINT_INFO
+	// SwsFullChrHInt wraps SWS_FULL_CHR_H_INT.
+	/*
+	   Perform full chroma upsampling when upscaling to RGB.
+
+	   For example, when converting 50x50 yuv420p to 100x100 rgba, setting this flag
+	   will scale the chroma plane from 25x25 to 100x100 (4:4:4), and then convert
+	   the 100x100 yuv444p image to rgba in the final output step.
+
+	   Without this flag, the chroma plane is instead scaled to 50x100 (4:2:2),
+	   with a single chroma sample being reused for both of the horizontally
+	   adjacent RGBA output pixels.
+	*/
+	SwsFullChrHInt SwsFlags = C.SWS_FULL_CHR_H_INT
+	// SwsFullChrHInp wraps SWS_FULL_CHR_H_INP.
+	/*
+	   Perform full chroma interpolation when downscaling RGB sources.
+
+	   For example, when converting a 100x100 rgba source to 50x50 yuv444p, setting
+	   this flag will generate a 100x100 (4:4:4) chroma plane, which is then
+	   downscaled to the required 50x50.
+
+	   Without this flag, the chroma plane is instead generated at 50x100 (dropping
+	   every other pixel), before then being downscaled to the required 50x50
+	   resolution.
+	*/
+	SwsFullChrHInp SwsFlags = C.SWS_FULL_CHR_H_INP
+	// SwsAccurateRnd wraps SWS_ACCURATE_RND.
+	/*
+	   Force bit-exact output. This will prevent the use of platform-specific
+	   optimizations that may lead to slight difference in rounding, in favor
+	   of always maintaining exact bit output compatibility with the reference
+	   C code.
+
+	   Note: It is recommended to set both of these flags simultaneously.
+	*/
+	SwsAccurateRnd SwsFlags = C.SWS_ACCURATE_RND
+	// SwsBitexact wraps SWS_BITEXACT.
+	/*
+	   Force bit-exact output. This will prevent the use of platform-specific
+	   optimizations that may lead to slight difference in rounding, in favor
+	   of always maintaining exact bit output compatibility with the reference
+	   C code.
+
+	   Note: It is recommended to set both of these flags simultaneously.
+	*/
+	SwsBitexact SwsFlags = C.SWS_BITEXACT
+	// SwsDirectBgr wraps SWS_DIRECT_BGR.
+	//
+	//	This flag has no effect
+	SwsDirectBgr SwsFlags = C.SWS_DIRECT_BGR
+	// SwsErrorDiffusion wraps SWS_ERROR_DIFFUSION.
+	//
+	//	Set `SwsContext.dither` instead
+	SwsErrorDiffusion SwsFlags = C.SWS_ERROR_DIFFUSION
+)
+
+// --- Enum SwsIntent ---
+
+// SwsIntent wraps SwsIntent.
+type SwsIntent C.SwsIntent
+
+const SizeOfSwsIntent = C.sizeof_SwsIntent
+
+func ToSwsIntentArray(ptr unsafe.Pointer) *Array[SwsIntent] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[SwsIntent]{
+		elemSize: SizeOfSwsIntent,
+		loadPtr: func(pointer unsafe.Pointer) SwsIntent {
+			ptr := (*SwsIntent)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value SwsIntent) {
+			ptr := (*SwsIntent)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocSwsIntentArray(size uint64) *Array[SwsIntent] {
+	return ToSwsIntentArray(AVCalloc(size, SizeOfSwsIntent))
+}
+
+const (
+	// SwsIntentPerceptual wraps SWS_INTENT_PERCEPTUAL.
+	//
+	//	Perceptual tone mapping
+	SwsIntentPerceptual SwsIntent = C.SWS_INTENT_PERCEPTUAL
+	// SwsIntentRelativeColorimetric wraps SWS_INTENT_RELATIVE_COLORIMETRIC.
+	//
+	//	Relative colorimetric clipping
+	SwsIntentRelativeColorimetric SwsIntent = C.SWS_INTENT_RELATIVE_COLORIMETRIC
+	// SwsIntentSaturation wraps SWS_INTENT_SATURATION.
+	//
+	//	Saturation mapping
+	SwsIntentSaturation SwsIntent = C.SWS_INTENT_SATURATION
+	// SwsIntentAbsoluteColorimetric wraps SWS_INTENT_ABSOLUTE_COLORIMETRIC.
+	//
+	//	Absolute colorimetric clipping
+	SwsIntentAbsoluteColorimetric SwsIntent = C.SWS_INTENT_ABSOLUTE_COLORIMETRIC
+	// SwsIntentNb wraps SWS_INTENT_NB.
+	//
+	//	not part of the ABI
+	SwsIntentNb SwsIntent = C.SWS_INTENT_NB
 )

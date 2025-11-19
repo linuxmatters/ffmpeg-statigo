@@ -37,12 +37,12 @@ import "unsafe"
 // #include <libavutil/rational.h>
 // #include <libavutil/samplefmt.h>
 // #include <libavutil/version.h>
-// #include <libpostproc/version.h>
-// #include <libpostproc/version_major.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
+// #include <libswresample/swresample.h>
 // #include <libswscale/version.h>
 // #include <libswscale/version_major.h>
+// #include <libswscale/swscale.h>
 import "C"
 
 // --- Function avcodec_version ---
@@ -11078,3 +11078,1157 @@ func AVSampleFmtIsPlanar(sampleFmt AVSampleFormat) (int, error) {
 // --- Function av_samples_set_silence ---
 
 // av_samples_set_silence skipped due to audioData
+
+// --- Function swr_get_class ---
+
+// SwrGetClass wraps swr_get_class.
+/*
+  Get the AVClass for SwrContext. It can be used in combination with
+  AV_OPT_SEARCH_FAKE_OBJ for examining options.
+
+  @see av_opt_find().
+  @return the AVClass of SwrContext
+*/
+func SwrGetClass() *AVClass {
+	ret := C.swr_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function swr_alloc ---
+
+// SwrAlloc wraps swr_alloc.
+/*
+  Allocate SwrContext.
+
+  If you use this function you will need to set the parameters (manually or
+  with swr_alloc_set_opts2()) before calling swr_init().
+
+  @see swr_alloc_set_opts2(), swr_init(), swr_free()
+  @return NULL on error, allocated context otherwise
+*/
+func SwrAlloc() *SwrContext {
+	ret := C.swr_alloc()
+	var retMapped *SwrContext
+	if ret != nil {
+		retMapped = &SwrContext{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function swr_init ---
+
+// SwrInit wraps swr_init.
+/*
+  Initialize context after user parameters have been set.
+  @note The context must be configured using the AVOption API.
+
+  @see av_opt_set_int()
+  @see av_opt_set_dict()
+
+  @param[in,out]   s Swr context to initialize
+  @return AVERROR error code in case of failure.
+*/
+func SwrInit(s *SwrContext) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_init(tmps)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_is_initialized ---
+
+// SwrIsInitialized wraps swr_is_initialized.
+/*
+  Check whether an swr context has been initialized or not.
+
+  @param[in]       s Swr context to check
+  @see swr_init()
+  @return positive if it has been initialized, 0 if not initialized
+*/
+func SwrIsInitialized(s *SwrContext) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_is_initialized(tmps)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_alloc_set_opts2 ---
+
+// SwrAllocSetOpts2 wraps swr_alloc_set_opts2.
+/*
+  Allocate SwrContext if needed and set/reset common parameters.
+
+  This function does not require *ps to be allocated with swr_alloc(). On the
+  other hand, swr_alloc() can use swr_alloc_set_opts2() to set the parameters
+  on the allocated context.
+
+  @param ps              Pointer to an existing Swr context if available, or to NULL if not.
+                         On success, *ps will be set to the allocated context.
+  @param out_ch_layout   output channel layout (e.g. AV_CHANNEL_LAYOUT_*)
+  @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*).
+  @param out_sample_rate output sample rate (frequency in Hz)
+  @param in_ch_layout    input channel layout (e.g. AV_CHANNEL_LAYOUT_*)
+  @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*).
+  @param in_sample_rate  input sample rate (frequency in Hz)
+  @param log_offset      logging level offset
+  @param log_ctx         parent logging context, can be NULL
+
+  @see swr_init(), swr_free()
+  @return 0 on success, a negative AVERROR code on error.
+          On error, the Swr context is freed and *ps set to NULL.
+*/
+func SwrAllocSetOpts2(ps **SwrContext, outChLayout *AVChannelLayout, outSampleFmt AVSampleFormat, outSampleRate int, inChLayout *AVChannelLayout, inSampleFmt AVSampleFormat, inSampleRate int, logOffset int, logCtx unsafe.Pointer) (int, error) {
+	var ptrps **C.SwrContext
+	var tmpps *C.SwrContext
+	var oldTmpps *C.SwrContext
+	if ps != nil {
+		innerps := *ps
+		if innerps != nil {
+			tmpps = innerps.ptr
+			oldTmpps = tmpps
+		}
+		ptrps = &tmpps
+	}
+	var tmpoutChLayout *C.AVChannelLayout
+	if outChLayout != nil {
+		tmpoutChLayout = outChLayout.ptr
+	}
+	var tmpinChLayout *C.AVChannelLayout
+	if inChLayout != nil {
+		tmpinChLayout = inChLayout.ptr
+	}
+	ret := C.swr_alloc_set_opts2(ptrps, tmpoutChLayout, C.enum_AVSampleFormat(outSampleFmt), C.int(outSampleRate), tmpinChLayout, C.enum_AVSampleFormat(inSampleFmt), C.int(inSampleRate), C.int(logOffset), logCtx)
+	if tmpps != oldTmpps && ps != nil {
+		if tmpps != nil {
+			*ps = &SwrContext{ptr: tmpps}
+		} else {
+			*ps = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_free ---
+
+// SwrFree wraps swr_free.
+/*
+  Free the given SwrContext and set the pointer to NULL.
+
+  @param[in] s a pointer to a pointer to Swr context
+*/
+func SwrFree(s **SwrContext) {
+	var ptrs **C.SwrContext
+	var tmps *C.SwrContext
+	var oldTmps *C.SwrContext
+	if s != nil {
+		inners := *s
+		if inners != nil {
+			tmps = inners.ptr
+			oldTmps = tmps
+		}
+		ptrs = &tmps
+	}
+	C.swr_free(ptrs)
+	if tmps != oldTmps && s != nil {
+		if tmps != nil {
+			*s = &SwrContext{ptr: tmps}
+		} else {
+			*s = nil
+		}
+	}
+}
+
+// --- Function swr_close ---
+
+// SwrClose wraps swr_close.
+/*
+  Closes the context so that swr_is_initialized() returns 0.
+
+  The context can be brought back to life by running swr_init(),
+  swr_init() can also be used without swr_close().
+  This function is mainly provided for simplifying the usecase
+  where one tries to support libavresample and libswresample.
+
+  @param[in,out] s Swr context to be closed
+*/
+func SwrClose(s *SwrContext) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	C.swr_close(tmps)
+}
+
+// --- Function swr_convert ---
+
+// swr_convert skipped due to out
+
+// --- Function swr_next_pts ---
+
+// SwrNextPts wraps swr_next_pts.
+/*
+  Convert the next timestamp from input to output
+  timestamps are in 1/(in_sample_rate * out_sample_rate) units.
+
+  @note There are 2 slightly differently behaving modes.
+        @li When automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
+               in this case timestamps will be passed through with delays compensated
+        @li When automatic timestamp compensation is used, (min_compensation < FLT_MAX)
+               in this case the output timestamps will match output sample numbers.
+               See ffmpeg-resampler(1) for the two modes of compensation.
+
+  @param[in] s     initialized Swr context
+  @param[in] pts   timestamp for the next input sample, INT64_MIN if unknown
+  @see swr_set_compensation(), swr_drop_output(), and swr_inject_silence() are
+       function used internally for timestamp compensation.
+  @return the output timestamp for the next output sample
+*/
+func SwrNextPts(s *SwrContext, pts int64) int64 {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_next_pts(tmps, C.int64_t(pts))
+	return int64(ret)
+}
+
+// --- Function swr_set_compensation ---
+
+// SwrSetCompensation wraps swr_set_compensation.
+/*
+  Activate resampling compensation ("soft" compensation). This function is
+  internally called when needed in swr_next_pts().
+
+  @param[in,out] s             allocated Swr context. If it is not initialized,
+                               or SWR_FLAG_RESAMPLE is not set, swr_init() is
+                               called with the flag set.
+  @param[in]     sample_delta  delta in PTS per sample
+  @param[in]     compensation_distance number of samples to compensate for
+  @return    >= 0 on success, AVERROR error codes if:
+             @li @c s is NULL,
+             @li @c compensation_distance is less than 0,
+             @li @c compensation_distance is 0 but sample_delta is not,
+             @li compensation unsupported by resampler, or
+             @li swr_init() fails when called.
+*/
+func SwrSetCompensation(s *SwrContext, sampleDelta int, compensationDistance int) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_set_compensation(tmps, C.int(sampleDelta), C.int(compensationDistance))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_set_channel_mapping ---
+
+// swr_set_channel_mapping skipped due to channelMap
+
+// --- Function swr_build_matrix2 ---
+
+// swr_build_matrix2 skipped due to matrix
+
+// --- Function swr_set_matrix ---
+
+// swr_set_matrix skipped due to matrix
+
+// --- Function swr_drop_output ---
+
+// SwrDropOutput wraps swr_drop_output.
+/*
+  Drops the specified number of output samples.
+
+  This function, along with swr_inject_silence(), is called by swr_next_pts()
+  if needed for "hard" compensation.
+
+  @param s     allocated Swr context
+  @param count number of samples to be dropped
+
+  @return >= 0 on success, or a negative AVERROR code on failure
+*/
+func SwrDropOutput(s *SwrContext, count int) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_drop_output(tmps, C.int(count))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_inject_silence ---
+
+// SwrInjectSilence wraps swr_inject_silence.
+/*
+  Injects the specified number of silence samples.
+
+  This function, along with swr_drop_output(), is called by swr_next_pts()
+  if needed for "hard" compensation.
+
+  @param s     allocated Swr context
+  @param count number of samples to be dropped
+
+  @return >= 0 on success, or a negative AVERROR code on failure
+*/
+func SwrInjectSilence(s *SwrContext, count int) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_inject_silence(tmps, C.int(count))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_get_delay ---
+
+// SwrGetDelay wraps swr_get_delay.
+/*
+  Gets the delay the next input sample will experience relative to the next output sample.
+
+  Swresample can buffer data if more input has been provided than available
+  output space, also converting between sample rates needs a delay.
+  This function returns the sum of all such delays.
+  The exact delay is not necessarily an integer value in either input or
+  output sample rate. Especially when downsampling by a large value, the
+  output sample rate may be a poor choice to represent the delay, similarly
+  for upsampling and the input sample rate.
+
+  @param s     swr context
+  @param base  timebase in which the returned delay will be:
+               @li if it's set to 1 the returned delay is in seconds
+               @li if it's set to 1000 the returned delay is in milliseconds
+               @li if it's set to the input sample rate then the returned
+                   delay is in input samples
+               @li if it's set to the output sample rate then the returned
+                   delay is in output samples
+               @li if it's the least common multiple of in_sample_rate and
+                   out_sample_rate then an exact rounding-free delay will be
+                   returned
+  @returns     the delay in 1 / @c base units.
+*/
+func SwrGetDelay(s *SwrContext, base int64) int64 {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_get_delay(tmps, C.int64_t(base))
+	return int64(ret)
+}
+
+// --- Function swr_get_out_samples ---
+
+// SwrGetOutSamples wraps swr_get_out_samples.
+/*
+  Find an upper bound on the number of samples that the next swr_convert
+  call will output, if called with in_samples of input samples. This
+  depends on the internal state, and anything changing the internal state
+  (like further swr_convert() calls) will may change the number of samples
+  swr_get_out_samples() returns for the same number of input samples.
+
+  @param in_samples    number of input samples.
+  @note any call to swr_inject_silence(), swr_convert(), swr_next_pts()
+        or swr_set_compensation() invalidates this limit
+  @note it is recommended to pass the correct available buffer size
+        to all functions like swr_convert() even if swr_get_out_samples()
+        indicates that less would be used.
+  @returns an upper bound on the number of samples that the next swr_convert
+           will output or a negative value to indicate an error
+*/
+func SwrGetOutSamples(s *SwrContext, inSamples int) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_get_out_samples(tmps, C.int(inSamples))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swresample_version ---
+
+// SwresampleVersion wraps swresample_version.
+/*
+  Return the @ref LIBSWRESAMPLE_VERSION_INT constant.
+
+  This is useful to check if the build-time libswresample has the same version
+  as the run-time one.
+
+  @returns     the unsigned int-typed version
+*/
+func SwresampleVersion() uint {
+	ret := C.swresample_version()
+	return uint(ret)
+}
+
+// --- Function swresample_configuration ---
+
+// SwresampleConfiguration wraps swresample_configuration.
+/*
+  Return the swr build-time configuration.
+
+  @returns     the build-time @c ./configure flags
+*/
+func SwresampleConfiguration() *CStr {
+	ret := C.swresample_configuration()
+	return wrapCStr(ret)
+}
+
+// --- Function swresample_license ---
+
+// SwresampleLicense wraps swresample_license.
+/*
+  Return the swr license.
+
+  @returns     the license of libswresample, determined at build-time
+*/
+func SwresampleLicense() *CStr {
+	ret := C.swresample_license()
+	return wrapCStr(ret)
+}
+
+// --- Function swr_convert_frame ---
+
+// SwrConvertFrame wraps swr_convert_frame.
+/*
+  Convert the samples in the input AVFrame and write them to the output AVFrame.
+
+  Input and output AVFrames must have channel_layout, sample_rate and format set.
+
+  If the output AVFrame does not have the data pointers allocated the nb_samples
+  field will be set using av_frame_get_buffer()
+  is called to allocate the frame.
+
+  The output AVFrame can be NULL or have fewer allocated samples than required.
+  In this case, any remaining samples not written to the output will be added
+  to an internal FIFO buffer, to be returned at the next call to this function
+  or to swr_convert().
+
+  If converting sample rate, there may be data remaining in the internal
+  resampling delay buffer. swr_get_delay() tells the number of
+  remaining samples. To get this data as output, call this function or
+  swr_convert() with NULL input.
+
+  If the SwrContext configuration does not match the output and
+  input AVFrame settings the conversion does not take place and depending on
+  which AVFrame is not matching AVERROR_OUTPUT_CHANGED, AVERROR_INPUT_CHANGED
+  or the result of a bitwise-OR of them is returned.
+
+  @see swr_delay()
+  @see swr_convert()
+  @see swr_get_delay()
+
+  @param swr             audio resample context
+  @param output          output AVFrame
+  @param input           input AVFrame
+  @return                0 on success, AVERROR on failure or nonmatching
+                         configuration.
+*/
+func SwrConvertFrame(swr *SwrContext, output *AVFrame, input *AVFrame) (int, error) {
+	var tmpswr *C.SwrContext
+	if swr != nil {
+		tmpswr = swr.ptr
+	}
+	var tmpoutput *C.AVFrame
+	if output != nil {
+		tmpoutput = output.ptr
+	}
+	var tmpinput *C.AVFrame
+	if input != nil {
+		tmpinput = input.ptr
+	}
+	ret := C.swr_convert_frame(tmpswr, tmpoutput, tmpinput)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swr_config_frame ---
+
+// SwrConfigFrame wraps swr_config_frame.
+/*
+  Configure or reconfigure the SwrContext using the information
+  provided by the AVFrames.
+
+  The original resampling context is reset even on failure.
+  The function calls swr_close() internally if the context is open.
+
+  @see swr_close();
+
+  @param swr             audio resample context
+  @param out             output AVFrame
+  @param in              input AVFrame
+  @return                0 on success, AVERROR on failure.
+*/
+func SwrConfigFrame(swr *SwrContext, out *AVFrame, in *AVFrame) (int, error) {
+	var tmpswr *C.SwrContext
+	if swr != nil {
+		tmpswr = swr.ptr
+	}
+	var tmpout *C.AVFrame
+	if out != nil {
+		tmpout = out.ptr
+	}
+	var tmpin *C.AVFrame
+	if in != nil {
+		tmpin = in.ptr
+	}
+	ret := C.swr_config_frame(tmpswr, tmpout, tmpin)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function swscale_version ---
+
+// SwscaleVersion wraps swscale_version.
+/*
+
+  Return the LIBSWSCALE_VERSION_INT constant.
+*/
+func SwscaleVersion() uint {
+	ret := C.swscale_version()
+	return uint(ret)
+}
+
+// --- Function swscale_configuration ---
+
+// SwscaleConfiguration wraps swscale_configuration.
+//
+//	Return the libswscale build-time configuration.
+func SwscaleConfiguration() *CStr {
+	ret := C.swscale_configuration()
+	return wrapCStr(ret)
+}
+
+// --- Function swscale_license ---
+
+// SwscaleLicense wraps swscale_license.
+//
+//	Return the libswscale license.
+func SwscaleLicense() *CStr {
+	ret := C.swscale_license()
+	return wrapCStr(ret)
+}
+
+// --- Function sws_get_class ---
+
+// SwsGetClass wraps sws_get_class.
+/*
+  Get the AVClass for SwsContext. It can be used in combination with
+  AV_OPT_SEARCH_FAKE_OBJ for examining options.
+
+  @see av_opt_find().
+*/
+func SwsGetClass() *AVClass {
+	ret := C.sws_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function sws_alloc_context ---
+
+// SwsAllocContext wraps sws_alloc_context.
+//
+//	Allocate an empty SwsContext and set its fields to default values.
+func SwsAllocContext() *SwsContext {
+	ret := C.sws_alloc_context()
+	var retMapped *SwsContext
+	if ret != nil {
+		retMapped = &SwsContext{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function sws_free_context ---
+
+// SwsFreeContext wraps sws_free_context.
+/*
+  Free the context and everything associated with it, and write NULL
+  to the provided pointer.
+*/
+func SwsFreeContext(ctx **SwsContext) {
+	var ptrctx **C.SwsContext
+	var tmpctx *C.SwsContext
+	var oldTmpctx *C.SwsContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	C.sws_free_context(ptrctx)
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &SwsContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+}
+
+// --- Function sws_test_format ---
+
+// SwsTestFormat wraps sws_test_format.
+/*
+  Test if a given pixel format is supported.
+
+  @param output  If 0, test if compatible with the source/input frame;
+                 otherwise, with the destination/output frame.
+  @param format  The format to check.
+
+  @return A positive integer if supported, 0 otherwise.
+*/
+func SwsTestFormat(format AVPixelFormat, output int) (int, error) {
+	ret := C.sws_test_format(C.enum_AVPixelFormat(format), C.int(output))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_test_colorspace ---
+
+// SwsTestColorspace wraps sws_test_colorspace.
+/*
+  Test if a given color space is supported.
+
+  @param output  If 0, test if compatible with the source/input frame;
+                 otherwise, with the destination/output frame.
+  @param colorspace The colorspace to check.
+
+  @return A positive integer if supported, 0 otherwise.
+*/
+func SwsTestColorspace(colorspace AVColorSpace, output int) (int, error) {
+	ret := C.sws_test_colorspace(C.enum_AVColorSpace(colorspace), C.int(output))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_test_primaries ---
+
+// SwsTestPrimaries wraps sws_test_primaries.
+/*
+  Test if a given set of color primaries is supported.
+
+  @param output  If 0, test if compatible with the source/input frame;
+                 otherwise, with the destination/output frame.
+  @param primaries The color primaries to check.
+
+  @return A positive integer if supported, 0 otherwise.
+*/
+func SwsTestPrimaries(primaries AVColorPrimaries, output int) (int, error) {
+	ret := C.sws_test_primaries(C.enum_AVColorPrimaries(primaries), C.int(output))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_test_transfer ---
+
+// SwsTestTransfer wraps sws_test_transfer.
+/*
+  Test if a given color transfer function is supported.
+
+  @param output  If 0, test if compatible with the source/input frame;
+                 otherwise, with the destination/output frame.
+  @param trc     The color transfer function to check.
+
+  @return A positive integer if supported, 0 otherwise.
+*/
+func SwsTestTransfer(trc AVColorTransferCharacteristic, output int) (int, error) {
+	ret := C.sws_test_transfer(C.enum_AVColorTransferCharacteristic(trc), C.int(output))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_test_frame ---
+
+// SwsTestFrame wraps sws_test_frame.
+/*
+  Helper function to run all sws_test_* against a frame, as well as testing
+  the basic frame properties for sanity. Ignores irrelevant properties - for
+  example, AVColorSpace is not checked for RGB frames.
+*/
+func SwsTestFrame(frame *AVFrame, output int) (int, error) {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.sws_test_frame(tmpframe, C.int(output))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_frame_setup ---
+
+// SwsFrameSetup wraps sws_frame_setup.
+/*
+  Like `sws_scale_frame`, but without actually scaling. It will instead
+  merely initialize internal state that *would* be required to perform the
+  operation, as well as returning the correct error code for unsupported
+  frame combinations.
+
+  @param ctx   The scaling context.
+  @param dst   The destination frame to consider.
+  @param src   The source frame to consider.
+  @return 0 on success, a negative AVERROR code on failure.
+*/
+func SwsFrameSetup(ctx *SwsContext, dst *AVFrame, src *AVFrame) (int, error) {
+	var tmpctx *C.SwsContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	var tmpdst *C.AVFrame
+	if dst != nil {
+		tmpdst = dst.ptr
+	}
+	var tmpsrc *C.AVFrame
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.sws_frame_setup(tmpctx, tmpdst, tmpsrc)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_is_noop ---
+
+// SwsIsNoop wraps sws_is_noop.
+/*
+  Check if a given conversion is a noop. Returns a positive integer if
+  no operation needs to be performed, 0 otherwise.
+*/
+func SwsIsNoop(dst *AVFrame, src *AVFrame) (int, error) {
+	var tmpdst *C.AVFrame
+	if dst != nil {
+		tmpdst = dst.ptr
+	}
+	var tmpsrc *C.AVFrame
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.sws_is_noop(tmpdst, tmpsrc)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_scale_frame ---
+
+// SwsScaleFrame wraps sws_scale_frame.
+/*
+  Scale source data from `src` and write the output to `dst`.
+
+  This function can be used directly on an allocated context, without setting
+  up any frame properties or calling `sws_init_context()`. Such usage is fully
+  dynamic and does not require reallocation if the frame properties change.
+
+  Alternatively, this function can be called on a context that has been
+  explicitly initialized. However, this is provided only for backwards
+  compatibility. In this usage mode, all frame properties must be correctly
+  set at init time, and may no longer change after initialization.
+
+  @param ctx   The scaling context.
+  @param dst   The destination frame. The data buffers may either be already
+               allocated by the caller or left clear, in which case they will
+               be allocated by the scaler. The latter may have performance
+               advantages - e.g. in certain cases some (or all) output planes
+               may be references to input planes, rather than copies.
+  @param src   The source frame. If the data buffers are set to NULL, then
+               this function behaves identically to `sws_frame_setup`.
+  @return >= 0 on success, a negative AVERROR code on failure.
+*/
+func SwsScaleFrame(c *SwsContext, dst *AVFrame, src *AVFrame) (int, error) {
+	var tmpc *C.SwsContext
+	if c != nil {
+		tmpc = c.ptr
+	}
+	var tmpdst *C.AVFrame
+	if dst != nil {
+		tmpdst = dst.ptr
+	}
+	var tmpsrc *C.AVFrame
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.sws_scale_frame(tmpc, tmpdst, tmpsrc)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_getCoefficients ---
+
+// SwsGetcoefficients wraps sws_getCoefficients.
+/*
+  Return a pointer to yuv<->rgb coefficients for the given colorspace
+  suitable for sws_setColorspaceDetails().
+
+  @param colorspace One of the SWS_CS_* macros. If invalid,
+  SWS_CS_DEFAULT is used.
+*/
+func SwsGetcoefficients(colorspace int) *int {
+	ret := C.sws_getCoefficients(C.int(colorspace))
+	return ret
+}
+
+// --- Function sws_isSupportedInput ---
+
+// SwsIssupportedinput wraps sws_isSupportedInput.
+/*
+  Return a positive value if pix_fmt is a supported input format, 0
+  otherwise.
+*/
+func SwsIssupportedinput(pixFmt AVPixelFormat) (int, error) {
+	ret := C.sws_isSupportedInput(C.enum_AVPixelFormat(pixFmt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_isSupportedOutput ---
+
+// SwsIssupportedoutput wraps sws_isSupportedOutput.
+/*
+  Return a positive value if pix_fmt is a supported output format, 0
+  otherwise.
+*/
+func SwsIssupportedoutput(pixFmt AVPixelFormat) (int, error) {
+	ret := C.sws_isSupportedOutput(C.enum_AVPixelFormat(pixFmt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_isSupportedEndiannessConversion ---
+
+// SwsIssupportedendiannessconversion wraps sws_isSupportedEndiannessConversion.
+/*
+  @param[in]  pix_fmt the pixel format
+  @return a positive value if an endianness conversion for pix_fmt is
+  supported, 0 otherwise.
+*/
+func SwsIssupportedendiannessconversion(pixFmt AVPixelFormat) (int, error) {
+	ret := C.sws_isSupportedEndiannessConversion(C.enum_AVPixelFormat(pixFmt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_init_context ---
+
+// SwsInitContext wraps sws_init_context.
+/*
+  Initialize the swscaler context sws_context.
+
+  This function is considered deprecated, and provided only for backwards
+  compatibility with sws_scale() and sws_start_frame(). The preferred way to
+  use libswscale is to set all frame properties correctly and call
+  sws_scale_frame() directly, without explicitly initializing the context.
+
+  @return zero or positive value on success, a negative value on
+  error
+*/
+func SwsInitContext(swsContext *SwsContext, srcFilter *SwsFilter, dstFilter *SwsFilter) (int, error) {
+	var tmpswsContext *C.SwsContext
+	if swsContext != nil {
+		tmpswsContext = swsContext.ptr
+	}
+	var tmpsrcFilter *C.SwsFilter
+	if srcFilter != nil {
+		tmpsrcFilter = srcFilter.ptr
+	}
+	var tmpdstFilter *C.SwsFilter
+	if dstFilter != nil {
+		tmpdstFilter = dstFilter.ptr
+	}
+	ret := C.sws_init_context(tmpswsContext, tmpsrcFilter, tmpdstFilter)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_freeContext ---
+
+// SwsFreecontext wraps sws_freeContext.
+/*
+  Free the swscaler context swsContext.
+  If swsContext is NULL, then does nothing.
+*/
+func SwsFreecontext(swsContext *SwsContext) {
+	var tmpswsContext *C.SwsContext
+	if swsContext != nil {
+		tmpswsContext = swsContext.ptr
+	}
+	C.sws_freeContext(tmpswsContext)
+}
+
+// --- Function sws_getContext ---
+
+// sws_getContext skipped due to param
+
+// --- Function sws_scale ---
+
+// sws_scale skipped due to srcSlice
+
+// --- Function sws_frame_start ---
+
+// SwsFrameStart wraps sws_frame_start.
+/*
+  Initialize the scaling process for a given pair of source/destination frames.
+  Must be called before any calls to sws_send_slice() and sws_receive_slice().
+  Requires a context that has been previously been initialized with
+  sws_init_context().
+
+  This function will retain references to src and dst, so they must both use
+  refcounted buffers (if allocated by the caller, in case of dst).
+
+  @param c   The scaling context
+  @param dst The destination frame.
+
+             The data buffers may either be already allocated by the caller or
+             left clear, in which case they will be allocated by the scaler.
+             The latter may have performance advantages - e.g. in certain cases
+             some output planes may be references to input planes, rather than
+             copies.
+
+             Output data will be written into this frame in successful
+             sws_receive_slice() calls.
+  @param src The source frame. The data buffers must be allocated, but the
+             frame data does not have to be ready at this point. Data
+             availability is then signalled by sws_send_slice().
+  @return 0 on success, a negative AVERROR code on failure
+
+  @see sws_frame_end()
+*/
+func SwsFrameStart(c *SwsContext, dst *AVFrame, src *AVFrame) (int, error) {
+	var tmpc *C.SwsContext
+	if c != nil {
+		tmpc = c.ptr
+	}
+	var tmpdst *C.AVFrame
+	if dst != nil {
+		tmpdst = dst.ptr
+	}
+	var tmpsrc *C.AVFrame
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.sws_frame_start(tmpc, tmpdst, tmpsrc)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_frame_end ---
+
+// SwsFrameEnd wraps sws_frame_end.
+/*
+  Finish the scaling process for a pair of source/destination frames previously
+  submitted with sws_frame_start(). Must be called after all sws_send_slice()
+  and sws_receive_slice() calls are done, before any new sws_frame_start()
+  calls.
+
+  @param c   The scaling context
+*/
+func SwsFrameEnd(c *SwsContext) {
+	var tmpc *C.SwsContext
+	if c != nil {
+		tmpc = c.ptr
+	}
+	C.sws_frame_end(tmpc)
+}
+
+// --- Function sws_send_slice ---
+
+// SwsSendSlice wraps sws_send_slice.
+/*
+  Indicate that a horizontal slice of input data is available in the source
+  frame previously provided to sws_frame_start(). The slices may be provided in
+  any order, but may not overlap. For vertically subsampled pixel formats, the
+  slices must be aligned according to subsampling.
+
+  @param c   The scaling context
+  @param slice_start first row of the slice
+  @param slice_height number of rows in the slice
+
+  @return a non-negative number on success, a negative AVERROR code on failure.
+*/
+func SwsSendSlice(c *SwsContext, sliceStart uint, sliceHeight uint) (int, error) {
+	var tmpc *C.SwsContext
+	if c != nil {
+		tmpc = c.ptr
+	}
+	ret := C.sws_send_slice(tmpc, C.uint(sliceStart), C.uint(sliceHeight))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_receive_slice ---
+
+// SwsReceiveSlice wraps sws_receive_slice.
+/*
+  Request a horizontal slice of the output data to be written into the frame
+  previously provided to sws_frame_start().
+
+  @param c   The scaling context
+  @param slice_start first row of the slice; must be a multiple of
+                     sws_receive_slice_alignment()
+  @param slice_height number of rows in the slice; must be a multiple of
+                      sws_receive_slice_alignment(), except for the last slice
+                      (i.e. when slice_start+slice_height is equal to output
+                      frame height)
+
+  @return a non-negative number if the data was successfully written into the output
+          AVERROR(EAGAIN) if more input data needs to be provided before the
+                          output can be produced
+          another negative AVERROR code on other kinds of scaling failure
+*/
+func SwsReceiveSlice(c *SwsContext, sliceStart uint, sliceHeight uint) (int, error) {
+	var tmpc *C.SwsContext
+	if c != nil {
+		tmpc = c.ptr
+	}
+	ret := C.sws_receive_slice(tmpc, C.uint(sliceStart), C.uint(sliceHeight))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_receive_slice_alignment ---
+
+// SwsReceiveSliceAlignment wraps sws_receive_slice_alignment.
+/*
+  Get the alignment required for slices. Requires a context that has been
+  previously been initialized with sws_init_context().
+
+  @param c   The scaling context
+  @return alignment required for output slices requested with sws_receive_slice().
+          Slice offsets and sizes passed to sws_receive_slice() must be
+          multiples of the value returned from this function.
+*/
+func SwsReceiveSliceAlignment(c *SwsContext) uint {
+	var tmpc *C.SwsContext
+	if c != nil {
+		tmpc = c.ptr
+	}
+	ret := C.sws_receive_slice_alignment(tmpc)
+	return uint(ret)
+}
+
+// --- Function sws_setColorspaceDetails ---
+
+// sws_setColorspaceDetails skipped due to const array param invTable
+
+// --- Function sws_getColorspaceDetails ---
+
+// sws_getColorspaceDetails skipped due to invTable
+
+// --- Function sws_allocVec ---
+
+// SwsAllocvec wraps sws_allocVec.
+//
+//	Allocate and return an uninitialized vector with length coefficients.
+func SwsAllocvec(length int) *SwsVector {
+	ret := C.sws_allocVec(C.int(length))
+	var retMapped *SwsVector
+	if ret != nil {
+		retMapped = &SwsVector{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function sws_getGaussianVec ---
+
+// SwsGetgaussianvec wraps sws_getGaussianVec.
+/*
+  Return a normalized Gaussian curve used to filter stuff
+  quality = 3 is high quality, lower is lower quality.
+*/
+func SwsGetgaussianvec(variance float64, quality float64) *SwsVector {
+	ret := C.sws_getGaussianVec(C.double(variance), C.double(quality))
+	var retMapped *SwsVector
+	if ret != nil {
+		retMapped = &SwsVector{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function sws_scaleVec ---
+
+// SwsScalevec wraps sws_scaleVec.
+//
+//	Scale all the coefficients of a by the scalar value.
+func SwsScalevec(a *SwsVector, scalar float64) {
+	var tmpa *C.SwsVector
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.sws_scaleVec(tmpa, C.double(scalar))
+}
+
+// --- Function sws_normalizeVec ---
+
+// SwsNormalizevec wraps sws_normalizeVec.
+//
+//	Scale all the coefficients of a so that their sum equals height.
+func SwsNormalizevec(a *SwsVector, height float64) {
+	var tmpa *C.SwsVector
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.sws_normalizeVec(tmpa, C.double(height))
+}
+
+// --- Function sws_freeVec ---
+
+// SwsFreevec wraps sws_freeVec.
+func SwsFreevec(a *SwsVector) {
+	var tmpa *C.SwsVector
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.sws_freeVec(tmpa)
+}
+
+// --- Function sws_getDefaultFilter ---
+
+// SwsGetdefaultfilter wraps sws_getDefaultFilter.
+func SwsGetdefaultfilter(lumaGblur float32, chromaGblur float32, lumaSharpen float32, chromaSharpen float32, chromaHshift float32, chromaVshift float32, verbose int) *SwsFilter {
+	ret := C.sws_getDefaultFilter(C.float(lumaGblur), C.float(chromaGblur), C.float(lumaSharpen), C.float(chromaSharpen), C.float(chromaHshift), C.float(chromaVshift), C.int(verbose))
+	var retMapped *SwsFilter
+	if ret != nil {
+		retMapped = &SwsFilter{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function sws_freeFilter ---
+
+// SwsFreefilter wraps sws_freeFilter.
+func SwsFreefilter(filter *SwsFilter) {
+	var tmpfilter *C.SwsFilter
+	if filter != nil {
+		tmpfilter = filter.ptr
+	}
+	C.sws_freeFilter(tmpfilter)
+}
+
+// --- Function sws_getCachedContext ---
+
+// sws_getCachedContext skipped due to param
+
+// --- Function sws_convertPalette8ToPacked32 ---
+
+// SwsConvertpalette8Topacked32 wraps sws_convertPalette8ToPacked32.
+/*
+  Convert an 8-bit paletted frame into a frame with a color depth of 32 bits.
+
+  The output frame will have the same packed format as the palette.
+
+  @param src        source frame buffer
+  @param dst        destination frame buffer
+  @param num_pixels number of pixels to convert
+  @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
+*/
+func SwsConvertpalette8Topacked32(src unsafe.Pointer, dst unsafe.Pointer, numPixels int, palette unsafe.Pointer) {
+	C.sws_convertPalette8ToPacked32((*C.uint8_t)(src), (*C.uint8_t)(dst), C.int(numPixels), (*C.uint8_t)(palette))
+}
+
+// --- Function sws_convertPalette8ToPacked24 ---
+
+// SwsConvertpalette8Topacked24 wraps sws_convertPalette8ToPacked24.
+/*
+  Convert an 8-bit paletted frame into a frame with a color depth of 24 bits.
+
+  With the palette format "ABCD", the destination frame ends up with the format "ABC".
+
+  @param src        source frame buffer
+  @param dst        destination frame buffer
+  @param num_pixels number of pixels to convert
+  @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
+*/
+func SwsConvertpalette8Topacked24(src unsafe.Pointer, dst unsafe.Pointer, numPixels int, palette unsafe.Pointer) {
+	C.sws_convertPalette8ToPacked24((*C.uint8_t)(src), (*C.uint8_t)(dst), C.int(numPixels), (*C.uint8_t)(palette))
+}

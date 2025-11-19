@@ -35,12 +35,12 @@ package ffmpeg
 // #include <libavutil/rational.h>
 // #include <libavutil/samplefmt.h>
 // #include <libavutil/version.h>
-// #include <libpostproc/version.h>
-// #include <libpostproc/version_major.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
+// #include <libswresample/swresample.h>
 // #include <libswscale/version.h>
 // #include <libswscale/version_major.h>
+// #include <libswscale/swscale.h>
 import "C"
 
 // AVCodecFlagUnaligned wraps AV_CODEC_FLAG_UNALIGNED.
@@ -2353,6 +2353,9 @@ const LIBSwresampleBuild = C.LIBSWRESAMPLE_BUILD
 // LIBSwresampleVersionMajor wraps LIBSWRESAMPLE_VERSION_MAJOR.
 const LIBSwresampleVersionMajor = C.LIBSWRESAMPLE_VERSION_MAJOR
 
+// SwrFlagResample wraps SWR_FLAG_RESAMPLE.
+const SwrFlagResample = C.SWR_FLAG_RESAMPLE
+
 // LIBSwscaleVersionMinor wraps LIBSWSCALE_VERSION_MINOR.
 const LIBSwscaleVersionMinor = C.LIBSWSCALE_VERSION_MINOR
 
@@ -2367,3 +2370,39 @@ const LIBSwscaleBuild = C.LIBSWSCALE_BUILD
 
 // LIBSwscaleVersionMajor wraps LIBSWSCALE_VERSION_MAJOR.
 const LIBSwscaleVersionMajor = C.LIBSWSCALE_VERSION_MAJOR
+
+// SwsSrcVChrDropMask wraps SWS_SRC_V_CHR_DROP_MASK.
+const SwsSrcVChrDropMask = C.SWS_SRC_V_CHR_DROP_MASK
+
+// SwsSrcVChrDropShift wraps SWS_SRC_V_CHR_DROP_SHIFT.
+const SwsSrcVChrDropShift = C.SWS_SRC_V_CHR_DROP_SHIFT
+
+// SwsParamDefault wraps SWS_PARAM_DEFAULT.
+const SwsParamDefault = C.SWS_PARAM_DEFAULT
+
+// SwsMaxReduceCutoff wraps SWS_MAX_REDUCE_CUTOFF.
+const SwsMaxReduceCutoff = C.SWS_MAX_REDUCE_CUTOFF
+
+// SwsCsItu709 wraps SWS_CS_ITU709.
+const SwsCsItu709 = C.SWS_CS_ITU709
+
+// SwsCsFcc wraps SWS_CS_FCC.
+const SwsCsFcc = C.SWS_CS_FCC
+
+// SwsCsItu601 wraps SWS_CS_ITU601.
+const SwsCsItu601 = C.SWS_CS_ITU601
+
+// SwsCsItu624 wraps SWS_CS_ITU624.
+const SwsCsItu624 = C.SWS_CS_ITU624
+
+// SwsCsSmpte170M wraps SWS_CS_SMPTE170M.
+const SwsCsSmpte170M = C.SWS_CS_SMPTE170M
+
+// SwsCsSmpte240M wraps SWS_CS_SMPTE240M.
+const SwsCsSmpte240M = C.SWS_CS_SMPTE240M
+
+// SwsCsDefault wraps SWS_CS_DEFAULT.
+const SwsCsDefault = C.SWS_CS_DEFAULT
+
+// SwsCsBt2020 wraps SWS_CS_BT2020.
+const SwsCsBt2020 = C.SWS_CS_BT2020
