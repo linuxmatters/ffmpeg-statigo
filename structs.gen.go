@@ -96,6 +96,7 @@ import "unsafe"
 // #include <libavutil/tree.h>
 // #include <libavutil/twofish.h>
 // #include <libavutil/tx.h>
+// #include <libavutil/uuid.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
