@@ -170,6 +170,32 @@ func (p *Parser) parseTopLevel(indent string, c clang.Cursor) {
 			return
 		}
 
+		// Skip compiler attribute macros (from libavutil/attributes.h and transitively included headers)
+		if strings.HasPrefix(name, "av_") && (
+			strings.HasSuffix(name, "_inline") ||
+			strings.Contains(name, "_unused") ||
+			strings.Contains(name, "_deprecated") ||
+			strings.Contains(name, "_result") ||
+			name == "av_const" || name == "av_pure" ||
+			name == "av_cold" || name == "av_flatten" ||
+			name == "av_alias" || name == "av_noreturn" ||
+			name == "av_used" || name == "av_noinline") {
+			return
+		}
+
+		// Skip math/utility function macros (from libavutil/common.h and transitively included headers)
+		if strings.HasPrefix(name, "av_clip") ||
+			strings.HasPrefix(name, "av_sat_") ||
+			strings.HasPrefix(name, "av_popcount") ||
+			strings.HasPrefix(name, "av_ceil_log2") ||
+			strings.HasPrefix(name, "av_mod_") ||
+			strings.HasPrefix(name, "av_zero_extend") ||
+			strings.HasPrefix(name, "av_parity") ||
+			strings.HasPrefix(name, "FF_CEIL_RSHIFT") ||
+			strings.HasPrefix(name, "av_builtin_") {
+			return
+		}
+
 		p.mod.constants[name] = &Constant{
 			Name: name,
 		}
