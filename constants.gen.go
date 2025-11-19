@@ -10,6 +10,7 @@ package ffmpeg
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
 // #include <libavfilter/avfilter.h>
