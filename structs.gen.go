@@ -23,13 +23,24 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/aes.h>
+// #include <libavutil/aes_ctr.h>
+// #include <libavutil/ambient_viewing_environment.h>
+// #include <libavutil/audio_fifo.h>
 // #include <libavutil/avassert.h>
 // #include <libavutil/avconfig.h>
+// #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
+// #include <libavutil/base64.h>
+// #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
+// #include <libavutil/camellia.h>
+// #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/des.h>
+// #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
 // #include <libavutil/downmix_info.h>
@@ -39,20 +50,45 @@ import "unsafe"
 // #include <libavutil/executor.h>
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
+// #include <libavutil/file.h>
 // #include <libavutil/frame.h>
+// #include <libavutil/hash.h>
+// #include <libavutil/hdr_dynamic_metadata.h>
+// #include <libavutil/hdr_dynamic_vivid_metadata.h>
+// #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/iamf.h>
+// #include <libavutil/intfloat.h>
 // #include <libavutil/log.h>
+// #include <libavutil/lzo.h>
+// #include <libavutil/macros.h>
+// #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
+// #include <libavutil/motion_vector.h>
+// #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
+// #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/rc4.h>
 // #include <libavutil/replaygain.h>
+// #include <libavutil/ripemd.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/sha.h>
+// #include <libavutil/sha512.h>
+// #include <libavutil/spherical.h>
+// #include <libavutil/stereo3d.h>
+// #include <libavutil/tdrdi.h>
+// #include <libavutil/tea.h>
+// #include <libavutil/threadmessage.h>
 // #include <libavutil/time.h>
 // #include <libavutil/timecode.h>
 // #include <libavutil/timestamp.h>
+// #include <libavutil/tree.h>
+// #include <libavutil/twofish.h>
+// #include <libavutil/tx.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
@@ -11163,84 +11199,6 @@ func (s *AVStreamGroupLCEVC) SetHeight(value int) {
 	s.ptr.height = (C.int)(value)
 }
 
-// --- Struct AVIAMFAudioElement ---
-
-// AVIAMFAudioElement wraps AVIAMFAudioElement.
-type AVIAMFAudioElement struct {
-	ptr *C.struct_AVIAMFAudioElement
-}
-
-func (s *AVIAMFAudioElement) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVIAMFAudioElementArray(ptr unsafe.Pointer) *Array[*AVIAMFAudioElement] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVIAMFAudioElement]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVIAMFAudioElement {
-			ptr := (**C.struct_AVIAMFAudioElement)(pointer)
-			value := *ptr
-			var valueMapped *AVIAMFAudioElement
-			if value != nil {
-				valueMapped = &AVIAMFAudioElement{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVIAMFAudioElement) {
-			ptr := (**C.struct_AVIAMFAudioElement)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
-}
-
-// --- Struct AVIAMFMixPresentation ---
-
-// AVIAMFMixPresentation wraps AVIAMFMixPresentation.
-type AVIAMFMixPresentation struct {
-	ptr *C.struct_AVIAMFMixPresentation
-}
-
-func (s *AVIAMFMixPresentation) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVIAMFMixPresentationArray(ptr unsafe.Pointer) *Array[*AVIAMFMixPresentation] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVIAMFMixPresentation]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVIAMFMixPresentation {
-			ptr := (**C.struct_AVIAMFMixPresentation)(pointer)
-			value := *ptr
-			var valueMapped *AVIAMFMixPresentation
-			if value != nil {
-				valueMapped = &AVIAMFMixPresentation{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVIAMFMixPresentation) {
-			ptr := (**C.struct_AVIAMFMixPresentation)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
-}
-
 // --- Struct AVStreamGroup ---
 
 // AVStreamGroup wraps AVStreamGroup.
@@ -14264,6 +14222,227 @@ func (s *AVIOContext) SetBytesWritten(value int64) {
 	s.ptr.bytes_written = (C.int64_t)(value)
 }
 
+// --- Struct AVAES ---
+
+// AVAES wraps AVAES.
+type AVAES struct {
+	ptr *C.struct_AVAES
+}
+
+func (s *AVAES) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVAESArray(ptr unsafe.Pointer) *Array[*AVAES] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVAES]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVAES {
+			ptr := (**C.struct_AVAES)(pointer)
+			value := *ptr
+			var valueMapped *AVAES
+			if value != nil {
+				valueMapped = &AVAES{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVAES) {
+			ptr := (**C.struct_AVAES)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVAESCTR ---
+
+// AVAESCTR wraps AVAESCTR.
+type AVAESCTR struct {
+	ptr *C.struct_AVAESCTR
+}
+
+func (s *AVAESCTR) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVAESCTRArray(ptr unsafe.Pointer) *Array[*AVAESCTR] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVAESCTR]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVAESCTR {
+			ptr := (**C.struct_AVAESCTR)(pointer)
+			value := *ptr
+			var valueMapped *AVAESCTR
+			if value != nil {
+				valueMapped = &AVAESCTR{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVAESCTR) {
+			ptr := (**C.struct_AVAESCTR)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVAmbientViewingEnvironment ---
+
+// AVAmbientViewingEnvironment wraps AVAmbientViewingEnvironment.
+/*
+  Ambient viewing environment metadata as defined by H.274. The values are
+  saved in AVRationals so that they keep their exactness, while allowing for
+  easy access to a double value with f.ex. av_q2d.
+
+  @note sizeof(AVAmbientViewingEnvironment) is not part of the public ABI, and
+        it must be allocated using av_ambient_viewing_environment_alloc.
+*/
+type AVAmbientViewingEnvironment struct {
+	ptr *C.AVAmbientViewingEnvironment
+}
+
+func (s *AVAmbientViewingEnvironment) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVAmbientViewingEnvironmentArray(ptr unsafe.Pointer) *Array[*AVAmbientViewingEnvironment] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVAmbientViewingEnvironment]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVAmbientViewingEnvironment {
+			ptr := (**C.AVAmbientViewingEnvironment)(pointer)
+			value := *ptr
+			var valueMapped *AVAmbientViewingEnvironment
+			if value != nil {
+				valueMapped = &AVAmbientViewingEnvironment{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVAmbientViewingEnvironment) {
+			ptr := (**C.AVAmbientViewingEnvironment)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AmbientIlluminance gets the ambient_illuminance field.
+//
+//	Environmental illuminance of the ambient viewing environment in lux.
+func (s *AVAmbientViewingEnvironment) AmbientIlluminance() *AVRational {
+	value := s.ptr.ambient_illuminance
+	return &AVRational{value: value}
+}
+
+// SetAmbientIlluminance sets the ambient_illuminance field.
+//
+//	Environmental illuminance of the ambient viewing environment in lux.
+func (s *AVAmbientViewingEnvironment) SetAmbientIlluminance(value *AVRational) {
+	s.ptr.ambient_illuminance = value.value
+}
+
+// AmbientLightX gets the ambient_light_x field.
+/*
+  Normalized x chromaticity coordinate of the environmental ambient light
+  in the nominal viewing environment according to the CIE 1931 definition
+  of x and y as specified in ISO/CIE 11664-1.
+*/
+func (s *AVAmbientViewingEnvironment) AmbientLightX() *AVRational {
+	value := s.ptr.ambient_light_x
+	return &AVRational{value: value}
+}
+
+// SetAmbientLightX sets the ambient_light_x field.
+/*
+  Normalized x chromaticity coordinate of the environmental ambient light
+  in the nominal viewing environment according to the CIE 1931 definition
+  of x and y as specified in ISO/CIE 11664-1.
+*/
+func (s *AVAmbientViewingEnvironment) SetAmbientLightX(value *AVRational) {
+	s.ptr.ambient_light_x = value.value
+}
+
+// AmbientLightY gets the ambient_light_y field.
+/*
+  Normalized y chromaticity coordinate of the environmental ambient light
+  in the nominal viewing environment according to the CIE 1931 definition
+  of x and y as specified in ISO/CIE 11664-1.
+*/
+func (s *AVAmbientViewingEnvironment) AmbientLightY() *AVRational {
+	value := s.ptr.ambient_light_y
+	return &AVRational{value: value}
+}
+
+// SetAmbientLightY sets the ambient_light_y field.
+/*
+  Normalized y chromaticity coordinate of the environmental ambient light
+  in the nominal viewing environment according to the CIE 1931 definition
+  of x and y as specified in ISO/CIE 11664-1.
+*/
+func (s *AVAmbientViewingEnvironment) SetAmbientLightY(value *AVRational) {
+	s.ptr.ambient_light_y = value.value
+}
+
+// --- Struct AVAudioFifo ---
+
+// AVAudioFifo wraps AVAudioFifo.
+type AVAudioFifo struct {
+	ptr *C.AVAudioFifo
+}
+
+func (s *AVAudioFifo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVAudioFifoArray(ptr unsafe.Pointer) *Array[*AVAudioFifo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVAudioFifo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVAudioFifo {
+			ptr := (**C.AVAudioFifo)(pointer)
+			value := *ptr
+			var valueMapped *AVAudioFifo
+			if value != nil {
+				valueMapped = &AVAudioFifo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVAudioFifo) {
+			ptr := (**C.AVAudioFifo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
 // --- Struct AVBuffer ---
 
 // AVBuffer wraps AVBuffer.
@@ -14433,6 +14612,84 @@ func ToAVBufferPoolArray(ptr unsafe.Pointer) *Array[*AVBufferPool] {
 		ptr: ptr,
 		storePtr: func(pointer unsafe.Pointer, value *AVBufferPool) {
 			ptr := (**C.AVBufferPool)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVCAMELLIA ---
+
+// AVCAMELLIA wraps AVCAMELLIA.
+type AVCAMELLIA struct {
+	ptr *C.struct_AVCAMELLIA
+}
+
+func (s *AVCAMELLIA) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVCAMELLIAArray(ptr unsafe.Pointer) *Array[*AVCAMELLIA] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVCAMELLIA]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVCAMELLIA {
+			ptr := (**C.struct_AVCAMELLIA)(pointer)
+			value := *ptr
+			var valueMapped *AVCAMELLIA
+			if value != nil {
+				valueMapped = &AVCAMELLIA{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVCAMELLIA) {
+			ptr := (**C.struct_AVCAMELLIA)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVCAST5 ---
+
+// AVCAST5 wraps AVCAST5.
+type AVCAST5 struct {
+	ptr *C.struct_AVCAST5
+}
+
+func (s *AVCAST5) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVCAST5Array(ptr unsafe.Pointer) *Array[*AVCAST5] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVCAST5]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVCAST5 {
+			ptr := (**C.struct_AVCAST5)(pointer)
+			value := *ptr
+			var valueMapped *AVCAST5
+			if value != nil {
+				valueMapped = &AVCAST5{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVCAST5) {
+			ptr := (**C.struct_AVCAST5)(pointer)
 			if value != nil {
 				*ptr = value.ptr
 			} else {
@@ -14713,6 +14970,281 @@ func ToAVContainerFifoArray(ptr unsafe.Pointer) *Array[*AVContainerFifo] {
 			}
 		},
 	}
+}
+
+// --- Struct AVDES ---
+
+// AVDES wraps AVDES.
+type AVDES struct {
+	ptr *C.AVDES
+}
+
+func (s *AVDES) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDESArray(ptr unsafe.Pointer) *Array[*AVDES] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDES]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDES {
+			ptr := (**C.AVDES)(pointer)
+			value := *ptr
+			var valueMapped *AVDES
+			if value != nil {
+				valueMapped = &AVDES{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDES) {
+			ptr := (**C.AVDES)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// round_keys skipped due to multi dim const array
+
+// TripleDes gets the triple_des field.
+func (s *AVDES) TripleDes() int {
+	value := s.ptr.triple_des
+	return int(value)
+}
+
+// SetTripleDes sets the triple_des field.
+func (s *AVDES) SetTripleDes(value int) {
+	s.ptr.triple_des = (C.int)(value)
+}
+
+// --- Struct AVDetectionBBox ---
+
+// AVDetectionBBox wraps AVDetectionBBox.
+type AVDetectionBBox struct {
+	ptr *C.AVDetectionBBox
+}
+
+func (s *AVDetectionBBox) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDetectionBBoxArray(ptr unsafe.Pointer) *Array[*AVDetectionBBox] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDetectionBBox]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDetectionBBox {
+			ptr := (**C.AVDetectionBBox)(pointer)
+			value := *ptr
+			var valueMapped *AVDetectionBBox
+			if value != nil {
+				valueMapped = &AVDetectionBBox{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDetectionBBox) {
+			ptr := (**C.AVDetectionBBox)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// X gets the x field.
+/*
+  Distance in pixels from the left/top edge of the frame,
+  together with width and height, defining the bounding box.
+*/
+func (s *AVDetectionBBox) X() int {
+	value := s.ptr.x
+	return int(value)
+}
+
+// SetX sets the x field.
+/*
+  Distance in pixels from the left/top edge of the frame,
+  together with width and height, defining the bounding box.
+*/
+func (s *AVDetectionBBox) SetX(value int) {
+	s.ptr.x = (C.int)(value)
+}
+
+// Y gets the y field.
+func (s *AVDetectionBBox) Y() int {
+	value := s.ptr.y
+	return int(value)
+}
+
+// SetY sets the y field.
+func (s *AVDetectionBBox) SetY(value int) {
+	s.ptr.y = (C.int)(value)
+}
+
+// W gets the w field.
+func (s *AVDetectionBBox) W() int {
+	value := s.ptr.w
+	return int(value)
+}
+
+// SetW sets the w field.
+func (s *AVDetectionBBox) SetW(value int) {
+	s.ptr.w = (C.int)(value)
+}
+
+// H gets the h field.
+func (s *AVDetectionBBox) H() int {
+	value := s.ptr.h
+	return int(value)
+}
+
+// SetH sets the h field.
+func (s *AVDetectionBBox) SetH(value int) {
+	s.ptr.h = (C.int)(value)
+}
+
+// DetectLabel gets the detect_label field.
+//
+//	Detect result with confidence
+func (s *AVDetectionBBox) DetectLabel() *Array[uint8] {
+	value := &s.ptr.detect_label
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// DetectConfidence gets the detect_confidence field.
+func (s *AVDetectionBBox) DetectConfidence() *AVRational {
+	value := s.ptr.detect_confidence
+	return &AVRational{value: value}
+}
+
+// SetDetectConfidence sets the detect_confidence field.
+func (s *AVDetectionBBox) SetDetectConfidence(value *AVRational) {
+	s.ptr.detect_confidence = value.value
+}
+
+// ClassifyCount gets the classify_count field.
+func (s *AVDetectionBBox) ClassifyCount() uint32 {
+	value := s.ptr.classify_count
+	return uint32(value)
+}
+
+// SetClassifyCount sets the classify_count field.
+func (s *AVDetectionBBox) SetClassifyCount(value uint32) {
+	s.ptr.classify_count = (C.uint32_t)(value)
+}
+
+// classify_labels skipped due to multi dim const array
+
+// classify_confidences skipped due to unknown const array
+
+// --- Struct AVDetectionBBoxHeader ---
+
+// AVDetectionBBoxHeader wraps AVDetectionBBoxHeader.
+type AVDetectionBBoxHeader struct {
+	ptr *C.AVDetectionBBoxHeader
+}
+
+func (s *AVDetectionBBoxHeader) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDetectionBBoxHeaderArray(ptr unsafe.Pointer) *Array[*AVDetectionBBoxHeader] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDetectionBBoxHeader]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDetectionBBoxHeader {
+			ptr := (**C.AVDetectionBBoxHeader)(pointer)
+			value := *ptr
+			var valueMapped *AVDetectionBBoxHeader
+			if value != nil {
+				valueMapped = &AVDetectionBBoxHeader{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDetectionBBoxHeader) {
+			ptr := (**C.AVDetectionBBoxHeader)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Source gets the source field.
+/*
+  Information about how the bounding box is generated.
+  for example, the DNN model name.
+*/
+func (s *AVDetectionBBoxHeader) Source() *Array[uint8] {
+	value := &s.ptr.source
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// NbBboxes gets the nb_bboxes field.
+//
+//	Number of bounding boxes in the array.
+func (s *AVDetectionBBoxHeader) NbBboxes() uint32 {
+	value := s.ptr.nb_bboxes
+	return uint32(value)
+}
+
+// SetNbBboxes sets the nb_bboxes field.
+//
+//	Number of bounding boxes in the array.
+func (s *AVDetectionBBoxHeader) SetNbBboxes(value uint32) {
+	s.ptr.nb_bboxes = (C.uint32_t)(value)
+}
+
+// BboxesOffset gets the bboxes_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which
+  the array of bounding boxes starts.
+*/
+func (s *AVDetectionBBoxHeader) BboxesOffset() uint64 {
+	value := s.ptr.bboxes_offset
+	return uint64(value)
+}
+
+// SetBboxesOffset sets the bboxes_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which
+  the array of bounding boxes starts.
+*/
+func (s *AVDetectionBBoxHeader) SetBboxesOffset(value uint64) {
+	s.ptr.bboxes_offset = (C.size_t)(value)
+}
+
+// BboxSize gets the bbox_size field.
+//
+//	Size of each bounding box in bytes.
+func (s *AVDetectionBBoxHeader) BboxSize() uint64 {
+	value := s.ptr.bbox_size
+	return uint64(value)
+}
+
+// SetBboxSize sets the bbox_size field.
+//
+//	Size of each bounding box in bytes.
+func (s *AVDetectionBBoxHeader) SetBboxSize(value uint64) {
+	s.ptr.bbox_size = (C.size_t)(value)
 }
 
 // --- Struct AVDictionaryEntry ---
@@ -16848,6 +17380,1691 @@ func (s *AVFrame) SetDuration(value int64) {
 	s.ptr.duration = (C.int64_t)(value)
 }
 
+// --- Struct AVHashContext ---
+
+// AVHashContext wraps AVHashContext.
+/*
+  @example ffhash.c
+  This example is a simple command line application that takes one or more
+  arguments. It demonstrates a typical use of the hashing API with allocation,
+  initialization, updating, and finalizing.
+*/
+type AVHashContext struct {
+	ptr *C.struct_AVHashContext
+}
+
+func (s *AVHashContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHashContextArray(ptr unsafe.Pointer) *Array[*AVHashContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHashContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHashContext {
+			ptr := (**C.struct_AVHashContext)(pointer)
+			value := *ptr
+			var valueMapped *AVHashContext
+			if value != nil {
+				valueMapped = &AVHashContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHashContext) {
+			ptr := (**C.struct_AVHashContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVHDRPlusPercentile ---
+
+// AVHDRPlusPercentile wraps AVHDRPlusPercentile.
+/*
+  Represents the percentile at a specific percentage in
+  a distribution.
+*/
+type AVHDRPlusPercentile struct {
+	ptr *C.AVHDRPlusPercentile
+}
+
+func (s *AVHDRPlusPercentile) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHDRPlusPercentileArray(ptr unsafe.Pointer) *Array[*AVHDRPlusPercentile] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHDRPlusPercentile]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHDRPlusPercentile {
+			ptr := (**C.AVHDRPlusPercentile)(pointer)
+			value := *ptr
+			var valueMapped *AVHDRPlusPercentile
+			if value != nil {
+				valueMapped = &AVHDRPlusPercentile{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHDRPlusPercentile) {
+			ptr := (**C.AVHDRPlusPercentile)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Percentage gets the percentage field.
+/*
+  The percentage value corresponding to a specific percentile linearized
+  RGB value in the processing window in the scene. The value shall be in
+  the range of 0 to100, inclusive.
+*/
+func (s *AVHDRPlusPercentile) Percentage() uint8 {
+	value := s.ptr.percentage
+	return uint8(value)
+}
+
+// SetPercentage sets the percentage field.
+/*
+  The percentage value corresponding to a specific percentile linearized
+  RGB value in the processing window in the scene. The value shall be in
+  the range of 0 to100, inclusive.
+*/
+func (s *AVHDRPlusPercentile) SetPercentage(value uint8) {
+	s.ptr.percentage = (C.uint8_t)(value)
+}
+
+// Percentile gets the percentile field.
+/*
+  The linearized maxRGB value at a specific percentile in the processing
+  window in the scene. The value shall be in the range of 0 to 1, inclusive
+  and in multiples of 0.00001.
+*/
+func (s *AVHDRPlusPercentile) Percentile() *AVRational {
+	value := s.ptr.percentile
+	return &AVRational{value: value}
+}
+
+// SetPercentile sets the percentile field.
+/*
+  The linearized maxRGB value at a specific percentile in the processing
+  window in the scene. The value shall be in the range of 0 to 1, inclusive
+  and in multiples of 0.00001.
+*/
+func (s *AVHDRPlusPercentile) SetPercentile(value *AVRational) {
+	s.ptr.percentile = value.value
+}
+
+// --- Struct AVHDRPlusColorTransformParams ---
+
+// AVHDRPlusColorTransformParams wraps AVHDRPlusColorTransformParams.
+/*
+  Color transform parameters at a processing window in a dynamic metadata for
+  SMPTE 2094-40.
+*/
+type AVHDRPlusColorTransformParams struct {
+	ptr *C.AVHDRPlusColorTransformParams
+}
+
+func (s *AVHDRPlusColorTransformParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHDRPlusColorTransformParamsArray(ptr unsafe.Pointer) *Array[*AVHDRPlusColorTransformParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHDRPlusColorTransformParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHDRPlusColorTransformParams {
+			ptr := (**C.AVHDRPlusColorTransformParams)(pointer)
+			value := *ptr
+			var valueMapped *AVHDRPlusColorTransformParams
+			if value != nil {
+				valueMapped = &AVHDRPlusColorTransformParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHDRPlusColorTransformParams) {
+			ptr := (**C.AVHDRPlusColorTransformParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// WindowUpperLeftCornerX gets the window_upper_left_corner_x field.
+/*
+  The relative x coordinate of the top left pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(width of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of width of Picture - 1. The value for
+  first processing window shall be 0.
+*/
+func (s *AVHDRPlusColorTransformParams) WindowUpperLeftCornerX() *AVRational {
+	value := s.ptr.window_upper_left_corner_x
+	return &AVRational{value: value}
+}
+
+// SetWindowUpperLeftCornerX sets the window_upper_left_corner_x field.
+/*
+  The relative x coordinate of the top left pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(width of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of width of Picture - 1. The value for
+  first processing window shall be 0.
+*/
+func (s *AVHDRPlusColorTransformParams) SetWindowUpperLeftCornerX(value *AVRational) {
+	s.ptr.window_upper_left_corner_x = value.value
+}
+
+// WindowUpperLeftCornerY gets the window_upper_left_corner_y field.
+/*
+  The relative y coordinate of the top left pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(height of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of height of Picture - 1. The value for
+  first processing window shall be 0.
+*/
+func (s *AVHDRPlusColorTransformParams) WindowUpperLeftCornerY() *AVRational {
+	value := s.ptr.window_upper_left_corner_y
+	return &AVRational{value: value}
+}
+
+// SetWindowUpperLeftCornerY sets the window_upper_left_corner_y field.
+/*
+  The relative y coordinate of the top left pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(height of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of height of Picture - 1. The value for
+  first processing window shall be 0.
+*/
+func (s *AVHDRPlusColorTransformParams) SetWindowUpperLeftCornerY(value *AVRational) {
+	s.ptr.window_upper_left_corner_y = value.value
+}
+
+// WindowLowerRightCornerX gets the window_lower_right_corner_x field.
+/*
+  The relative x coordinate of the bottom right pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(width of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of width of Picture - 1. The value for
+  first processing window shall be 1.
+*/
+func (s *AVHDRPlusColorTransformParams) WindowLowerRightCornerX() *AVRational {
+	value := s.ptr.window_lower_right_corner_x
+	return &AVRational{value: value}
+}
+
+// SetWindowLowerRightCornerX sets the window_lower_right_corner_x field.
+/*
+  The relative x coordinate of the bottom right pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(width of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of width of Picture - 1. The value for
+  first processing window shall be 1.
+*/
+func (s *AVHDRPlusColorTransformParams) SetWindowLowerRightCornerX(value *AVRational) {
+	s.ptr.window_lower_right_corner_x = value.value
+}
+
+// WindowLowerRightCornerY gets the window_lower_right_corner_y field.
+/*
+  The relative y coordinate of the bottom right pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(height of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of height of Picture - 1. The value for
+  first processing window shall be 1.
+*/
+func (s *AVHDRPlusColorTransformParams) WindowLowerRightCornerY() *AVRational {
+	value := s.ptr.window_lower_right_corner_y
+	return &AVRational{value: value}
+}
+
+// SetWindowLowerRightCornerY sets the window_lower_right_corner_y field.
+/*
+  The relative y coordinate of the bottom right pixel of the processing
+  window. The value shall be in the range of 0 and 1, inclusive and
+  in multiples of 1/(height of Picture - 1). The value 1 corresponds
+  to the absolute coordinate of height of Picture - 1. The value for
+  first processing window shall be 1.
+*/
+func (s *AVHDRPlusColorTransformParams) SetWindowLowerRightCornerY(value *AVRational) {
+	s.ptr.window_lower_right_corner_y = value.value
+}
+
+// CenterOfEllipseX gets the center_of_ellipse_x field.
+/*
+  The x coordinate of the center position of the concentric internal and
+  external ellipses of the elliptical pixel selector in the processing
+  window. The value shall be in the range of 0 to (width of Picture - 1),
+  inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) CenterOfEllipseX() uint16 {
+	value := s.ptr.center_of_ellipse_x
+	return uint16(value)
+}
+
+// SetCenterOfEllipseX sets the center_of_ellipse_x field.
+/*
+  The x coordinate of the center position of the concentric internal and
+  external ellipses of the elliptical pixel selector in the processing
+  window. The value shall be in the range of 0 to (width of Picture - 1),
+  inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SetCenterOfEllipseX(value uint16) {
+	s.ptr.center_of_ellipse_x = (C.uint16_t)(value)
+}
+
+// CenterOfEllipseY gets the center_of_ellipse_y field.
+/*
+  The y coordinate of the center position of the concentric internal and
+  external ellipses of the elliptical pixel selector in the processing
+  window. The value shall be in the range of 0 to (height of Picture - 1),
+  inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) CenterOfEllipseY() uint16 {
+	value := s.ptr.center_of_ellipse_y
+	return uint16(value)
+}
+
+// SetCenterOfEllipseY sets the center_of_ellipse_y field.
+/*
+  The y coordinate of the center position of the concentric internal and
+  external ellipses of the elliptical pixel selector in the processing
+  window. The value shall be in the range of 0 to (height of Picture - 1),
+  inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SetCenterOfEllipseY(value uint16) {
+	s.ptr.center_of_ellipse_y = (C.uint16_t)(value)
+}
+
+// RotationAngle gets the rotation_angle field.
+/*
+  The clockwise rotation angle in degree of arc with respect to the
+  positive direction of the x-axis of the concentric internal and external
+  ellipses of the elliptical pixel selector in the processing window. The
+  value shall be in the range of 0 to 180, inclusive and in multiples of 1.
+*/
+func (s *AVHDRPlusColorTransformParams) RotationAngle() uint8 {
+	value := s.ptr.rotation_angle
+	return uint8(value)
+}
+
+// SetRotationAngle sets the rotation_angle field.
+/*
+  The clockwise rotation angle in degree of arc with respect to the
+  positive direction of the x-axis of the concentric internal and external
+  ellipses of the elliptical pixel selector in the processing window. The
+  value shall be in the range of 0 to 180, inclusive and in multiples of 1.
+*/
+func (s *AVHDRPlusColorTransformParams) SetRotationAngle(value uint8) {
+	s.ptr.rotation_angle = (C.uint8_t)(value)
+}
+
+// SemimajorAxisInternalEllipse gets the semimajor_axis_internal_ellipse field.
+/*
+  The semi-major axis value of the internal ellipse of the elliptical pixel
+  selector in amount of pixels in the processing window. The value shall be
+  in the range of 1 to 65535, inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SemimajorAxisInternalEllipse() uint16 {
+	value := s.ptr.semimajor_axis_internal_ellipse
+	return uint16(value)
+}
+
+// SetSemimajorAxisInternalEllipse sets the semimajor_axis_internal_ellipse field.
+/*
+  The semi-major axis value of the internal ellipse of the elliptical pixel
+  selector in amount of pixels in the processing window. The value shall be
+  in the range of 1 to 65535, inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SetSemimajorAxisInternalEllipse(value uint16) {
+	s.ptr.semimajor_axis_internal_ellipse = (C.uint16_t)(value)
+}
+
+// SemimajorAxisExternalEllipse gets the semimajor_axis_external_ellipse field.
+/*
+  The semi-major axis value of the external ellipse of the elliptical pixel
+  selector in amount of pixels in the processing window. The value
+  shall not be less than semimajor_axis_internal_ellipse of the current
+  processing window. The value shall be in the range of 1 to 65535,
+  inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SemimajorAxisExternalEllipse() uint16 {
+	value := s.ptr.semimajor_axis_external_ellipse
+	return uint16(value)
+}
+
+// SetSemimajorAxisExternalEllipse sets the semimajor_axis_external_ellipse field.
+/*
+  The semi-major axis value of the external ellipse of the elliptical pixel
+  selector in amount of pixels in the processing window. The value
+  shall not be less than semimajor_axis_internal_ellipse of the current
+  processing window. The value shall be in the range of 1 to 65535,
+  inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SetSemimajorAxisExternalEllipse(value uint16) {
+	s.ptr.semimajor_axis_external_ellipse = (C.uint16_t)(value)
+}
+
+// SemiminorAxisExternalEllipse gets the semiminor_axis_external_ellipse field.
+/*
+  The semi-minor axis value of the external ellipse of the elliptical pixel
+  selector in amount of pixels in the processing window. The value shall be
+  in the range of 1 to 65535, inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SemiminorAxisExternalEllipse() uint16 {
+	value := s.ptr.semiminor_axis_external_ellipse
+	return uint16(value)
+}
+
+// SetSemiminorAxisExternalEllipse sets the semiminor_axis_external_ellipse field.
+/*
+  The semi-minor axis value of the external ellipse of the elliptical pixel
+  selector in amount of pixels in the processing window. The value shall be
+  in the range of 1 to 65535, inclusive and in multiples of 1 pixel.
+*/
+func (s *AVHDRPlusColorTransformParams) SetSemiminorAxisExternalEllipse(value uint16) {
+	s.ptr.semiminor_axis_external_ellipse = (C.uint16_t)(value)
+}
+
+// OverlapProcessOption gets the overlap_process_option field.
+/*
+  Overlap process option indicates one of the two methods of combining
+  rendered pixels in the processing window in an image with at least one
+  elliptical pixel selector. For overlapping elliptical pixel selectors
+  in an image, overlap_process_option shall have the same value.
+*/
+func (s *AVHDRPlusColorTransformParams) OverlapProcessOption() AVHDRPlusOverlapProcessOption {
+	value := s.ptr.overlap_process_option
+	return AVHDRPlusOverlapProcessOption(value)
+}
+
+// SetOverlapProcessOption sets the overlap_process_option field.
+/*
+  Overlap process option indicates one of the two methods of combining
+  rendered pixels in the processing window in an image with at least one
+  elliptical pixel selector. For overlapping elliptical pixel selectors
+  in an image, overlap_process_option shall have the same value.
+*/
+func (s *AVHDRPlusColorTransformParams) SetOverlapProcessOption(value AVHDRPlusOverlapProcessOption) {
+	s.ptr.overlap_process_option = (C.enum_AVHDRPlusOverlapProcessOption)(value)
+}
+
+// maxscl skipped due to unknown const array
+
+// AverageMaxrgb gets the average_maxrgb field.
+/*
+  The average of linearized maxRGB values in the processing window in the
+  scene. The value should be in the range of 0 to 1, inclusive and in
+  multiples of 0.00001.
+*/
+func (s *AVHDRPlusColorTransformParams) AverageMaxrgb() *AVRational {
+	value := s.ptr.average_maxrgb
+	return &AVRational{value: value}
+}
+
+// SetAverageMaxrgb sets the average_maxrgb field.
+/*
+  The average of linearized maxRGB values in the processing window in the
+  scene. The value should be in the range of 0 to 1, inclusive and in
+  multiples of 0.00001.
+*/
+func (s *AVHDRPlusColorTransformParams) SetAverageMaxrgb(value *AVRational) {
+	s.ptr.average_maxrgb = value.value
+}
+
+// NumDistributionMaxrgbPercentiles gets the num_distribution_maxrgb_percentiles field.
+/*
+  The number of linearized maxRGB values at given percentiles in the
+  processing window in the scene. The maximum value shall be 15.
+*/
+func (s *AVHDRPlusColorTransformParams) NumDistributionMaxrgbPercentiles() uint8 {
+	value := s.ptr.num_distribution_maxrgb_percentiles
+	return uint8(value)
+}
+
+// SetNumDistributionMaxrgbPercentiles sets the num_distribution_maxrgb_percentiles field.
+/*
+  The number of linearized maxRGB values at given percentiles in the
+  processing window in the scene. The maximum value shall be 15.
+*/
+func (s *AVHDRPlusColorTransformParams) SetNumDistributionMaxrgbPercentiles(value uint8) {
+	s.ptr.num_distribution_maxrgb_percentiles = (C.uint8_t)(value)
+}
+
+// distribution_maxrgb skipped due to unknown const array
+
+// FractionBrightPixels gets the fraction_bright_pixels field.
+/*
+  The fraction of selected pixels in the image that contains the brightest
+  pixel in the scene. The value shall be in the range of 0 to 1, inclusive
+  and in multiples of 0.001.
+*/
+func (s *AVHDRPlusColorTransformParams) FractionBrightPixels() *AVRational {
+	value := s.ptr.fraction_bright_pixels
+	return &AVRational{value: value}
+}
+
+// SetFractionBrightPixels sets the fraction_bright_pixels field.
+/*
+  The fraction of selected pixels in the image that contains the brightest
+  pixel in the scene. The value shall be in the range of 0 to 1, inclusive
+  and in multiples of 0.001.
+*/
+func (s *AVHDRPlusColorTransformParams) SetFractionBrightPixels(value *AVRational) {
+	s.ptr.fraction_bright_pixels = value.value
+}
+
+// ToneMappingFlag gets the tone_mapping_flag field.
+/*
+  This flag indicates that the metadata for the tone mapping function in
+  the processing window is present (for value of 1).
+*/
+func (s *AVHDRPlusColorTransformParams) ToneMappingFlag() uint8 {
+	value := s.ptr.tone_mapping_flag
+	return uint8(value)
+}
+
+// SetToneMappingFlag sets the tone_mapping_flag field.
+/*
+  This flag indicates that the metadata for the tone mapping function in
+  the processing window is present (for value of 1).
+*/
+func (s *AVHDRPlusColorTransformParams) SetToneMappingFlag(value uint8) {
+	s.ptr.tone_mapping_flag = (C.uint8_t)(value)
+}
+
+// KneePointX gets the knee_point_x field.
+/*
+  The x coordinate of the separation point between the linear part and the
+  curved part of the tone mapping function. The value shall be in the range
+  of 0 to 1, excluding 0 and in multiples of 1/4095.
+*/
+func (s *AVHDRPlusColorTransformParams) KneePointX() *AVRational {
+	value := s.ptr.knee_point_x
+	return &AVRational{value: value}
+}
+
+// SetKneePointX sets the knee_point_x field.
+/*
+  The x coordinate of the separation point between the linear part and the
+  curved part of the tone mapping function. The value shall be in the range
+  of 0 to 1, excluding 0 and in multiples of 1/4095.
+*/
+func (s *AVHDRPlusColorTransformParams) SetKneePointX(value *AVRational) {
+	s.ptr.knee_point_x = value.value
+}
+
+// KneePointY gets the knee_point_y field.
+/*
+  The y coordinate of the separation point between the linear part and the
+  curved part of the tone mapping function. The value shall be in the range
+  of 0 to 1, excluding 0 and in multiples of 1/4095.
+*/
+func (s *AVHDRPlusColorTransformParams) KneePointY() *AVRational {
+	value := s.ptr.knee_point_y
+	return &AVRational{value: value}
+}
+
+// SetKneePointY sets the knee_point_y field.
+/*
+  The y coordinate of the separation point between the linear part and the
+  curved part of the tone mapping function. The value shall be in the range
+  of 0 to 1, excluding 0 and in multiples of 1/4095.
+*/
+func (s *AVHDRPlusColorTransformParams) SetKneePointY(value *AVRational) {
+	s.ptr.knee_point_y = value.value
+}
+
+// NumBezierCurveAnchors gets the num_bezier_curve_anchors field.
+/*
+  The number of the intermediate anchor parameters of the tone mapping
+  function in the processing window. The maximum value shall be 15.
+*/
+func (s *AVHDRPlusColorTransformParams) NumBezierCurveAnchors() uint8 {
+	value := s.ptr.num_bezier_curve_anchors
+	return uint8(value)
+}
+
+// SetNumBezierCurveAnchors sets the num_bezier_curve_anchors field.
+/*
+  The number of the intermediate anchor parameters of the tone mapping
+  function in the processing window. The maximum value shall be 15.
+*/
+func (s *AVHDRPlusColorTransformParams) SetNumBezierCurveAnchors(value uint8) {
+	s.ptr.num_bezier_curve_anchors = (C.uint8_t)(value)
+}
+
+// bezier_curve_anchors skipped due to unknown const array
+
+// ColorSaturationMappingFlag gets the color_saturation_mapping_flag field.
+/*
+  This flag shall be equal to 0 in bitstreams conforming to this version of
+  this Specification. Other values are reserved for future use.
+*/
+func (s *AVHDRPlusColorTransformParams) ColorSaturationMappingFlag() uint8 {
+	value := s.ptr.color_saturation_mapping_flag
+	return uint8(value)
+}
+
+// SetColorSaturationMappingFlag sets the color_saturation_mapping_flag field.
+/*
+  This flag shall be equal to 0 in bitstreams conforming to this version of
+  this Specification. Other values are reserved for future use.
+*/
+func (s *AVHDRPlusColorTransformParams) SetColorSaturationMappingFlag(value uint8) {
+	s.ptr.color_saturation_mapping_flag = (C.uint8_t)(value)
+}
+
+// ColorSaturationWeight gets the color_saturation_weight field.
+/*
+  The color saturation gain in the processing window in the scene. The
+  value shall be in the range of 0 to 63/8, inclusive and in multiples of
+  1/8. The default value shall be 1.
+*/
+func (s *AVHDRPlusColorTransformParams) ColorSaturationWeight() *AVRational {
+	value := s.ptr.color_saturation_weight
+	return &AVRational{value: value}
+}
+
+// SetColorSaturationWeight sets the color_saturation_weight field.
+/*
+  The color saturation gain in the processing window in the scene. The
+  value shall be in the range of 0 to 63/8, inclusive and in multiples of
+  1/8. The default value shall be 1.
+*/
+func (s *AVHDRPlusColorTransformParams) SetColorSaturationWeight(value *AVRational) {
+	s.ptr.color_saturation_weight = value.value
+}
+
+// --- Struct AVDynamicHDRPlus ---
+
+// AVDynamicHDRPlus wraps AVDynamicHDRPlus.
+/*
+  This struct represents dynamic metadata for color volume transform -
+  application 4 of SMPTE 2094-40:2016 standard.
+
+  To be used as payload of a AVFrameSideData or AVPacketSideData with the
+  appropriate type.
+
+  @note The struct should be allocated with
+  av_dynamic_hdr_plus_alloc() and its size is not a part of
+  the public ABI.
+*/
+type AVDynamicHDRPlus struct {
+	ptr *C.AVDynamicHDRPlus
+}
+
+func (s *AVDynamicHDRPlus) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDynamicHDRPlusArray(ptr unsafe.Pointer) *Array[*AVDynamicHDRPlus] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDynamicHDRPlus]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDynamicHDRPlus {
+			ptr := (**C.AVDynamicHDRPlus)(pointer)
+			value := *ptr
+			var valueMapped *AVDynamicHDRPlus
+			if value != nil {
+				valueMapped = &AVDynamicHDRPlus{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDynamicHDRPlus) {
+			ptr := (**C.AVDynamicHDRPlus)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// ItuTT35CountryCode gets the itu_t_t35_country_code field.
+//
+//	Country code by Rec. ITU-T T.35 Annex A. The value shall be 0xB5.
+func (s *AVDynamicHDRPlus) ItuTT35CountryCode() uint8 {
+	value := s.ptr.itu_t_t35_country_code
+	return uint8(value)
+}
+
+// SetItuTT35CountryCode sets the itu_t_t35_country_code field.
+//
+//	Country code by Rec. ITU-T T.35 Annex A. The value shall be 0xB5.
+func (s *AVDynamicHDRPlus) SetItuTT35CountryCode(value uint8) {
+	s.ptr.itu_t_t35_country_code = (C.uint8_t)(value)
+}
+
+// ApplicationVersion gets the application_version field.
+/*
+  Application version in the application defining document in ST-2094
+  suite. The value shall be set to 0.
+*/
+func (s *AVDynamicHDRPlus) ApplicationVersion() uint8 {
+	value := s.ptr.application_version
+	return uint8(value)
+}
+
+// SetApplicationVersion sets the application_version field.
+/*
+  Application version in the application defining document in ST-2094
+  suite. The value shall be set to 0.
+*/
+func (s *AVDynamicHDRPlus) SetApplicationVersion(value uint8) {
+	s.ptr.application_version = (C.uint8_t)(value)
+}
+
+// NumWindows gets the num_windows field.
+/*
+  The number of processing windows. The value shall be in the range
+  of 1 to 3, inclusive.
+*/
+func (s *AVDynamicHDRPlus) NumWindows() uint8 {
+	value := s.ptr.num_windows
+	return uint8(value)
+}
+
+// SetNumWindows sets the num_windows field.
+/*
+  The number of processing windows. The value shall be in the range
+  of 1 to 3, inclusive.
+*/
+func (s *AVDynamicHDRPlus) SetNumWindows(value uint8) {
+	s.ptr.num_windows = (C.uint8_t)(value)
+}
+
+// params skipped due to unknown const array
+
+// TargetedSystemDisplayMaximumLuminance gets the targeted_system_display_maximum_luminance field.
+/*
+  The nominal maximum display luminance of the targeted system display,
+  in units of 0.0001 candelas per square metre. The value shall be in
+  the range of 0 to 10000, inclusive.
+*/
+func (s *AVDynamicHDRPlus) TargetedSystemDisplayMaximumLuminance() *AVRational {
+	value := s.ptr.targeted_system_display_maximum_luminance
+	return &AVRational{value: value}
+}
+
+// SetTargetedSystemDisplayMaximumLuminance sets the targeted_system_display_maximum_luminance field.
+/*
+  The nominal maximum display luminance of the targeted system display,
+  in units of 0.0001 candelas per square metre. The value shall be in
+  the range of 0 to 10000, inclusive.
+*/
+func (s *AVDynamicHDRPlus) SetTargetedSystemDisplayMaximumLuminance(value *AVRational) {
+	s.ptr.targeted_system_display_maximum_luminance = value.value
+}
+
+// TargetedSystemDisplayActualPeakLuminanceFlag gets the targeted_system_display_actual_peak_luminance_flag field.
+/*
+  This flag shall be equal to 0 in bit streams conforming to this version
+  of this Specification. The value 1 is reserved for future use.
+*/
+func (s *AVDynamicHDRPlus) TargetedSystemDisplayActualPeakLuminanceFlag() uint8 {
+	value := s.ptr.targeted_system_display_actual_peak_luminance_flag
+	return uint8(value)
+}
+
+// SetTargetedSystemDisplayActualPeakLuminanceFlag sets the targeted_system_display_actual_peak_luminance_flag field.
+/*
+  This flag shall be equal to 0 in bit streams conforming to this version
+  of this Specification. The value 1 is reserved for future use.
+*/
+func (s *AVDynamicHDRPlus) SetTargetedSystemDisplayActualPeakLuminanceFlag(value uint8) {
+	s.ptr.targeted_system_display_actual_peak_luminance_flag = (C.uint8_t)(value)
+}
+
+// NumRowsTargetedSystemDisplayActualPeakLuminance gets the num_rows_targeted_system_display_actual_peak_luminance field.
+/*
+  The number of rows in the targeted system_display_actual_peak_luminance
+  array. The value shall be in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) NumRowsTargetedSystemDisplayActualPeakLuminance() uint8 {
+	value := s.ptr.num_rows_targeted_system_display_actual_peak_luminance
+	return uint8(value)
+}
+
+// SetNumRowsTargetedSystemDisplayActualPeakLuminance sets the num_rows_targeted_system_display_actual_peak_luminance field.
+/*
+  The number of rows in the targeted system_display_actual_peak_luminance
+  array. The value shall be in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) SetNumRowsTargetedSystemDisplayActualPeakLuminance(value uint8) {
+	s.ptr.num_rows_targeted_system_display_actual_peak_luminance = (C.uint8_t)(value)
+}
+
+// NumColsTargetedSystemDisplayActualPeakLuminance gets the num_cols_targeted_system_display_actual_peak_luminance field.
+/*
+  The number of columns in the
+  targeted_system_display_actual_peak_luminance array. The value shall be
+  in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) NumColsTargetedSystemDisplayActualPeakLuminance() uint8 {
+	value := s.ptr.num_cols_targeted_system_display_actual_peak_luminance
+	return uint8(value)
+}
+
+// SetNumColsTargetedSystemDisplayActualPeakLuminance sets the num_cols_targeted_system_display_actual_peak_luminance field.
+/*
+  The number of columns in the
+  targeted_system_display_actual_peak_luminance array. The value shall be
+  in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) SetNumColsTargetedSystemDisplayActualPeakLuminance(value uint8) {
+	s.ptr.num_cols_targeted_system_display_actual_peak_luminance = (C.uint8_t)(value)
+}
+
+// targeted_system_display_actual_peak_luminance skipped due to multi dim const array
+
+// MasteringDisplayActualPeakLuminanceFlag gets the mastering_display_actual_peak_luminance_flag field.
+/*
+  This flag shall be equal to 0 in bitstreams conforming to this version of
+  this Specification. The value 1 is reserved for future use.
+*/
+func (s *AVDynamicHDRPlus) MasteringDisplayActualPeakLuminanceFlag() uint8 {
+	value := s.ptr.mastering_display_actual_peak_luminance_flag
+	return uint8(value)
+}
+
+// SetMasteringDisplayActualPeakLuminanceFlag sets the mastering_display_actual_peak_luminance_flag field.
+/*
+  This flag shall be equal to 0 in bitstreams conforming to this version of
+  this Specification. The value 1 is reserved for future use.
+*/
+func (s *AVDynamicHDRPlus) SetMasteringDisplayActualPeakLuminanceFlag(value uint8) {
+	s.ptr.mastering_display_actual_peak_luminance_flag = (C.uint8_t)(value)
+}
+
+// NumRowsMasteringDisplayActualPeakLuminance gets the num_rows_mastering_display_actual_peak_luminance field.
+/*
+  The number of rows in the mastering_display_actual_peak_luminance array.
+  The value shall be in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) NumRowsMasteringDisplayActualPeakLuminance() uint8 {
+	value := s.ptr.num_rows_mastering_display_actual_peak_luminance
+	return uint8(value)
+}
+
+// SetNumRowsMasteringDisplayActualPeakLuminance sets the num_rows_mastering_display_actual_peak_luminance field.
+/*
+  The number of rows in the mastering_display_actual_peak_luminance array.
+  The value shall be in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) SetNumRowsMasteringDisplayActualPeakLuminance(value uint8) {
+	s.ptr.num_rows_mastering_display_actual_peak_luminance = (C.uint8_t)(value)
+}
+
+// NumColsMasteringDisplayActualPeakLuminance gets the num_cols_mastering_display_actual_peak_luminance field.
+/*
+  The number of columns in the mastering_display_actual_peak_luminance
+  array. The value shall be in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) NumColsMasteringDisplayActualPeakLuminance() uint8 {
+	value := s.ptr.num_cols_mastering_display_actual_peak_luminance
+	return uint8(value)
+}
+
+// SetNumColsMasteringDisplayActualPeakLuminance sets the num_cols_mastering_display_actual_peak_luminance field.
+/*
+  The number of columns in the mastering_display_actual_peak_luminance
+  array. The value shall be in the range of 2 to 25, inclusive.
+*/
+func (s *AVDynamicHDRPlus) SetNumColsMasteringDisplayActualPeakLuminance(value uint8) {
+	s.ptr.num_cols_mastering_display_actual_peak_luminance = (C.uint8_t)(value)
+}
+
+// mastering_display_actual_peak_luminance skipped due to multi dim const array
+
+// --- Struct AVHDRVivid3SplineParams ---
+
+// AVHDRVivid3SplineParams wraps AVHDRVivid3SplineParams.
+//
+//	HDR Vivid three spline params.
+type AVHDRVivid3SplineParams struct {
+	ptr *C.AVHDRVivid3SplineParams
+}
+
+func (s *AVHDRVivid3SplineParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHDRVivid3SplineParamsArray(ptr unsafe.Pointer) *Array[*AVHDRVivid3SplineParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHDRVivid3SplineParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHDRVivid3SplineParams {
+			ptr := (**C.AVHDRVivid3SplineParams)(pointer)
+			value := *ptr
+			var valueMapped *AVHDRVivid3SplineParams
+			if value != nil {
+				valueMapped = &AVHDRVivid3SplineParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHDRVivid3SplineParams) {
+			ptr := (**C.AVHDRVivid3SplineParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// ThMode gets the th_mode field.
+/*
+  The mode of three Spline. the value shall be in the range
+  of 0 to 3, inclusive.
+*/
+func (s *AVHDRVivid3SplineParams) ThMode() int {
+	value := s.ptr.th_mode
+	return int(value)
+}
+
+// SetThMode sets the th_mode field.
+/*
+  The mode of three Spline. the value shall be in the range
+  of 0 to 3, inclusive.
+*/
+func (s *AVHDRVivid3SplineParams) SetThMode(value int) {
+	s.ptr.th_mode = (C.int)(value)
+}
+
+// ThEnableMb gets the th_enable_mb field.
+/*
+  three_Spline_TH_enable_MB is in the range of 0.0 to 1.0, inclusive
+  and in multiples of 1.0/255.
+*/
+func (s *AVHDRVivid3SplineParams) ThEnableMb() *AVRational {
+	value := s.ptr.th_enable_mb
+	return &AVRational{value: value}
+}
+
+// SetThEnableMb sets the th_enable_mb field.
+/*
+  three_Spline_TH_enable_MB is in the range of 0.0 to 1.0, inclusive
+  and in multiples of 1.0/255.
+*/
+func (s *AVHDRVivid3SplineParams) SetThEnableMb(value *AVRational) {
+	s.ptr.th_enable_mb = value.value
+}
+
+// ThEnable gets the th_enable field.
+/*
+  3Spline_TH_enable of three Spline.
+  The value shall be in the range of 0.0 to 1.0, inclusive.
+  and in multiples of 1.0/4095.
+*/
+func (s *AVHDRVivid3SplineParams) ThEnable() *AVRational {
+	value := s.ptr.th_enable
+	return &AVRational{value: value}
+}
+
+// SetThEnable sets the th_enable field.
+/*
+  3Spline_TH_enable of three Spline.
+  The value shall be in the range of 0.0 to 1.0, inclusive.
+  and in multiples of 1.0/4095.
+*/
+func (s *AVHDRVivid3SplineParams) SetThEnable(value *AVRational) {
+	s.ptr.th_enable = value.value
+}
+
+// ThDelta1 gets the th_delta1 field.
+/*
+  3Spline_TH_Delta1 of three Spline.
+  The value shall be in the range of 0.0 to 0.25, inclusive,
+  and in multiples of 0.25/1023.
+*/
+func (s *AVHDRVivid3SplineParams) ThDelta1() *AVRational {
+	value := s.ptr.th_delta1
+	return &AVRational{value: value}
+}
+
+// SetThDelta1 sets the th_delta1 field.
+/*
+  3Spline_TH_Delta1 of three Spline.
+  The value shall be in the range of 0.0 to 0.25, inclusive,
+  and in multiples of 0.25/1023.
+*/
+func (s *AVHDRVivid3SplineParams) SetThDelta1(value *AVRational) {
+	s.ptr.th_delta1 = value.value
+}
+
+// ThDelta2 gets the th_delta2 field.
+/*
+  3Spline_TH_Delta2 of three Spline.
+  The value shall be in the range of 0.0 to 0.25, inclusive,
+  and in multiples of 0.25/1023.
+*/
+func (s *AVHDRVivid3SplineParams) ThDelta2() *AVRational {
+	value := s.ptr.th_delta2
+	return &AVRational{value: value}
+}
+
+// SetThDelta2 sets the th_delta2 field.
+/*
+  3Spline_TH_Delta2 of three Spline.
+  The value shall be in the range of 0.0 to 0.25, inclusive,
+  and in multiples of 0.25/1023.
+*/
+func (s *AVHDRVivid3SplineParams) SetThDelta2(value *AVRational) {
+	s.ptr.th_delta2 = value.value
+}
+
+// EnableStrength gets the enable_strength field.
+/*
+  3Spline_enable_Strength of three Spline.
+  The value shall be in the range of 0.0 to 1.0, inclusive,
+  and in multiples of 1.0/255.
+*/
+func (s *AVHDRVivid3SplineParams) EnableStrength() *AVRational {
+	value := s.ptr.enable_strength
+	return &AVRational{value: value}
+}
+
+// SetEnableStrength sets the enable_strength field.
+/*
+  3Spline_enable_Strength of three Spline.
+  The value shall be in the range of 0.0 to 1.0, inclusive,
+  and in multiples of 1.0/255.
+*/
+func (s *AVHDRVivid3SplineParams) SetEnableStrength(value *AVRational) {
+	s.ptr.enable_strength = value.value
+}
+
+// --- Struct AVHDRVividColorToneMappingParams ---
+
+// AVHDRVividColorToneMappingParams wraps AVHDRVividColorToneMappingParams.
+/*
+  Color tone mapping parameters at a processing window in a dynamic metadata for
+  CUVA 005.1:2021.
+*/
+type AVHDRVividColorToneMappingParams struct {
+	ptr *C.AVHDRVividColorToneMappingParams
+}
+
+func (s *AVHDRVividColorToneMappingParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHDRVividColorToneMappingParamsArray(ptr unsafe.Pointer) *Array[*AVHDRVividColorToneMappingParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHDRVividColorToneMappingParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHDRVividColorToneMappingParams {
+			ptr := (**C.AVHDRVividColorToneMappingParams)(pointer)
+			value := *ptr
+			var valueMapped *AVHDRVividColorToneMappingParams
+			if value != nil {
+				valueMapped = &AVHDRVividColorToneMappingParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHDRVividColorToneMappingParams) {
+			ptr := (**C.AVHDRVividColorToneMappingParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// TargetedSystemDisplayMaximumLuminance gets the targeted_system_display_maximum_luminance field.
+/*
+  The nominal maximum display luminance of the targeted system display,
+  in multiples of 1.0/4095 candelas per square metre. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) TargetedSystemDisplayMaximumLuminance() *AVRational {
+	value := s.ptr.targeted_system_display_maximum_luminance
+	return &AVRational{value: value}
+}
+
+// SetTargetedSystemDisplayMaximumLuminance sets the targeted_system_display_maximum_luminance field.
+/*
+  The nominal maximum display luminance of the targeted system display,
+  in multiples of 1.0/4095 candelas per square metre. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetTargetedSystemDisplayMaximumLuminance(value *AVRational) {
+	s.ptr.targeted_system_display_maximum_luminance = value.value
+}
+
+// BaseEnableFlag gets the base_enable_flag field.
+//
+//	This flag indicates that transfer the base parameter(for value of 1)
+func (s *AVHDRVividColorToneMappingParams) BaseEnableFlag() int {
+	value := s.ptr.base_enable_flag
+	return int(value)
+}
+
+// SetBaseEnableFlag sets the base_enable_flag field.
+//
+//	This flag indicates that transfer the base parameter(for value of 1)
+func (s *AVHDRVividColorToneMappingParams) SetBaseEnableFlag(value int) {
+	s.ptr.base_enable_flag = (C.int)(value)
+}
+
+// BaseParamMP gets the base_param_m_p field.
+/*
+  base_param_m_p in the base parameter,
+  in multiples of 1.0/16383. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamMP() *AVRational {
+	value := s.ptr.base_param_m_p
+	return &AVRational{value: value}
+}
+
+// SetBaseParamMP sets the base_param_m_p field.
+/*
+  base_param_m_p in the base parameter,
+  in multiples of 1.0/16383. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamMP(value *AVRational) {
+	s.ptr.base_param_m_p = value.value
+}
+
+// BaseParamMM gets the base_param_m_m field.
+/*
+  base_param_m_m in the base parameter,
+  in multiples of 1.0/10. The value shall be in
+  the range of 0.0 to 6.3, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamMM() *AVRational {
+	value := s.ptr.base_param_m_m
+	return &AVRational{value: value}
+}
+
+// SetBaseParamMM sets the base_param_m_m field.
+/*
+  base_param_m_m in the base parameter,
+  in multiples of 1.0/10. The value shall be in
+  the range of 0.0 to 6.3, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamMM(value *AVRational) {
+	s.ptr.base_param_m_m = value.value
+}
+
+// BaseParamMA gets the base_param_m_a field.
+/*
+  base_param_m_a in the base parameter,
+  in multiples of 1.0/1023. The value shall be in
+  the range of 0.0 to 1.0 inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamMA() *AVRational {
+	value := s.ptr.base_param_m_a
+	return &AVRational{value: value}
+}
+
+// SetBaseParamMA sets the base_param_m_a field.
+/*
+  base_param_m_a in the base parameter,
+  in multiples of 1.0/1023. The value shall be in
+  the range of 0.0 to 1.0 inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamMA(value *AVRational) {
+	s.ptr.base_param_m_a = value.value
+}
+
+// BaseParamMB gets the base_param_m_b field.
+/*
+  base_param_m_b in the base parameter,
+  in multiples of 1/1023. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamMB() *AVRational {
+	value := s.ptr.base_param_m_b
+	return &AVRational{value: value}
+}
+
+// SetBaseParamMB sets the base_param_m_b field.
+/*
+  base_param_m_b in the base parameter,
+  in multiples of 1/1023. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamMB(value *AVRational) {
+	s.ptr.base_param_m_b = value.value
+}
+
+// BaseParamMN gets the base_param_m_n field.
+/*
+  base_param_m_n in the base parameter,
+  in multiples of 1.0/10. The value shall be in
+  the range of 0.0 to 6.3, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamMN() *AVRational {
+	value := s.ptr.base_param_m_n
+	return &AVRational{value: value}
+}
+
+// SetBaseParamMN sets the base_param_m_n field.
+/*
+  base_param_m_n in the base parameter,
+  in multiples of 1.0/10. The value shall be in
+  the range of 0.0 to 6.3, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamMN(value *AVRational) {
+	s.ptr.base_param_m_n = value.value
+}
+
+// BaseParamK1 gets the base_param_k1 field.
+/*
+  indicates k1_0 in the base parameter,
+  base_param_k1 <= 1: k1_0 = base_param_k1
+  base_param_k1 > 1: reserved
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamK1() int {
+	value := s.ptr.base_param_k1
+	return int(value)
+}
+
+// SetBaseParamK1 sets the base_param_k1 field.
+/*
+  indicates k1_0 in the base parameter,
+  base_param_k1 <= 1: k1_0 = base_param_k1
+  base_param_k1 > 1: reserved
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamK1(value int) {
+	s.ptr.base_param_k1 = (C.int)(value)
+}
+
+// BaseParamK2 gets the base_param_k2 field.
+/*
+  indicates k2_0 in the base parameter,
+  base_param_k2 <= 1: k2_0 = base_param_k2
+  base_param_k2 > 1: reserved
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamK2() int {
+	value := s.ptr.base_param_k2
+	return int(value)
+}
+
+// SetBaseParamK2 sets the base_param_k2 field.
+/*
+  indicates k2_0 in the base parameter,
+  base_param_k2 <= 1: k2_0 = base_param_k2
+  base_param_k2 > 1: reserved
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamK2(value int) {
+	s.ptr.base_param_k2 = (C.int)(value)
+}
+
+// BaseParamK3 gets the base_param_k3 field.
+/*
+  indicates k3_0 in the base parameter,
+  base_param_k3 == 1: k3_0 = base_param_k3
+  base_param_k3 == 2: k3_0 = maximum_maxrgb
+  base_param_k3 > 2: reserved
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamK3() int {
+	value := s.ptr.base_param_k3
+	return int(value)
+}
+
+// SetBaseParamK3 sets the base_param_k3 field.
+/*
+  indicates k3_0 in the base parameter,
+  base_param_k3 == 1: k3_0 = base_param_k3
+  base_param_k3 == 2: k3_0 = maximum_maxrgb
+  base_param_k3 > 2: reserved
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamK3(value int) {
+	s.ptr.base_param_k3 = (C.int)(value)
+}
+
+// BaseParamDeltaEnableMode gets the base_param_Delta_enable_mode field.
+//
+//	This flag indicates that delta mode of base parameter(for value of 1)
+func (s *AVHDRVividColorToneMappingParams) BaseParamDeltaEnableMode() int {
+	value := s.ptr.base_param_Delta_enable_mode
+	return int(value)
+}
+
+// SetBaseParamDeltaEnableMode sets the base_param_Delta_enable_mode field.
+//
+//	This flag indicates that delta mode of base parameter(for value of 1)
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamDeltaEnableMode(value int) {
+	s.ptr.base_param_Delta_enable_mode = (C.int)(value)
+}
+
+// BaseParamDelta gets the base_param_Delta field.
+/*
+  base_param_Delta in the base parameter,
+  in multiples of 1.0/127. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) BaseParamDelta() *AVRational {
+	value := s.ptr.base_param_Delta
+	return &AVRational{value: value}
+}
+
+// SetBaseParamDelta sets the base_param_Delta field.
+/*
+  base_param_Delta in the base parameter,
+  in multiples of 1.0/127. The value shall be in
+  the range of 0.0 to 1.0, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetBaseParamDelta(value *AVRational) {
+	s.ptr.base_param_Delta = value.value
+}
+
+// ThreeSplineEnableFlag gets the three_Spline_enable_flag field.
+/*
+  indicates 3Spline_enable_flag in the base parameter,
+  This flag indicates that transfer three Spline of base parameter(for value of 1)
+*/
+func (s *AVHDRVividColorToneMappingParams) ThreeSplineEnableFlag() int {
+	value := s.ptr.three_Spline_enable_flag
+	return int(value)
+}
+
+// SetThreeSplineEnableFlag sets the three_Spline_enable_flag field.
+/*
+  indicates 3Spline_enable_flag in the base parameter,
+  This flag indicates that transfer three Spline of base parameter(for value of 1)
+*/
+func (s *AVHDRVividColorToneMappingParams) SetThreeSplineEnableFlag(value int) {
+	s.ptr.three_Spline_enable_flag = (C.int)(value)
+}
+
+// ThreeSplineNum gets the three_Spline_num field.
+/*
+  The number of three Spline. The value shall be in the range
+  of 1 to 2, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) ThreeSplineNum() int {
+	value := s.ptr.three_Spline_num
+	return int(value)
+}
+
+// SetThreeSplineNum sets the three_Spline_num field.
+/*
+  The number of three Spline. The value shall be in the range
+  of 1 to 2, inclusive.
+*/
+func (s *AVHDRVividColorToneMappingParams) SetThreeSplineNum(value int) {
+	s.ptr.three_Spline_num = (C.int)(value)
+}
+
+// three_spline skipped due to unknown const array
+
+// --- Struct AVHDRVividColorTransformParams ---
+
+// AVHDRVividColorTransformParams wraps AVHDRVividColorTransformParams.
+/*
+  Color transform parameters at a processing window in a dynamic metadata for
+  CUVA 005.1:2021.
+*/
+type AVHDRVividColorTransformParams struct {
+	ptr *C.AVHDRVividColorTransformParams
+}
+
+func (s *AVHDRVividColorTransformParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHDRVividColorTransformParamsArray(ptr unsafe.Pointer) *Array[*AVHDRVividColorTransformParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHDRVividColorTransformParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHDRVividColorTransformParams {
+			ptr := (**C.AVHDRVividColorTransformParams)(pointer)
+			value := *ptr
+			var valueMapped *AVHDRVividColorTransformParams
+			if value != nil {
+				valueMapped = &AVHDRVividColorTransformParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHDRVividColorTransformParams) {
+			ptr := (**C.AVHDRVividColorTransformParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// MinimumMaxrgb gets the minimum_maxrgb field.
+/*
+  Indicates the minimum brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0,
+  inclusive and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) MinimumMaxrgb() *AVRational {
+	value := s.ptr.minimum_maxrgb
+	return &AVRational{value: value}
+}
+
+// SetMinimumMaxrgb sets the minimum_maxrgb field.
+/*
+  Indicates the minimum brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0,
+  inclusive and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) SetMinimumMaxrgb(value *AVRational) {
+	s.ptr.minimum_maxrgb = value.value
+}
+
+// AverageMaxrgb gets the average_maxrgb field.
+/*
+  Indicates the average brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0,
+  inclusive and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) AverageMaxrgb() *AVRational {
+	value := s.ptr.average_maxrgb
+	return &AVRational{value: value}
+}
+
+// SetAverageMaxrgb sets the average_maxrgb field.
+/*
+  Indicates the average brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0,
+  inclusive and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) SetAverageMaxrgb(value *AVRational) {
+	s.ptr.average_maxrgb = value.value
+}
+
+// VarianceMaxrgb gets the variance_maxrgb field.
+/*
+  Indicates the variance brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0,
+  inclusive and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) VarianceMaxrgb() *AVRational {
+	value := s.ptr.variance_maxrgb
+	return &AVRational{value: value}
+}
+
+// SetVarianceMaxrgb sets the variance_maxrgb field.
+/*
+  Indicates the variance brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0,
+  inclusive and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) SetVarianceMaxrgb(value *AVRational) {
+	s.ptr.variance_maxrgb = value.value
+}
+
+// MaximumMaxrgb gets the maximum_maxrgb field.
+/*
+  Indicates the maximum brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0, inclusive
+  and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) MaximumMaxrgb() *AVRational {
+	value := s.ptr.maximum_maxrgb
+	return &AVRational{value: value}
+}
+
+// SetMaximumMaxrgb sets the maximum_maxrgb field.
+/*
+  Indicates the maximum brightness of the displayed content.
+  The values should be in the range of 0.0 to 1.0, inclusive
+  and in multiples of 1/4095.
+*/
+func (s *AVHDRVividColorTransformParams) SetMaximumMaxrgb(value *AVRational) {
+	s.ptr.maximum_maxrgb = value.value
+}
+
+// ToneMappingModeFlag gets the tone_mapping_mode_flag field.
+/*
+  This flag indicates that the metadata for the tone mapping function in
+  the processing window is present (for value of 1).
+*/
+func (s *AVHDRVividColorTransformParams) ToneMappingModeFlag() int {
+	value := s.ptr.tone_mapping_mode_flag
+	return int(value)
+}
+
+// SetToneMappingModeFlag sets the tone_mapping_mode_flag field.
+/*
+  This flag indicates that the metadata for the tone mapping function in
+  the processing window is present (for value of 1).
+*/
+func (s *AVHDRVividColorTransformParams) SetToneMappingModeFlag(value int) {
+	s.ptr.tone_mapping_mode_flag = (C.int)(value)
+}
+
+// ToneMappingParamNum gets the tone_mapping_param_num field.
+/*
+  The number of tone mapping param. The value shall be in the range
+  of 1 to 2, inclusive.
+*/
+func (s *AVHDRVividColorTransformParams) ToneMappingParamNum() int {
+	value := s.ptr.tone_mapping_param_num
+	return int(value)
+}
+
+// SetToneMappingParamNum sets the tone_mapping_param_num field.
+/*
+  The number of tone mapping param. The value shall be in the range
+  of 1 to 2, inclusive.
+*/
+func (s *AVHDRVividColorTransformParams) SetToneMappingParamNum(value int) {
+	s.ptr.tone_mapping_param_num = (C.int)(value)
+}
+
+// tm_params skipped due to unknown const array
+
+// ColorSaturationMappingFlag gets the color_saturation_mapping_flag field.
+/*
+  This flag indicates that the metadata for the color saturation mapping in
+  the processing window is present (for value of 1).
+*/
+func (s *AVHDRVividColorTransformParams) ColorSaturationMappingFlag() int {
+	value := s.ptr.color_saturation_mapping_flag
+	return int(value)
+}
+
+// SetColorSaturationMappingFlag sets the color_saturation_mapping_flag field.
+/*
+  This flag indicates that the metadata for the color saturation mapping in
+  the processing window is present (for value of 1).
+*/
+func (s *AVHDRVividColorTransformParams) SetColorSaturationMappingFlag(value int) {
+	s.ptr.color_saturation_mapping_flag = (C.int)(value)
+}
+
+// ColorSaturationNum gets the color_saturation_num field.
+/*
+  The number of color saturation param. The value shall be in the range
+  of 0 to 7, inclusive.
+*/
+func (s *AVHDRVividColorTransformParams) ColorSaturationNum() int {
+	value := s.ptr.color_saturation_num
+	return int(value)
+}
+
+// SetColorSaturationNum sets the color_saturation_num field.
+/*
+  The number of color saturation param. The value shall be in the range
+  of 0 to 7, inclusive.
+*/
+func (s *AVHDRVividColorTransformParams) SetColorSaturationNum(value int) {
+	s.ptr.color_saturation_num = (C.int)(value)
+}
+
+// color_saturation_gain skipped due to unknown const array
+
+// --- Struct AVDynamicHDRVivid ---
+
+// AVDynamicHDRVivid wraps AVDynamicHDRVivid.
+/*
+  This struct represents dynamic metadata for color volume transform -
+  CUVA 005.1:2021 standard
+
+  To be used as payload of a AVFrameSideData or AVPacketSideData with the
+  appropriate type.
+
+  @note The struct should be allocated with
+  av_dynamic_hdr_vivid_alloc() and its size is not a part of
+  the public ABI.
+*/
+type AVDynamicHDRVivid struct {
+	ptr *C.AVDynamicHDRVivid
+}
+
+func (s *AVDynamicHDRVivid) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDynamicHDRVividArray(ptr unsafe.Pointer) *Array[*AVDynamicHDRVivid] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDynamicHDRVivid]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDynamicHDRVivid {
+			ptr := (**C.AVDynamicHDRVivid)(pointer)
+			value := *ptr
+			var valueMapped *AVDynamicHDRVivid
+			if value != nil {
+				valueMapped = &AVDynamicHDRVivid{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDynamicHDRVivid) {
+			ptr := (**C.AVDynamicHDRVivid)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// SystemStartCode gets the system_start_code field.
+//
+//	The system start code. The value shall be set to 0x01.
+func (s *AVDynamicHDRVivid) SystemStartCode() uint8 {
+	value := s.ptr.system_start_code
+	return uint8(value)
+}
+
+// SetSystemStartCode sets the system_start_code field.
+//
+//	The system start code. The value shall be set to 0x01.
+func (s *AVDynamicHDRVivid) SetSystemStartCode(value uint8) {
+	s.ptr.system_start_code = (C.uint8_t)(value)
+}
+
+// NumWindows gets the num_windows field.
+/*
+  The number of processing windows. The value shall be set to 0x01
+  if the system_start_code is 0x01.
+*/
+func (s *AVDynamicHDRVivid) NumWindows() uint8 {
+	value := s.ptr.num_windows
+	return uint8(value)
+}
+
+// SetNumWindows sets the num_windows field.
+/*
+  The number of processing windows. The value shall be set to 0x01
+  if the system_start_code is 0x01.
+*/
+func (s *AVDynamicHDRVivid) SetNumWindows(value uint8) {
+	s.ptr.num_windows = (C.uint8_t)(value)
+}
+
+// params skipped due to unknown const array
+
+// --- Struct AVHMAC ---
+
+// AVHMAC wraps AVHMAC.
+type AVHMAC struct {
+	ptr *C.AVHMAC
+}
+
+func (s *AVHMAC) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVHMACArray(ptr unsafe.Pointer) *Array[*AVHMAC] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVHMAC]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVHMAC {
+			ptr := (**C.AVHMAC)(pointer)
+			value := *ptr
+			var valueMapped *AVHMAC
+			if value != nil {
+				valueMapped = &AVHMAC{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVHMAC) {
+			ptr := (**C.AVHMAC)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
 // --- Struct AVHWDeviceContext ---
 
 // AVHWDeviceContext wraps AVHWDeviceContext.
@@ -17513,6 +19730,1709 @@ func (s *AVHWFramesConstraints) SetMaxHeight(value int) {
 	s.ptr.max_height = (C.int)(value)
 }
 
+// --- Struct AVIAMFMixGain ---
+
+// AVIAMFMixGain wraps AVIAMFMixGain.
+/*
+  Mix Gain Parameter Data as defined in section 3.8.1 of IAMF.
+
+  @note This struct's size is not a part of the public ABI.
+*/
+type AVIAMFMixGain struct {
+	ptr *C.AVIAMFMixGain
+}
+
+func (s *AVIAMFMixGain) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFMixGainArray(ptr unsafe.Pointer) *Array[*AVIAMFMixGain] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFMixGain]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFMixGain {
+			ptr := (**C.AVIAMFMixGain)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFMixGain
+			if value != nil {
+				valueMapped = &AVIAMFMixGain{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFMixGain) {
+			ptr := (**C.AVIAMFMixGain)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFMixGain) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFMixGain) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// SubblockDuration gets the subblock_duration field.
+/*
+  Duration for the given subblock, in units of
+  1 / @ref AVIAMFParamDefinition.parameter_rate "parameter_rate".
+  It must not be 0.
+*/
+func (s *AVIAMFMixGain) SubblockDuration() uint {
+	value := s.ptr.subblock_duration
+	return uint(value)
+}
+
+// SetSubblockDuration sets the subblock_duration field.
+/*
+  Duration for the given subblock, in units of
+  1 / @ref AVIAMFParamDefinition.parameter_rate "parameter_rate".
+  It must not be 0.
+*/
+func (s *AVIAMFMixGain) SetSubblockDuration(value uint) {
+	s.ptr.subblock_duration = (C.uint)(value)
+}
+
+// AnimationType gets the animation_type field.
+//
+//	The type of animation applied to the parameter values.
+func (s *AVIAMFMixGain) AnimationType() AVIAMFAnimationType {
+	value := s.ptr.animation_type
+	return AVIAMFAnimationType(value)
+}
+
+// SetAnimationType sets the animation_type field.
+//
+//	The type of animation applied to the parameter values.
+func (s *AVIAMFMixGain) SetAnimationType(value AVIAMFAnimationType) {
+	s.ptr.animation_type = (C.enum_AVIAMFAnimationType)(value)
+}
+
+// StartPointValue gets the start_point_value field.
+/*
+  Parameter value that is applied at the start of the subblock.
+  Applies to all defined Animation Types.
+
+  Valid range of values is -128.0 to 128.0
+*/
+func (s *AVIAMFMixGain) StartPointValue() *AVRational {
+	value := s.ptr.start_point_value
+	return &AVRational{value: value}
+}
+
+// SetStartPointValue sets the start_point_value field.
+/*
+  Parameter value that is applied at the start of the subblock.
+  Applies to all defined Animation Types.
+
+  Valid range of values is -128.0 to 128.0
+*/
+func (s *AVIAMFMixGain) SetStartPointValue(value *AVRational) {
+	s.ptr.start_point_value = value.value
+}
+
+// EndPointValue gets the end_point_value field.
+/*
+  Parameter value that is applied at the end of the subblock.
+  Applies only to AV_IAMF_ANIMATION_TYPE_LINEAR and
+  AV_IAMF_ANIMATION_TYPE_BEZIER Animation Types.
+
+  Valid range of values is -128.0 to 128.0
+*/
+func (s *AVIAMFMixGain) EndPointValue() *AVRational {
+	value := s.ptr.end_point_value
+	return &AVRational{value: value}
+}
+
+// SetEndPointValue sets the end_point_value field.
+/*
+  Parameter value that is applied at the end of the subblock.
+  Applies only to AV_IAMF_ANIMATION_TYPE_LINEAR and
+  AV_IAMF_ANIMATION_TYPE_BEZIER Animation Types.
+
+  Valid range of values is -128.0 to 128.0
+*/
+func (s *AVIAMFMixGain) SetEndPointValue(value *AVRational) {
+	s.ptr.end_point_value = value.value
+}
+
+// ControlPointValue gets the control_point_value field.
+/*
+  Parameter value of the middle control point of a quadratic Bezier
+  curve, i.e., its y-axis value.
+  Applies only to AV_IAMF_ANIMATION_TYPE_BEZIER Animation Type.
+
+  Valid range of values is -128.0 to 128.0
+*/
+func (s *AVIAMFMixGain) ControlPointValue() *AVRational {
+	value := s.ptr.control_point_value
+	return &AVRational{value: value}
+}
+
+// SetControlPointValue sets the control_point_value field.
+/*
+  Parameter value of the middle control point of a quadratic Bezier
+  curve, i.e., its y-axis value.
+  Applies only to AV_IAMF_ANIMATION_TYPE_BEZIER Animation Type.
+
+  Valid range of values is -128.0 to 128.0
+*/
+func (s *AVIAMFMixGain) SetControlPointValue(value *AVRational) {
+	s.ptr.control_point_value = value.value
+}
+
+// ControlPointRelativeTime gets the control_point_relative_time field.
+/*
+  Parameter value of the time of the middle control point of a
+  quadratic Bezier curve, i.e., its x-axis value.
+  Applies only to AV_IAMF_ANIMATION_TYPE_BEZIER Animation Type.
+
+  Valid range of values is 0.0 to 1.0
+*/
+func (s *AVIAMFMixGain) ControlPointRelativeTime() *AVRational {
+	value := s.ptr.control_point_relative_time
+	return &AVRational{value: value}
+}
+
+// SetControlPointRelativeTime sets the control_point_relative_time field.
+/*
+  Parameter value of the time of the middle control point of a
+  quadratic Bezier curve, i.e., its x-axis value.
+  Applies only to AV_IAMF_ANIMATION_TYPE_BEZIER Animation Type.
+
+  Valid range of values is 0.0 to 1.0
+*/
+func (s *AVIAMFMixGain) SetControlPointRelativeTime(value *AVRational) {
+	s.ptr.control_point_relative_time = value.value
+}
+
+// --- Struct AVIAMFDemixingInfo ---
+
+// AVIAMFDemixingInfo wraps AVIAMFDemixingInfo.
+/*
+  Demixing Info Parameter Data as defined in section 3.8.2 of IAMF.
+
+  @note This struct's size is not a part of the public ABI.
+*/
+type AVIAMFDemixingInfo struct {
+	ptr *C.AVIAMFDemixingInfo
+}
+
+func (s *AVIAMFDemixingInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFDemixingInfoArray(ptr unsafe.Pointer) *Array[*AVIAMFDemixingInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFDemixingInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFDemixingInfo {
+			ptr := (**C.AVIAMFDemixingInfo)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFDemixingInfo
+			if value != nil {
+				valueMapped = &AVIAMFDemixingInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFDemixingInfo) {
+			ptr := (**C.AVIAMFDemixingInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFDemixingInfo) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFDemixingInfo) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// SubblockDuration gets the subblock_duration field.
+/*
+  Duration for the given subblock, in units of
+  1 / @ref AVIAMFParamDefinition.parameter_rate "parameter_rate".
+  It must not be 0.
+*/
+func (s *AVIAMFDemixingInfo) SubblockDuration() uint {
+	value := s.ptr.subblock_duration
+	return uint(value)
+}
+
+// SetSubblockDuration sets the subblock_duration field.
+/*
+  Duration for the given subblock, in units of
+  1 / @ref AVIAMFParamDefinition.parameter_rate "parameter_rate".
+  It must not be 0.
+*/
+func (s *AVIAMFDemixingInfo) SetSubblockDuration(value uint) {
+	s.ptr.subblock_duration = (C.uint)(value)
+}
+
+// DmixpMode gets the dmixp_mode field.
+//
+//	Pre-defined combination of demixing parameters.
+func (s *AVIAMFDemixingInfo) DmixpMode() uint {
+	value := s.ptr.dmixp_mode
+	return uint(value)
+}
+
+// SetDmixpMode sets the dmixp_mode field.
+//
+//	Pre-defined combination of demixing parameters.
+func (s *AVIAMFDemixingInfo) SetDmixpMode(value uint) {
+	s.ptr.dmixp_mode = (C.uint)(value)
+}
+
+// --- Struct AVIAMFReconGain ---
+
+// AVIAMFReconGain wraps AVIAMFReconGain.
+/*
+  Recon Gain Info Parameter Data as defined in section 3.8.3 of IAMF.
+
+  @note This struct's size is not a part of the public ABI.
+*/
+type AVIAMFReconGain struct {
+	ptr *C.AVIAMFReconGain
+}
+
+func (s *AVIAMFReconGain) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFReconGainArray(ptr unsafe.Pointer) *Array[*AVIAMFReconGain] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFReconGain]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFReconGain {
+			ptr := (**C.AVIAMFReconGain)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFReconGain
+			if value != nil {
+				valueMapped = &AVIAMFReconGain{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFReconGain) {
+			ptr := (**C.AVIAMFReconGain)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFReconGain) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFReconGain) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// SubblockDuration gets the subblock_duration field.
+/*
+  Duration for the given subblock, in units of
+  1 / @ref AVIAMFParamDefinition.parameter_rate "parameter_rate".
+  It must not be 0.
+*/
+func (s *AVIAMFReconGain) SubblockDuration() uint {
+	value := s.ptr.subblock_duration
+	return uint(value)
+}
+
+// SetSubblockDuration sets the subblock_duration field.
+/*
+  Duration for the given subblock, in units of
+  1 / @ref AVIAMFParamDefinition.parameter_rate "parameter_rate".
+  It must not be 0.
+*/
+func (s *AVIAMFReconGain) SetSubblockDuration(value uint) {
+	s.ptr.subblock_duration = (C.uint)(value)
+}
+
+// recon_gain skipped due to multi dim const array
+
+// --- Struct AVIAMFParamDefinition ---
+
+// AVIAMFParamDefinition wraps AVIAMFParamDefinition.
+/*
+  Parameters as defined in section 3.6.1 of IAMF.
+
+  The struct is allocated by av_iamf_param_definition_alloc() along with an
+  array of subblocks, its type depending on the value of type.
+  This array is placed subblocks_offset bytes after the start of this struct.
+
+  @note This struct's size is not a part of the public ABI.
+*/
+type AVIAMFParamDefinition struct {
+	ptr *C.AVIAMFParamDefinition
+}
+
+func (s *AVIAMFParamDefinition) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFParamDefinitionArray(ptr unsafe.Pointer) *Array[*AVIAMFParamDefinition] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFParamDefinition]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFParamDefinition {
+			ptr := (**C.AVIAMFParamDefinition)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFParamDefinition
+			if value != nil {
+				valueMapped = &AVIAMFParamDefinition{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFParamDefinition) {
+			ptr := (**C.AVIAMFParamDefinition)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFParamDefinition) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFParamDefinition) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// SubblocksOffset gets the subblocks_offset field.
+/*
+  Offset in bytes from the start of this struct, at which the subblocks
+  array is located.
+*/
+func (s *AVIAMFParamDefinition) SubblocksOffset() uint64 {
+	value := s.ptr.subblocks_offset
+	return uint64(value)
+}
+
+// SetSubblocksOffset sets the subblocks_offset field.
+/*
+  Offset in bytes from the start of this struct, at which the subblocks
+  array is located.
+*/
+func (s *AVIAMFParamDefinition) SetSubblocksOffset(value uint64) {
+	s.ptr.subblocks_offset = (C.size_t)(value)
+}
+
+// SubblockSize gets the subblock_size field.
+//
+//	Size in bytes of each element in the subblocks array.
+func (s *AVIAMFParamDefinition) SubblockSize() uint64 {
+	value := s.ptr.subblock_size
+	return uint64(value)
+}
+
+// SetSubblockSize sets the subblock_size field.
+//
+//	Size in bytes of each element in the subblocks array.
+func (s *AVIAMFParamDefinition) SetSubblockSize(value uint64) {
+	s.ptr.subblock_size = (C.size_t)(value)
+}
+
+// NbSubblocks gets the nb_subblocks field.
+//
+//	Number of subblocks in the array.
+func (s *AVIAMFParamDefinition) NbSubblocks() uint {
+	value := s.ptr.nb_subblocks
+	return uint(value)
+}
+
+// SetNbSubblocks sets the nb_subblocks field.
+//
+//	Number of subblocks in the array.
+func (s *AVIAMFParamDefinition) SetNbSubblocks(value uint) {
+	s.ptr.nb_subblocks = (C.uint)(value)
+}
+
+// Type gets the type field.
+//
+//	Parameters type. Determines the type of the subblock elements.
+func (s *AVIAMFParamDefinition) Type() AVIAMFParamDefinitionType {
+	value := s.ptr._type
+	return AVIAMFParamDefinitionType(value)
+}
+
+// SetType sets the type field.
+//
+//	Parameters type. Determines the type of the subblock elements.
+func (s *AVIAMFParamDefinition) SetType(value AVIAMFParamDefinitionType) {
+	s.ptr._type = (C.enum_AVIAMFParamDefinitionType)(value)
+}
+
+// ParameterId gets the parameter_id field.
+//
+//	Identifier for the parameter substream.
+func (s *AVIAMFParamDefinition) ParameterId() uint {
+	value := s.ptr.parameter_id
+	return uint(value)
+}
+
+// SetParameterId sets the parameter_id field.
+//
+//	Identifier for the parameter substream.
+func (s *AVIAMFParamDefinition) SetParameterId(value uint) {
+	s.ptr.parameter_id = (C.uint)(value)
+}
+
+// ParameterRate gets the parameter_rate field.
+//
+//	Sample rate for the parameter substream. It must not be 0.
+func (s *AVIAMFParamDefinition) ParameterRate() uint {
+	value := s.ptr.parameter_rate
+	return uint(value)
+}
+
+// SetParameterRate sets the parameter_rate field.
+//
+//	Sample rate for the parameter substream. It must not be 0.
+func (s *AVIAMFParamDefinition) SetParameterRate(value uint) {
+	s.ptr.parameter_rate = (C.uint)(value)
+}
+
+// Duration gets the duration field.
+/*
+  The accumulated duration of all blocks in this parameter definition,
+  in units of 1 / @ref parameter_rate.
+
+  May be 0, in which case all duration values should be specified in
+  another parameter definition referencing the same parameter_id.
+*/
+func (s *AVIAMFParamDefinition) Duration() uint {
+	value := s.ptr.duration
+	return uint(value)
+}
+
+// SetDuration sets the duration field.
+/*
+  The accumulated duration of all blocks in this parameter definition,
+  in units of 1 / @ref parameter_rate.
+
+  May be 0, in which case all duration values should be specified in
+  another parameter definition referencing the same parameter_id.
+*/
+func (s *AVIAMFParamDefinition) SetDuration(value uint) {
+	s.ptr.duration = (C.uint)(value)
+}
+
+// ConstantSubblockDuration gets the constant_subblock_duration field.
+/*
+  The duration of every subblock in the case where all subblocks, with
+  the optional exception of the last subblock, have equal durations.
+
+  Must be 0 if subblocks have different durations.
+*/
+func (s *AVIAMFParamDefinition) ConstantSubblockDuration() uint {
+	value := s.ptr.constant_subblock_duration
+	return uint(value)
+}
+
+// SetConstantSubblockDuration sets the constant_subblock_duration field.
+/*
+  The duration of every subblock in the case where all subblocks, with
+  the optional exception of the last subblock, have equal durations.
+
+  Must be 0 if subblocks have different durations.
+*/
+func (s *AVIAMFParamDefinition) SetConstantSubblockDuration(value uint) {
+	s.ptr.constant_subblock_duration = (C.uint)(value)
+}
+
+// --- Struct AVIAMFLayer ---
+
+// AVIAMFLayer wraps AVIAMFLayer.
+/*
+  A layer defining a Channel Layout in the Audio Element.
+
+  When @ref AVIAMFAudioElement.audio_element_type "the parent's Audio Element type"
+  is AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL, this corresponds to an Scalable Channel
+  Layout layer as defined in section 3.6.2 of IAMF.
+  For AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE, it is an Ambisonics channel
+  layout as defined in section 3.6.3 of IAMF.
+
+  @note The struct should be allocated with av_iamf_audio_element_add_layer()
+        and its size is not a part of the public ABI.
+*/
+type AVIAMFLayer struct {
+	ptr *C.AVIAMFLayer
+}
+
+func (s *AVIAMFLayer) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFLayerArray(ptr unsafe.Pointer) *Array[*AVIAMFLayer] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFLayer]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFLayer {
+			ptr := (**C.AVIAMFLayer)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFLayer
+			if value != nil {
+				valueMapped = &AVIAMFLayer{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFLayer) {
+			ptr := (**C.AVIAMFLayer)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFLayer) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFLayer) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// ChLayout gets the ch_layout field.
+func (s *AVIAMFLayer) ChLayout() *AVChannelLayout {
+	value := &s.ptr.ch_layout
+	return &AVChannelLayout{ptr: value}
+}
+
+// Flags gets the flags field.
+//
+//	A bitmask which may contain a combination of AV_IAMF_LAYER_FLAG_* flags.
+func (s *AVIAMFLayer) Flags() uint {
+	value := s.ptr.flags
+	return uint(value)
+}
+
+// SetFlags sets the flags field.
+//
+//	A bitmask which may contain a combination of AV_IAMF_LAYER_FLAG_* flags.
+func (s *AVIAMFLayer) SetFlags(value uint) {
+	s.ptr.flags = (C.uint)(value)
+}
+
+// OutputGainFlags gets the output_gain_flags field.
+/*
+  Output gain channel flags as defined in section 3.6.2 of IAMF.
+
+  This field is defined only if @ref AVIAMFAudioElement.audio_element_type
+  "the parent's Audio Element type" is AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL,
+  must be 0 otherwise.
+*/
+func (s *AVIAMFLayer) OutputGainFlags() uint {
+	value := s.ptr.output_gain_flags
+	return uint(value)
+}
+
+// SetOutputGainFlags sets the output_gain_flags field.
+/*
+  Output gain channel flags as defined in section 3.6.2 of IAMF.
+
+  This field is defined only if @ref AVIAMFAudioElement.audio_element_type
+  "the parent's Audio Element type" is AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL,
+  must be 0 otherwise.
+*/
+func (s *AVIAMFLayer) SetOutputGainFlags(value uint) {
+	s.ptr.output_gain_flags = (C.uint)(value)
+}
+
+// OutputGain gets the output_gain field.
+/*
+  Output gain as defined in section 3.6.2 of IAMF.
+
+  Must be 0 if @ref output_gain_flags is 0.
+*/
+func (s *AVIAMFLayer) OutputGain() *AVRational {
+	value := s.ptr.output_gain
+	return &AVRational{value: value}
+}
+
+// SetOutputGain sets the output_gain field.
+/*
+  Output gain as defined in section 3.6.2 of IAMF.
+
+  Must be 0 if @ref output_gain_flags is 0.
+*/
+func (s *AVIAMFLayer) SetOutputGain(value *AVRational) {
+	s.ptr.output_gain = value.value
+}
+
+// AmbisonicsMode gets the ambisonics_mode field.
+/*
+  Ambisonics mode as defined in section 3.6.3 of IAMF.
+
+  This field is defined only if @ref AVIAMFAudioElement.audio_element_type
+  "the parent's Audio Element type" is AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE.
+
+  If AV_IAMF_AMBISONICS_MODE_MONO, channel_mapping is defined implicitly
+  (Ambisonic Order) or explicitly (Custom Order with ambi channels) in
+  @ref ch_layout.
+  If AV_IAMF_AMBISONICS_MODE_PROJECTION, @ref demixing_matrix must be set.
+*/
+func (s *AVIAMFLayer) AmbisonicsMode() AVIAMFAmbisonicsMode {
+	value := s.ptr.ambisonics_mode
+	return AVIAMFAmbisonicsMode(value)
+}
+
+// SetAmbisonicsMode sets the ambisonics_mode field.
+/*
+  Ambisonics mode as defined in section 3.6.3 of IAMF.
+
+  This field is defined only if @ref AVIAMFAudioElement.audio_element_type
+  "the parent's Audio Element type" is AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE.
+
+  If AV_IAMF_AMBISONICS_MODE_MONO, channel_mapping is defined implicitly
+  (Ambisonic Order) or explicitly (Custom Order with ambi channels) in
+  @ref ch_layout.
+  If AV_IAMF_AMBISONICS_MODE_PROJECTION, @ref demixing_matrix must be set.
+*/
+func (s *AVIAMFLayer) SetAmbisonicsMode(value AVIAMFAmbisonicsMode) {
+	s.ptr.ambisonics_mode = (C.enum_AVIAMFAmbisonicsMode)(value)
+}
+
+// demixing_matrix skipped due to struct value ptr
+
+// --- Struct AVIAMFAudioElement ---
+
+// AVIAMFAudioElement wraps AVIAMFAudioElement.
+/*
+  Information on how to combine one or more audio streams, as defined in
+  section 3.6 of IAMF.
+
+  @note The struct should be allocated with av_iamf_audio_element_alloc()
+        and its size is not a part of the public ABI.
+*/
+type AVIAMFAudioElement struct {
+	ptr *C.AVIAMFAudioElement
+}
+
+func (s *AVIAMFAudioElement) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFAudioElementArray(ptr unsafe.Pointer) *Array[*AVIAMFAudioElement] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFAudioElement]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFAudioElement {
+			ptr := (**C.AVIAMFAudioElement)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFAudioElement
+			if value != nil {
+				valueMapped = &AVIAMFAudioElement{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFAudioElement) {
+			ptr := (**C.AVIAMFAudioElement)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFAudioElement) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFAudioElement) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// Layers gets the layers field.
+func (s *AVIAMFAudioElement) Layers() *Array[*AVIAMFLayer] {
+	value := s.ptr.layers
+	return ToAVIAMFLayerArray(unsafe.Pointer(value))
+}
+
+// SetLayers sets the layers field.
+func (s *AVIAMFAudioElement) SetLayers(value *Array[AVIAMFLayer]) {
+	if value != nil {
+		s.ptr.layers = (**C.AVIAMFLayer)(value.ptr)
+	} else {
+		s.ptr.layers = nil
+	}
+}
+
+// NbLayers gets the nb_layers field.
+/*
+  Number of layers, or channel groups, in the Audio Element.
+  There may be 6 layers at most, and for @ref audio_element_type
+  AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE, there may be exactly 1.
+
+  Set by av_iamf_audio_element_add_layer(), must not be
+  modified by any other code.
+*/
+func (s *AVIAMFAudioElement) NbLayers() uint {
+	value := s.ptr.nb_layers
+	return uint(value)
+}
+
+// SetNbLayers sets the nb_layers field.
+/*
+  Number of layers, or channel groups, in the Audio Element.
+  There may be 6 layers at most, and for @ref audio_element_type
+  AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE, there may be exactly 1.
+
+  Set by av_iamf_audio_element_add_layer(), must not be
+  modified by any other code.
+*/
+func (s *AVIAMFAudioElement) SetNbLayers(value uint) {
+	s.ptr.nb_layers = (C.uint)(value)
+}
+
+// DemixingInfo gets the demixing_info field.
+/*
+  Demixing information used to reconstruct a scalable channel audio
+  representation.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_DEMIXING.
+*/
+func (s *AVIAMFAudioElement) DemixingInfo() *AVIAMFParamDefinition {
+	value := s.ptr.demixing_info
+	var valueMapped *AVIAMFParamDefinition
+	if value != nil {
+		valueMapped = &AVIAMFParamDefinition{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetDemixingInfo sets the demixing_info field.
+/*
+  Demixing information used to reconstruct a scalable channel audio
+  representation.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_DEMIXING.
+*/
+func (s *AVIAMFAudioElement) SetDemixingInfo(value *AVIAMFParamDefinition) {
+	if value != nil {
+		s.ptr.demixing_info = value.ptr
+	} else {
+		s.ptr.demixing_info = nil
+	}
+}
+
+// ReconGainInfo gets the recon_gain_info field.
+/*
+  Recon gain information used to reconstruct a scalable channel audio
+  representation.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN.
+*/
+func (s *AVIAMFAudioElement) ReconGainInfo() *AVIAMFParamDefinition {
+	value := s.ptr.recon_gain_info
+	var valueMapped *AVIAMFParamDefinition
+	if value != nil {
+		valueMapped = &AVIAMFParamDefinition{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetReconGainInfo sets the recon_gain_info field.
+/*
+  Recon gain information used to reconstruct a scalable channel audio
+  representation.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN.
+*/
+func (s *AVIAMFAudioElement) SetReconGainInfo(value *AVIAMFParamDefinition) {
+	if value != nil {
+		s.ptr.recon_gain_info = value.ptr
+	} else {
+		s.ptr.recon_gain_info = nil
+	}
+}
+
+// AudioElementType gets the audio_element_type field.
+//
+//	Audio element type as defined in section 3.6 of IAMF.
+func (s *AVIAMFAudioElement) AudioElementType() AVIAMFAudioElementType {
+	value := s.ptr.audio_element_type
+	return AVIAMFAudioElementType(value)
+}
+
+// SetAudioElementType sets the audio_element_type field.
+//
+//	Audio element type as defined in section 3.6 of IAMF.
+func (s *AVIAMFAudioElement) SetAudioElementType(value AVIAMFAudioElementType) {
+	s.ptr.audio_element_type = (C.enum_AVIAMFAudioElementType)(value)
+}
+
+// DefaultW gets the default_w field.
+//
+//	Default weight value as defined in section 3.6 of IAMF.
+func (s *AVIAMFAudioElement) DefaultW() uint {
+	value := s.ptr.default_w
+	return uint(value)
+}
+
+// SetDefaultW sets the default_w field.
+//
+//	Default weight value as defined in section 3.6 of IAMF.
+func (s *AVIAMFAudioElement) SetDefaultW(value uint) {
+	s.ptr.default_w = (C.uint)(value)
+}
+
+// --- Struct AVIAMFSubmixElement ---
+
+// AVIAMFSubmixElement wraps AVIAMFSubmixElement.
+/*
+  Submix element as defined in section 3.7 of IAMF.
+
+  @note The struct should be allocated with av_iamf_submix_add_element()
+        and its size is not a part of the public ABI.
+*/
+type AVIAMFSubmixElement struct {
+	ptr *C.AVIAMFSubmixElement
+}
+
+func (s *AVIAMFSubmixElement) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFSubmixElementArray(ptr unsafe.Pointer) *Array[*AVIAMFSubmixElement] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFSubmixElement]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFSubmixElement {
+			ptr := (**C.AVIAMFSubmixElement)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFSubmixElement
+			if value != nil {
+				valueMapped = &AVIAMFSubmixElement{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFSubmixElement) {
+			ptr := (**C.AVIAMFSubmixElement)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFSubmixElement) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFSubmixElement) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// AudioElementId gets the audio_element_id field.
+//
+//	The id of the Audio Element this submix element references.
+func (s *AVIAMFSubmixElement) AudioElementId() uint {
+	value := s.ptr.audio_element_id
+	return uint(value)
+}
+
+// SetAudioElementId sets the audio_element_id field.
+//
+//	The id of the Audio Element this submix element references.
+func (s *AVIAMFSubmixElement) SetAudioElementId(value uint) {
+	s.ptr.audio_element_id = (C.uint)(value)
+}
+
+// ElementMixConfig gets the element_mix_config field.
+/*
+  Information required required for applying any processing to the
+  referenced and rendered Audio Element before being summed with other
+  processed Audio Elements.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN.
+*/
+func (s *AVIAMFSubmixElement) ElementMixConfig() *AVIAMFParamDefinition {
+	value := s.ptr.element_mix_config
+	var valueMapped *AVIAMFParamDefinition
+	if value != nil {
+		valueMapped = &AVIAMFParamDefinition{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetElementMixConfig sets the element_mix_config field.
+/*
+  Information required required for applying any processing to the
+  referenced and rendered Audio Element before being summed with other
+  processed Audio Elements.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN.
+*/
+func (s *AVIAMFSubmixElement) SetElementMixConfig(value *AVIAMFParamDefinition) {
+	if value != nil {
+		s.ptr.element_mix_config = value.ptr
+	} else {
+		s.ptr.element_mix_config = nil
+	}
+}
+
+// DefaultMixGain gets the default_mix_gain field.
+/*
+  Default mix gain value to apply when there are no AVIAMFParamDefinition
+  with @ref element_mix_config "element_mix_config's"
+  @ref AVIAMFParamDefinition.parameter_id "parameter_id" available for a
+  given audio frame.
+*/
+func (s *AVIAMFSubmixElement) DefaultMixGain() *AVRational {
+	value := s.ptr.default_mix_gain
+	return &AVRational{value: value}
+}
+
+// SetDefaultMixGain sets the default_mix_gain field.
+/*
+  Default mix gain value to apply when there are no AVIAMFParamDefinition
+  with @ref element_mix_config "element_mix_config's"
+  @ref AVIAMFParamDefinition.parameter_id "parameter_id" available for a
+  given audio frame.
+*/
+func (s *AVIAMFSubmixElement) SetDefaultMixGain(value *AVRational) {
+	s.ptr.default_mix_gain = value.value
+}
+
+// HeadphonesRenderingMode gets the headphones_rendering_mode field.
+/*
+  A value that indicates whether the referenced channel-based Audio Element
+  shall be rendered to stereo loudspeakers or spatialized with a binaural
+  renderer when played back on headphones.
+  If the Audio Element is not of @ref AVIAMFAudioElement.audio_element_type
+  "type" AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL, then this field is undefined.
+*/
+func (s *AVIAMFSubmixElement) HeadphonesRenderingMode() AVIAMFHeadphonesMode {
+	value := s.ptr.headphones_rendering_mode
+	return AVIAMFHeadphonesMode(value)
+}
+
+// SetHeadphonesRenderingMode sets the headphones_rendering_mode field.
+/*
+  A value that indicates whether the referenced channel-based Audio Element
+  shall be rendered to stereo loudspeakers or spatialized with a binaural
+  renderer when played back on headphones.
+  If the Audio Element is not of @ref AVIAMFAudioElement.audio_element_type
+  "type" AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL, then this field is undefined.
+*/
+func (s *AVIAMFSubmixElement) SetHeadphonesRenderingMode(value AVIAMFHeadphonesMode) {
+	s.ptr.headphones_rendering_mode = (C.enum_AVIAMFHeadphonesMode)(value)
+}
+
+// Annotations gets the annotations field.
+/*
+  A dictionary of strings describing the submix in different languages.
+  Must have the same amount of entries as
+  @ref AVIAMFMixPresentation.annotations "the mix's annotations", stored
+  in the same order, and with the same key strings.
+
+  @ref AVDictionaryEntry.key "key" is a string conforming to BCP-47 that
+  specifies the language for the string stored in
+  @ref AVDictionaryEntry.value "value".
+*/
+func (s *AVIAMFSubmixElement) Annotations() *AVDictionary {
+	value := s.ptr.annotations
+	var valueMapped *AVDictionary
+	if value != nil {
+		valueMapped = &AVDictionary{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAnnotations sets the annotations field.
+/*
+  A dictionary of strings describing the submix in different languages.
+  Must have the same amount of entries as
+  @ref AVIAMFMixPresentation.annotations "the mix's annotations", stored
+  in the same order, and with the same key strings.
+
+  @ref AVDictionaryEntry.key "key" is a string conforming to BCP-47 that
+  specifies the language for the string stored in
+  @ref AVDictionaryEntry.value "value".
+*/
+func (s *AVIAMFSubmixElement) SetAnnotations(value *AVDictionary) {
+	if value != nil {
+		s.ptr.annotations = value.ptr
+	} else {
+		s.ptr.annotations = nil
+	}
+}
+
+// --- Struct AVIAMFSubmixLayout ---
+
+// AVIAMFSubmixLayout wraps AVIAMFSubmixLayout.
+/*
+  Submix layout as defined in section 3.7.6 of IAMF.
+
+  @note The struct should be allocated with av_iamf_submix_add_layout()
+        and its size is not a part of the public ABI.
+*/
+type AVIAMFSubmixLayout struct {
+	ptr *C.AVIAMFSubmixLayout
+}
+
+func (s *AVIAMFSubmixLayout) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFSubmixLayoutArray(ptr unsafe.Pointer) *Array[*AVIAMFSubmixLayout] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFSubmixLayout]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFSubmixLayout {
+			ptr := (**C.AVIAMFSubmixLayout)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFSubmixLayout
+			if value != nil {
+				valueMapped = &AVIAMFSubmixLayout{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFSubmixLayout) {
+			ptr := (**C.AVIAMFSubmixLayout)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFSubmixLayout) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFSubmixLayout) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// LayoutType gets the layout_type field.
+func (s *AVIAMFSubmixLayout) LayoutType() AVIAMFSubmixLayoutType {
+	value := s.ptr.layout_type
+	return AVIAMFSubmixLayoutType(value)
+}
+
+// SetLayoutType sets the layout_type field.
+func (s *AVIAMFSubmixLayout) SetLayoutType(value AVIAMFSubmixLayoutType) {
+	s.ptr.layout_type = (C.enum_AVIAMFSubmixLayoutType)(value)
+}
+
+// SoundSystem gets the sound_system field.
+/*
+  Channel layout matching one of Sound Systems A to J of ITU-2051-3, plus
+  7.1.2ch, 3.1.2ch, and binaural.
+  If layout_type is not AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS or
+  AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL, this field is undefined.
+*/
+func (s *AVIAMFSubmixLayout) SoundSystem() *AVChannelLayout {
+	value := &s.ptr.sound_system
+	return &AVChannelLayout{ptr: value}
+}
+
+// IntegratedLoudness gets the integrated_loudness field.
+/*
+  The program integrated loudness information, as defined in
+  ITU-1770-4.
+*/
+func (s *AVIAMFSubmixLayout) IntegratedLoudness() *AVRational {
+	value := s.ptr.integrated_loudness
+	return &AVRational{value: value}
+}
+
+// SetIntegratedLoudness sets the integrated_loudness field.
+/*
+  The program integrated loudness information, as defined in
+  ITU-1770-4.
+*/
+func (s *AVIAMFSubmixLayout) SetIntegratedLoudness(value *AVRational) {
+	s.ptr.integrated_loudness = value.value
+}
+
+// DigitalPeak gets the digital_peak field.
+/*
+  The digital (sampled) peak value of the audio signal, as defined
+  in ITU-1770-4.
+*/
+func (s *AVIAMFSubmixLayout) DigitalPeak() *AVRational {
+	value := s.ptr.digital_peak
+	return &AVRational{value: value}
+}
+
+// SetDigitalPeak sets the digital_peak field.
+/*
+  The digital (sampled) peak value of the audio signal, as defined
+  in ITU-1770-4.
+*/
+func (s *AVIAMFSubmixLayout) SetDigitalPeak(value *AVRational) {
+	s.ptr.digital_peak = value.value
+}
+
+// TruePeak gets the true_peak field.
+//
+//	The true peak of the audio signal, as defined in ITU-1770-4.
+func (s *AVIAMFSubmixLayout) TruePeak() *AVRational {
+	value := s.ptr.true_peak
+	return &AVRational{value: value}
+}
+
+// SetTruePeak sets the true_peak field.
+//
+//	The true peak of the audio signal, as defined in ITU-1770-4.
+func (s *AVIAMFSubmixLayout) SetTruePeak(value *AVRational) {
+	s.ptr.true_peak = value.value
+}
+
+// DialogueAnchoredLoudness gets the dialogue_anchored_loudness field.
+//
+//	The Dialogue loudness information, as defined in ITU-1770-4.
+func (s *AVIAMFSubmixLayout) DialogueAnchoredLoudness() *AVRational {
+	value := s.ptr.dialogue_anchored_loudness
+	return &AVRational{value: value}
+}
+
+// SetDialogueAnchoredLoudness sets the dialogue_anchored_loudness field.
+//
+//	The Dialogue loudness information, as defined in ITU-1770-4.
+func (s *AVIAMFSubmixLayout) SetDialogueAnchoredLoudness(value *AVRational) {
+	s.ptr.dialogue_anchored_loudness = value.value
+}
+
+// AlbumAnchoredLoudness gets the album_anchored_loudness field.
+//
+//	The Album loudness information, as defined in ITU-1770-4.
+func (s *AVIAMFSubmixLayout) AlbumAnchoredLoudness() *AVRational {
+	value := s.ptr.album_anchored_loudness
+	return &AVRational{value: value}
+}
+
+// SetAlbumAnchoredLoudness sets the album_anchored_loudness field.
+//
+//	The Album loudness information, as defined in ITU-1770-4.
+func (s *AVIAMFSubmixLayout) SetAlbumAnchoredLoudness(value *AVRational) {
+	s.ptr.album_anchored_loudness = value.value
+}
+
+// --- Struct AVIAMFSubmix ---
+
+// AVIAMFSubmix wraps AVIAMFSubmix.
+/*
+  Submix layout as defined in section 3.7 of IAMF.
+
+  @note The struct should be allocated with av_iamf_mix_presentation_add_submix()
+        and its size is not a part of the public ABI.
+*/
+type AVIAMFSubmix struct {
+	ptr *C.AVIAMFSubmix
+}
+
+func (s *AVIAMFSubmix) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFSubmixArray(ptr unsafe.Pointer) *Array[*AVIAMFSubmix] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFSubmix]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFSubmix {
+			ptr := (**C.AVIAMFSubmix)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFSubmix
+			if value != nil {
+				valueMapped = &AVIAMFSubmix{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFSubmix) {
+			ptr := (**C.AVIAMFSubmix)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFSubmix) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFSubmix) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// Elements gets the elements field.
+/*
+  Array of submix elements.
+
+  Set by av_iamf_submix_add_element(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) Elements() *Array[*AVIAMFSubmixElement] {
+	value := s.ptr.elements
+	return ToAVIAMFSubmixElementArray(unsafe.Pointer(value))
+}
+
+// SetElements sets the elements field.
+/*
+  Array of submix elements.
+
+  Set by av_iamf_submix_add_element(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) SetElements(value *Array[AVIAMFSubmixElement]) {
+	if value != nil {
+		s.ptr.elements = (**C.AVIAMFSubmixElement)(value.ptr)
+	} else {
+		s.ptr.elements = nil
+	}
+}
+
+// NbElements gets the nb_elements field.
+/*
+  Number of elements in the submix.
+
+  Set by av_iamf_submix_add_element(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) NbElements() uint {
+	value := s.ptr.nb_elements
+	return uint(value)
+}
+
+// SetNbElements sets the nb_elements field.
+/*
+  Number of elements in the submix.
+
+  Set by av_iamf_submix_add_element(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) SetNbElements(value uint) {
+	s.ptr.nb_elements = (C.uint)(value)
+}
+
+// Layouts gets the layouts field.
+/*
+  Array of submix layouts.
+
+  Set by av_iamf_submix_add_layout(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) Layouts() *Array[*AVIAMFSubmixLayout] {
+	value := s.ptr.layouts
+	return ToAVIAMFSubmixLayoutArray(unsafe.Pointer(value))
+}
+
+// SetLayouts sets the layouts field.
+/*
+  Array of submix layouts.
+
+  Set by av_iamf_submix_add_layout(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) SetLayouts(value *Array[AVIAMFSubmixLayout]) {
+	if value != nil {
+		s.ptr.layouts = (**C.AVIAMFSubmixLayout)(value.ptr)
+	} else {
+		s.ptr.layouts = nil
+	}
+}
+
+// NbLayouts gets the nb_layouts field.
+/*
+  Number of layouts in the submix.
+
+  Set by av_iamf_submix_add_layout(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) NbLayouts() uint {
+	value := s.ptr.nb_layouts
+	return uint(value)
+}
+
+// SetNbLayouts sets the nb_layouts field.
+/*
+  Number of layouts in the submix.
+
+  Set by av_iamf_submix_add_layout(), must not be modified by any
+  other code.
+*/
+func (s *AVIAMFSubmix) SetNbLayouts(value uint) {
+	s.ptr.nb_layouts = (C.uint)(value)
+}
+
+// OutputMixConfig gets the output_mix_config field.
+/*
+  Information required for post-processing the mixed audio signal to
+  generate the audio signal for playback.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN.
+*/
+func (s *AVIAMFSubmix) OutputMixConfig() *AVIAMFParamDefinition {
+	value := s.ptr.output_mix_config
+	var valueMapped *AVIAMFParamDefinition
+	if value != nil {
+		valueMapped = &AVIAMFParamDefinition{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetOutputMixConfig sets the output_mix_config field.
+/*
+  Information required for post-processing the mixed audio signal to
+  generate the audio signal for playback.
+  The @ref AVIAMFParamDefinition.type "type" must be
+  AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN.
+*/
+func (s *AVIAMFSubmix) SetOutputMixConfig(value *AVIAMFParamDefinition) {
+	if value != nil {
+		s.ptr.output_mix_config = value.ptr
+	} else {
+		s.ptr.output_mix_config = nil
+	}
+}
+
+// DefaultMixGain gets the default_mix_gain field.
+/*
+  Default mix gain value to apply when there are no AVIAMFParamDefinition
+  with @ref output_mix_config "output_mix_config's"
+  @ref AVIAMFParamDefinition.parameter_id "parameter_id" available for a
+  given audio frame.
+*/
+func (s *AVIAMFSubmix) DefaultMixGain() *AVRational {
+	value := s.ptr.default_mix_gain
+	return &AVRational{value: value}
+}
+
+// SetDefaultMixGain sets the default_mix_gain field.
+/*
+  Default mix gain value to apply when there are no AVIAMFParamDefinition
+  with @ref output_mix_config "output_mix_config's"
+  @ref AVIAMFParamDefinition.parameter_id "parameter_id" available for a
+  given audio frame.
+*/
+func (s *AVIAMFSubmix) SetDefaultMixGain(value *AVRational) {
+	s.ptr.default_mix_gain = value.value
+}
+
+// --- Struct AVIAMFMixPresentation ---
+
+// AVIAMFMixPresentation wraps AVIAMFMixPresentation.
+/*
+  Information on how to render and mix one or more AVIAMFAudioElement to generate
+  the final audio output, as defined in section 3.7 of IAMF.
+
+  @note The struct should be allocated with av_iamf_mix_presentation_alloc()
+        and its size is not a part of the public ABI.
+*/
+type AVIAMFMixPresentation struct {
+	ptr *C.AVIAMFMixPresentation
+}
+
+func (s *AVIAMFMixPresentation) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVIAMFMixPresentationArray(ptr unsafe.Pointer) *Array[*AVIAMFMixPresentation] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVIAMFMixPresentation]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVIAMFMixPresentation {
+			ptr := (**C.AVIAMFMixPresentation)(pointer)
+			value := *ptr
+			var valueMapped *AVIAMFMixPresentation
+			if value != nil {
+				valueMapped = &AVIAMFMixPresentation{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVIAMFMixPresentation) {
+			ptr := (**C.AVIAMFMixPresentation)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVIAMFMixPresentation) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVIAMFMixPresentation) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// Submixes gets the submixes field.
+/*
+  Array of submixes.
+
+  Set by av_iamf_mix_presentation_add_submix(), must not be modified
+  by any other code.
+*/
+func (s *AVIAMFMixPresentation) Submixes() *Array[*AVIAMFSubmix] {
+	value := s.ptr.submixes
+	return ToAVIAMFSubmixArray(unsafe.Pointer(value))
+}
+
+// SetSubmixes sets the submixes field.
+/*
+  Array of submixes.
+
+  Set by av_iamf_mix_presentation_add_submix(), must not be modified
+  by any other code.
+*/
+func (s *AVIAMFMixPresentation) SetSubmixes(value *Array[AVIAMFSubmix]) {
+	if value != nil {
+		s.ptr.submixes = (**C.AVIAMFSubmix)(value.ptr)
+	} else {
+		s.ptr.submixes = nil
+	}
+}
+
+// NbSubmixes gets the nb_submixes field.
+/*
+  Number of submixes in the presentation.
+
+  Set by av_iamf_mix_presentation_add_submix(), must not be modified
+  by any other code.
+*/
+func (s *AVIAMFMixPresentation) NbSubmixes() uint {
+	value := s.ptr.nb_submixes
+	return uint(value)
+}
+
+// SetNbSubmixes sets the nb_submixes field.
+/*
+  Number of submixes in the presentation.
+
+  Set by av_iamf_mix_presentation_add_submix(), must not be modified
+  by any other code.
+*/
+func (s *AVIAMFMixPresentation) SetNbSubmixes(value uint) {
+	s.ptr.nb_submixes = (C.uint)(value)
+}
+
+// Annotations gets the annotations field.
+/*
+  A dictionary of strings describing the mix in different languages.
+  Must have the same amount of entries as every
+  @ref AVIAMFSubmixElement.annotations "Submix element annotations",
+  stored in the same order, and with the same key strings.
+
+  @ref AVDictionaryEntry.key "key" is a string conforming to BCP-47
+  that specifies the language for the string stored in
+  @ref AVDictionaryEntry.value "value".
+*/
+func (s *AVIAMFMixPresentation) Annotations() *AVDictionary {
+	value := s.ptr.annotations
+	var valueMapped *AVDictionary
+	if value != nil {
+		valueMapped = &AVDictionary{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAnnotations sets the annotations field.
+/*
+  A dictionary of strings describing the mix in different languages.
+  Must have the same amount of entries as every
+  @ref AVIAMFSubmixElement.annotations "Submix element annotations",
+  stored in the same order, and with the same key strings.
+
+  @ref AVDictionaryEntry.key "key" is a string conforming to BCP-47
+  that specifies the language for the string stored in
+  @ref AVDictionaryEntry.value "value".
+*/
+func (s *AVIAMFMixPresentation) SetAnnotations(value *AVDictionary) {
+	if value != nil {
+		s.ptr.annotations = value.ptr
+	} else {
+		s.ptr.annotations = nil
+	}
+}
+
 // --- Struct AVClass ---
 
 // AVClass wraps AVClass.
@@ -17742,6 +21662,349 @@ func (s *AVClass) StateFlagsOffset() int {
 */
 func (s *AVClass) SetStateFlagsOffset(value int) {
 	s.ptr.state_flags_offset = (C.int)(value)
+}
+
+// --- Struct AVMasteringDisplayMetadata ---
+
+// AVMasteringDisplayMetadata wraps AVMasteringDisplayMetadata.
+/*
+  Mastering display metadata capable of representing the color volume of
+  the display used to master the content (SMPTE 2086:2014).
+
+  To be used as payload of a AVFrameSideData or AVPacketSideData with the
+  appropriate type.
+
+  @note The struct should be allocated with av_mastering_display_metadata_alloc()
+        and its size is not a part of the public ABI.
+*/
+type AVMasteringDisplayMetadata struct {
+	ptr *C.AVMasteringDisplayMetadata
+}
+
+func (s *AVMasteringDisplayMetadata) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVMasteringDisplayMetadataArray(ptr unsafe.Pointer) *Array[*AVMasteringDisplayMetadata] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVMasteringDisplayMetadata]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVMasteringDisplayMetadata {
+			ptr := (**C.AVMasteringDisplayMetadata)(pointer)
+			value := *ptr
+			var valueMapped *AVMasteringDisplayMetadata
+			if value != nil {
+				valueMapped = &AVMasteringDisplayMetadata{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVMasteringDisplayMetadata) {
+			ptr := (**C.AVMasteringDisplayMetadata)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// display_primaries skipped due to multi dim const array
+
+// white_point skipped due to unknown const array
+
+// MinLuminance gets the min_luminance field.
+//
+//	Min luminance of mastering display (cd/m^2).
+func (s *AVMasteringDisplayMetadata) MinLuminance() *AVRational {
+	value := s.ptr.min_luminance
+	return &AVRational{value: value}
+}
+
+// SetMinLuminance sets the min_luminance field.
+//
+//	Min luminance of mastering display (cd/m^2).
+func (s *AVMasteringDisplayMetadata) SetMinLuminance(value *AVRational) {
+	s.ptr.min_luminance = value.value
+}
+
+// MaxLuminance gets the max_luminance field.
+//
+//	Max luminance of mastering display (cd/m^2).
+func (s *AVMasteringDisplayMetadata) MaxLuminance() *AVRational {
+	value := s.ptr.max_luminance
+	return &AVRational{value: value}
+}
+
+// SetMaxLuminance sets the max_luminance field.
+//
+//	Max luminance of mastering display (cd/m^2).
+func (s *AVMasteringDisplayMetadata) SetMaxLuminance(value *AVRational) {
+	s.ptr.max_luminance = value.value
+}
+
+// HasPrimaries gets the has_primaries field.
+//
+//	Flag indicating whether the display primaries (and white point) are set.
+func (s *AVMasteringDisplayMetadata) HasPrimaries() int {
+	value := s.ptr.has_primaries
+	return int(value)
+}
+
+// SetHasPrimaries sets the has_primaries field.
+//
+//	Flag indicating whether the display primaries (and white point) are set.
+func (s *AVMasteringDisplayMetadata) SetHasPrimaries(value int) {
+	s.ptr.has_primaries = (C.int)(value)
+}
+
+// HasLuminance gets the has_luminance field.
+//
+//	Flag indicating whether the luminance (min_ and max_) have been set.
+func (s *AVMasteringDisplayMetadata) HasLuminance() int {
+	value := s.ptr.has_luminance
+	return int(value)
+}
+
+// SetHasLuminance sets the has_luminance field.
+//
+//	Flag indicating whether the luminance (min_ and max_) have been set.
+func (s *AVMasteringDisplayMetadata) SetHasLuminance(value int) {
+	s.ptr.has_luminance = (C.int)(value)
+}
+
+// --- Struct AVContentLightMetadata ---
+
+// AVContentLightMetadata wraps AVContentLightMetadata.
+/*
+  Content light level needed by to transmit HDR over HDMI (CTA-861.3).
+
+  To be used as payload of a AVFrameSideData or AVPacketSideData with the
+  appropriate type.
+
+  @note The struct should be allocated with av_content_light_metadata_alloc()
+        and its size is not a part of the public ABI.
+*/
+type AVContentLightMetadata struct {
+	ptr *C.AVContentLightMetadata
+}
+
+func (s *AVContentLightMetadata) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVContentLightMetadataArray(ptr unsafe.Pointer) *Array[*AVContentLightMetadata] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVContentLightMetadata]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVContentLightMetadata {
+			ptr := (**C.AVContentLightMetadata)(pointer)
+			value := *ptr
+			var valueMapped *AVContentLightMetadata
+			if value != nil {
+				valueMapped = &AVContentLightMetadata{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVContentLightMetadata) {
+			ptr := (**C.AVContentLightMetadata)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// MaxCll gets the MaxCLL field.
+//
+//	Max content light level (cd/m^2).
+func (s *AVContentLightMetadata) MaxCll() uint {
+	value := s.ptr.MaxCLL
+	return uint(value)
+}
+
+// SetMaxCll sets the MaxCLL field.
+//
+//	Max content light level (cd/m^2).
+func (s *AVContentLightMetadata) SetMaxCll(value uint) {
+	s.ptr.MaxCLL = (C.uint)(value)
+}
+
+// MaxFall gets the MaxFALL field.
+//
+//	Max average light level per frame (cd/m^2).
+func (s *AVContentLightMetadata) MaxFall() uint {
+	value := s.ptr.MaxFALL
+	return uint(value)
+}
+
+// SetMaxFall sets the MaxFALL field.
+//
+//	Max average light level per frame (cd/m^2).
+func (s *AVContentLightMetadata) SetMaxFall(value uint) {
+	s.ptr.MaxFALL = (C.uint)(value)
+}
+
+// --- Struct AVMotionVector ---
+
+// AVMotionVector wraps AVMotionVector.
+type AVMotionVector struct {
+	ptr *C.AVMotionVector
+}
+
+func (s *AVMotionVector) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVMotionVectorArray(ptr unsafe.Pointer) *Array[*AVMotionVector] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVMotionVector]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVMotionVector {
+			ptr := (**C.AVMotionVector)(pointer)
+			value := *ptr
+			var valueMapped *AVMotionVector
+			if value != nil {
+				valueMapped = &AVMotionVector{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVMotionVector) {
+			ptr := (**C.AVMotionVector)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// source skipped due to unexpected IdentType int32_t
+
+// W gets the w field.
+//
+//	Width and height of the block.
+func (s *AVMotionVector) W() uint8 {
+	value := s.ptr.w
+	return uint8(value)
+}
+
+// SetW sets the w field.
+//
+//	Width and height of the block.
+func (s *AVMotionVector) SetW(value uint8) {
+	s.ptr.w = (C.uint8_t)(value)
+}
+
+// H gets the h field.
+//
+//	Width and height of the block.
+func (s *AVMotionVector) H() uint8 {
+	value := s.ptr.h
+	return uint8(value)
+}
+
+// SetH sets the h field.
+//
+//	Width and height of the block.
+func (s *AVMotionVector) SetH(value uint8) {
+	s.ptr.h = (C.uint8_t)(value)
+}
+
+// src_x skipped due to unexpected IdentType int16_t
+
+// src_y skipped due to unexpected IdentType int16_t
+
+// dst_x skipped due to unexpected IdentType int16_t
+
+// dst_y skipped due to unexpected IdentType int16_t
+
+// Flags gets the flags field.
+/*
+  Extra flag information.
+  Currently unused.
+*/
+func (s *AVMotionVector) Flags() uint64 {
+	value := s.ptr.flags
+	return uint64(value)
+}
+
+// SetFlags sets the flags field.
+/*
+  Extra flag information.
+  Currently unused.
+*/
+func (s *AVMotionVector) SetFlags(value uint64) {
+	s.ptr.flags = (C.uint64_t)(value)
+}
+
+// motion_x skipped due to unexpected IdentType int32_t
+
+// motion_y skipped due to unexpected IdentType int32_t
+
+// MotionScale gets the motion_scale field.
+func (s *AVMotionVector) MotionScale() uint16 {
+	value := s.ptr.motion_scale
+	return uint16(value)
+}
+
+// SetMotionScale sets the motion_scale field.
+func (s *AVMotionVector) SetMotionScale(value uint16) {
+	s.ptr.motion_scale = (C.uint16_t)(value)
+}
+
+// --- Struct AVMurMur3 ---
+
+// AVMurMur3 wraps AVMurMur3.
+type AVMurMur3 struct {
+	ptr *C.struct_AVMurMur3
+}
+
+func (s *AVMurMur3) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVMurMur3Array(ptr unsafe.Pointer) *Array[*AVMurMur3] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVMurMur3]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVMurMur3 {
+			ptr := (**C.struct_AVMurMur3)(pointer)
+			value := *ptr
+			var valueMapped *AVMurMur3
+			if value != nil {
+				valueMapped = &AVMurMur3{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVMurMur3) {
+			ptr := (**C.struct_AVMurMur3)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
 }
 
 // --- Struct AVOptionArrayDef ---
@@ -18380,6 +22643,73 @@ func (s *AVRational) SetDen(value int) {
 	s.value.den = (C.int)(value)
 }
 
+// --- Struct AVRC4 ---
+
+// AVRC4 wraps AVRC4.
+type AVRC4 struct {
+	ptr *C.AVRC4
+}
+
+func (s *AVRC4) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVRC4Array(ptr unsafe.Pointer) *Array[*AVRC4] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVRC4]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVRC4 {
+			ptr := (**C.AVRC4)(pointer)
+			value := *ptr
+			var valueMapped *AVRC4
+			if value != nil {
+				valueMapped = &AVRC4{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVRC4) {
+			ptr := (**C.AVRC4)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// State gets the state field.
+func (s *AVRC4) State() *Array[uint8] {
+	value := &s.ptr.state
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// X gets the x field.
+func (s *AVRC4) X() int {
+	value := s.ptr.x
+	return int(value)
+}
+
+// SetX sets the x field.
+func (s *AVRC4) SetX(value int) {
+	s.ptr.x = (C.int)(value)
+}
+
+// Y gets the y field.
+func (s *AVRC4) Y() int {
+	value := s.ptr.y
+	return int(value)
+}
+
+// SetY sets the y field.
+func (s *AVRC4) SetY(value int) {
+	s.ptr.y = (C.int)(value)
+}
+
 // --- Struct AVReplayGain ---
 
 // AVReplayGain wraps AVReplayGain.
@@ -18460,6 +22790,831 @@ func (s *AVReplayGain) AlbumPeak() uint32 {
 //	Same as track_peak, but for the whole album,
 func (s *AVReplayGain) SetAlbumPeak(value uint32) {
 	s.ptr.album_peak = (C.uint32_t)(value)
+}
+
+// --- Struct AVRIPEMD ---
+
+// AVRIPEMD wraps AVRIPEMD.
+type AVRIPEMD struct {
+	ptr *C.struct_AVRIPEMD
+}
+
+func (s *AVRIPEMD) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVRIPEMDArray(ptr unsafe.Pointer) *Array[*AVRIPEMD] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVRIPEMD]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVRIPEMD {
+			ptr := (**C.struct_AVRIPEMD)(pointer)
+			value := *ptr
+			var valueMapped *AVRIPEMD
+			if value != nil {
+				valueMapped = &AVRIPEMD{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVRIPEMD) {
+			ptr := (**C.struct_AVRIPEMD)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVSHA ---
+
+// AVSHA wraps AVSHA.
+type AVSHA struct {
+	ptr *C.struct_AVSHA
+}
+
+func (s *AVSHA) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVSHAArray(ptr unsafe.Pointer) *Array[*AVSHA] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVSHA]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVSHA {
+			ptr := (**C.struct_AVSHA)(pointer)
+			value := *ptr
+			var valueMapped *AVSHA
+			if value != nil {
+				valueMapped = &AVSHA{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVSHA) {
+			ptr := (**C.struct_AVSHA)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVSHA512 ---
+
+// AVSHA512 wraps AVSHA512.
+type AVSHA512 struct {
+	ptr *C.struct_AVSHA512
+}
+
+func (s *AVSHA512) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVSHA512Array(ptr unsafe.Pointer) *Array[*AVSHA512] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVSHA512]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVSHA512 {
+			ptr := (**C.struct_AVSHA512)(pointer)
+			value := *ptr
+			var valueMapped *AVSHA512
+			if value != nil {
+				valueMapped = &AVSHA512{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVSHA512) {
+			ptr := (**C.struct_AVSHA512)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVSphericalMapping ---
+
+// AVSphericalMapping wraps AVSphericalMapping.
+/*
+  This structure describes how to handle spherical videos, outlining
+  information about projection, initial layout, and any other view modifier.
+
+  @note The struct must be allocated with av_spherical_alloc() and
+        its size is not a part of the public ABI.
+*/
+type AVSphericalMapping struct {
+	ptr *C.AVSphericalMapping
+}
+
+func (s *AVSphericalMapping) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVSphericalMappingArray(ptr unsafe.Pointer) *Array[*AVSphericalMapping] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVSphericalMapping]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVSphericalMapping {
+			ptr := (**C.AVSphericalMapping)(pointer)
+			value := *ptr
+			var valueMapped *AVSphericalMapping
+			if value != nil {
+				valueMapped = &AVSphericalMapping{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVSphericalMapping) {
+			ptr := (**C.AVSphericalMapping)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Projection gets the projection field.
+//
+//	Projection type.
+func (s *AVSphericalMapping) Projection() AVSphericalProjection {
+	value := s.ptr.projection
+	return AVSphericalProjection(value)
+}
+
+// SetProjection sets the projection field.
+//
+//	Projection type.
+func (s *AVSphericalMapping) SetProjection(value AVSphericalProjection) {
+	s.ptr.projection = (C.enum_AVSphericalProjection)(value)
+}
+
+// yaw skipped due to unexpected IdentType int32_t
+
+// pitch skipped due to unexpected IdentType int32_t
+
+// roll skipped due to unexpected IdentType int32_t
+
+// BoundLeft gets the bound_left field.
+//
+//	Distance from the left edge
+func (s *AVSphericalMapping) BoundLeft() uint32 {
+	value := s.ptr.bound_left
+	return uint32(value)
+}
+
+// SetBoundLeft sets the bound_left field.
+//
+//	Distance from the left edge
+func (s *AVSphericalMapping) SetBoundLeft(value uint32) {
+	s.ptr.bound_left = (C.uint32_t)(value)
+}
+
+// BoundTop gets the bound_top field.
+//
+//	Distance from the top edge
+func (s *AVSphericalMapping) BoundTop() uint32 {
+	value := s.ptr.bound_top
+	return uint32(value)
+}
+
+// SetBoundTop sets the bound_top field.
+//
+//	Distance from the top edge
+func (s *AVSphericalMapping) SetBoundTop(value uint32) {
+	s.ptr.bound_top = (C.uint32_t)(value)
+}
+
+// BoundRight gets the bound_right field.
+//
+//	Distance from the right edge
+func (s *AVSphericalMapping) BoundRight() uint32 {
+	value := s.ptr.bound_right
+	return uint32(value)
+}
+
+// SetBoundRight sets the bound_right field.
+//
+//	Distance from the right edge
+func (s *AVSphericalMapping) SetBoundRight(value uint32) {
+	s.ptr.bound_right = (C.uint32_t)(value)
+}
+
+// BoundBottom gets the bound_bottom field.
+//
+//	Distance from the bottom edge
+func (s *AVSphericalMapping) BoundBottom() uint32 {
+	value := s.ptr.bound_bottom
+	return uint32(value)
+}
+
+// SetBoundBottom sets the bound_bottom field.
+//
+//	Distance from the bottom edge
+func (s *AVSphericalMapping) SetBoundBottom(value uint32) {
+	s.ptr.bound_bottom = (C.uint32_t)(value)
+}
+
+// Padding gets the padding field.
+/*
+  Number of pixels to pad from the edge of each cube face.
+
+  @note This value is valid for only for the cubemap projection type
+        (@ref AV_SPHERICAL_CUBEMAP), and should be ignored in all other
+        cases.
+*/
+func (s *AVSphericalMapping) Padding() uint32 {
+	value := s.ptr.padding
+	return uint32(value)
+}
+
+// SetPadding sets the padding field.
+/*
+  Number of pixels to pad from the edge of each cube face.
+
+  @note This value is valid for only for the cubemap projection type
+        (@ref AV_SPHERICAL_CUBEMAP), and should be ignored in all other
+        cases.
+*/
+func (s *AVSphericalMapping) SetPadding(value uint32) {
+	s.ptr.padding = (C.uint32_t)(value)
+}
+
+// --- Struct AVStereo3D ---
+
+// AVStereo3D wraps AVStereo3D.
+/*
+  Stereo 3D type: this structure describes how two videos are packed
+  within a single video surface, with additional information as needed.
+
+  @note The struct must be allocated with av_stereo3d_alloc() and
+        its size is not a part of the public ABI.
+*/
+type AVStereo3D struct {
+	ptr *C.AVStereo3D
+}
+
+func (s *AVStereo3D) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVStereo3DArray(ptr unsafe.Pointer) *Array[*AVStereo3D] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVStereo3D]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVStereo3D {
+			ptr := (**C.AVStereo3D)(pointer)
+			value := *ptr
+			var valueMapped *AVStereo3D
+			if value != nil {
+				valueMapped = &AVStereo3D{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVStereo3D) {
+			ptr := (**C.AVStereo3D)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Type gets the type field.
+//
+//	How views are packed within the video.
+func (s *AVStereo3D) Type() AVStereo3DType {
+	value := s.ptr._type
+	return AVStereo3DType(value)
+}
+
+// SetType sets the type field.
+//
+//	How views are packed within the video.
+func (s *AVStereo3D) SetType(value AVStereo3DType) {
+	s.ptr._type = (C.enum_AVStereo3DType)(value)
+}
+
+// Flags gets the flags field.
+//
+//	Additional information about the frame packing.
+func (s *AVStereo3D) Flags() int {
+	value := s.ptr.flags
+	return int(value)
+}
+
+// SetFlags sets the flags field.
+//
+//	Additional information about the frame packing.
+func (s *AVStereo3D) SetFlags(value int) {
+	s.ptr.flags = (C.int)(value)
+}
+
+// View gets the view field.
+//
+//	Determines which views are packed.
+func (s *AVStereo3D) View() AVStereo3DView {
+	value := s.ptr.view
+	return AVStereo3DView(value)
+}
+
+// SetView sets the view field.
+//
+//	Determines which views are packed.
+func (s *AVStereo3D) SetView(value AVStereo3DView) {
+	s.ptr.view = (C.enum_AVStereo3DView)(value)
+}
+
+// PrimaryEye gets the primary_eye field.
+//
+//	Which eye is the primary eye when rendering in 2D.
+func (s *AVStereo3D) PrimaryEye() AVStereo3DPrimaryEye {
+	value := s.ptr.primary_eye
+	return AVStereo3DPrimaryEye(value)
+}
+
+// SetPrimaryEye sets the primary_eye field.
+//
+//	Which eye is the primary eye when rendering in 2D.
+func (s *AVStereo3D) SetPrimaryEye(value AVStereo3DPrimaryEye) {
+	s.ptr.primary_eye = (C.enum_AVStereo3DPrimaryEye)(value)
+}
+
+// Baseline gets the baseline field.
+/*
+  The distance between the centres of the lenses of the camera system,
+  in micrometers. Zero if unset.
+*/
+func (s *AVStereo3D) Baseline() uint32 {
+	value := s.ptr.baseline
+	return uint32(value)
+}
+
+// SetBaseline sets the baseline field.
+/*
+  The distance between the centres of the lenses of the camera system,
+  in micrometers. Zero if unset.
+*/
+func (s *AVStereo3D) SetBaseline(value uint32) {
+	s.ptr.baseline = (C.uint32_t)(value)
+}
+
+// HorizontalDisparityAdjustment gets the horizontal_disparity_adjustment field.
+/*
+  Relative shift of the left and right images, which changes the zero parallax plane.
+  Range is -1.0 to 1.0. Zero if unset.
+*/
+func (s *AVStereo3D) HorizontalDisparityAdjustment() *AVRational {
+	value := s.ptr.horizontal_disparity_adjustment
+	return &AVRational{value: value}
+}
+
+// SetHorizontalDisparityAdjustment sets the horizontal_disparity_adjustment field.
+/*
+  Relative shift of the left and right images, which changes the zero parallax plane.
+  Range is -1.0 to 1.0. Zero if unset.
+*/
+func (s *AVStereo3D) SetHorizontalDisparityAdjustment(value *AVRational) {
+	s.ptr.horizontal_disparity_adjustment = value.value
+}
+
+// HorizontalFieldOfView gets the horizontal_field_of_view field.
+//
+//	Horizontal field of view, in degrees. Zero if unset.
+func (s *AVStereo3D) HorizontalFieldOfView() *AVRational {
+	value := s.ptr.horizontal_field_of_view
+	return &AVRational{value: value}
+}
+
+// SetHorizontalFieldOfView sets the horizontal_field_of_view field.
+//
+//	Horizontal field of view, in degrees. Zero if unset.
+func (s *AVStereo3D) SetHorizontalFieldOfView(value *AVRational) {
+	s.ptr.horizontal_field_of_view = value.value
+}
+
+// --- Struct AV3DReferenceDisplaysInfo ---
+
+// AV3DReferenceDisplaysInfo wraps AV3DReferenceDisplaysInfo.
+/*
+  This structure describes information about the reference display width(s) and reference
+  viewing distance(s) as well as information about the corresponding reference stereo pair(s).
+  See section G.14.3.2.3 of ITU-T H.265 for more information.
+
+  @note The struct must be allocated with av_tdrdi_alloc() and
+        its size is not a part of the public ABI.
+*/
+type AV3DReferenceDisplaysInfo struct {
+	ptr *C.AV3DReferenceDisplaysInfo
+}
+
+func (s *AV3DReferenceDisplaysInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAV3DReferenceDisplaysInfoArray(ptr unsafe.Pointer) *Array[*AV3DReferenceDisplaysInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AV3DReferenceDisplaysInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AV3DReferenceDisplaysInfo {
+			ptr := (**C.AV3DReferenceDisplaysInfo)(pointer)
+			value := *ptr
+			var valueMapped *AV3DReferenceDisplaysInfo
+			if value != nil {
+				valueMapped = &AV3DReferenceDisplaysInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AV3DReferenceDisplaysInfo) {
+			ptr := (**C.AV3DReferenceDisplaysInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// PrecRefDisplayWidth gets the prec_ref_display_width field.
+/*
+  The exponent of the maximum allowable truncation error for
+  {exponent,mantissa}_ref_display_width as given by 2<sup>(-prec_ref_display_width)</sup>.
+*/
+func (s *AV3DReferenceDisplaysInfo) PrecRefDisplayWidth() uint8 {
+	value := s.ptr.prec_ref_display_width
+	return uint8(value)
+}
+
+// SetPrecRefDisplayWidth sets the prec_ref_display_width field.
+/*
+  The exponent of the maximum allowable truncation error for
+  {exponent,mantissa}_ref_display_width as given by 2<sup>(-prec_ref_display_width)</sup>.
+*/
+func (s *AV3DReferenceDisplaysInfo) SetPrecRefDisplayWidth(value uint8) {
+	s.ptr.prec_ref_display_width = (C.uint8_t)(value)
+}
+
+// RefViewingDistanceFlag gets the ref_viewing_distance_flag field.
+/*
+  A flag to indicate the presence of reference viewing distance.
+  If false, the values of prec_ref_viewing_dist, exponent_ref_viewing_distance,
+  and mantissa_ref_viewing_distance are undefined.
+*/
+func (s *AV3DReferenceDisplaysInfo) RefViewingDistanceFlag() uint8 {
+	value := s.ptr.ref_viewing_distance_flag
+	return uint8(value)
+}
+
+// SetRefViewingDistanceFlag sets the ref_viewing_distance_flag field.
+/*
+  A flag to indicate the presence of reference viewing distance.
+  If false, the values of prec_ref_viewing_dist, exponent_ref_viewing_distance,
+  and mantissa_ref_viewing_distance are undefined.
+*/
+func (s *AV3DReferenceDisplaysInfo) SetRefViewingDistanceFlag(value uint8) {
+	s.ptr.ref_viewing_distance_flag = (C.uint8_t)(value)
+}
+
+// PrecRefViewingDist gets the prec_ref_viewing_dist field.
+/*
+  The exponent of the maximum allowable truncation error for
+  {exponent,mantissa}_ref_viewing_distance as given by 2<sup>^(-prec_ref_viewing_dist)</sup>.
+  The value of prec_ref_viewing_dist shall be in the range of 0 to 31, inclusive.
+*/
+func (s *AV3DReferenceDisplaysInfo) PrecRefViewingDist() uint8 {
+	value := s.ptr.prec_ref_viewing_dist
+	return uint8(value)
+}
+
+// SetPrecRefViewingDist sets the prec_ref_viewing_dist field.
+/*
+  The exponent of the maximum allowable truncation error for
+  {exponent,mantissa}_ref_viewing_distance as given by 2<sup>^(-prec_ref_viewing_dist)</sup>.
+  The value of prec_ref_viewing_dist shall be in the range of 0 to 31, inclusive.
+*/
+func (s *AV3DReferenceDisplaysInfo) SetPrecRefViewingDist(value uint8) {
+	s.ptr.prec_ref_viewing_dist = (C.uint8_t)(value)
+}
+
+// NumRefDisplays gets the num_ref_displays field.
+/*
+  The number of reference displays that are signalled in this struct.
+  Allowed range is 1 to 32, inclusive.
+*/
+func (s *AV3DReferenceDisplaysInfo) NumRefDisplays() uint8 {
+	value := s.ptr.num_ref_displays
+	return uint8(value)
+}
+
+// SetNumRefDisplays sets the num_ref_displays field.
+/*
+  The number of reference displays that are signalled in this struct.
+  Allowed range is 1 to 32, inclusive.
+*/
+func (s *AV3DReferenceDisplaysInfo) SetNumRefDisplays(value uint8) {
+	s.ptr.num_ref_displays = (C.uint8_t)(value)
+}
+
+// EntriesOffset gets the entries_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which the array
+  of reference displays starts.
+*/
+func (s *AV3DReferenceDisplaysInfo) EntriesOffset() uint64 {
+	value := s.ptr.entries_offset
+	return uint64(value)
+}
+
+// SetEntriesOffset sets the entries_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which the array
+  of reference displays starts.
+*/
+func (s *AV3DReferenceDisplaysInfo) SetEntriesOffset(value uint64) {
+	s.ptr.entries_offset = (C.size_t)(value)
+}
+
+// EntrySize gets the entry_size field.
+//
+//	Size of each entry in bytes. May not match sizeof(AV3DReferenceDisplay).
+func (s *AV3DReferenceDisplaysInfo) EntrySize() uint64 {
+	value := s.ptr.entry_size
+	return uint64(value)
+}
+
+// SetEntrySize sets the entry_size field.
+//
+//	Size of each entry in bytes. May not match sizeof(AV3DReferenceDisplay).
+func (s *AV3DReferenceDisplaysInfo) SetEntrySize(value uint64) {
+	s.ptr.entry_size = (C.size_t)(value)
+}
+
+// --- Struct AV3DReferenceDisplay ---
+
+// AV3DReferenceDisplay wraps AV3DReferenceDisplay.
+/*
+  Data structure for single deference display information.
+  It is allocated as a part of AV3DReferenceDisplaysInfo and should be retrieved with
+  av_tdrdi_get_display().
+
+  sizeof(AV3DReferenceDisplay) is not a part of the ABI and new fields may be
+  added to it.
+*/
+type AV3DReferenceDisplay struct {
+	ptr *C.AV3DReferenceDisplay
+}
+
+func (s *AV3DReferenceDisplay) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAV3DReferenceDisplayArray(ptr unsafe.Pointer) *Array[*AV3DReferenceDisplay] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AV3DReferenceDisplay]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AV3DReferenceDisplay {
+			ptr := (**C.AV3DReferenceDisplay)(pointer)
+			value := *ptr
+			var valueMapped *AV3DReferenceDisplay
+			if value != nil {
+				valueMapped = &AV3DReferenceDisplay{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AV3DReferenceDisplay) {
+			ptr := (**C.AV3DReferenceDisplay)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// LeftViewId gets the left_view_id field.
+//
+//	The ViewId of the left view of a stereo pair corresponding to the n-th reference display.
+func (s *AV3DReferenceDisplay) LeftViewId() uint16 {
+	value := s.ptr.left_view_id
+	return uint16(value)
+}
+
+// SetLeftViewId sets the left_view_id field.
+//
+//	The ViewId of the left view of a stereo pair corresponding to the n-th reference display.
+func (s *AV3DReferenceDisplay) SetLeftViewId(value uint16) {
+	s.ptr.left_view_id = (C.uint16_t)(value)
+}
+
+// RightViewId gets the right_view_id field.
+//
+//	The ViewId of the left view of a stereo pair corresponding to the n-th reference display.
+func (s *AV3DReferenceDisplay) RightViewId() uint16 {
+	value := s.ptr.right_view_id
+	return uint16(value)
+}
+
+// SetRightViewId sets the right_view_id field.
+//
+//	The ViewId of the left view of a stereo pair corresponding to the n-th reference display.
+func (s *AV3DReferenceDisplay) SetRightViewId(value uint16) {
+	s.ptr.right_view_id = (C.uint16_t)(value)
+}
+
+// ExponentRefDisplayWidth gets the exponent_ref_display_width field.
+//
+//	The exponent part of the reference display width of the n-th reference display.
+func (s *AV3DReferenceDisplay) ExponentRefDisplayWidth() uint8 {
+	value := s.ptr.exponent_ref_display_width
+	return uint8(value)
+}
+
+// SetExponentRefDisplayWidth sets the exponent_ref_display_width field.
+//
+//	The exponent part of the reference display width of the n-th reference display.
+func (s *AV3DReferenceDisplay) SetExponentRefDisplayWidth(value uint8) {
+	s.ptr.exponent_ref_display_width = (C.uint8_t)(value)
+}
+
+// MantissaRefDisplayWidth gets the mantissa_ref_display_width field.
+//
+//	The mantissa part of the reference display width of the n-th reference display.
+func (s *AV3DReferenceDisplay) MantissaRefDisplayWidth() uint8 {
+	value := s.ptr.mantissa_ref_display_width
+	return uint8(value)
+}
+
+// SetMantissaRefDisplayWidth sets the mantissa_ref_display_width field.
+//
+//	The mantissa part of the reference display width of the n-th reference display.
+func (s *AV3DReferenceDisplay) SetMantissaRefDisplayWidth(value uint8) {
+	s.ptr.mantissa_ref_display_width = (C.uint8_t)(value)
+}
+
+// ExponentRefViewingDistance gets the exponent_ref_viewing_distance field.
+//
+//	The exponent part of the reference viewing distance of the n-th reference display.
+func (s *AV3DReferenceDisplay) ExponentRefViewingDistance() uint8 {
+	value := s.ptr.exponent_ref_viewing_distance
+	return uint8(value)
+}
+
+// SetExponentRefViewingDistance sets the exponent_ref_viewing_distance field.
+//
+//	The exponent part of the reference viewing distance of the n-th reference display.
+func (s *AV3DReferenceDisplay) SetExponentRefViewingDistance(value uint8) {
+	s.ptr.exponent_ref_viewing_distance = (C.uint8_t)(value)
+}
+
+// MantissaRefViewingDistance gets the mantissa_ref_viewing_distance field.
+//
+//	The mantissa part of the reference viewing distance of the n-th reference display.
+func (s *AV3DReferenceDisplay) MantissaRefViewingDistance() uint8 {
+	value := s.ptr.mantissa_ref_viewing_distance
+	return uint8(value)
+}
+
+// SetMantissaRefViewingDistance sets the mantissa_ref_viewing_distance field.
+//
+//	The mantissa part of the reference viewing distance of the n-th reference display.
+func (s *AV3DReferenceDisplay) SetMantissaRefViewingDistance(value uint8) {
+	s.ptr.mantissa_ref_viewing_distance = (C.uint8_t)(value)
+}
+
+// AdditionalShiftPresentFlag gets the additional_shift_present_flag field.
+/*
+  An array of flags to indicates that the information about additional horizontal shift of
+  the left and right views for the n-th reference display is present.
+*/
+func (s *AV3DReferenceDisplay) AdditionalShiftPresentFlag() uint8 {
+	value := s.ptr.additional_shift_present_flag
+	return uint8(value)
+}
+
+// SetAdditionalShiftPresentFlag sets the additional_shift_present_flag field.
+/*
+  An array of flags to indicates that the information about additional horizontal shift of
+  the left and right views for the n-th reference display is present.
+*/
+func (s *AV3DReferenceDisplay) SetAdditionalShiftPresentFlag(value uint8) {
+	s.ptr.additional_shift_present_flag = (C.uint8_t)(value)
+}
+
+// num_sample_shift skipped due to unexpected IdentType int16_t
+
+// --- Struct AVTEA ---
+
+// AVTEA wraps AVTEA.
+type AVTEA struct {
+	ptr *C.struct_AVTEA
+}
+
+func (s *AVTEA) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTEAArray(ptr unsafe.Pointer) *Array[*AVTEA] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTEA]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTEA {
+			ptr := (**C.struct_AVTEA)(pointer)
+			value := *ptr
+			var valueMapped *AVTEA
+			if value != nil {
+				valueMapped = &AVTEA{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTEA) {
+			ptr := (**C.struct_AVTEA)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVThreadMessageQueue ---
+
+// AVThreadMessageQueue wraps AVThreadMessageQueue.
+type AVThreadMessageQueue struct {
+	ptr *C.AVThreadMessageQueue
+}
+
+func (s *AVThreadMessageQueue) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVThreadMessageQueueArray(ptr unsafe.Pointer) *Array[*AVThreadMessageQueue] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVThreadMessageQueue]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVThreadMessageQueue {
+			ptr := (**C.AVThreadMessageQueue)(pointer)
+			value := *ptr
+			var valueMapped *AVThreadMessageQueue
+			if value != nil {
+				valueMapped = &AVThreadMessageQueue{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVThreadMessageQueue) {
+			ptr := (**C.AVThreadMessageQueue)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
 }
 
 // --- Struct AVTimecode ---
@@ -18560,6 +23715,288 @@ func (s *AVTimecode) Fps() uint {
 func (s *AVTimecode) SetFps(value uint) {
 	s.ptr.fps = (C.uint)(value)
 }
+
+// --- Struct AVTreeNode ---
+
+// AVTreeNode wraps AVTreeNode.
+type AVTreeNode struct {
+	ptr *C.struct_AVTreeNode
+}
+
+func (s *AVTreeNode) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTreeNodeArray(ptr unsafe.Pointer) *Array[*AVTreeNode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTreeNode]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTreeNode {
+			ptr := (**C.struct_AVTreeNode)(pointer)
+			value := *ptr
+			var valueMapped *AVTreeNode
+			if value != nil {
+				valueMapped = &AVTreeNode{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTreeNode) {
+			ptr := (**C.struct_AVTreeNode)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVTWOFISH ---
+
+// AVTWOFISH wraps AVTWOFISH.
+type AVTWOFISH struct {
+	ptr *C.struct_AVTWOFISH
+}
+
+func (s *AVTWOFISH) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTWOFISHArray(ptr unsafe.Pointer) *Array[*AVTWOFISH] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTWOFISH]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTWOFISH {
+			ptr := (**C.struct_AVTWOFISH)(pointer)
+			value := *ptr
+			var valueMapped *AVTWOFISH
+			if value != nil {
+				valueMapped = &AVTWOFISH{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTWOFISH) {
+			ptr := (**C.struct_AVTWOFISH)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVTXContext ---
+
+// AVTXContext wraps AVTXContext.
+type AVTXContext struct {
+	ptr *C.AVTXContext
+}
+
+func (s *AVTXContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTXContextArray(ptr unsafe.Pointer) *Array[*AVTXContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTXContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTXContext {
+			ptr := (**C.AVTXContext)(pointer)
+			value := *ptr
+			var valueMapped *AVTXContext
+			if value != nil {
+				valueMapped = &AVTXContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTXContext) {
+			ptr := (**C.AVTXContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVComplexFloat ---
+
+// AVComplexFloat wraps AVComplexFloat.
+type AVComplexFloat struct {
+	ptr *C.AVComplexFloat
+}
+
+func (s *AVComplexFloat) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVComplexFloatArray(ptr unsafe.Pointer) *Array[*AVComplexFloat] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVComplexFloat]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVComplexFloat {
+			ptr := (**C.AVComplexFloat)(pointer)
+			value := *ptr
+			var valueMapped *AVComplexFloat
+			if value != nil {
+				valueMapped = &AVComplexFloat{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVComplexFloat) {
+			ptr := (**C.AVComplexFloat)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Re gets the re field.
+func (s *AVComplexFloat) Re() float32 {
+	value := s.ptr.re
+	return float32(value)
+}
+
+// SetRe sets the re field.
+func (s *AVComplexFloat) SetRe(value float32) {
+	s.ptr.re = (C.float)(value)
+}
+
+// Im gets the im field.
+func (s *AVComplexFloat) Im() float32 {
+	value := s.ptr.im
+	return float32(value)
+}
+
+// SetIm sets the im field.
+func (s *AVComplexFloat) SetIm(value float32) {
+	s.ptr.im = (C.float)(value)
+}
+
+// --- Struct AVComplexDouble ---
+
+// AVComplexDouble wraps AVComplexDouble.
+type AVComplexDouble struct {
+	ptr *C.AVComplexDouble
+}
+
+func (s *AVComplexDouble) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVComplexDoubleArray(ptr unsafe.Pointer) *Array[*AVComplexDouble] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVComplexDouble]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVComplexDouble {
+			ptr := (**C.AVComplexDouble)(pointer)
+			value := *ptr
+			var valueMapped *AVComplexDouble
+			if value != nil {
+				valueMapped = &AVComplexDouble{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVComplexDouble) {
+			ptr := (**C.AVComplexDouble)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Re gets the re field.
+func (s *AVComplexDouble) Re() float64 {
+	value := s.ptr.re
+	return float64(value)
+}
+
+// SetRe sets the re field.
+func (s *AVComplexDouble) SetRe(value float64) {
+	s.ptr.re = (C.double)(value)
+}
+
+// Im gets the im field.
+func (s *AVComplexDouble) Im() float64 {
+	value := s.ptr.im
+	return float64(value)
+}
+
+// SetIm sets the im field.
+func (s *AVComplexDouble) SetIm(value float64) {
+	s.ptr.im = (C.double)(value)
+}
+
+// --- Struct AVComplexInt32 ---
+
+// AVComplexInt32 wraps AVComplexInt32.
+type AVComplexInt32 struct {
+	ptr *C.AVComplexInt32
+}
+
+func (s *AVComplexInt32) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVComplexInt32Array(ptr unsafe.Pointer) *Array[*AVComplexInt32] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVComplexInt32]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVComplexInt32 {
+			ptr := (**C.AVComplexInt32)(pointer)
+			value := *ptr
+			var valueMapped *AVComplexInt32
+			if value != nil {
+				valueMapped = &AVComplexInt32{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVComplexInt32) {
+			ptr := (**C.AVComplexInt32)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// re skipped due to unexpected IdentType int32_t
+
+// im skipped due to unexpected IdentType int32_t
 
 // --- Struct AVVideoEncParams ---
 

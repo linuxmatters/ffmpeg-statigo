@@ -23,13 +23,24 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/aes.h>
+// #include <libavutil/aes_ctr.h>
+// #include <libavutil/ambient_viewing_environment.h>
+// #include <libavutil/audio_fifo.h>
 // #include <libavutil/avassert.h>
 // #include <libavutil/avconfig.h>
+// #include <libavutil/avstring.h>
 // #include <libavutil/avutil.h>
+// #include <libavutil/base64.h>
+// #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
+// #include <libavutil/camellia.h>
+// #include <libavutil/cast5.h>
 // #include <libavutil/channel_layout.h>
 // #include <libavutil/container_fifo.h>
 // #include <libavutil/cpu.h>
+// #include <libavutil/des.h>
+// #include <libavutil/detection_bbox.h>
 // #include <libavutil/dict.h>
 // #include <libavutil/display.h>
 // #include <libavutil/downmix_info.h>
@@ -39,20 +50,45 @@ import "unsafe"
 // #include <libavutil/executor.h>
 // #include <libavutil/ffversion.h>
 // #include <libavutil/fifo.h>
+// #include <libavutil/file.h>
 // #include <libavutil/frame.h>
+// #include <libavutil/hash.h>
+// #include <libavutil/hdr_dynamic_metadata.h>
+// #include <libavutil/hdr_dynamic_vivid_metadata.h>
+// #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/iamf.h>
+// #include <libavutil/intfloat.h>
 // #include <libavutil/log.h>
+// #include <libavutil/lzo.h>
+// #include <libavutil/macros.h>
+// #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
+// #include <libavutil/motion_vector.h>
+// #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
+// #include <libavutil/random_seed.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/rc4.h>
 // #include <libavutil/replaygain.h>
+// #include <libavutil/ripemd.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/sha.h>
+// #include <libavutil/sha512.h>
+// #include <libavutil/spherical.h>
+// #include <libavutil/stereo3d.h>
+// #include <libavutil/tdrdi.h>
+// #include <libavutil/tea.h>
+// #include <libavutil/threadmessage.h>
 // #include <libavutil/time.h>
 // #include <libavutil/timecode.h>
 // #include <libavutil/timestamp.h>
+// #include <libavutil/tree.h>
+// #include <libavutil/twofish.h>
+// #include <libavutil/tx.h>
 // #include <libavutil/version.h>
 // #include <libavutil/video_enc_params.h>
 // #include <libavutil/video_hint.h>
@@ -7054,6 +7090,366 @@ func AVIOHandshake(c *AVIOContext) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_aes_alloc ---
+
+// AVAesAlloc wraps av_aes_alloc.
+//
+//	Allocate an AVAES context.
+func AVAesAlloc() *AVAES {
+	ret := C.av_aes_alloc()
+	var retMapped *AVAES
+	if ret != nil {
+		retMapped = &AVAES{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_aes_init ---
+
+// AVAesInit wraps av_aes_init.
+/*
+  Initialize an AVAES context.
+
+  @param a The AVAES context
+  @param key Pointer to the key
+  @param key_bits 128, 192 or 256
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVAesInit(a *AVAES, key unsafe.Pointer, keyBits int, decrypt int) (int, error) {
+	var tmpa *C.struct_AVAES
+	if a != nil {
+		tmpa = a.ptr
+	}
+	ret := C.av_aes_init(tmpa, (*C.uint8_t)(key), C.int(keyBits), C.int(decrypt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_aes_crypt ---
+
+// AVAesCrypt wraps av_aes_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context.
+
+  @param a The AVAES context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 16 byte blocks
+  @param iv initialization vector for CBC mode, if NULL then ECB will be used
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVAesCrypt(a *AVAES, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpa *C.struct_AVAES
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_crypt(tmpa, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_aes_ctr_alloc ---
+
+// AVAesCtrAlloc wraps av_aes_ctr_alloc.
+//
+//	Allocate an AVAESCTR context.
+func AVAesCtrAlloc() *AVAESCTR {
+	ret := C.av_aes_ctr_alloc()
+	var retMapped *AVAESCTR
+	if ret != nil {
+		retMapped = &AVAESCTR{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_aes_ctr_init ---
+
+// AVAesCtrInit wraps av_aes_ctr_init.
+/*
+  Initialize an AVAESCTR context.
+
+  @param a The AVAESCTR context to initialize
+  @param key encryption key, must have a length of AES_CTR_KEY_SIZE
+*/
+func AVAesCtrInit(a *AVAESCTR, key unsafe.Pointer) (int, error) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	ret := C.av_aes_ctr_init(tmpa, (*C.uint8_t)(key))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_aes_ctr_free ---
+
+// AVAesCtrFree wraps av_aes_ctr_free.
+/*
+  Release an AVAESCTR context.
+
+  @param a The AVAESCTR context
+*/
+func AVAesCtrFree(a *AVAESCTR) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_ctr_free(tmpa)
+}
+
+// --- Function av_aes_ctr_crypt ---
+
+// AVAesCtrCrypt wraps av_aes_ctr_crypt.
+/*
+  Process a buffer using a previously initialized context.
+
+  @param a The AVAESCTR context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param size the size of src and dst
+*/
+func AVAesCtrCrypt(a *AVAESCTR, dst unsafe.Pointer, src unsafe.Pointer, size int) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_ctr_crypt(tmpa, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(size))
+}
+
+// --- Function av_aes_ctr_get_iv ---
+
+// AVAesCtrGetIv wraps av_aes_ctr_get_iv.
+//
+//	Get the current iv
+func AVAesCtrGetIv(a *AVAESCTR) unsafe.Pointer {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	ret := C.av_aes_ctr_get_iv(tmpa)
+	return unsafe.Pointer(ret)
+}
+
+// --- Function av_aes_ctr_set_random_iv ---
+
+// AVAesCtrSetRandomIv wraps av_aes_ctr_set_random_iv.
+//
+//	Generate a random iv
+func AVAesCtrSetRandomIv(a *AVAESCTR) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_ctr_set_random_iv(tmpa)
+}
+
+// --- Function av_aes_ctr_set_iv ---
+
+// AVAesCtrSetIv wraps av_aes_ctr_set_iv.
+//
+//	Forcefully change the 8-byte iv
+func AVAesCtrSetIv(a *AVAESCTR, iv unsafe.Pointer) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_ctr_set_iv(tmpa, (*C.uint8_t)(iv))
+}
+
+// --- Function av_aes_ctr_set_full_iv ---
+
+// AVAesCtrSetFullIv wraps av_aes_ctr_set_full_iv.
+//
+//	Forcefully change the "full" 16-byte iv, including the counter
+func AVAesCtrSetFullIv(a *AVAESCTR, iv unsafe.Pointer) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_ctr_set_full_iv(tmpa, (*C.uint8_t)(iv))
+}
+
+// --- Function av_aes_ctr_increment_iv ---
+
+// AVAesCtrIncrementIv wraps av_aes_ctr_increment_iv.
+//
+//	Increment the top 64 bit of the iv (performed after each frame)
+func AVAesCtrIncrementIv(a *AVAESCTR) {
+	var tmpa *C.struct_AVAESCTR
+	if a != nil {
+		tmpa = a.ptr
+	}
+	C.av_aes_ctr_increment_iv(tmpa)
+}
+
+// --- Function av_ambient_viewing_environment_alloc ---
+
+// av_ambient_viewing_environment_alloc skipped due to size
+
+// --- Function av_ambient_viewing_environment_create_side_data ---
+
+// AVAmbientViewingEnvironmentCreateSideData wraps av_ambient_viewing_environment_create_side_data.
+/*
+  Allocate and add an AVAmbientViewingEnvironment structure to an existing
+  AVFrame as side data.
+
+  @return the newly allocated struct, or NULL on failure
+*/
+func AVAmbientViewingEnvironmentCreateSideData(frame *AVFrame) *AVAmbientViewingEnvironment {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_ambient_viewing_environment_create_side_data(tmpframe)
+	var retMapped *AVAmbientViewingEnvironment
+	if ret != nil {
+		retMapped = &AVAmbientViewingEnvironment{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_audio_fifo_free ---
+
+// AVAudioFifoFree wraps av_audio_fifo_free.
+/*
+  Free an AVAudioFifo.
+
+  @param af  AVAudioFifo to free
+*/
+func AVAudioFifoFree(af *AVAudioFifo) {
+	var tmpaf *C.AVAudioFifo
+	if af != nil {
+		tmpaf = af.ptr
+	}
+	C.av_audio_fifo_free(tmpaf)
+}
+
+// --- Function av_audio_fifo_alloc ---
+
+// AVAudioFifoAlloc wraps av_audio_fifo_alloc.
+/*
+  Allocate an AVAudioFifo.
+
+  @param sample_fmt  sample format
+  @param channels    number of channels
+  @param nb_samples  initial allocation size, in samples
+  @return            newly allocated AVAudioFifo, or NULL on error
+*/
+func AVAudioFifoAlloc(sampleFmt AVSampleFormat, channels int, nbSamples int) *AVAudioFifo {
+	ret := C.av_audio_fifo_alloc(C.enum_AVSampleFormat(sampleFmt), C.int(channels), C.int(nbSamples))
+	var retMapped *AVAudioFifo
+	if ret != nil {
+		retMapped = &AVAudioFifo{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_audio_fifo_realloc ---
+
+// AVAudioFifoRealloc wraps av_audio_fifo_realloc.
+/*
+  Reallocate an AVAudioFifo.
+
+  @param af          AVAudioFifo to reallocate
+  @param nb_samples  new allocation size, in samples
+  @return            0 if OK, or negative AVERROR code on failure
+*/
+func AVAudioFifoRealloc(af *AVAudioFifo, nbSamples int) (int, error) {
+	var tmpaf *C.AVAudioFifo
+	if af != nil {
+		tmpaf = af.ptr
+	}
+	ret := C.av_audio_fifo_realloc(tmpaf, C.int(nbSamples))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_audio_fifo_write ---
+
+// av_audio_fifo_write skipped due to data
+
+// --- Function av_audio_fifo_peek ---
+
+// av_audio_fifo_peek skipped due to data
+
+// --- Function av_audio_fifo_peek_at ---
+
+// av_audio_fifo_peek_at skipped due to data
+
+// --- Function av_audio_fifo_read ---
+
+// av_audio_fifo_read skipped due to data
+
+// --- Function av_audio_fifo_drain ---
+
+// AVAudioFifoDrain wraps av_audio_fifo_drain.
+/*
+  Drain data from an AVAudioFifo.
+
+  Removes the data without reading it.
+
+  @param af          AVAudioFifo to drain
+  @param nb_samples  number of samples to drain
+  @return            0 if OK, or negative AVERROR code on failure
+*/
+func AVAudioFifoDrain(af *AVAudioFifo, nbSamples int) (int, error) {
+	var tmpaf *C.AVAudioFifo
+	if af != nil {
+		tmpaf = af.ptr
+	}
+	ret := C.av_audio_fifo_drain(tmpaf, C.int(nbSamples))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_audio_fifo_reset ---
+
+// AVAudioFifoReset wraps av_audio_fifo_reset.
+/*
+  Reset the AVAudioFifo buffer.
+
+  This empties all data in the buffer.
+
+  @param af  AVAudioFifo to reset
+*/
+func AVAudioFifoReset(af *AVAudioFifo) {
+	var tmpaf *C.AVAudioFifo
+	if af != nil {
+		tmpaf = af.ptr
+	}
+	C.av_audio_fifo_reset(tmpaf)
+}
+
+// --- Function av_audio_fifo_size ---
+
+// AVAudioFifoSize wraps av_audio_fifo_size.
+/*
+  Get the current number of samples in the AVAudioFifo available for reading.
+
+  @param af  the AVAudioFifo to query
+  @return    number of samples available for reading
+*/
+func AVAudioFifoSize(af *AVAudioFifo) (int, error) {
+	var tmpaf *C.AVAudioFifo
+	if af != nil {
+		tmpaf = af.ptr
+	}
+	ret := C.av_audio_fifo_size(tmpaf)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_audio_fifo_space ---
+
+// AVAudioFifoSpace wraps av_audio_fifo_space.
+/*
+  Get the current number of samples in the AVAudioFifo available for writing.
+
+  @param af  the AVAudioFifo to query
+  @return    number of samples available for writing
+*/
+func AVAudioFifoSpace(af *AVAudioFifo) (int, error) {
+	var tmpaf *C.AVAudioFifo
+	if af != nil {
+		tmpaf = af.ptr
+	}
+	ret := C.av_audio_fifo_space(tmpaf)
+	return int(ret), WrapErr(int(ret))
+}
+
 // --- Function av_assert0_fpu ---
 
 // AVAssert0Fpu wraps av_assert0_fpu.
@@ -7065,6 +7461,417 @@ func AVIOHandshake(c *AVIOContext) (int, error) {
 func AVAssert0Fpu() {
 	C.av_assert0_fpu()
 }
+
+// --- Function av_strstart ---
+
+// av_strstart skipped due to ptr
+
+// --- Function av_stristart ---
+
+// av_stristart skipped due to ptr
+
+// --- Function av_stristr ---
+
+// AVStristr wraps av_stristr.
+/*
+  Locate the first case-independent occurrence in the string haystack
+  of the string needle.  A zero-length string needle is considered to
+  match at the start of haystack.
+
+  This function is a case-insensitive version of the standard strstr().
+
+  @param haystack string to search in
+  @param needle   string to search for
+  @return         pointer to the located match within haystack
+                  or a null pointer if no match
+*/
+func AVStristr(haystack *CStr, needle *CStr) *CStr {
+	var tmphaystack *C.char
+	if haystack != nil {
+		tmphaystack = haystack.ptr
+	}
+	var tmpneedle *C.char
+	if needle != nil {
+		tmpneedle = needle.ptr
+	}
+	ret := C.av_stristr(tmphaystack, tmpneedle)
+	return wrapCStr(ret)
+}
+
+// --- Function av_strnstr ---
+
+// AVStrnstr wraps av_strnstr.
+/*
+  Locate the first occurrence of the string needle in the string haystack
+  where not more than hay_length characters are searched. A zero-length
+  string needle is considered to match at the start of haystack.
+
+  This function is a length-limited version of the standard strstr().
+
+  @param haystack   string to search in
+  @param needle     string to search for
+  @param hay_length length of string to search in
+  @return           pointer to the located match within haystack
+                    or a null pointer if no match
+*/
+func AVStrnstr(haystack *CStr, needle *CStr, hayLength uint64) *CStr {
+	var tmphaystack *C.char
+	if haystack != nil {
+		tmphaystack = haystack.ptr
+	}
+	var tmpneedle *C.char
+	if needle != nil {
+		tmpneedle = needle.ptr
+	}
+	ret := C.av_strnstr(tmphaystack, tmpneedle, C.size_t(hayLength))
+	return wrapCStr(ret)
+}
+
+// --- Function av_strlcpy ---
+
+// AVStrlcpy wraps av_strlcpy.
+/*
+  Copy the string src to dst, but no more than size - 1 bytes, and
+  null-terminate dst.
+
+  This function is the same as BSD strlcpy().
+
+  @param dst destination buffer
+  @param src source string
+  @param size size of destination buffer
+  @return the length of src
+
+  @warning since the return value is the length of src, src absolutely
+  _must_ be a properly 0-terminated string, otherwise this will read beyond
+  the end of the buffer and possibly crash.
+*/
+func AVStrlcpy(dst *CStr, src *CStr, size uint64) uint64 {
+	var tmpdst *C.char
+	if dst != nil {
+		tmpdst = dst.ptr
+	}
+	var tmpsrc *C.char
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.av_strlcpy(tmpdst, tmpsrc, C.size_t(size))
+	return uint64(ret)
+}
+
+// --- Function av_strlcat ---
+
+// AVStrlcat wraps av_strlcat.
+/*
+  Append the string src to the string dst, but to a total length of
+  no more than size - 1 bytes, and null-terminate dst.
+
+  This function is similar to BSD strlcat(), but differs when
+  size <= strlen(dst).
+
+  @param dst destination buffer
+  @param src source string
+  @param size size of destination buffer
+  @return the total length of src and dst
+
+  @warning since the return value use the length of src and dst, these
+  absolutely _must_ be a properly 0-terminated strings, otherwise this
+  will read beyond the end of the buffer and possibly crash.
+*/
+func AVStrlcat(dst *CStr, src *CStr, size uint64) uint64 {
+	var tmpdst *C.char
+	if dst != nil {
+		tmpdst = dst.ptr
+	}
+	var tmpsrc *C.char
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.av_strlcat(tmpdst, tmpsrc, C.size_t(size))
+	return uint64(ret)
+}
+
+// --- Function av_strlcatf ---
+
+// av_strlcatf skipped due to variadic arg.
+
+// --- Function av_strnlen ---
+
+// AVStrnlen wraps av_strnlen.
+/*
+  Get the count of continuous non zero chars starting from the beginning.
+
+  @param s   the string whose length to count
+  @param len maximum number of characters to check in the string, that
+             is the maximum value which is returned by the function
+*/
+func AVStrnlen(s *CStr, len uint64) uint64 {
+	var tmps *C.char
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.av_strnlen(tmps, C.size_t(len))
+	return uint64(ret)
+}
+
+// --- Function av_asprintf ---
+
+// av_asprintf skipped due to variadic arg.
+
+// --- Function av_get_token ---
+
+// av_get_token skipped due to buf
+
+// --- Function av_strtok ---
+
+// av_strtok skipped due to saveptr
+
+// --- Function av_isdigit ---
+
+// AVIsdigit wraps av_isdigit.
+//
+//	Locale-independent conversion of ASCII isdigit.
+func AVIsdigit(c int) (int, error) {
+	ret := C.av_isdigit(C.int(c))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_isgraph ---
+
+// AVIsgraph wraps av_isgraph.
+//
+//	Locale-independent conversion of ASCII isgraph.
+func AVIsgraph(c int) (int, error) {
+	ret := C.av_isgraph(C.int(c))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_isspace ---
+
+// AVIsspace wraps av_isspace.
+//
+//	Locale-independent conversion of ASCII isspace.
+func AVIsspace(c int) (int, error) {
+	ret := C.av_isspace(C.int(c))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_toupper ---
+
+// AVToupper wraps av_toupper.
+//
+//	Locale-independent conversion of ASCII characters to uppercase.
+func AVToupper(c int) (int, error) {
+	ret := C.av_toupper(C.int(c))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_tolower ---
+
+// AVTolower wraps av_tolower.
+//
+//	Locale-independent conversion of ASCII characters to lowercase.
+func AVTolower(c int) (int, error) {
+	ret := C.av_tolower(C.int(c))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_isxdigit ---
+
+// AVIsxdigit wraps av_isxdigit.
+//
+//	Locale-independent conversion of ASCII isxdigit.
+func AVIsxdigit(c int) (int, error) {
+	ret := C.av_isxdigit(C.int(c))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_strcasecmp ---
+
+// AVStrcasecmp wraps av_strcasecmp.
+/*
+  Locale-independent case-insensitive compare.
+  @note This means only ASCII-range characters are case-insensitive
+*/
+func AVStrcasecmp(a *CStr, b *CStr) (int, error) {
+	var tmpa *C.char
+	if a != nil {
+		tmpa = a.ptr
+	}
+	var tmpb *C.char
+	if b != nil {
+		tmpb = b.ptr
+	}
+	ret := C.av_strcasecmp(tmpa, tmpb)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_strncasecmp ---
+
+// AVStrncasecmp wraps av_strncasecmp.
+/*
+  Locale-independent case-insensitive compare.
+  @note This means only ASCII-range characters are case-insensitive
+*/
+func AVStrncasecmp(a *CStr, b *CStr, n uint64) (int, error) {
+	var tmpa *C.char
+	if a != nil {
+		tmpa = a.ptr
+	}
+	var tmpb *C.char
+	if b != nil {
+		tmpb = b.ptr
+	}
+	ret := C.av_strncasecmp(tmpa, tmpb, C.size_t(n))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_strireplace ---
+
+// AVStrireplace wraps av_strireplace.
+/*
+  Locale-independent strings replace.
+  @note This means only ASCII-range characters are replaced.
+*/
+func AVStrireplace(str *CStr, from *CStr, to *CStr) *CStr {
+	var tmpstr *C.char
+	if str != nil {
+		tmpstr = str.ptr
+	}
+	var tmpfrom *C.char
+	if from != nil {
+		tmpfrom = from.ptr
+	}
+	var tmpto *C.char
+	if to != nil {
+		tmpto = to.ptr
+	}
+	ret := C.av_strireplace(tmpstr, tmpfrom, tmpto)
+	return wrapCStr(ret)
+}
+
+// --- Function av_basename ---
+
+// AVBasename wraps av_basename.
+/*
+  Thread safe basename.
+  @param path the string to parse, on DOS both \ and / are considered separators.
+  @return pointer to the basename substring.
+  If path does not contain a slash, the function returns a copy of path.
+  If path is a NULL pointer or points to an empty string, a pointer
+  to a string "." is returned.
+*/
+func AVBasename(path *CStr) *CStr {
+	var tmppath *C.char
+	if path != nil {
+		tmppath = path.ptr
+	}
+	ret := C.av_basename(tmppath)
+	return wrapCStr(ret)
+}
+
+// --- Function av_dirname ---
+
+// AVDirname wraps av_dirname.
+/*
+  Thread safe dirname.
+  @param path the string to parse, on DOS both \ and / are considered separators.
+  @return A pointer to a string that's the parent directory of path.
+  If path is a NULL pointer or points to an empty string, a pointer
+  to a string "." is returned.
+  @note the function may modify the contents of the path, so copies should be passed.
+*/
+func AVDirname(path *CStr) *CStr {
+	var tmppath *C.char
+	if path != nil {
+		tmppath = path.ptr
+	}
+	ret := C.av_dirname(tmppath)
+	return wrapCStr(ret)
+}
+
+// --- Function av_match_name ---
+
+// AVMatchName wraps av_match_name.
+/*
+  Match instances of a name in a comma-separated list of names.
+  List entries are checked from the start to the end of the names list,
+  the first match ends further processing. If an entry prefixed with '-'
+  matches, then 0 is returned. The "ALL" list entry is considered to
+  match all names.
+
+  @param name  Name to look for.
+  @param names List of names.
+  @return 1 on match, 0 otherwise.
+*/
+func AVMatchName(name *CStr, names *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	var tmpnames *C.char
+	if names != nil {
+		tmpnames = names.ptr
+	}
+	ret := C.av_match_name(tmpname, tmpnames)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_append_path_component ---
+
+// AVAppendPathComponent wraps av_append_path_component.
+/*
+  Append path component to the existing path.
+  Path separator '/' is placed between when needed.
+  Resulting string have to be freed with av_free().
+  @param path      base path
+  @param component component to be appended
+  @return new path or NULL on error.
+*/
+func AVAppendPathComponent(path *CStr, component *CStr) *CStr {
+	var tmppath *C.char
+	if path != nil {
+		tmppath = path.ptr
+	}
+	var tmpcomponent *C.char
+	if component != nil {
+		tmpcomponent = component.ptr
+	}
+	ret := C.av_append_path_component(tmppath, tmpcomponent)
+	return wrapCStr(ret)
+}
+
+// --- Function av_escape ---
+
+// av_escape skipped due to dst
+
+// --- Function av_utf8_decode ---
+
+// av_utf8_decode skipped due to codep
+
+// --- Function av_match_list ---
+
+// AVMatchList wraps av_match_list.
+/*
+  Check if a name is in a list.
+  @returns 0 if not found, or the 1 based index where it has been found in the
+             list.
+*/
+func AVMatchList(name *CStr, list *CStr, separator uint8) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	var tmplist *C.char
+	if list != nil {
+		tmplist = list.ptr
+	}
+	ret := C.av_match_list(tmpname, tmplist, C.char(separator))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sscanf ---
+
+// av_sscanf skipped due to variadic arg.
 
 // --- Function avutil_version ---
 
@@ -7190,6 +7997,74 @@ func AVFourccMakeString(buf *CStr, fourcc uint32) *CStr {
 	}
 	ret := C.av_fourcc_make_string(tmpbuf, C.uint32_t(fourcc))
 	return wrapCStr(ret)
+}
+
+// --- Function av_base64_decode ---
+
+// AVBase64Decode wraps av_base64_decode.
+/*
+  Decode a base64-encoded string.
+
+  @param out      buffer for decoded data
+  @param in       null-terminated input string
+  @param out_size size in bytes of the out buffer, must be at
+                  least 3/4 of the length of in, that is AV_BASE64_DECODE_SIZE(strlen(in))
+  @return         number of bytes written, or a negative value in case of
+                  invalid input
+*/
+func AVBase64Decode(out unsafe.Pointer, in *CStr, outSize int) (int, error) {
+	var tmpin *C.char
+	if in != nil {
+		tmpin = in.ptr
+	}
+	ret := C.av_base64_decode((*C.uint8_t)(out), tmpin, C.int(outSize))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_base64_encode ---
+
+// AVBase64Encode wraps av_base64_encode.
+/*
+  Encode data to base64 and null-terminate.
+
+  @param out      buffer for encoded data
+  @param out_size size in bytes of the out buffer (including the
+                  null terminator), must be at least AV_BASE64_SIZE(in_size)
+  @param in       input buffer containing the data to encode
+  @param in_size  size in bytes of the in buffer
+  @return         out or NULL in case of error
+*/
+func AVBase64Encode(out *CStr, outSize int, in unsafe.Pointer, inSize int) *CStr {
+	var tmpout *C.char
+	if out != nil {
+		tmpout = out.ptr
+	}
+	ret := C.av_base64_encode(tmpout, C.int(outSize), (*C.uint8_t)(in), C.int(inSize))
+	return wrapCStr(ret)
+}
+
+// --- Function av_bswap16 ---
+
+// AVBswap16 wraps av_bswap16.
+func AVBswap16(x uint16) uint16 {
+	ret := C.av_bswap16(C.uint16_t(x))
+	return uint16(ret)
+}
+
+// --- Function av_bswap32 ---
+
+// AVBswap32 wraps av_bswap32.
+func AVBswap32(x uint32) uint32 {
+	ret := C.av_bswap32(C.uint32_t(x))
+	return uint32(ret)
+}
+
+// --- Function av_bswap64 ---
+
+// AVBswap64 wraps av_bswap64.
+func AVBswap64(x uint64) uint64 {
+	ret := C.av_bswap64(C.uint64_t(x))
+	return uint64(ret)
 }
 
 // --- Function av_buffer_alloc ---
@@ -7542,6 +8417,139 @@ func AVBufferPoolBufferGetOpaque(ref *AVBufferRef) unsafe.Pointer {
 	}
 	ret := C.av_buffer_pool_buffer_get_opaque(tmpref)
 	return ret
+}
+
+// --- Function av_camellia_alloc ---
+
+// AVCamelliaAlloc wraps av_camellia_alloc.
+/*
+  Allocate an AVCAMELLIA context
+  To free the struct: av_free(ptr)
+*/
+func AVCamelliaAlloc() *AVCAMELLIA {
+	ret := C.av_camellia_alloc()
+	var retMapped *AVCAMELLIA
+	if ret != nil {
+		retMapped = &AVCAMELLIA{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_camellia_init ---
+
+// AVCamelliaInit wraps av_camellia_init.
+/*
+  Initialize an AVCAMELLIA context.
+
+  @param ctx an AVCAMELLIA context
+  @param key a key of 16, 24, 32 bytes used for encryption/decryption
+  @param key_bits number of keybits: possible are 128, 192, 256
+*/
+func AVCamelliaInit(ctx *AVCAMELLIA, key unsafe.Pointer, keyBits int) (int, error) {
+	var tmpctx *C.struct_AVCAMELLIA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_camellia_init(tmpctx, (*C.uint8_t)(key), C.int(keyBits))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_camellia_crypt ---
+
+// AVCamelliaCrypt wraps av_camellia_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context
+
+  @param ctx an AVCAMELLIA context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 16 byte blocks
+  @param iv initialization vector for CBC mode, NULL for ECB mode
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVCamelliaCrypt(ctx *AVCAMELLIA, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.struct_AVCAMELLIA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_camellia_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_cast5_alloc ---
+
+// AVCast5Alloc wraps av_cast5_alloc.
+/*
+  Allocate an AVCAST5 context
+  To free the struct: av_free(ptr)
+*/
+func AVCast5Alloc() *AVCAST5 {
+	ret := C.av_cast5_alloc()
+	var retMapped *AVCAST5
+	if ret != nil {
+		retMapped = &AVCAST5{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_cast5_init ---
+
+// AVCast5Init wraps av_cast5_init.
+/*
+  Initialize an AVCAST5 context.
+
+  @param ctx an AVCAST5 context
+  @param key a key of 5,6,...16 bytes used for encryption/decryption
+  @param key_bits number of keybits: possible are 40,48,...,128
+  @return 0 on success, less than 0 on failure
+*/
+func AVCast5Init(ctx *AVCAST5, key unsafe.Pointer, keyBits int) (int, error) {
+	var tmpctx *C.struct_AVCAST5
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_cast5_init(tmpctx, (*C.uint8_t)(key), C.int(keyBits))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_cast5_crypt ---
+
+// AVCast5Crypt wraps av_cast5_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context, ECB mode only
+
+  @param ctx an AVCAST5 context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 8 byte blocks
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVCast5Crypt(ctx *AVCAST5, dst unsafe.Pointer, src unsafe.Pointer, count int, decrypt int) {
+	var tmpctx *C.struct_AVCAST5
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_cast5_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), C.int(decrypt))
+}
+
+// --- Function av_cast5_crypt2 ---
+
+// AVCast5Crypt2 wraps av_cast5_crypt2.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context
+
+  @param ctx an AVCAST5 context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 8 byte blocks
+  @param iv initialization vector for CBC mode, NULL for ECB mode
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVCast5Crypt2(ctx *AVCAST5, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.struct_AVCAST5
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_cast5_crypt2(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
 }
 
 // --- Function av_channel_name ---
@@ -8256,6 +9264,125 @@ func AVCpuForceCount(count int) {
 func AVCpuMaxAlign() uint64 {
 	ret := C.av_cpu_max_align()
 	return uint64(ret)
+}
+
+// --- Function av_des_alloc ---
+
+// AVDesAlloc wraps av_des_alloc.
+//
+//	Allocate an AVDES context.
+func AVDesAlloc() *AVDES {
+	ret := C.av_des_alloc()
+	var retMapped *AVDES
+	if ret != nil {
+		retMapped = &AVDES{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_des_init ---
+
+// AVDesInit wraps av_des_init.
+/*
+  @brief Initializes an AVDES context.
+
+  @param d pointer to a AVDES structure to initialize
+  @param key pointer to the key to use
+  @param key_bits must be 64 or 192
+  @param decrypt 0 for encryption/CBC-MAC, 1 for decryption
+  @return zero on success, negative value otherwise
+*/
+func AVDesInit(d *AVDES, key unsafe.Pointer, keyBits int, decrypt int) (int, error) {
+	var tmpd *C.AVDES
+	if d != nil {
+		tmpd = d.ptr
+	}
+	ret := C.av_des_init(tmpd, (*C.uint8_t)(key), C.int(keyBits), C.int(decrypt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_des_crypt ---
+
+// AVDesCrypt wraps av_des_crypt.
+/*
+  @brief Encrypts / decrypts using the DES algorithm.
+
+  @param d pointer to the AVDES structure
+  @param dst destination array, can be equal to src, must be 8-byte aligned
+  @param src source array, can be equal to dst, must be 8-byte aligned, may be NULL
+  @param count number of 8 byte blocks
+  @param iv initialization vector for CBC mode, if NULL then ECB will be used,
+            must be 8-byte aligned
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVDesCrypt(d *AVDES, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpd *C.AVDES
+	if d != nil {
+		tmpd = d.ptr
+	}
+	C.av_des_crypt(tmpd, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_des_mac ---
+
+// AVDesMac wraps av_des_mac.
+/*
+  @brief Calculates CBC-MAC using the DES algorithm.
+
+  @param d pointer to the AVDES structure
+  @param dst destination array, can be equal to src, must be 8-byte aligned
+  @param src source array, can be equal to dst, must be 8-byte aligned, may be NULL
+  @param count number of 8 byte blocks
+*/
+func AVDesMac(d *AVDES, dst unsafe.Pointer, src unsafe.Pointer, count int) {
+	var tmpd *C.AVDES
+	if d != nil {
+		tmpd = d.ptr
+	}
+	C.av_des_mac(tmpd, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count))
+}
+
+// --- Function av_get_detection_bbox ---
+
+// AVGetDetectionBbox wraps av_get_detection_bbox.
+//
+//	Get the bounding box at the specified {@code idx}. Must be between 0 and nb_bboxes.
+func AVGetDetectionBbox(header *AVDetectionBBoxHeader, idx uint) *AVDetectionBBox {
+	var tmpheader *C.AVDetectionBBoxHeader
+	if header != nil {
+		tmpheader = header.ptr
+	}
+	ret := C.av_get_detection_bbox(tmpheader, C.uint(idx))
+	var retMapped *AVDetectionBBox
+	if ret != nil {
+		retMapped = &AVDetectionBBox{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_detection_bbox_alloc ---
+
+// av_detection_bbox_alloc skipped due to outSize
+
+// --- Function av_detection_bbox_create_side_data ---
+
+// AVDetectionBboxCreateSideData wraps av_detection_bbox_create_side_data.
+/*
+  Allocates memory for AVDetectionBBoxHeader, plus an array of {@code nb_bboxes}
+  AVDetectionBBox, in the given AVFrame {@code frame} as AVFrameSideData of type
+  AV_FRAME_DATA_DETECTION_BBOXES and initializes the variables.
+*/
+func AVDetectionBboxCreateSideData(frame *AVFrame, nbBboxes uint32) *AVDetectionBBoxHeader {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_detection_bbox_create_side_data(tmpframe, C.uint32_t(nbBboxes))
+	var retMapped *AVDetectionBBoxHeader
+	if ret != nil {
+		retMapped = &AVDetectionBBoxHeader{ptr: ret}
+	}
+	return retMapped
 }
 
 // --- Function av_dict_get ---
@@ -9168,6 +10295,24 @@ func AVFifoFreep2(f **AVFifo) {
 	}
 }
 
+// --- Function av_file_map ---
+
+// av_file_map skipped due to bufptr
+
+// --- Function av_file_unmap ---
+
+// AVFileUnmap wraps av_file_unmap.
+/*
+  Unmap or free the buffer bufptr created by av_file_map().
+
+  @param bufptr the buffer previously created with av_file_map()
+  @param size size in bytes of bufptr, must be the same as returned
+  by av_file_map()
+*/
+func AVFileUnmap(bufptr unsafe.Pointer, size uint64) {
+	C.av_file_unmap((*C.uint8_t)(bufptr), C.size_t(size))
+}
+
 // --- Function av_frame_alloc ---
 
 // AVFrameAlloc wraps av_frame_alloc.
@@ -9742,6 +10887,449 @@ func AVFrameSideDataGet(sd **AVFrameSideData, nbSd int, _type AVFrameSideDataTyp
 
 // av_frame_side_data_remove_by_props skipped due to sd
 
+// --- Function av_hash_alloc ---
+
+// AVHashAlloc wraps av_hash_alloc.
+/*
+  Allocate a hash context for the algorithm specified by name.
+
+  @return  >= 0 for success, a negative error code for failure
+
+  @note The context is not initialized after a call to this function; you must
+  call av_hash_init() to do so.
+*/
+func AVHashAlloc(ctx **AVHashContext, name *CStr) (int, error) {
+	var ptrctx **C.struct_AVHashContext
+	var tmpctx *C.struct_AVHashContext
+	var oldTmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_hash_alloc(ptrctx, tmpname)
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &AVHashContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_hash_names ---
+
+// AVHashNames wraps av_hash_names.
+/*
+  Get the names of available hash algorithms.
+
+  This function can be used to enumerate the algorithms.
+
+  @param[in] i  Index of the hash algorithm, starting from 0
+  @return       Pointer to a static string or `NULL` if `i` is out of range
+*/
+func AVHashNames(i int) *CStr {
+	ret := C.av_hash_names(C.int(i))
+	return wrapCStr(ret)
+}
+
+// --- Function av_hash_get_name ---
+
+// AVHashGetName wraps av_hash_get_name.
+//
+//	Get the name of the algorithm corresponding to the given hash context.
+func AVHashGetName(ctx *AVHashContext) *CStr {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_hash_get_name(tmpctx)
+	return wrapCStr(ret)
+}
+
+// --- Function av_hash_get_size ---
+
+// AVHashGetSize wraps av_hash_get_size.
+/*
+  Get the size of the resulting hash value in bytes.
+
+  The maximum value this function will currently return is available as macro
+  #AV_HASH_MAX_SIZE.
+
+  @param[in]     ctx Hash context
+  @return            Size of the hash value in bytes
+*/
+func AVHashGetSize(ctx *AVHashContext) (int, error) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_hash_get_size(tmpctx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_hash_init ---
+
+// AVHashInit wraps av_hash_init.
+/*
+  Initialize or reset a hash context.
+
+  @param[in,out] ctx Hash context
+*/
+func AVHashInit(ctx *AVHashContext) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hash_init(tmpctx)
+}
+
+// --- Function av_hash_update ---
+
+// AVHashUpdate wraps av_hash_update.
+/*
+  Update a hash context with additional data.
+
+  @param[in,out] ctx Hash context
+  @param[in]     src Data to be added to the hash context
+  @param[in]     len Size of the additional data
+*/
+func AVHashUpdate(ctx *AVHashContext, src unsafe.Pointer, len uint64) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hash_update(tmpctx, (*C.uint8_t)(src), C.size_t(len))
+}
+
+// --- Function av_hash_final ---
+
+// AVHashFinal wraps av_hash_final.
+/*
+  Finalize a hash context and compute the actual hash value.
+
+  The minimum size of `dst` buffer is given by av_hash_get_size() or
+  #AV_HASH_MAX_SIZE. The use of the latter macro is discouraged.
+
+  It is not safe to update or finalize a hash context again, if it has already
+  been finalized.
+
+  @param[in,out] ctx Hash context
+  @param[out]    dst Where the final hash value will be stored
+
+  @see av_hash_final_bin() provides an alternative API
+*/
+func AVHashFinal(ctx *AVHashContext, dst unsafe.Pointer) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hash_final(tmpctx, (*C.uint8_t)(dst))
+}
+
+// --- Function av_hash_final_bin ---
+
+// AVHashFinalBin wraps av_hash_final_bin.
+/*
+  Finalize a hash context and store the actual hash value in a buffer.
+
+  It is not safe to update or finalize a hash context again, if it has already
+  been finalized.
+
+  If `size` is smaller than the hash size (given by av_hash_get_size()), the
+  hash is truncated; if size is larger, the buffer is padded with 0.
+
+  @param[in,out] ctx  Hash context
+  @param[out]    dst  Where the final hash value will be stored
+  @param[in]     size Number of bytes to write to `dst`
+*/
+func AVHashFinalBin(ctx *AVHashContext, dst unsafe.Pointer, size int) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hash_final_bin(tmpctx, (*C.uint8_t)(dst), C.int(size))
+}
+
+// --- Function av_hash_final_hex ---
+
+// AVHashFinalHex wraps av_hash_final_hex.
+/*
+  Finalize a hash context and store the hexadecimal representation of the
+  actual hash value as a string.
+
+  It is not safe to update or finalize a hash context again, if it has already
+  been finalized.
+
+  The string is always 0-terminated.
+
+  If `size` is smaller than `2 * hash_size + 1`, where `hash_size` is the
+  value returned by av_hash_get_size(), the string will be truncated.
+
+  @param[in,out] ctx  Hash context
+  @param[out]    dst  Where the string will be stored
+  @param[in]     size Maximum number of bytes to write to `dst`
+*/
+func AVHashFinalHex(ctx *AVHashContext, dst unsafe.Pointer, size int) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hash_final_hex(tmpctx, (*C.uint8_t)(dst), C.int(size))
+}
+
+// --- Function av_hash_final_b64 ---
+
+// AVHashFinalB64 wraps av_hash_final_b64.
+/*
+  Finalize a hash context and store the Base64 representation of the
+  actual hash value as a string.
+
+  It is not safe to update or finalize a hash context again, if it has already
+  been finalized.
+
+  The string is always 0-terminated.
+
+  If `size` is smaller than AV_BASE64_SIZE(hash_size), where `hash_size` is
+  the value returned by av_hash_get_size(), the string will be truncated.
+
+  @param[in,out] ctx  Hash context
+  @param[out]    dst  Where the final hash value will be stored
+  @param[in]     size Maximum number of bytes to write to `dst`
+*/
+func AVHashFinalB64(ctx *AVHashContext, dst unsafe.Pointer, size int) {
+	var tmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hash_final_b64(tmpctx, (*C.uint8_t)(dst), C.int(size))
+}
+
+// --- Function av_hash_freep ---
+
+// AVHashFreep wraps av_hash_freep.
+/*
+  Free hash context and set hash context pointer to `NULL`.
+
+  @param[in,out] ctx  Pointer to hash context
+*/
+func AVHashFreep(ctx **AVHashContext) {
+	var ptrctx **C.struct_AVHashContext
+	var tmpctx *C.struct_AVHashContext
+	var oldTmpctx *C.struct_AVHashContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	C.av_hash_freep(ptrctx)
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &AVHashContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+}
+
+// --- Function av_dynamic_hdr_plus_alloc ---
+
+// av_dynamic_hdr_plus_alloc skipped due to size
+
+// --- Function av_dynamic_hdr_plus_create_side_data ---
+
+// AVDynamicHdrPlusCreateSideData wraps av_dynamic_hdr_plus_create_side_data.
+/*
+  Allocate a complete AVDynamicHDRPlus and add it to the frame.
+  @param frame The frame which side data is added to.
+
+  @return The AVDynamicHDRPlus structure to be filled by caller or NULL
+          on failure.
+*/
+func AVDynamicHdrPlusCreateSideData(frame *AVFrame) *AVDynamicHDRPlus {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_dynamic_hdr_plus_create_side_data(tmpframe)
+	var retMapped *AVDynamicHDRPlus
+	if ret != nil {
+		retMapped = &AVDynamicHDRPlus{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dynamic_hdr_plus_from_t35 ---
+
+// AVDynamicHdrPlusFromT35 wraps av_dynamic_hdr_plus_from_t35.
+/*
+  Parse the user data registered ITU-T T.35 to AVbuffer (AVDynamicHDRPlus).
+  The T.35 buffer must begin with the application mode, skipping the
+  country code, terminal provider codes, and application identifier.
+  @param s A pointer containing the decoded AVDynamicHDRPlus structure.
+  @param data The byte array containing the raw ITU-T T.35 data.
+  @param size Size of the data array in bytes.
+
+  @return >= 0 on success. Otherwise, returns the appropriate AVERROR.
+*/
+func AVDynamicHdrPlusFromT35(s *AVDynamicHDRPlus, data unsafe.Pointer, size uint64) (int, error) {
+	var tmps *C.AVDynamicHDRPlus
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.av_dynamic_hdr_plus_from_t35(tmps, (*C.uint8_t)(data), C.size_t(size))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_dynamic_hdr_plus_to_t35 ---
+
+// av_dynamic_hdr_plus_to_t35 skipped due to data
+
+// --- Function av_dynamic_hdr_vivid_alloc ---
+
+// av_dynamic_hdr_vivid_alloc skipped due to size
+
+// --- Function av_dynamic_hdr_vivid_create_side_data ---
+
+// AVDynamicHdrVividCreateSideData wraps av_dynamic_hdr_vivid_create_side_data.
+/*
+  Allocate a complete AVDynamicHDRVivid and add it to the frame.
+  @param frame The frame which side data is added to.
+
+  @return The AVDynamicHDRVivid structure to be filled by caller or NULL
+          on failure.
+*/
+func AVDynamicHdrVividCreateSideData(frame *AVFrame) *AVDynamicHDRVivid {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_dynamic_hdr_vivid_create_side_data(tmpframe)
+	var retMapped *AVDynamicHDRVivid
+	if ret != nil {
+		retMapped = &AVDynamicHDRVivid{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_hmac_alloc ---
+
+// AVHmacAlloc wraps av_hmac_alloc.
+/*
+  Allocate an AVHMAC context.
+  @param type The hash function used for the HMAC.
+*/
+func AVHmacAlloc(_type AVHMACType) *AVHMAC {
+	ret := C.av_hmac_alloc(C.enum_AVHMACType(_type))
+	var retMapped *AVHMAC
+	if ret != nil {
+		retMapped = &AVHMAC{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_hmac_free ---
+
+// AVHmacFree wraps av_hmac_free.
+/*
+  Free an AVHMAC context.
+  @param ctx The context to free, may be NULL
+*/
+func AVHmacFree(ctx *AVHMAC) {
+	var tmpctx *C.AVHMAC
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hmac_free(tmpctx)
+}
+
+// --- Function av_hmac_init ---
+
+// AVHmacInit wraps av_hmac_init.
+/*
+  Initialize an AVHMAC context with an authentication key.
+  @param ctx    The HMAC context
+  @param key    The authentication key
+  @param keylen The length of the key, in bytes
+*/
+func AVHmacInit(ctx *AVHMAC, key unsafe.Pointer, keylen uint) {
+	var tmpctx *C.AVHMAC
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hmac_init(tmpctx, (*C.uint8_t)(key), C.uint(keylen))
+}
+
+// --- Function av_hmac_update ---
+
+// AVHmacUpdate wraps av_hmac_update.
+/*
+  Hash data with the HMAC.
+  @param ctx  The HMAC context
+  @param data The data to hash
+  @param len  The length of the data, in bytes
+*/
+func AVHmacUpdate(ctx *AVHMAC, data unsafe.Pointer, len uint) {
+	var tmpctx *C.AVHMAC
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_hmac_update(tmpctx, (*C.uint8_t)(data), C.uint(len))
+}
+
+// --- Function av_hmac_final ---
+
+// AVHmacFinal wraps av_hmac_final.
+/*
+  Finish hashing and output the HMAC digest.
+  @param ctx    The HMAC context
+  @param out    The output buffer to write the digest into
+  @param outlen The length of the out buffer, in bytes
+  @return       The number of bytes written to out, or a negative error code.
+*/
+func AVHmacFinal(ctx *AVHMAC, out unsafe.Pointer, outlen uint) (int, error) {
+	var tmpctx *C.AVHMAC
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_hmac_final(tmpctx, (*C.uint8_t)(out), C.uint(outlen))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_hmac_calc ---
+
+// AVHmacCalc wraps av_hmac_calc.
+/*
+  Hash an array of data with a key.
+  @param ctx    The HMAC context
+  @param data   The data to hash
+  @param len    The length of the data, in bytes
+  @param key    The authentication key
+  @param keylen The length of the key, in bytes
+  @param out    The output buffer to write the digest into
+  @param outlen The length of the out buffer, in bytes
+  @return       The number of bytes written to out, or a negative error code.
+*/
+func AVHmacCalc(ctx *AVHMAC, data unsafe.Pointer, len uint, key unsafe.Pointer, keylen uint, out unsafe.Pointer, outlen uint) (int, error) {
+	var tmpctx *C.AVHMAC
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_hmac_calc(tmpctx, (*C.uint8_t)(data), C.uint(len), (*C.uint8_t)(key), C.uint(keylen), (*C.uint8_t)(out), C.uint(outlen))
+	return int(ret), WrapErr(int(ret))
+}
+
 // --- Function av_hwdevice_find_type_by_name ---
 
 // AVHWDeviceFindTypeByName wraps av_hwdevice_find_type_by_name.
@@ -10298,6 +11886,295 @@ func AVHWFrameCtxCreateDerived(derivedFrameCtx **AVBufferRef, format AVPixelForm
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function av_iamf_param_definition_get_class ---
+
+// AVIamfParamDefinitionGetClass wraps av_iamf_param_definition_get_class.
+func AVIamfParamDefinitionGetClass() *AVClass {
+	ret := C.av_iamf_param_definition_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_param_definition_alloc ---
+
+// av_iamf_param_definition_alloc skipped due to size
+
+// --- Function av_iamf_param_definition_get_subblock ---
+
+// AVIamfParamDefinitionGetSubblock wraps av_iamf_param_definition_get_subblock.
+/*
+  Get the subblock at the specified {@code idx}. Must be between 0 and nb_subblocks - 1.
+
+  The @ref AVIAMFParamDefinition.type "param definition type" defines
+  the struct type of the returned pointer.
+*/
+func AVIamfParamDefinitionGetSubblock(par *AVIAMFParamDefinition, idx uint) unsafe.Pointer {
+	var tmppar *C.AVIAMFParamDefinition
+	if par != nil {
+		tmppar = par.ptr
+	}
+	ret := C.av_iamf_param_definition_get_subblock(tmppar, C.uint(idx))
+	return ret
+}
+
+// --- Function av_iamf_audio_element_get_class ---
+
+// AVIamfAudioElementGetClass wraps av_iamf_audio_element_get_class.
+func AVIamfAudioElementGetClass() *AVClass {
+	ret := C.av_iamf_audio_element_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_audio_element_alloc ---
+
+// AVIamfAudioElementAlloc wraps av_iamf_audio_element_alloc.
+/*
+  Allocates a AVIAMFAudioElement, and initializes its fields with default values.
+  No layers are allocated. Must be freed with av_iamf_audio_element_free().
+
+  @see av_iamf_audio_element_add_layer()
+*/
+func AVIamfAudioElementAlloc() *AVIAMFAudioElement {
+	ret := C.av_iamf_audio_element_alloc()
+	var retMapped *AVIAMFAudioElement
+	if ret != nil {
+		retMapped = &AVIAMFAudioElement{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_audio_element_add_layer ---
+
+// AVIamfAudioElementAddLayer wraps av_iamf_audio_element_add_layer.
+/*
+  Allocate a layer and add it to a given AVIAMFAudioElement.
+  It is freed by av_iamf_audio_element_free() alongside the rest of the parent
+  AVIAMFAudioElement.
+
+  @return a pointer to the allocated layer.
+*/
+func AVIamfAudioElementAddLayer(audioElement *AVIAMFAudioElement) *AVIAMFLayer {
+	var tmpaudioElement *C.AVIAMFAudioElement
+	if audioElement != nil {
+		tmpaudioElement = audioElement.ptr
+	}
+	ret := C.av_iamf_audio_element_add_layer(tmpaudioElement)
+	var retMapped *AVIAMFLayer
+	if ret != nil {
+		retMapped = &AVIAMFLayer{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_audio_element_free ---
+
+// AVIamfAudioElementFree wraps av_iamf_audio_element_free.
+/*
+  Free an AVIAMFAudioElement and all its contents.
+
+  @param audio_element pointer to pointer to an allocated AVIAMFAudioElement.
+                       upon return, *audio_element will be set to NULL.
+*/
+func AVIamfAudioElementFree(audioElement **AVIAMFAudioElement) {
+	var ptraudioElement **C.AVIAMFAudioElement
+	var tmpaudioElement *C.AVIAMFAudioElement
+	var oldTmpaudioElement *C.AVIAMFAudioElement
+	if audioElement != nil {
+		inneraudioElement := *audioElement
+		if inneraudioElement != nil {
+			tmpaudioElement = inneraudioElement.ptr
+			oldTmpaudioElement = tmpaudioElement
+		}
+		ptraudioElement = &tmpaudioElement
+	}
+	C.av_iamf_audio_element_free(ptraudioElement)
+	if tmpaudioElement != oldTmpaudioElement && audioElement != nil {
+		if tmpaudioElement != nil {
+			*audioElement = &AVIAMFAudioElement{ptr: tmpaudioElement}
+		} else {
+			*audioElement = nil
+		}
+	}
+}
+
+// --- Function av_iamf_mix_presentation_get_class ---
+
+// AVIamfMixPresentationGetClass wraps av_iamf_mix_presentation_get_class.
+func AVIamfMixPresentationGetClass() *AVClass {
+	ret := C.av_iamf_mix_presentation_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_mix_presentation_alloc ---
+
+// AVIamfMixPresentationAlloc wraps av_iamf_mix_presentation_alloc.
+/*
+  Allocates a AVIAMFMixPresentation, and initializes its fields with default
+  values. No submixes are allocated.
+  Must be freed with av_iamf_mix_presentation_free().
+
+  @see av_iamf_mix_presentation_add_submix()
+*/
+func AVIamfMixPresentationAlloc() *AVIAMFMixPresentation {
+	ret := C.av_iamf_mix_presentation_alloc()
+	var retMapped *AVIAMFMixPresentation
+	if ret != nil {
+		retMapped = &AVIAMFMixPresentation{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_mix_presentation_add_submix ---
+
+// AVIamfMixPresentationAddSubmix wraps av_iamf_mix_presentation_add_submix.
+/*
+  Allocate a submix and add it to a given AVIAMFMixPresentation.
+  It is freed by av_iamf_mix_presentation_free() alongside the rest of the
+  parent AVIAMFMixPresentation.
+
+  @return a pointer to the allocated submix.
+*/
+func AVIamfMixPresentationAddSubmix(mixPresentation *AVIAMFMixPresentation) *AVIAMFSubmix {
+	var tmpmixPresentation *C.AVIAMFMixPresentation
+	if mixPresentation != nil {
+		tmpmixPresentation = mixPresentation.ptr
+	}
+	ret := C.av_iamf_mix_presentation_add_submix(tmpmixPresentation)
+	var retMapped *AVIAMFSubmix
+	if ret != nil {
+		retMapped = &AVIAMFSubmix{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_submix_add_element ---
+
+// AVIamfSubmixAddElement wraps av_iamf_submix_add_element.
+/*
+  Allocate a submix element and add it to a given AVIAMFSubmix.
+  It is freed by av_iamf_mix_presentation_free() alongside the rest of the
+  parent AVIAMFSubmix.
+
+  @return a pointer to the allocated submix.
+*/
+func AVIamfSubmixAddElement(submix *AVIAMFSubmix) *AVIAMFSubmixElement {
+	var tmpsubmix *C.AVIAMFSubmix
+	if submix != nil {
+		tmpsubmix = submix.ptr
+	}
+	ret := C.av_iamf_submix_add_element(tmpsubmix)
+	var retMapped *AVIAMFSubmixElement
+	if ret != nil {
+		retMapped = &AVIAMFSubmixElement{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_submix_add_layout ---
+
+// AVIamfSubmixAddLayout wraps av_iamf_submix_add_layout.
+/*
+  Allocate a submix layout and add it to a given AVIAMFSubmix.
+  It is freed by av_iamf_mix_presentation_free() alongside the rest of the
+  parent AVIAMFSubmix.
+
+  @return a pointer to the allocated submix.
+*/
+func AVIamfSubmixAddLayout(submix *AVIAMFSubmix) *AVIAMFSubmixLayout {
+	var tmpsubmix *C.AVIAMFSubmix
+	if submix != nil {
+		tmpsubmix = submix.ptr
+	}
+	ret := C.av_iamf_submix_add_layout(tmpsubmix)
+	var retMapped *AVIAMFSubmixLayout
+	if ret != nil {
+		retMapped = &AVIAMFSubmixLayout{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_iamf_mix_presentation_free ---
+
+// AVIamfMixPresentationFree wraps av_iamf_mix_presentation_free.
+/*
+  Free an AVIAMFMixPresentation and all its contents.
+
+  @param mix_presentation pointer to pointer to an allocated AVIAMFMixPresentation.
+                          upon return, *mix_presentation will be set to NULL.
+*/
+func AVIamfMixPresentationFree(mixPresentation **AVIAMFMixPresentation) {
+	var ptrmixPresentation **C.AVIAMFMixPresentation
+	var tmpmixPresentation *C.AVIAMFMixPresentation
+	var oldTmpmixPresentation *C.AVIAMFMixPresentation
+	if mixPresentation != nil {
+		innermixPresentation := *mixPresentation
+		if innermixPresentation != nil {
+			tmpmixPresentation = innermixPresentation.ptr
+			oldTmpmixPresentation = tmpmixPresentation
+		}
+		ptrmixPresentation = &tmpmixPresentation
+	}
+	C.av_iamf_mix_presentation_free(ptrmixPresentation)
+	if tmpmixPresentation != oldTmpmixPresentation && mixPresentation != nil {
+		if tmpmixPresentation != nil {
+			*mixPresentation = &AVIAMFMixPresentation{ptr: tmpmixPresentation}
+		} else {
+			*mixPresentation = nil
+		}
+	}
+}
+
+// --- Function av_int2float ---
+
+// AVInt2Float wraps av_int2float.
+//
+//	Reinterpret a 32-bit integer as a float.
+func AVInt2Float(i uint32) float32 {
+	ret := C.av_int2float(C.uint32_t(i))
+	return float32(ret)
+}
+
+// --- Function av_float2int ---
+
+// AVFloat2Int wraps av_float2int.
+//
+//	Reinterpret a float as a 32-bit integer.
+func AVFloat2Int(f float32) uint32 {
+	ret := C.av_float2int(C.float(f))
+	return uint32(ret)
+}
+
+// --- Function av_int2double ---
+
+// AVInt2Double wraps av_int2double.
+//
+//	Reinterpret a 64-bit integer as a double.
+func AVInt2Double(i uint64) float64 {
+	ret := C.av_int2double(C.uint64_t(i))
+	return float64(ret)
+}
+
+// --- Function av_double2int ---
+
+// AVDouble2Int wraps av_double2int.
+//
+//	Reinterpret a double as a 64-bit integer.
+func AVDouble2Int(f float64) uint64 {
+	ret := C.av_double2int(C.double(f))
+	return uint64(ret)
+}
+
 // --- Function av_log ---
 
 // av_log skipped due to variadic arg.
@@ -10391,6 +12268,83 @@ func AVLogSetFlags(arg int) {
 func AVLogGetFlags() (int, error) {
 	ret := C.av_log_get_flags()
 	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_lzo1x_decode ---
+
+// av_lzo1x_decode skipped due to outlen
+
+// --- Function av_mastering_display_metadata_alloc ---
+
+// AVMasteringDisplayMetadataAlloc wraps av_mastering_display_metadata_alloc.
+/*
+  Allocate an AVMasteringDisplayMetadata structure and set its fields to
+  default values. The resulting struct can be freed using av_freep().
+
+  @return An AVMasteringDisplayMetadata filled with default values or NULL
+          on failure.
+*/
+func AVMasteringDisplayMetadataAlloc() *AVMasteringDisplayMetadata {
+	ret := C.av_mastering_display_metadata_alloc()
+	var retMapped *AVMasteringDisplayMetadata
+	if ret != nil {
+		retMapped = &AVMasteringDisplayMetadata{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_mastering_display_metadata_alloc_size ---
+
+// av_mastering_display_metadata_alloc_size skipped due to size
+
+// --- Function av_mastering_display_metadata_create_side_data ---
+
+// AVMasteringDisplayMetadataCreateSideData wraps av_mastering_display_metadata_create_side_data.
+/*
+  Allocate a complete AVMasteringDisplayMetadata and add it to the frame.
+
+  @param frame The frame which side data is added to.
+
+  @return The AVMasteringDisplayMetadata structure to be filled by caller.
+*/
+func AVMasteringDisplayMetadataCreateSideData(frame *AVFrame) *AVMasteringDisplayMetadata {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_mastering_display_metadata_create_side_data(tmpframe)
+	var retMapped *AVMasteringDisplayMetadata
+	if ret != nil {
+		retMapped = &AVMasteringDisplayMetadata{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_content_light_metadata_alloc ---
+
+// av_content_light_metadata_alloc skipped due to size
+
+// --- Function av_content_light_metadata_create_side_data ---
+
+// AVContentLightMetadataCreateSideData wraps av_content_light_metadata_create_side_data.
+/*
+  Allocate a complete AVContentLightMetadata and add it to the frame.
+
+  @param frame The frame which side data is added to.
+
+  @return The AVContentLightMetadata structure to be filled by caller.
+*/
+func AVContentLightMetadataCreateSideData(frame *AVFrame) *AVContentLightMetadata {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_content_light_metadata_create_side_data(tmpframe)
+	var retMapped *AVContentLightMetadata
+	if ret != nil {
+		retMapped = &AVContentLightMetadata{ptr: ret}
+	}
+	return retMapped
 }
 
 // --- Function av_gcd ---
@@ -10926,6 +12880,88 @@ func AVMemcpyBackptr(dst unsafe.Pointer, back int, cnt int) {
 func AVMaxAlloc(max uint64) {
 	C.av_max_alloc(C.size_t(max))
 }
+
+// --- Function av_murmur3_alloc ---
+
+// AVMurmur3Alloc wraps av_murmur3_alloc.
+/*
+  Allocate an AVMurMur3 hash context.
+
+  @return Uninitialized hash context or `NULL` in case of error
+*/
+func AVMurmur3Alloc() *AVMurMur3 {
+	ret := C.av_murmur3_alloc()
+	var retMapped *AVMurMur3
+	if ret != nil {
+		retMapped = &AVMurMur3{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_murmur3_init_seeded ---
+
+// AVMurmur3InitSeeded wraps av_murmur3_init_seeded.
+/*
+  Initialize or reinitialize an AVMurMur3 hash context with a seed.
+
+  @param[out] c    Hash context
+  @param[in]  seed Random seed
+
+  @see av_murmur3_init()
+  @see @ref lavu_murmur3_seedinfo "Detailed description" on a discussion of
+  seeds for MurmurHash3.
+*/
+func AVMurmur3InitSeeded(c *AVMurMur3, seed uint64) {
+	var tmpc *C.struct_AVMurMur3
+	if c != nil {
+		tmpc = c.ptr
+	}
+	C.av_murmur3_init_seeded(tmpc, C.uint64_t(seed))
+}
+
+// --- Function av_murmur3_init ---
+
+// AVMurmur3Init wraps av_murmur3_init.
+/*
+  Initialize or reinitialize an AVMurMur3 hash context.
+
+  Equivalent to av_murmur3_init_seeded() with a built-in seed.
+
+  @param[out] c    Hash context
+
+  @see av_murmur3_init_seeded()
+  @see @ref lavu_murmur3_seedinfo "Detailed description" on a discussion of
+  seeds for MurmurHash3.
+*/
+func AVMurmur3Init(c *AVMurMur3) {
+	var tmpc *C.struct_AVMurMur3
+	if c != nil {
+		tmpc = c.ptr
+	}
+	C.av_murmur3_init(tmpc)
+}
+
+// --- Function av_murmur3_update ---
+
+// AVMurmur3Update wraps av_murmur3_update.
+/*
+  Update hash context with new data.
+
+  @param[out] c    Hash context
+  @param[in]  src  Input data to update hash with
+  @param[in]  len  Number of bytes to read from `src`
+*/
+func AVMurmur3Update(c *AVMurMur3, src unsafe.Pointer, len uint64) {
+	var tmpc *C.struct_AVMurMur3
+	if c != nil {
+		tmpc = c.ptr
+	}
+	C.av_murmur3_update(tmpc, (*C.uint8_t)(src), C.size_t(len))
+}
+
+// --- Function av_murmur3_final ---
+
+// av_murmur3_final skipped due to const array param dst
 
 // --- Function av_opt_set_defaults ---
 
@@ -11921,6 +13957,40 @@ func AVFindInfoTag(arg *CStr, argSize int, tag1 *CStr, info *CStr) (int, error) 
 
 // av_timegm skipped due to tm
 
+// --- Function av_get_random_seed ---
+
+// AVGetRandomSeed wraps av_get_random_seed.
+/*
+  Get a seed to use in conjunction with random functions.
+  This function tries to provide a good seed at a best effort bases.
+  Its possible to call this function multiple times if more bits are needed.
+  It can be quite slow, which is why it should only be used as seed for a faster
+  PRNG. The quality of the seed depends on the platform.
+*/
+func AVGetRandomSeed() uint32 {
+	ret := C.av_get_random_seed()
+	return uint32(ret)
+}
+
+// --- Function av_random_bytes ---
+
+// AVRandomBytes wraps av_random_bytes.
+/*
+  Generate cryptographically secure random data, i.e. suitable for use as
+  encryption keys and similar.
+
+  @param buf buffer into which the random data will be written
+  @param len size of buf in bytes
+
+  @retval 0                         success, len bytes of random data was written
+                                    into buf
+  @retval "a negative AVERROR code" random data could not be generated
+*/
+func AVRandomBytes(buf unsafe.Pointer, len uint64) (int, error) {
+	ret := C.av_random_bytes((*C.uint8_t)(buf), C.size_t(len))
+	return int(ret), WrapErr(int(ret))
+}
+
 // --- Function av_make_q ---
 
 // AVMakeQ wraps av_make_q.
@@ -12119,6 +14189,130 @@ func AVGcdQ(a *AVRational, b *AVRational, maxDen int, def *AVRational) *AVRation
 	return &AVRational{value: ret}
 }
 
+// --- Function av_rc4_alloc ---
+
+// AVRc4Alloc wraps av_rc4_alloc.
+//
+//	Allocate an AVRC4 context.
+func AVRc4Alloc() *AVRC4 {
+	ret := C.av_rc4_alloc()
+	var retMapped *AVRC4
+	if ret != nil {
+		retMapped = &AVRC4{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_rc4_init ---
+
+// AVRc4Init wraps av_rc4_init.
+/*
+  @brief Initializes an AVRC4 context.
+
+  @param d pointer to the AVRC4 context
+  @param key buffer containing the key
+  @param key_bits must be a multiple of 8
+  @param decrypt 0 for encryption, 1 for decryption, currently has no effect
+  @return zero on success, negative value otherwise
+*/
+func AVRc4Init(d *AVRC4, key unsafe.Pointer, keyBits int, decrypt int) (int, error) {
+	var tmpd *C.AVRC4
+	if d != nil {
+		tmpd = d.ptr
+	}
+	ret := C.av_rc4_init(tmpd, (*C.uint8_t)(key), C.int(keyBits), C.int(decrypt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_rc4_crypt ---
+
+// AVRc4Crypt wraps av_rc4_crypt.
+/*
+  @brief Encrypts / decrypts using the RC4 algorithm.
+
+  @param d pointer to the AVRC4 context
+  @param count number of bytes
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst, may be NULL
+  @param iv not (yet) used for RC4, should be NULL
+  @param decrypt 0 for encryption, 1 for decryption, not (yet) used
+*/
+func AVRc4Crypt(d *AVRC4, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpd *C.AVRC4
+	if d != nil {
+		tmpd = d.ptr
+	}
+	C.av_rc4_crypt(tmpd, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_ripemd_alloc ---
+
+// AVRipemdAlloc wraps av_ripemd_alloc.
+//
+//	Allocate an AVRIPEMD context.
+func AVRipemdAlloc() *AVRIPEMD {
+	ret := C.av_ripemd_alloc()
+	var retMapped *AVRIPEMD
+	if ret != nil {
+		retMapped = &AVRIPEMD{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_ripemd_init ---
+
+// AVRipemdInit wraps av_ripemd_init.
+/*
+  Initialize RIPEMD hashing.
+
+  @param context pointer to the function context (of size av_ripemd_size)
+  @param bits    number of bits in digest (128, 160, 256 or 320 bits)
+  @return        zero if initialization succeeded, -1 otherwise
+*/
+func AVRipemdInit(context *AVRIPEMD, bits int) (int, error) {
+	var tmpcontext *C.struct_AVRIPEMD
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	ret := C.av_ripemd_init(tmpcontext, C.int(bits))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_ripemd_update ---
+
+// AVRipemdUpdate wraps av_ripemd_update.
+/*
+  Update hash value.
+
+  @param context hash function context
+  @param data    input data to update hash with
+  @param len     input data length
+*/
+func AVRipemdUpdate(context *AVRIPEMD, data unsafe.Pointer, len uint64) {
+	var tmpcontext *C.struct_AVRIPEMD
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	C.av_ripemd_update(tmpcontext, (*C.uint8_t)(data), C.size_t(len))
+}
+
+// --- Function av_ripemd_final ---
+
+// AVRipemdFinal wraps av_ripemd_final.
+/*
+  Finish hashing and output digest value.
+
+  @param context hash function context
+  @param digest  buffer where output digest value is stored
+*/
+func AVRipemdFinal(context *AVRIPEMD, digest unsafe.Pointer) {
+	var tmpcontext *C.struct_AVRIPEMD
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	C.av_ripemd_final(tmpcontext, (*C.uint8_t)(digest))
+}
+
 // --- Function av_get_sample_fmt_name ---
 
 // AVGetSampleFmtName wraps av_get_sample_fmt_name.
@@ -12271,6 +14465,563 @@ func AVSampleFmtIsPlanar(sampleFmt AVSampleFormat) (int, error) {
 // --- Function av_samples_set_silence ---
 
 // av_samples_set_silence skipped due to audioData
+
+// --- Function av_sha_alloc ---
+
+// AVShaAlloc wraps av_sha_alloc.
+//
+//	Allocate an AVSHA context.
+func AVShaAlloc() *AVSHA {
+	ret := C.av_sha_alloc()
+	var retMapped *AVSHA
+	if ret != nil {
+		retMapped = &AVSHA{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_sha_init ---
+
+// AVShaInit wraps av_sha_init.
+/*
+  Initialize SHA-1 or SHA-2 hashing.
+
+  @param context pointer to the function context (of size av_sha_size)
+  @param bits    number of bits in digest (SHA-1 - 160 bits, SHA-2 224 or 256 bits)
+  @return        zero if initialization succeeded, -1 otherwise
+*/
+func AVShaInit(context *AVSHA, bits int) (int, error) {
+	var tmpcontext *C.struct_AVSHA
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	ret := C.av_sha_init(tmpcontext, C.int(bits))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sha_update ---
+
+// AVShaUpdate wraps av_sha_update.
+/*
+  Update hash value.
+
+  @param ctx     hash function context
+  @param data    input data to update hash with
+  @param len     input data length
+*/
+func AVShaUpdate(ctx *AVSHA, data unsafe.Pointer, len uint64) {
+	var tmpctx *C.struct_AVSHA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_sha_update(tmpctx, (*C.uint8_t)(data), C.size_t(len))
+}
+
+// --- Function av_sha_final ---
+
+// AVShaFinal wraps av_sha_final.
+/*
+  Finish hashing and output digest value.
+
+  @param context hash function context
+  @param digest  buffer where output digest value is stored
+*/
+func AVShaFinal(context *AVSHA, digest unsafe.Pointer) {
+	var tmpcontext *C.struct_AVSHA
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	C.av_sha_final(tmpcontext, (*C.uint8_t)(digest))
+}
+
+// --- Function av_sha512_alloc ---
+
+// AVSha512Alloc wraps av_sha512_alloc.
+//
+//	Allocate an AVSHA512 context.
+func AVSha512Alloc() *AVSHA512 {
+	ret := C.av_sha512_alloc()
+	var retMapped *AVSHA512
+	if ret != nil {
+		retMapped = &AVSHA512{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_sha512_init ---
+
+// AVSha512Init wraps av_sha512_init.
+/*
+  Initialize SHA-2 512 hashing.
+
+  @param context pointer to the function context (of size av_sha512_size)
+  @param bits    number of bits in digest (224, 256, 384 or 512 bits)
+  @return        zero if initialization succeeded, -1 otherwise
+*/
+func AVSha512Init(context *AVSHA512, bits int) (int, error) {
+	var tmpcontext *C.struct_AVSHA512
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	ret := C.av_sha512_init(tmpcontext, C.int(bits))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_sha512_update ---
+
+// AVSha512Update wraps av_sha512_update.
+/*
+  Update hash value.
+
+  @param context hash function context
+  @param data    input data to update hash with
+  @param len     input data length
+*/
+func AVSha512Update(context *AVSHA512, data unsafe.Pointer, len uint64) {
+	var tmpcontext *C.struct_AVSHA512
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	C.av_sha512_update(tmpcontext, (*C.uint8_t)(data), C.size_t(len))
+}
+
+// --- Function av_sha512_final ---
+
+// AVSha512Final wraps av_sha512_final.
+/*
+  Finish hashing and output digest value.
+
+  @param context hash function context
+  @param digest  buffer where output digest value is stored
+*/
+func AVSha512Final(context *AVSHA512, digest unsafe.Pointer) {
+	var tmpcontext *C.struct_AVSHA512
+	if context != nil {
+		tmpcontext = context.ptr
+	}
+	C.av_sha512_final(tmpcontext, (*C.uint8_t)(digest))
+}
+
+// --- Function av_spherical_alloc ---
+
+// av_spherical_alloc skipped due to size
+
+// --- Function av_spherical_tile_bounds ---
+
+// av_spherical_tile_bounds skipped due to left
+
+// --- Function av_spherical_projection_name ---
+
+// AVSphericalProjectionName wraps av_spherical_projection_name.
+/*
+  Provide a human-readable name of a given AVSphericalProjection.
+
+  @param projection The input AVSphericalProjection.
+
+  @return The name of the AVSphericalProjection, or "unknown".
+*/
+func AVSphericalProjectionName(projection AVSphericalProjection) *CStr {
+	ret := C.av_spherical_projection_name(C.enum_AVSphericalProjection(projection))
+	return wrapCStr(ret)
+}
+
+// --- Function av_spherical_from_name ---
+
+// AVSphericalFromName wraps av_spherical_from_name.
+/*
+  Get the AVSphericalProjection form a human-readable name.
+
+  @param name The input string.
+
+  @return The AVSphericalProjection value, or -1 if not found.
+*/
+func AVSphericalFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_spherical_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_stereo3d_alloc ---
+
+// AVStereo3DAlloc wraps av_stereo3d_alloc.
+/*
+  Allocate an AVStereo3D structure and set its fields to default values.
+  The resulting struct can be freed using av_freep().
+
+  @return An AVStereo3D filled with default values or NULL on failure.
+*/
+func AVStereo3DAlloc() *AVStereo3D {
+	ret := C.av_stereo3d_alloc()
+	var retMapped *AVStereo3D
+	if ret != nil {
+		retMapped = &AVStereo3D{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_stereo3d_alloc_size ---
+
+// av_stereo3d_alloc_size skipped due to size
+
+// --- Function av_stereo3d_create_side_data ---
+
+// AVStereo3DCreateSideData wraps av_stereo3d_create_side_data.
+/*
+  Allocate a complete AVFrameSideData and add it to the frame.
+
+  @param frame The frame which side data is added to.
+
+  @return The AVStereo3D structure to be filled by caller.
+*/
+func AVStereo3DCreateSideData(frame *AVFrame) *AVStereo3D {
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.av_stereo3d_create_side_data(tmpframe)
+	var retMapped *AVStereo3D
+	if ret != nil {
+		retMapped = &AVStereo3D{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_stereo3d_type_name ---
+
+// AVStereo3DTypeName wraps av_stereo3d_type_name.
+/*
+  Provide a human-readable name of a given stereo3d type.
+
+  @param type The input stereo3d type value.
+
+  @return The name of the stereo3d value, or "unknown".
+*/
+func AVStereo3DTypeName(_type uint) *CStr {
+	ret := C.av_stereo3d_type_name(C.uint(_type))
+	return wrapCStr(ret)
+}
+
+// --- Function av_stereo3d_from_name ---
+
+// AVStereo3DFromName wraps av_stereo3d_from_name.
+/*
+  Get the AVStereo3DType form a human-readable name.
+
+  @param name The input string.
+
+  @return The AVStereo3DType value, or -1 if not found.
+*/
+func AVStereo3DFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_stereo3d_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_stereo3d_view_name ---
+
+// AVStereo3DViewName wraps av_stereo3d_view_name.
+/*
+  Provide a human-readable name of a given stereo3d view.
+
+  @param type The input stereo3d view value.
+
+  @return The name of the stereo3d view value, or "unknown".
+*/
+func AVStereo3DViewName(view uint) *CStr {
+	ret := C.av_stereo3d_view_name(C.uint(view))
+	return wrapCStr(ret)
+}
+
+// --- Function av_stereo3d_view_from_name ---
+
+// AVStereo3DViewFromName wraps av_stereo3d_view_from_name.
+/*
+  Get the AVStereo3DView form a human-readable name.
+
+  @param name The input string.
+
+  @return The AVStereo3DView value, or -1 if not found.
+*/
+func AVStereo3DViewFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_stereo3d_view_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_stereo3d_primary_eye_name ---
+
+// AVStereo3DPrimaryEyeName wraps av_stereo3d_primary_eye_name.
+/*
+  Provide a human-readable name of a given stereo3d primary eye.
+
+  @param type The input stereo3d primary eye value.
+
+  @return The name of the stereo3d primary eye value, or "unknown".
+*/
+func AVStereo3DPrimaryEyeName(eye uint) *CStr {
+	ret := C.av_stereo3d_primary_eye_name(C.uint(eye))
+	return wrapCStr(ret)
+}
+
+// --- Function av_stereo3d_primary_eye_from_name ---
+
+// AVStereo3DPrimaryEyeFromName wraps av_stereo3d_primary_eye_from_name.
+/*
+  Get the AVStereo3DPrimaryEye form a human-readable name.
+
+  @param name The input string.
+
+  @return The AVStereo3DPrimaryEye value, or -1 if not found.
+*/
+func AVStereo3DPrimaryEyeFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_stereo3d_primary_eye_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_tdrdi_get_display ---
+
+// AVTdrdiGetDisplay wraps av_tdrdi_get_display.
+func AVTdrdiGetDisplay(tdrdi *AV3DReferenceDisplaysInfo, idx uint) *AV3DReferenceDisplay {
+	var tmptdrdi *C.AV3DReferenceDisplaysInfo
+	if tdrdi != nil {
+		tmptdrdi = tdrdi.ptr
+	}
+	ret := C.av_tdrdi_get_display(tmptdrdi, C.uint(idx))
+	var retMapped *AV3DReferenceDisplay
+	if ret != nil {
+		retMapped = &AV3DReferenceDisplay{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_tdrdi_alloc ---
+
+// av_tdrdi_alloc skipped due to size
+
+// --- Function av_tea_alloc ---
+
+// AVTeaAlloc wraps av_tea_alloc.
+/*
+  Allocate an AVTEA context
+  To free the struct: av_free(ptr)
+*/
+func AVTeaAlloc() *AVTEA {
+	ret := C.av_tea_alloc()
+	var retMapped *AVTEA
+	if ret != nil {
+		retMapped = &AVTEA{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_tea_init ---
+
+// av_tea_init skipped due to const array param key
+
+// --- Function av_tea_crypt ---
+
+// AVTeaCrypt wraps av_tea_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context.
+
+  @param ctx an AVTEA context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 8 byte blocks
+  @param iv initialization vector for CBC mode, if NULL then ECB will be used
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVTeaCrypt(ctx *AVTEA, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.struct_AVTEA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_tea_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_thread_message_queue_alloc ---
+
+// AVThreadMessageQueueAlloc wraps av_thread_message_queue_alloc.
+/*
+  Allocate a new message queue.
+
+  @param mq      pointer to the message queue
+  @param nelem   maximum number of elements in the queue
+  @param elsize  size of each element in the queue
+  @return  >=0 for success; <0 for error, in particular AVERROR(ENOSYS) if
+           lavu was built without thread support
+*/
+func AVThreadMessageQueueAlloc(mq **AVThreadMessageQueue, nelem uint, elsize uint) (int, error) {
+	var ptrmq **C.AVThreadMessageQueue
+	var tmpmq *C.AVThreadMessageQueue
+	var oldTmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		innermq := *mq
+		if innermq != nil {
+			tmpmq = innermq.ptr
+			oldTmpmq = tmpmq
+		}
+		ptrmq = &tmpmq
+	}
+	ret := C.av_thread_message_queue_alloc(ptrmq, C.uint(nelem), C.uint(elsize))
+	if tmpmq != oldTmpmq && mq != nil {
+		if tmpmq != nil {
+			*mq = &AVThreadMessageQueue{ptr: tmpmq}
+		} else {
+			*mq = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_thread_message_queue_free ---
+
+// AVThreadMessageQueueFree wraps av_thread_message_queue_free.
+/*
+  Free a message queue.
+
+  The message queue must no longer be in use by another thread.
+*/
+func AVThreadMessageQueueFree(mq **AVThreadMessageQueue) {
+	var ptrmq **C.AVThreadMessageQueue
+	var tmpmq *C.AVThreadMessageQueue
+	var oldTmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		innermq := *mq
+		if innermq != nil {
+			tmpmq = innermq.ptr
+			oldTmpmq = tmpmq
+		}
+		ptrmq = &tmpmq
+	}
+	C.av_thread_message_queue_free(ptrmq)
+	if tmpmq != oldTmpmq && mq != nil {
+		if tmpmq != nil {
+			*mq = &AVThreadMessageQueue{ptr: tmpmq}
+		} else {
+			*mq = nil
+		}
+	}
+}
+
+// --- Function av_thread_message_queue_send ---
+
+// AVThreadMessageQueueSend wraps av_thread_message_queue_send.
+//
+//	Send a message on the queue.
+func AVThreadMessageQueueSend(mq *AVThreadMessageQueue, msg unsafe.Pointer, flags uint) (int, error) {
+	var tmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		tmpmq = mq.ptr
+	}
+	ret := C.av_thread_message_queue_send(tmpmq, msg, C.uint(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_thread_message_queue_recv ---
+
+// AVThreadMessageQueueRecv wraps av_thread_message_queue_recv.
+//
+//	Receive a message from the queue.
+func AVThreadMessageQueueRecv(mq *AVThreadMessageQueue, msg unsafe.Pointer, flags uint) (int, error) {
+	var tmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		tmpmq = mq.ptr
+	}
+	ret := C.av_thread_message_queue_recv(tmpmq, msg, C.uint(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_thread_message_queue_set_err_send ---
+
+// AVThreadMessageQueueSetErrSend wraps av_thread_message_queue_set_err_send.
+/*
+  Set the sending error code.
+
+  If the error code is set to non-zero, av_thread_message_queue_send() will
+  return it immediately. Conventional values, such as AVERROR_EOF or
+  AVERROR(EAGAIN), can be used to cause the sending thread to stop or
+  suspend its operation.
+*/
+func AVThreadMessageQueueSetErrSend(mq *AVThreadMessageQueue, err int) {
+	var tmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		tmpmq = mq.ptr
+	}
+	C.av_thread_message_queue_set_err_send(tmpmq, C.int(err))
+}
+
+// --- Function av_thread_message_queue_set_err_recv ---
+
+// AVThreadMessageQueueSetErrRecv wraps av_thread_message_queue_set_err_recv.
+/*
+  Set the receiving error code.
+
+  If the error code is set to non-zero, av_thread_message_queue_recv() will
+  return it immediately when there are no longer available messages.
+  Conventional values, such as AVERROR_EOF or AVERROR(EAGAIN), can be used
+  to cause the receiving thread to stop or suspend its operation.
+*/
+func AVThreadMessageQueueSetErrRecv(mq *AVThreadMessageQueue, err int) {
+	var tmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		tmpmq = mq.ptr
+	}
+	C.av_thread_message_queue_set_err_recv(tmpmq, C.int(err))
+}
+
+// --- Function av_thread_message_queue_set_free_func ---
+
+// av_thread_message_queue_set_free_func skipped due to free_func.
+
+// --- Function av_thread_message_queue_nb_elems ---
+
+// AVThreadMessageQueueNbElems wraps av_thread_message_queue_nb_elems.
+/*
+  Return the current number of messages in the queue.
+
+  @return the current number of messages or AVERROR(ENOSYS) if lavu was built
+          without thread support
+*/
+func AVThreadMessageQueueNbElems(mq *AVThreadMessageQueue) (int, error) {
+	var tmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		tmpmq = mq.ptr
+	}
+	ret := C.av_thread_message_queue_nb_elems(tmpmq)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_thread_message_flush ---
+
+// AVThreadMessageFlush wraps av_thread_message_flush.
+/*
+  Flush the message queue
+
+  This function is mostly equivalent to reading and free-ing every message
+  except that it will be done in a single operation (no lock/unlock between
+  reads).
+*/
+func AVThreadMessageFlush(mq *AVThreadMessageQueue) {
+	var tmpmq *C.AVThreadMessageQueue
+	if mq != nil {
+		tmpmq = mq.ptr
+	}
+	C.av_thread_message_flush(tmpmq)
+}
 
 // --- Function av_gettime ---
 
@@ -12626,6 +15377,130 @@ func AVTsMakeTimeString2(buf *CStr, ts int64, tb *AVRational) *CStr {
 // --- Function av_ts_make_time_string ---
 
 // av_ts_make_time_string skipped due to tb
+
+// --- Function av_tree_node_alloc ---
+
+// AVTreeNodeAlloc wraps av_tree_node_alloc.
+//
+//	Allocate an AVTreeNode.
+func AVTreeNodeAlloc() *AVTreeNode {
+	ret := C.av_tree_node_alloc()
+	var retMapped *AVTreeNode
+	if ret != nil {
+		retMapped = &AVTreeNode{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_tree_find ---
+
+// av_tree_find skipped due to cmp.
+
+// --- Function av_tree_insert ---
+
+// av_tree_insert skipped due to cmp.
+
+// --- Function av_tree_destroy ---
+
+// AVTreeDestroy wraps av_tree_destroy.
+func AVTreeDestroy(t *AVTreeNode) {
+	var tmpt *C.struct_AVTreeNode
+	if t != nil {
+		tmpt = t.ptr
+	}
+	C.av_tree_destroy(tmpt)
+}
+
+// --- Function av_tree_enumerate ---
+
+// av_tree_enumerate skipped due to cmp.
+
+// --- Function av_twofish_alloc ---
+
+// AVTwofishAlloc wraps av_twofish_alloc.
+/*
+  Allocate an AVTWOFISH context
+  To free the struct: av_free(ptr)
+*/
+func AVTwofishAlloc() *AVTWOFISH {
+	ret := C.av_twofish_alloc()
+	var retMapped *AVTWOFISH
+	if ret != nil {
+		retMapped = &AVTWOFISH{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_twofish_init ---
+
+// AVTwofishInit wraps av_twofish_init.
+/*
+  Initialize an AVTWOFISH context.
+
+  @param ctx an AVTWOFISH context
+  @param key a key of size ranging from 1 to 32 bytes used for encryption/decryption
+  @param key_bits number of keybits: 128, 192, 256 If less than the required, padded with zeroes to nearest valid value; return value is 0 if key_bits is 128/192/256, -1 if less than 0, 1 otherwise
+*/
+func AVTwofishInit(ctx *AVTWOFISH, key unsafe.Pointer, keyBits int) (int, error) {
+	var tmpctx *C.struct_AVTWOFISH
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_twofish_init(tmpctx, (*C.uint8_t)(key), C.int(keyBits))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_twofish_crypt ---
+
+// AVTwofishCrypt wraps av_twofish_crypt.
+/*
+  Encrypt or decrypt a buffer using a previously initialized context
+
+  @param ctx an AVTWOFISH context
+  @param dst destination array, can be equal to src
+  @param src source array, can be equal to dst
+  @param count number of 16 byte blocks
+  @param iv initialization vector for CBC mode, NULL for ECB mode
+  @param decrypt 0 for encryption, 1 for decryption
+*/
+func AVTwofishCrypt(ctx *AVTWOFISH, dst unsafe.Pointer, src unsafe.Pointer, count int, iv unsafe.Pointer, decrypt int) {
+	var tmpctx *C.struct_AVTWOFISH
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_twofish_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
+}
+
+// --- Function av_tx_init ---
+
+// av_tx_init skipped due to tx
+
+// --- Function av_tx_uninit ---
+
+// AVTxUninit wraps av_tx_uninit.
+//
+//	Frees a context and sets *ctx to NULL, does nothing when *ctx == NULL.
+func AVTxUninit(ctx **AVTXContext) {
+	var ptrctx **C.AVTXContext
+	var tmpctx *C.AVTXContext
+	var oldTmpctx *C.AVTXContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	C.av_tx_uninit(ptrctx)
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &AVTXContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+}
 
 // --- Function av_video_enc_params_block ---
 
