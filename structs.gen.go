@@ -3,7 +3,6 @@ package ffmpeg
 import "unsafe"
 
 // #include <libavcodec/avcodec.h>
-// #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
@@ -24,21 +23,39 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/avassert.h>
+// #include <libavutil/avconfig.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/container_fifo.h>
+// #include <libavutil/cpu.h>
 // #include <libavutil/dict.h>
+// #include <libavutil/display.h>
+// #include <libavutil/downmix_info.h>
+// #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
+// #include <libavutil/eval.h>
+// #include <libavutil/executor.h>
+// #include <libavutil/ffversion.h>
+// #include <libavutil/fifo.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/log.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/opt.h>
+// #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/replaygain.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/time.h>
+// #include <libavutil/timecode.h>
+// #include <libavutil/timestamp.h>
 // #include <libavutil/version.h>
+// #include <libavutil/video_enc_params.h>
+// #include <libavutil/video_hint.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -4710,365 +4727,6 @@ func (s *AVCodecParser) SetPrivDataSize(value int) {
 
 // split skipped due to func ptr
 
-// --- Struct AVBSFContext ---
-
-// AVBSFContext wraps AVBSFContext.
-/*
-  The bitstream filter state.
-
-  This struct must be allocated with av_bsf_alloc() and freed with
-  av_bsf_free().
-
-  The fields in the struct will only be changed (by the caller or by the
-  filter) as described in their documentation, and are to be considered
-  immutable otherwise.
-*/
-type AVBSFContext struct {
-	ptr *C.AVBSFContext
-}
-
-func (s *AVBSFContext) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVBSFContextArray(ptr unsafe.Pointer) *Array[*AVBSFContext] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVBSFContext]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVBSFContext {
-			ptr := (**C.AVBSFContext)(pointer)
-			value := *ptr
-			var valueMapped *AVBSFContext
-			if value != nil {
-				valueMapped = &AVBSFContext{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVBSFContext) {
-			ptr := (**C.AVBSFContext)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
-}
-
-// AvClass gets the av_class field.
-//
-//	A class for logging and AVOptions
-func (s *AVBSFContext) AvClass() *AVClass {
-	value := s.ptr.av_class
-	var valueMapped *AVClass
-	if value != nil {
-		valueMapped = &AVClass{ptr: value}
-	}
-	return valueMapped
-}
-
-// SetAvClass sets the av_class field.
-//
-//	A class for logging and AVOptions
-func (s *AVBSFContext) SetAvClass(value *AVClass) {
-	if value != nil {
-		s.ptr.av_class = value.ptr
-	} else {
-		s.ptr.av_class = nil
-	}
-}
-
-// Filter gets the filter field.
-//
-//	The bitstream filter this context is an instance of.
-func (s *AVBSFContext) Filter() *AVBitStreamFilter {
-	value := s.ptr.filter
-	var valueMapped *AVBitStreamFilter
-	if value != nil {
-		valueMapped = &AVBitStreamFilter{ptr: value}
-	}
-	return valueMapped
-}
-
-// SetFilter sets the filter field.
-//
-//	The bitstream filter this context is an instance of.
-func (s *AVBSFContext) SetFilter(value *AVBitStreamFilter) {
-	if value != nil {
-		s.ptr.filter = value.ptr
-	} else {
-		s.ptr.filter = nil
-	}
-}
-
-// PrivData gets the priv_data field.
-/*
-  Opaque filter-specific private data. If filter->priv_class is non-NULL,
-  this is an AVOptions-enabled struct.
-*/
-func (s *AVBSFContext) PrivData() unsafe.Pointer {
-	value := s.ptr.priv_data
-	return value
-}
-
-// SetPrivData sets the priv_data field.
-/*
-  Opaque filter-specific private data. If filter->priv_class is non-NULL,
-  this is an AVOptions-enabled struct.
-*/
-func (s *AVBSFContext) SetPrivData(value unsafe.Pointer) {
-	s.ptr.priv_data = value
-}
-
-// ParIn gets the par_in field.
-/*
-  Parameters of the input stream. This field is allocated in
-  av_bsf_alloc(), it needs to be filled by the caller before
-  av_bsf_init().
-*/
-func (s *AVBSFContext) ParIn() *AVCodecParameters {
-	value := s.ptr.par_in
-	var valueMapped *AVCodecParameters
-	if value != nil {
-		valueMapped = &AVCodecParameters{ptr: value}
-	}
-	return valueMapped
-}
-
-// SetParIn sets the par_in field.
-/*
-  Parameters of the input stream. This field is allocated in
-  av_bsf_alloc(), it needs to be filled by the caller before
-  av_bsf_init().
-*/
-func (s *AVBSFContext) SetParIn(value *AVCodecParameters) {
-	if value != nil {
-		s.ptr.par_in = value.ptr
-	} else {
-		s.ptr.par_in = nil
-	}
-}
-
-// ParOut gets the par_out field.
-/*
-  Parameters of the output stream. This field is allocated in
-  av_bsf_alloc(), it is set by the filter in av_bsf_init().
-*/
-func (s *AVBSFContext) ParOut() *AVCodecParameters {
-	value := s.ptr.par_out
-	var valueMapped *AVCodecParameters
-	if value != nil {
-		valueMapped = &AVCodecParameters{ptr: value}
-	}
-	return valueMapped
-}
-
-// SetParOut sets the par_out field.
-/*
-  Parameters of the output stream. This field is allocated in
-  av_bsf_alloc(), it is set by the filter in av_bsf_init().
-*/
-func (s *AVBSFContext) SetParOut(value *AVCodecParameters) {
-	if value != nil {
-		s.ptr.par_out = value.ptr
-	} else {
-		s.ptr.par_out = nil
-	}
-}
-
-// TimeBaseIn gets the time_base_in field.
-/*
-  The timebase used for the timestamps of the input packets. Set by the
-  caller before av_bsf_init().
-*/
-func (s *AVBSFContext) TimeBaseIn() *AVRational {
-	value := s.ptr.time_base_in
-	return &AVRational{value: value}
-}
-
-// SetTimeBaseIn sets the time_base_in field.
-/*
-  The timebase used for the timestamps of the input packets. Set by the
-  caller before av_bsf_init().
-*/
-func (s *AVBSFContext) SetTimeBaseIn(value *AVRational) {
-	s.ptr.time_base_in = value.value
-}
-
-// TimeBaseOut gets the time_base_out field.
-/*
-  The timebase used for the timestamps of the output packets. Set by the
-  filter in av_bsf_init().
-*/
-func (s *AVBSFContext) TimeBaseOut() *AVRational {
-	value := s.ptr.time_base_out
-	return &AVRational{value: value}
-}
-
-// SetTimeBaseOut sets the time_base_out field.
-/*
-  The timebase used for the timestamps of the output packets. Set by the
-  filter in av_bsf_init().
-*/
-func (s *AVBSFContext) SetTimeBaseOut(value *AVRational) {
-	s.ptr.time_base_out = value.value
-}
-
-// --- Struct AVBitStreamFilter ---
-
-// AVBitStreamFilter wraps AVBitStreamFilter.
-type AVBitStreamFilter struct {
-	ptr *C.AVBitStreamFilter
-}
-
-func (s *AVBitStreamFilter) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVBitStreamFilterArray(ptr unsafe.Pointer) *Array[*AVBitStreamFilter] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVBitStreamFilter]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVBitStreamFilter {
-			ptr := (**C.AVBitStreamFilter)(pointer)
-			value := *ptr
-			var valueMapped *AVBitStreamFilter
-			if value != nil {
-				valueMapped = &AVBitStreamFilter{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVBitStreamFilter) {
-			ptr := (**C.AVBitStreamFilter)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
-}
-
-// Name gets the name field.
-func (s *AVBitStreamFilter) Name() *CStr {
-	value := s.ptr.name
-	return wrapCStr(value)
-}
-
-// SetName sets the name field.
-func (s *AVBitStreamFilter) SetName(value *CStr) {
-	s.ptr.name = value.ptr
-}
-
-// CodecIds gets the codec_ids field.
-/*
-  A list of codec ids supported by the filter, terminated by
-  AV_CODEC_ID_NONE.
-  May be NULL, in that case the bitstream filter works with any codec id.
-*/
-func (s *AVBitStreamFilter) CodecIds() *Array[AVCodecID] {
-	value := s.ptr.codec_ids
-	return ToAVCodecIDArray(unsafe.Pointer(value))
-}
-
-// SetCodecIds sets the codec_ids field.
-/*
-  A list of codec ids supported by the filter, terminated by
-  AV_CODEC_ID_NONE.
-  May be NULL, in that case the bitstream filter works with any codec id.
-*/
-func (s *AVBitStreamFilter) SetCodecIds(value *Array[AVCodecID]) {
-	if value != nil {
-		s.ptr.codec_ids = (*C.enum_AVCodecID)(value.ptr)
-	} else {
-		s.ptr.codec_ids = nil
-	}
-}
-
-// PrivClass gets the priv_class field.
-/*
-  A class for the private data, used to declare bitstream filter private
-  AVOptions. This field is NULL for bitstream filters that do not declare
-  any options.
-
-  If this field is non-NULL, the first member of the filter private data
-  must be a pointer to AVClass, which will be set by libavcodec generic
-  code to this class.
-*/
-func (s *AVBitStreamFilter) PrivClass() *AVClass {
-	value := s.ptr.priv_class
-	var valueMapped *AVClass
-	if value != nil {
-		valueMapped = &AVClass{ptr: value}
-	}
-	return valueMapped
-}
-
-// SetPrivClass sets the priv_class field.
-/*
-  A class for the private data, used to declare bitstream filter private
-  AVOptions. This field is NULL for bitstream filters that do not declare
-  any options.
-
-  If this field is non-NULL, the first member of the filter private data
-  must be a pointer to AVClass, which will be set by libavcodec generic
-  code to this class.
-*/
-func (s *AVBitStreamFilter) SetPrivClass(value *AVClass) {
-	if value != nil {
-		s.ptr.priv_class = value.ptr
-	} else {
-		s.ptr.priv_class = nil
-	}
-}
-
-// --- Struct AVBSFList ---
-
-// AVBSFList wraps AVBSFList.
-type AVBSFList struct {
-	ptr *C.AVBSFList
-}
-
-func (s *AVBSFList) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVBSFListArray(ptr unsafe.Pointer) *Array[*AVBSFList] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVBSFList]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVBSFList {
-			ptr := (**C.AVBSFList)(pointer)
-			value := *ptr
-			var valueMapped *AVBSFList
-			if value != nil {
-				valueMapped = &AVBSFList{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVBSFList) {
-			ptr := (**C.AVBSFList)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
-}
-
 // --- Struct AVProfile ---
 
 // AVProfile wraps AVProfile.
@@ -7210,45 +6868,6 @@ func (s *AVPacketList) SetNext(value *AVPacketList) {
 		s.ptr.next = value.ptr
 	} else {
 		s.ptr.next = nil
-	}
-}
-
-// --- Struct AVContainerFifo ---
-
-// AVContainerFifo wraps AVContainerFifo.
-type AVContainerFifo struct {
-	ptr *C.struct_AVContainerFifo
-}
-
-func (s *AVContainerFifo) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVContainerFifoArray(ptr unsafe.Pointer) *Array[*AVContainerFifo] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVContainerFifo]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVContainerFifo {
-			ptr := (**C.struct_AVContainerFifo)(pointer)
-			value := *ptr
-			var valueMapped *AVContainerFifo
-			if value != nil {
-				valueMapped = &AVContainerFifo{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVContainerFifo) {
-			ptr := (**C.struct_AVContainerFifo)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
 	}
 }
 
@@ -15057,6 +14676,45 @@ func ToAVBPrintArray(ptr unsafe.Pointer) *Array[*AVBPrint] {
 	}
 }
 
+// --- Struct AVContainerFifo ---
+
+// AVContainerFifo wraps AVContainerFifo.
+type AVContainerFifo struct {
+	ptr *C.AVContainerFifo
+}
+
+func (s *AVContainerFifo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVContainerFifoArray(ptr unsafe.Pointer) *Array[*AVContainerFifo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVContainerFifo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVContainerFifo {
+			ptr := (**C.AVContainerFifo)(pointer)
+			value := *ptr
+			var valueMapped *AVContainerFifo
+			if value != nil {
+				valueMapped = &AVContainerFifo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVContainerFifo) {
+			ptr := (**C.AVContainerFifo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
 // --- Struct AVDictionaryEntry ---
 
 // AVDictionaryEntry wraps AVDictionaryEntry.
@@ -15148,6 +14806,847 @@ func ToAVDictionaryArray(ptr unsafe.Pointer) *Array[*AVDictionary] {
 		ptr: ptr,
 		storePtr: func(pointer unsafe.Pointer, value *AVDictionary) {
 			ptr := (**C.AVDictionary)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVDownmixInfo ---
+
+// AVDownmixInfo wraps AVDownmixInfo.
+/*
+  This structure describes optional metadata relevant to a downmix procedure.
+
+  All fields are set by the decoder to the value indicated in the audio
+  bitstream (if present), or to a "sane" default otherwise.
+*/
+type AVDownmixInfo struct {
+	ptr *C.AVDownmixInfo
+}
+
+func (s *AVDownmixInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDownmixInfoArray(ptr unsafe.Pointer) *Array[*AVDownmixInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDownmixInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDownmixInfo {
+			ptr := (**C.AVDownmixInfo)(pointer)
+			value := *ptr
+			var valueMapped *AVDownmixInfo
+			if value != nil {
+				valueMapped = &AVDownmixInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDownmixInfo) {
+			ptr := (**C.AVDownmixInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// PreferredDownmixType gets the preferred_downmix_type field.
+//
+//	Type of downmix preferred by the mastering engineer.
+func (s *AVDownmixInfo) PreferredDownmixType() AVDownmixType {
+	value := s.ptr.preferred_downmix_type
+	return AVDownmixType(value)
+}
+
+// SetPreferredDownmixType sets the preferred_downmix_type field.
+//
+//	Type of downmix preferred by the mastering engineer.
+func (s *AVDownmixInfo) SetPreferredDownmixType(value AVDownmixType) {
+	s.ptr.preferred_downmix_type = (C.enum_AVDownmixType)(value)
+}
+
+// CenterMixLevel gets the center_mix_level field.
+/*
+  Absolute scale factor representing the nominal level of the center
+  channel during a regular downmix.
+*/
+func (s *AVDownmixInfo) CenterMixLevel() float64 {
+	value := s.ptr.center_mix_level
+	return float64(value)
+}
+
+// SetCenterMixLevel sets the center_mix_level field.
+/*
+  Absolute scale factor representing the nominal level of the center
+  channel during a regular downmix.
+*/
+func (s *AVDownmixInfo) SetCenterMixLevel(value float64) {
+	s.ptr.center_mix_level = (C.double)(value)
+}
+
+// CenterMixLevelLtrt gets the center_mix_level_ltrt field.
+/*
+  Absolute scale factor representing the nominal level of the center
+  channel during an Lt/Rt compatible downmix.
+*/
+func (s *AVDownmixInfo) CenterMixLevelLtrt() float64 {
+	value := s.ptr.center_mix_level_ltrt
+	return float64(value)
+}
+
+// SetCenterMixLevelLtrt sets the center_mix_level_ltrt field.
+/*
+  Absolute scale factor representing the nominal level of the center
+  channel during an Lt/Rt compatible downmix.
+*/
+func (s *AVDownmixInfo) SetCenterMixLevelLtrt(value float64) {
+	s.ptr.center_mix_level_ltrt = (C.double)(value)
+}
+
+// SurroundMixLevel gets the surround_mix_level field.
+/*
+  Absolute scale factor representing the nominal level of the surround
+  channels during a regular downmix.
+*/
+func (s *AVDownmixInfo) SurroundMixLevel() float64 {
+	value := s.ptr.surround_mix_level
+	return float64(value)
+}
+
+// SetSurroundMixLevel sets the surround_mix_level field.
+/*
+  Absolute scale factor representing the nominal level of the surround
+  channels during a regular downmix.
+*/
+func (s *AVDownmixInfo) SetSurroundMixLevel(value float64) {
+	s.ptr.surround_mix_level = (C.double)(value)
+}
+
+// SurroundMixLevelLtrt gets the surround_mix_level_ltrt field.
+/*
+  Absolute scale factor representing the nominal level of the surround
+  channels during an Lt/Rt compatible downmix.
+*/
+func (s *AVDownmixInfo) SurroundMixLevelLtrt() float64 {
+	value := s.ptr.surround_mix_level_ltrt
+	return float64(value)
+}
+
+// SetSurroundMixLevelLtrt sets the surround_mix_level_ltrt field.
+/*
+  Absolute scale factor representing the nominal level of the surround
+  channels during an Lt/Rt compatible downmix.
+*/
+func (s *AVDownmixInfo) SetSurroundMixLevelLtrt(value float64) {
+	s.ptr.surround_mix_level_ltrt = (C.double)(value)
+}
+
+// LfeMixLevel gets the lfe_mix_level field.
+/*
+  Absolute scale factor representing the level at which the LFE data is
+  mixed into L/R channels during downmixing.
+*/
+func (s *AVDownmixInfo) LfeMixLevel() float64 {
+	value := s.ptr.lfe_mix_level
+	return float64(value)
+}
+
+// SetLfeMixLevel sets the lfe_mix_level field.
+/*
+  Absolute scale factor representing the level at which the LFE data is
+  mixed into L/R channels during downmixing.
+*/
+func (s *AVDownmixInfo) SetLfeMixLevel(value float64) {
+	s.ptr.lfe_mix_level = (C.double)(value)
+}
+
+// --- Struct AVSubsampleEncryptionInfo ---
+
+// AVSubsampleEncryptionInfo wraps AVSubsampleEncryptionInfo.
+type AVSubsampleEncryptionInfo struct {
+	ptr *C.AVSubsampleEncryptionInfo
+}
+
+func (s *AVSubsampleEncryptionInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVSubsampleEncryptionInfoArray(ptr unsafe.Pointer) *Array[*AVSubsampleEncryptionInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVSubsampleEncryptionInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVSubsampleEncryptionInfo {
+			ptr := (**C.AVSubsampleEncryptionInfo)(pointer)
+			value := *ptr
+			var valueMapped *AVSubsampleEncryptionInfo
+			if value != nil {
+				valueMapped = &AVSubsampleEncryptionInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVSubsampleEncryptionInfo) {
+			ptr := (**C.AVSubsampleEncryptionInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// BytesOfClearData gets the bytes_of_clear_data field.
+//
+//	The number of bytes that are clear.
+func (s *AVSubsampleEncryptionInfo) BytesOfClearData() uint {
+	value := s.ptr.bytes_of_clear_data
+	return uint(value)
+}
+
+// SetBytesOfClearData sets the bytes_of_clear_data field.
+//
+//	The number of bytes that are clear.
+func (s *AVSubsampleEncryptionInfo) SetBytesOfClearData(value uint) {
+	s.ptr.bytes_of_clear_data = (C.uint)(value)
+}
+
+// BytesOfProtectedData gets the bytes_of_protected_data field.
+/*
+  The number of bytes that are protected.  If using pattern encryption,
+  the pattern applies to only the protected bytes; if not using pattern
+  encryption, all these bytes are encrypted.
+*/
+func (s *AVSubsampleEncryptionInfo) BytesOfProtectedData() uint {
+	value := s.ptr.bytes_of_protected_data
+	return uint(value)
+}
+
+// SetBytesOfProtectedData sets the bytes_of_protected_data field.
+/*
+  The number of bytes that are protected.  If using pattern encryption,
+  the pattern applies to only the protected bytes; if not using pattern
+  encryption, all these bytes are encrypted.
+*/
+func (s *AVSubsampleEncryptionInfo) SetBytesOfProtectedData(value uint) {
+	s.ptr.bytes_of_protected_data = (C.uint)(value)
+}
+
+// --- Struct AVEncryptionInfo ---
+
+// AVEncryptionInfo wraps AVEncryptionInfo.
+/*
+  This describes encryption info for a packet.  This contains frame-specific
+  info for how to decrypt the packet before passing it to the decoder.
+
+  The size of this struct is not part of the public ABI.
+*/
+type AVEncryptionInfo struct {
+	ptr *C.AVEncryptionInfo
+}
+
+func (s *AVEncryptionInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVEncryptionInfoArray(ptr unsafe.Pointer) *Array[*AVEncryptionInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVEncryptionInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVEncryptionInfo {
+			ptr := (**C.AVEncryptionInfo)(pointer)
+			value := *ptr
+			var valueMapped *AVEncryptionInfo
+			if value != nil {
+				valueMapped = &AVEncryptionInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVEncryptionInfo) {
+			ptr := (**C.AVEncryptionInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Scheme gets the scheme field.
+//
+//	The fourcc encryption scheme, in big-endian byte order.
+func (s *AVEncryptionInfo) Scheme() uint32 {
+	value := s.ptr.scheme
+	return uint32(value)
+}
+
+// SetScheme sets the scheme field.
+//
+//	The fourcc encryption scheme, in big-endian byte order.
+func (s *AVEncryptionInfo) SetScheme(value uint32) {
+	s.ptr.scheme = (C.uint32_t)(value)
+}
+
+// CryptByteBlock gets the crypt_byte_block field.
+/*
+  Only used for pattern encryption.  This is the number of 16-byte blocks
+  that are encrypted.
+*/
+func (s *AVEncryptionInfo) CryptByteBlock() uint32 {
+	value := s.ptr.crypt_byte_block
+	return uint32(value)
+}
+
+// SetCryptByteBlock sets the crypt_byte_block field.
+/*
+  Only used for pattern encryption.  This is the number of 16-byte blocks
+  that are encrypted.
+*/
+func (s *AVEncryptionInfo) SetCryptByteBlock(value uint32) {
+	s.ptr.crypt_byte_block = (C.uint32_t)(value)
+}
+
+// SkipByteBlock gets the skip_byte_block field.
+/*
+  Only used for pattern encryption.  This is the number of 16-byte blocks
+  that are clear.
+*/
+func (s *AVEncryptionInfo) SkipByteBlock() uint32 {
+	value := s.ptr.skip_byte_block
+	return uint32(value)
+}
+
+// SetSkipByteBlock sets the skip_byte_block field.
+/*
+  Only used for pattern encryption.  This is the number of 16-byte blocks
+  that are clear.
+*/
+func (s *AVEncryptionInfo) SetSkipByteBlock(value uint32) {
+	s.ptr.skip_byte_block = (C.uint32_t)(value)
+}
+
+// KeyId gets the key_id field.
+/*
+  The ID of the key used to encrypt the packet.  This should always be
+  16 bytes long, but may be changed in the future.
+*/
+func (s *AVEncryptionInfo) KeyId() unsafe.Pointer {
+	value := s.ptr.key_id
+	return unsafe.Pointer(value)
+}
+
+// SetKeyId sets the key_id field.
+/*
+  The ID of the key used to encrypt the packet.  This should always be
+  16 bytes long, but may be changed in the future.
+*/
+func (s *AVEncryptionInfo) SetKeyId(value unsafe.Pointer) {
+	s.ptr.key_id = (*C.uint8_t)(value)
+}
+
+// KeyIdSize gets the key_id_size field.
+func (s *AVEncryptionInfo) KeyIdSize() uint32 {
+	value := s.ptr.key_id_size
+	return uint32(value)
+}
+
+// SetKeyIdSize sets the key_id_size field.
+func (s *AVEncryptionInfo) SetKeyIdSize(value uint32) {
+	s.ptr.key_id_size = (C.uint32_t)(value)
+}
+
+// Iv gets the iv field.
+/*
+  The initialization vector.  This may have been zero-filled to be the
+  correct block size.  This should always be 16 bytes long, but may be
+  changed in the future.
+*/
+func (s *AVEncryptionInfo) Iv() unsafe.Pointer {
+	value := s.ptr.iv
+	return unsafe.Pointer(value)
+}
+
+// SetIv sets the iv field.
+/*
+  The initialization vector.  This may have been zero-filled to be the
+  correct block size.  This should always be 16 bytes long, but may be
+  changed in the future.
+*/
+func (s *AVEncryptionInfo) SetIv(value unsafe.Pointer) {
+	s.ptr.iv = (*C.uint8_t)(value)
+}
+
+// IvSize gets the iv_size field.
+func (s *AVEncryptionInfo) IvSize() uint32 {
+	value := s.ptr.iv_size
+	return uint32(value)
+}
+
+// SetIvSize sets the iv_size field.
+func (s *AVEncryptionInfo) SetIvSize(value uint32) {
+	s.ptr.iv_size = (C.uint32_t)(value)
+}
+
+// Subsamples gets the subsamples field.
+/*
+  An array of subsample encryption info specifying how parts of the sample
+  are encrypted.  If there are no subsamples, then the whole sample is
+  encrypted.
+*/
+func (s *AVEncryptionInfo) Subsamples() *AVSubsampleEncryptionInfo {
+	value := s.ptr.subsamples
+	var valueMapped *AVSubsampleEncryptionInfo
+	if value != nil {
+		valueMapped = &AVSubsampleEncryptionInfo{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetSubsamples sets the subsamples field.
+/*
+  An array of subsample encryption info specifying how parts of the sample
+  are encrypted.  If there are no subsamples, then the whole sample is
+  encrypted.
+*/
+func (s *AVEncryptionInfo) SetSubsamples(value *AVSubsampleEncryptionInfo) {
+	if value != nil {
+		s.ptr.subsamples = value.ptr
+	} else {
+		s.ptr.subsamples = nil
+	}
+}
+
+// SubsampleCount gets the subsample_count field.
+func (s *AVEncryptionInfo) SubsampleCount() uint32 {
+	value := s.ptr.subsample_count
+	return uint32(value)
+}
+
+// SetSubsampleCount sets the subsample_count field.
+func (s *AVEncryptionInfo) SetSubsampleCount(value uint32) {
+	s.ptr.subsample_count = (C.uint32_t)(value)
+}
+
+// --- Struct AVEncryptionInitInfo ---
+
+// AVEncryptionInitInfo wraps AVEncryptionInitInfo.
+/*
+  This describes info used to initialize an encryption key system.
+
+  The size of this struct is not part of the public ABI.
+*/
+type AVEncryptionInitInfo struct {
+	ptr *C.AVEncryptionInitInfo
+}
+
+func (s *AVEncryptionInitInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVEncryptionInitInfoArray(ptr unsafe.Pointer) *Array[*AVEncryptionInitInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVEncryptionInitInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVEncryptionInitInfo {
+			ptr := (**C.AVEncryptionInitInfo)(pointer)
+			value := *ptr
+			var valueMapped *AVEncryptionInitInfo
+			if value != nil {
+				valueMapped = &AVEncryptionInitInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVEncryptionInitInfo) {
+			ptr := (**C.AVEncryptionInitInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// SystemId gets the system_id field.
+/*
+  A unique identifier for the key system this is for, can be NULL if it
+  is not known.  This should always be 16 bytes, but may change in the
+  future.
+*/
+func (s *AVEncryptionInitInfo) SystemId() unsafe.Pointer {
+	value := s.ptr.system_id
+	return unsafe.Pointer(value)
+}
+
+// SetSystemId sets the system_id field.
+/*
+  A unique identifier for the key system this is for, can be NULL if it
+  is not known.  This should always be 16 bytes, but may change in the
+  future.
+*/
+func (s *AVEncryptionInitInfo) SetSystemId(value unsafe.Pointer) {
+	s.ptr.system_id = (*C.uint8_t)(value)
+}
+
+// SystemIdSize gets the system_id_size field.
+func (s *AVEncryptionInitInfo) SystemIdSize() uint32 {
+	value := s.ptr.system_id_size
+	return uint32(value)
+}
+
+// SetSystemIdSize sets the system_id_size field.
+func (s *AVEncryptionInitInfo) SetSystemIdSize(value uint32) {
+	s.ptr.system_id_size = (C.uint32_t)(value)
+}
+
+// key_ids skipped due to unknown ptr ptr
+
+// NumKeyIds gets the num_key_ids field.
+//
+//	The number of key IDs.
+func (s *AVEncryptionInitInfo) NumKeyIds() uint32 {
+	value := s.ptr.num_key_ids
+	return uint32(value)
+}
+
+// SetNumKeyIds sets the num_key_ids field.
+//
+//	The number of key IDs.
+func (s *AVEncryptionInitInfo) SetNumKeyIds(value uint32) {
+	s.ptr.num_key_ids = (C.uint32_t)(value)
+}
+
+// KeyIdSize gets the key_id_size field.
+/*
+  The number of bytes in each key ID.  This should always be 16, but may
+  change in the future.
+*/
+func (s *AVEncryptionInitInfo) KeyIdSize() uint32 {
+	value := s.ptr.key_id_size
+	return uint32(value)
+}
+
+// SetKeyIdSize sets the key_id_size field.
+/*
+  The number of bytes in each key ID.  This should always be 16, but may
+  change in the future.
+*/
+func (s *AVEncryptionInitInfo) SetKeyIdSize(value uint32) {
+	s.ptr.key_id_size = (C.uint32_t)(value)
+}
+
+// Data gets the data field.
+/*
+  Key-system specific initialization data.  This data is copied directly
+  from the file and the format depends on the specific key system.  This
+  can be NULL if there is no initialization data; in that case, there
+  will be at least one key ID.
+*/
+func (s *AVEncryptionInitInfo) Data() unsafe.Pointer {
+	value := s.ptr.data
+	return unsafe.Pointer(value)
+}
+
+// SetData sets the data field.
+/*
+  Key-system specific initialization data.  This data is copied directly
+  from the file and the format depends on the specific key system.  This
+  can be NULL if there is no initialization data; in that case, there
+  will be at least one key ID.
+*/
+func (s *AVEncryptionInitInfo) SetData(value unsafe.Pointer) {
+	s.ptr.data = (*C.uint8_t)(value)
+}
+
+// DataSize gets the data_size field.
+func (s *AVEncryptionInitInfo) DataSize() uint32 {
+	value := s.ptr.data_size
+	return uint32(value)
+}
+
+// SetDataSize sets the data_size field.
+func (s *AVEncryptionInitInfo) SetDataSize(value uint32) {
+	s.ptr.data_size = (C.uint32_t)(value)
+}
+
+// Next gets the next field.
+//
+//	An optional pointer to the next initialization info in the list.
+func (s *AVEncryptionInitInfo) Next() *AVEncryptionInitInfo {
+	value := s.ptr.next
+	var valueMapped *AVEncryptionInitInfo
+	if value != nil {
+		valueMapped = &AVEncryptionInitInfo{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetNext sets the next field.
+//
+//	An optional pointer to the next initialization info in the list.
+func (s *AVEncryptionInitInfo) SetNext(value *AVEncryptionInitInfo) {
+	if value != nil {
+		s.ptr.next = value.ptr
+	} else {
+		s.ptr.next = nil
+	}
+}
+
+// --- Struct AVExpr ---
+
+// AVExpr wraps AVExpr.
+type AVExpr struct {
+	ptr *C.AVExpr
+}
+
+func (s *AVExpr) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVExprArray(ptr unsafe.Pointer) *Array[*AVExpr] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVExpr]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVExpr {
+			ptr := (**C.AVExpr)(pointer)
+			value := *ptr
+			var valueMapped *AVExpr
+			if value != nil {
+				valueMapped = &AVExpr{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVExpr) {
+			ptr := (**C.AVExpr)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVExecutor ---
+
+// AVExecutor wraps AVExecutor.
+type AVExecutor struct {
+	ptr *C.AVExecutor
+}
+
+func (s *AVExecutor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVExecutorArray(ptr unsafe.Pointer) *Array[*AVExecutor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVExecutor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVExecutor {
+			ptr := (**C.AVExecutor)(pointer)
+			value := *ptr
+			var valueMapped *AVExecutor
+			if value != nil {
+				valueMapped = &AVExecutor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVExecutor) {
+			ptr := (**C.AVExecutor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// --- Struct AVTask ---
+
+// AVTask wraps AVTask.
+type AVTask struct {
+	ptr *C.AVTask
+}
+
+func (s *AVTask) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTaskArray(ptr unsafe.Pointer) *Array[*AVTask] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTask]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTask {
+			ptr := (**C.AVTask)(pointer)
+			value := *ptr
+			var valueMapped *AVTask
+			if value != nil {
+				valueMapped = &AVTask{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTask) {
+			ptr := (**C.AVTask)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Next gets the next field.
+func (s *AVTask) Next() *AVTask {
+	value := s.ptr.next
+	var valueMapped *AVTask
+	if value != nil {
+		valueMapped = &AVTask{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetNext sets the next field.
+func (s *AVTask) SetNext(value *AVTask) {
+	if value != nil {
+		s.ptr.next = value.ptr
+	} else {
+		s.ptr.next = nil
+	}
+}
+
+// --- Struct AVTaskCallbacks ---
+
+// AVTaskCallbacks wraps AVTaskCallbacks.
+type AVTaskCallbacks struct {
+	ptr *C.AVTaskCallbacks
+}
+
+func (s *AVTaskCallbacks) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTaskCallbacksArray(ptr unsafe.Pointer) *Array[*AVTaskCallbacks] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTaskCallbacks]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTaskCallbacks {
+			ptr := (**C.AVTaskCallbacks)(pointer)
+			value := *ptr
+			var valueMapped *AVTaskCallbacks
+			if value != nil {
+				valueMapped = &AVTaskCallbacks{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTaskCallbacks) {
+			ptr := (**C.AVTaskCallbacks)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// UserData gets the user_data field.
+func (s *AVTaskCallbacks) UserData() unsafe.Pointer {
+	value := s.ptr.user_data
+	return value
+}
+
+// SetUserData sets the user_data field.
+func (s *AVTaskCallbacks) SetUserData(value unsafe.Pointer) {
+	s.ptr.user_data = value
+}
+
+// LocalContextSize gets the local_context_size field.
+func (s *AVTaskCallbacks) LocalContextSize() int {
+	value := s.ptr.local_context_size
+	return int(value)
+}
+
+// SetLocalContextSize sets the local_context_size field.
+func (s *AVTaskCallbacks) SetLocalContextSize(value int) {
+	s.ptr.local_context_size = (C.int)(value)
+}
+
+// priority_higher skipped due to func ptr
+
+// ready skipped due to func ptr
+
+// run skipped due to func ptr
+
+// --- Struct AVFifo ---
+
+// AVFifo wraps AVFifo.
+type AVFifo struct {
+	ptr *C.AVFifo
+}
+
+func (s *AVFifo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVFifoArray(ptr unsafe.Pointer) *Array[*AVFifo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVFifo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVFifo {
+			ptr := (**C.AVFifo)(pointer)
+			value := *ptr
+			var valueMapped *AVFifo
+			if value != nil {
+				valueMapped = &AVFifo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVFifo) {
+			ptr := (**C.AVFifo)(pointer)
 			if value != nil {
 				*ptr = value.ptr
 			} else {
@@ -17879,6 +18378,622 @@ func (s *AVRational) Den() int {
 //	Denominator
 func (s *AVRational) SetDen(value int) {
 	s.value.den = (C.int)(value)
+}
+
+// --- Struct AVReplayGain ---
+
+// AVReplayGain wraps AVReplayGain.
+/*
+  ReplayGain information (see
+  http://wiki.hydrogenaudio.org/index.php?title=ReplayGain_1.0_specification).
+  The size of this struct is a part of the public ABI.
+*/
+type AVReplayGain struct {
+	ptr *C.AVReplayGain
+}
+
+func (s *AVReplayGain) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVReplayGainArray(ptr unsafe.Pointer) *Array[*AVReplayGain] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVReplayGain]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVReplayGain {
+			ptr := (**C.AVReplayGain)(pointer)
+			value := *ptr
+			var valueMapped *AVReplayGain
+			if value != nil {
+				valueMapped = &AVReplayGain{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVReplayGain) {
+			ptr := (**C.AVReplayGain)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// track_gain skipped due to unexpected IdentType int32_t
+
+// TrackPeak gets the track_peak field.
+/*
+  Peak track amplitude, with 100000 representing full scale (but values
+  may overflow). 0 when unknown.
+*/
+func (s *AVReplayGain) TrackPeak() uint32 {
+	value := s.ptr.track_peak
+	return uint32(value)
+}
+
+// SetTrackPeak sets the track_peak field.
+/*
+  Peak track amplitude, with 100000 representing full scale (but values
+  may overflow). 0 when unknown.
+*/
+func (s *AVReplayGain) SetTrackPeak(value uint32) {
+	s.ptr.track_peak = (C.uint32_t)(value)
+}
+
+// album_gain skipped due to unexpected IdentType int32_t
+
+// AlbumPeak gets the album_peak field.
+//
+//	Same as track_peak, but for the whole album,
+func (s *AVReplayGain) AlbumPeak() uint32 {
+	value := s.ptr.album_peak
+	return uint32(value)
+}
+
+// SetAlbumPeak sets the album_peak field.
+//
+//	Same as track_peak, but for the whole album,
+func (s *AVReplayGain) SetAlbumPeak(value uint32) {
+	s.ptr.album_peak = (C.uint32_t)(value)
+}
+
+// --- Struct AVTimecode ---
+
+// AVTimecode wraps AVTimecode.
+type AVTimecode struct {
+	ptr *C.AVTimecode
+}
+
+func (s *AVTimecode) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVTimecodeArray(ptr unsafe.Pointer) *Array[*AVTimecode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVTimecode]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVTimecode {
+			ptr := (**C.AVTimecode)(pointer)
+			value := *ptr
+			var valueMapped *AVTimecode
+			if value != nil {
+				valueMapped = &AVTimecode{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVTimecode) {
+			ptr := (**C.AVTimecode)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Start gets the start field.
+//
+//	timecode frame start (first base frame number)
+func (s *AVTimecode) Start() int {
+	value := s.ptr.start
+	return int(value)
+}
+
+// SetStart sets the start field.
+//
+//	timecode frame start (first base frame number)
+func (s *AVTimecode) SetStart(value int) {
+	s.ptr.start = (C.int)(value)
+}
+
+// Flags gets the flags field.
+//
+//	flags such as drop frame, +24 hours support, ...
+func (s *AVTimecode) Flags() uint32 {
+	value := s.ptr.flags
+	return uint32(value)
+}
+
+// SetFlags sets the flags field.
+//
+//	flags such as drop frame, +24 hours support, ...
+func (s *AVTimecode) SetFlags(value uint32) {
+	s.ptr.flags = (C.uint32_t)(value)
+}
+
+// Rate gets the rate field.
+//
+//	frame rate in rational form
+func (s *AVTimecode) Rate() *AVRational {
+	value := s.ptr.rate
+	return &AVRational{value: value}
+}
+
+// SetRate sets the rate field.
+//
+//	frame rate in rational form
+func (s *AVTimecode) SetRate(value *AVRational) {
+	s.ptr.rate = value.value
+}
+
+// Fps gets the fps field.
+//
+//	frame per second; must be consistent with the rate field
+func (s *AVTimecode) Fps() uint {
+	value := s.ptr.fps
+	return uint(value)
+}
+
+// SetFps sets the fps field.
+//
+//	frame per second; must be consistent with the rate field
+func (s *AVTimecode) SetFps(value uint) {
+	s.ptr.fps = (C.uint)(value)
+}
+
+// --- Struct AVVideoEncParams ---
+
+// AVVideoEncParams wraps AVVideoEncParams.
+/*
+  Video encoding parameters for a given frame. This struct is allocated along
+  with an optional array of per-block AVVideoBlockParams descriptors.
+  Must be allocated with av_video_enc_params_alloc().
+*/
+type AVVideoEncParams struct {
+	ptr *C.AVVideoEncParams
+}
+
+func (s *AVVideoEncParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVVideoEncParamsArray(ptr unsafe.Pointer) *Array[*AVVideoEncParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVVideoEncParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVVideoEncParams {
+			ptr := (**C.AVVideoEncParams)(pointer)
+			value := *ptr
+			var valueMapped *AVVideoEncParams
+			if value != nil {
+				valueMapped = &AVVideoEncParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVVideoEncParams) {
+			ptr := (**C.AVVideoEncParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// NbBlocks gets the nb_blocks field.
+/*
+  Number of blocks in the array.
+
+  May be 0, in which case no per-block information is present. In this case
+  the values of blocks_offset / block_size are unspecified and should not
+  be accessed.
+*/
+func (s *AVVideoEncParams) NbBlocks() uint {
+	value := s.ptr.nb_blocks
+	return uint(value)
+}
+
+// SetNbBlocks sets the nb_blocks field.
+/*
+  Number of blocks in the array.
+
+  May be 0, in which case no per-block information is present. In this case
+  the values of blocks_offset / block_size are unspecified and should not
+  be accessed.
+*/
+func (s *AVVideoEncParams) SetNbBlocks(value uint) {
+	s.ptr.nb_blocks = (C.uint)(value)
+}
+
+// BlocksOffset gets the blocks_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which the array
+  of blocks starts.
+*/
+func (s *AVVideoEncParams) BlocksOffset() uint64 {
+	value := s.ptr.blocks_offset
+	return uint64(value)
+}
+
+// SetBlocksOffset sets the blocks_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which the array
+  of blocks starts.
+*/
+func (s *AVVideoEncParams) SetBlocksOffset(value uint64) {
+	s.ptr.blocks_offset = (C.size_t)(value)
+}
+
+// BlockSize gets the block_size field.
+//
+//	Size of each block in bytes. May not match sizeof(AVVideoBlockParams).
+func (s *AVVideoEncParams) BlockSize() uint64 {
+	value := s.ptr.block_size
+	return uint64(value)
+}
+
+// SetBlockSize sets the block_size field.
+//
+//	Size of each block in bytes. May not match sizeof(AVVideoBlockParams).
+func (s *AVVideoEncParams) SetBlockSize(value uint64) {
+	s.ptr.block_size = (C.size_t)(value)
+}
+
+// Type gets the type field.
+//
+//	Type of the parameters (the codec they are used with).
+func (s *AVVideoEncParams) Type() AVVideoEncParamsType {
+	value := s.ptr._type
+	return AVVideoEncParamsType(value)
+}
+
+// SetType sets the type field.
+//
+//	Type of the parameters (the codec they are used with).
+func (s *AVVideoEncParams) SetType(value AVVideoEncParamsType) {
+	s.ptr._type = (C.enum_AVVideoEncParamsType)(value)
+}
+
+// qp skipped due to unexpected IdentType int32_t
+
+// delta_qp skipped due to multi dim const array
+
+// --- Struct AVVideoBlockParams ---
+
+// AVVideoBlockParams wraps AVVideoBlockParams.
+/*
+  Data structure for storing block-level encoding information.
+  It is allocated as a part of AVVideoEncParams and should be retrieved with
+  av_video_enc_params_block().
+
+  sizeof(AVVideoBlockParams) is not a part of the ABI and new fields may be
+  added to it.
+*/
+type AVVideoBlockParams struct {
+	ptr *C.AVVideoBlockParams
+}
+
+func (s *AVVideoBlockParams) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVVideoBlockParamsArray(ptr unsafe.Pointer) *Array[*AVVideoBlockParams] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVVideoBlockParams]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVVideoBlockParams {
+			ptr := (**C.AVVideoBlockParams)(pointer)
+			value := *ptr
+			var valueMapped *AVVideoBlockParams
+			if value != nil {
+				valueMapped = &AVVideoBlockParams{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVVideoBlockParams) {
+			ptr := (**C.AVVideoBlockParams)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// SrcX gets the src_x field.
+/*
+  Distance in luma pixels from the top-left corner of the visible frame
+  to the top-left corner of the block.
+  Can be negative if top/right padding is present on the coded frame.
+*/
+func (s *AVVideoBlockParams) SrcX() int {
+	value := s.ptr.src_x
+	return int(value)
+}
+
+// SetSrcX sets the src_x field.
+/*
+  Distance in luma pixels from the top-left corner of the visible frame
+  to the top-left corner of the block.
+  Can be negative if top/right padding is present on the coded frame.
+*/
+func (s *AVVideoBlockParams) SetSrcX(value int) {
+	s.ptr.src_x = (C.int)(value)
+}
+
+// SrcY gets the src_y field.
+/*
+  Distance in luma pixels from the top-left corner of the visible frame
+  to the top-left corner of the block.
+  Can be negative if top/right padding is present on the coded frame.
+*/
+func (s *AVVideoBlockParams) SrcY() int {
+	value := s.ptr.src_y
+	return int(value)
+}
+
+// SetSrcY sets the src_y field.
+/*
+  Distance in luma pixels from the top-left corner of the visible frame
+  to the top-left corner of the block.
+  Can be negative if top/right padding is present on the coded frame.
+*/
+func (s *AVVideoBlockParams) SetSrcY(value int) {
+	s.ptr.src_y = (C.int)(value)
+}
+
+// W gets the w field.
+//
+//	Width and height of the block in luma pixels.
+func (s *AVVideoBlockParams) W() int {
+	value := s.ptr.w
+	return int(value)
+}
+
+// SetW sets the w field.
+//
+//	Width and height of the block in luma pixels.
+func (s *AVVideoBlockParams) SetW(value int) {
+	s.ptr.w = (C.int)(value)
+}
+
+// H gets the h field.
+//
+//	Width and height of the block in luma pixels.
+func (s *AVVideoBlockParams) H() int {
+	value := s.ptr.h
+	return int(value)
+}
+
+// SetH sets the h field.
+//
+//	Width and height of the block in luma pixels.
+func (s *AVVideoBlockParams) SetH(value int) {
+	s.ptr.h = (C.int)(value)
+}
+
+// delta_qp skipped due to unexpected IdentType int32_t
+
+// --- Struct AVVideoRect ---
+
+// AVVideoRect wraps AVVideoRect.
+type AVVideoRect struct {
+	ptr *C.AVVideoRect
+}
+
+func (s *AVVideoRect) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVVideoRectArray(ptr unsafe.Pointer) *Array[*AVVideoRect] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVVideoRect]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVVideoRect {
+			ptr := (**C.AVVideoRect)(pointer)
+			value := *ptr
+			var valueMapped *AVVideoRect
+			if value != nil {
+				valueMapped = &AVVideoRect{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVVideoRect) {
+			ptr := (**C.AVVideoRect)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// X gets the x field.
+func (s *AVVideoRect) X() uint32 {
+	value := s.ptr.x
+	return uint32(value)
+}
+
+// SetX sets the x field.
+func (s *AVVideoRect) SetX(value uint32) {
+	s.ptr.x = (C.uint32_t)(value)
+}
+
+// Y gets the y field.
+func (s *AVVideoRect) Y() uint32 {
+	value := s.ptr.y
+	return uint32(value)
+}
+
+// SetY sets the y field.
+func (s *AVVideoRect) SetY(value uint32) {
+	s.ptr.y = (C.uint32_t)(value)
+}
+
+// Width gets the width field.
+func (s *AVVideoRect) Width() uint32 {
+	value := s.ptr.width
+	return uint32(value)
+}
+
+// SetWidth sets the width field.
+func (s *AVVideoRect) SetWidth(value uint32) {
+	s.ptr.width = (C.uint32_t)(value)
+}
+
+// Height gets the height field.
+func (s *AVVideoRect) Height() uint32 {
+	value := s.ptr.height
+	return uint32(value)
+}
+
+// SetHeight sets the height field.
+func (s *AVVideoRect) SetHeight(value uint32) {
+	s.ptr.height = (C.uint32_t)(value)
+}
+
+// --- Struct AVVideoHint ---
+
+// AVVideoHint wraps AVVideoHint.
+type AVVideoHint struct {
+	ptr *C.AVVideoHint
+}
+
+func (s *AVVideoHint) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVVideoHintArray(ptr unsafe.Pointer) *Array[*AVVideoHint] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVVideoHint]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVVideoHint {
+			ptr := (**C.AVVideoHint)(pointer)
+			value := *ptr
+			var valueMapped *AVVideoHint
+			if value != nil {
+				valueMapped = &AVVideoHint{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVVideoHint) {
+			ptr := (**C.AVVideoHint)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// NbRects gets the nb_rects field.
+/*
+  Number of AVVideoRect present.
+
+  May be 0, in which case no per-rectangle information is present. In this
+  case the values of rect_offset / rect_size are unspecified and should
+  not be accessed.
+*/
+func (s *AVVideoHint) NbRects() uint64 {
+	value := s.ptr.nb_rects
+	return uint64(value)
+}
+
+// SetNbRects sets the nb_rects field.
+/*
+  Number of AVVideoRect present.
+
+  May be 0, in which case no per-rectangle information is present. In this
+  case the values of rect_offset / rect_size are unspecified and should
+  not be accessed.
+*/
+func (s *AVVideoHint) SetNbRects(value uint64) {
+	s.ptr.nb_rects = (C.size_t)(value)
+}
+
+// RectOffset gets the rect_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which the array
+  of AVVideoRect starts.
+*/
+func (s *AVVideoHint) RectOffset() uint64 {
+	value := s.ptr.rect_offset
+	return uint64(value)
+}
+
+// SetRectOffset sets the rect_offset field.
+/*
+  Offset in bytes from the beginning of this structure at which the array
+  of AVVideoRect starts.
+*/
+func (s *AVVideoHint) SetRectOffset(value uint64) {
+	s.ptr.rect_offset = (C.size_t)(value)
+}
+
+// RectSize gets the rect_size field.
+//
+//	Size in bytes of AVVideoRect.
+func (s *AVVideoHint) RectSize() uint64 {
+	value := s.ptr.rect_size
+	return uint64(value)
+}
+
+// SetRectSize sets the rect_size field.
+//
+//	Size in bytes of AVVideoRect.
+func (s *AVVideoHint) SetRectSize(value uint64) {
+	s.ptr.rect_size = (C.size_t)(value)
+}
+
+// Type gets the type field.
+func (s *AVVideoHint) Type() AVVideoHintType {
+	value := s.ptr._type
+	return AVVideoHintType(value)
+}
+
+// SetType sets the type field.
+func (s *AVVideoHint) SetType(value AVVideoHintType) {
+	s.ptr._type = (C.AVVideoHintType)(value)
 }
 
 // --- Struct SwrContext ---

@@ -3,7 +3,6 @@ package ffmpeg
 import "unsafe"
 
 // #include <libavcodec/avcodec.h>
-// #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
@@ -24,21 +23,39 @@ import "unsafe"
 // #include <libavformat/avio.h>
 // #include <libavformat/version.h>
 // #include <libavformat/version_major.h>
+// #include <libavutil/avassert.h>
+// #include <libavutil/avconfig.h>
 // #include <libavutil/avutil.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/channel_layout.h>
+// #include <libavutil/container_fifo.h>
+// #include <libavutil/cpu.h>
 // #include <libavutil/dict.h>
+// #include <libavutil/display.h>
+// #include <libavutil/downmix_info.h>
+// #include <libavutil/encryption_info.h>
 // #include <libavutil/error.h>
+// #include <libavutil/eval.h>
+// #include <libavutil/executor.h>
+// #include <libavutil/ffversion.h>
+// #include <libavutil/fifo.h>
 // #include <libavutil/frame.h>
 // #include <libavutil/hwcontext.h>
 // #include <libavutil/log.h>
 // #include <libavutil/mathematics.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/opt.h>
+// #include <libavutil/parseutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/rational.h>
+// #include <libavutil/replaygain.h>
 // #include <libavutil/samplefmt.h>
+// #include <libavutil/time.h>
+// #include <libavutil/timecode.h>
+// #include <libavutil/timestamp.h>
 // #include <libavutil/version.h>
+// #include <libavutil/video_enc_params.h>
+// #include <libavutil/video_hint.h>
 // #include <libswresample/version.h>
 // #include <libswresample/version_major.h>
 // #include <libswresample/swresample.h>
@@ -3168,6 +3185,110 @@ const (
 	AVMatrixEncodingNb AVMatrixEncoding = C.AV_MATRIX_ENCODING_NB
 )
 
+// --- Enum AVContainerFifoFlags ---
+
+// AVContainerFifoFlags wraps AVContainerFifoFlags.
+type AVContainerFifoFlags C.enum_AVContainerFifoFlags
+
+const SizeOfAVContainerFifoFlags = C.sizeof_enum_AVContainerFifoFlags
+
+func ToAVContainerFifoFlagsArray(ptr unsafe.Pointer) *Array[AVContainerFifoFlags] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVContainerFifoFlags]{
+		elemSize: SizeOfAVContainerFifoFlags,
+		loadPtr: func(pointer unsafe.Pointer) AVContainerFifoFlags {
+			ptr := (*AVContainerFifoFlags)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVContainerFifoFlags) {
+			ptr := (*AVContainerFifoFlags)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVContainerFifoFlagsArray(size uint64) *Array[AVContainerFifoFlags] {
+	return ToAVContainerFifoFlagsArray(AVCalloc(size, SizeOfAVContainerFifoFlags))
+}
+
+const (
+	// AVContainerFifoFlagRef wraps AV_CONTAINER_FIFO_FLAG_REF.
+	/*
+	   Signal to av_container_fifo_write() that it should make a new reference
+	   to data in src rather than consume its contents.
+
+	   @note you must handle this flag manually in your own fifo_transfer()
+	         callback
+	*/
+	AVContainerFifoFlagRef AVContainerFifoFlags = C.AV_CONTAINER_FIFO_FLAG_REF
+	// AVContainerFifoFlagUser wraps AV_CONTAINER_FIFO_FLAG_USER.
+	/*
+	   This and all higher bits in flags may be set to any value by the caller
+	   and are guaranteed to be passed through to the fifo_transfer() callback
+	   and not be interpreted by AVContainerFifo code.
+	*/
+	AVContainerFifoFlagUser AVContainerFifoFlags = C.AV_CONTAINER_FIFO_FLAG_USER
+)
+
+// --- Enum AVDownmixType ---
+
+// AVDownmixType wraps AVDownmixType.
+//
+//	Possible downmix types.
+type AVDownmixType C.enum_AVDownmixType
+
+const SizeOfAVDownmixType = C.sizeof_enum_AVDownmixType
+
+func ToAVDownmixTypeArray(ptr unsafe.Pointer) *Array[AVDownmixType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVDownmixType]{
+		elemSize: SizeOfAVDownmixType,
+		loadPtr: func(pointer unsafe.Pointer) AVDownmixType {
+			ptr := (*AVDownmixType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVDownmixType) {
+			ptr := (*AVDownmixType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVDownmixTypeArray(size uint64) *Array[AVDownmixType] {
+	return ToAVDownmixTypeArray(AVCalloc(size, SizeOfAVDownmixType))
+}
+
+const (
+	// AVDownmixTypeUnknown wraps AV_DOWNMIX_TYPE_UNKNOWN.
+	//
+	//	Not indicated.
+	AVDownmixTypeUnknown AVDownmixType = C.AV_DOWNMIX_TYPE_UNKNOWN
+	// AVDownmixTypeLoro wraps AV_DOWNMIX_TYPE_LORO.
+	//
+	//	Lo/Ro 2-channel downmix (Stereo).
+	AVDownmixTypeLoro AVDownmixType = C.AV_DOWNMIX_TYPE_LORO
+	// AVDownmixTypeLtrt wraps AV_DOWNMIX_TYPE_LTRT.
+	//
+	//	Lt/Rt 2-channel downmix, Dolby Surround compatible.
+	AVDownmixTypeLtrt AVDownmixType = C.AV_DOWNMIX_TYPE_LTRT
+	// AVDownmixTypeDplii wraps AV_DOWNMIX_TYPE_DPLII.
+	//
+	//	Lt/Rt 2-channel downmix, Dolby Pro Logic II compatible.
+	AVDownmixTypeDplii AVDownmixType = C.AV_DOWNMIX_TYPE_DPLII
+	// AVDownmixTypeNb wraps AV_DOWNMIX_TYPE_NB.
+	//
+	//	Number of downmix types. Not part of ABI.
+	AVDownmixTypeNb AVDownmixType = C.AV_DOWNMIX_TYPE_NB
+)
+
 // --- Enum AVFrameSideDataType ---
 
 // AVFrameSideDataType wraps AVFrameSideDataType.
@@ -5755,6 +5876,164 @@ const (
 	//
 	//	Number of sample formats. DO NOT USE if linking dynamically
 	AVSampleFmtNb AVSampleFormat = C.AV_SAMPLE_FMT_NB
+)
+
+// --- Enum AVTimecodeFlag ---
+
+// AVTimecodeFlag wraps AVTimecodeFlag.
+type AVTimecodeFlag C.enum_AVTimecodeFlag
+
+const SizeOfAVTimecodeFlag = C.sizeof_enum_AVTimecodeFlag
+
+func ToAVTimecodeFlagArray(ptr unsafe.Pointer) *Array[AVTimecodeFlag] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVTimecodeFlag]{
+		elemSize: SizeOfAVTimecodeFlag,
+		loadPtr: func(pointer unsafe.Pointer) AVTimecodeFlag {
+			ptr := (*AVTimecodeFlag)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVTimecodeFlag) {
+			ptr := (*AVTimecodeFlag)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVTimecodeFlagArray(size uint64) *Array[AVTimecodeFlag] {
+	return ToAVTimecodeFlagArray(AVCalloc(size, SizeOfAVTimecodeFlag))
+}
+
+const (
+	// AVTimecodeFlagDropframe wraps AV_TIMECODE_FLAG_DROPFRAME.
+	//
+	//	timecode is drop frame
+	AVTimecodeFlagDropframe AVTimecodeFlag = C.AV_TIMECODE_FLAG_DROPFRAME
+	// AVTimecodeFlag24Hoursmax wraps AV_TIMECODE_FLAG_24HOURSMAX.
+	//
+	//	timecode wraps after 24 hours
+	AVTimecodeFlag24Hoursmax AVTimecodeFlag = C.AV_TIMECODE_FLAG_24HOURSMAX
+	// AVTimecodeFlagAllownegative wraps AV_TIMECODE_FLAG_ALLOWNEGATIVE.
+	//
+	//	negative time values are allowed
+	AVTimecodeFlagAllownegative AVTimecodeFlag = C.AV_TIMECODE_FLAG_ALLOWNEGATIVE
+)
+
+// --- Enum AVVideoEncParamsType ---
+
+// AVVideoEncParamsType wraps AVVideoEncParamsType.
+type AVVideoEncParamsType C.enum_AVVideoEncParamsType
+
+const SizeOfAVVideoEncParamsType = C.sizeof_enum_AVVideoEncParamsType
+
+func ToAVVideoEncParamsTypeArray(ptr unsafe.Pointer) *Array[AVVideoEncParamsType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVVideoEncParamsType]{
+		elemSize: SizeOfAVVideoEncParamsType,
+		loadPtr: func(pointer unsafe.Pointer) AVVideoEncParamsType {
+			ptr := (*AVVideoEncParamsType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVVideoEncParamsType) {
+			ptr := (*AVVideoEncParamsType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVVideoEncParamsTypeArray(size uint64) *Array[AVVideoEncParamsType] {
+	return ToAVVideoEncParamsTypeArray(AVCalloc(size, SizeOfAVVideoEncParamsType))
+}
+
+const (
+	// AVVideoEncParamsNone wraps AV_VIDEO_ENC_PARAMS_NONE.
+	AVVideoEncParamsNone AVVideoEncParamsType = C.AV_VIDEO_ENC_PARAMS_NONE
+	// AVVideoEncParamsVp9 wraps AV_VIDEO_ENC_PARAMS_VP9.
+	/*
+	   VP9 stores:
+	   - per-frame base (luma AC) quantizer index, exported as AVVideoEncParams.qp
+	   - deltas for luma DC, chroma AC and chroma DC, exported in the
+	     corresponding entries in AVVideoEncParams.delta_qp
+	   - per-segment delta, exported as for each block as AVVideoBlockParams.delta_qp
+
+	   To compute the resulting quantizer index for a block:
+	   - for luma AC, add the base qp and the per-block delta_qp, saturating to
+	     unsigned 8-bit.
+	   - for luma DC and chroma AC/DC, add the corresponding
+	     AVVideoBlockParams.delta_qp to the luma AC index, again saturating to
+	     unsigned 8-bit.
+	*/
+	AVVideoEncParamsVp9 AVVideoEncParamsType = C.AV_VIDEO_ENC_PARAMS_VP9
+	// AVVideoEncParamsH264 wraps AV_VIDEO_ENC_PARAMS_H264.
+	/*
+	   H.264 stores:
+	   - in PPS (per-picture):
+	     * initial QP_Y (luma) value, exported as AVVideoEncParams.qp
+	     * delta(s) for chroma QP values (same for both, or each separately),
+	       exported as in the corresponding entries in AVVideoEncParams.delta_qp
+	   - per-slice QP delta, not exported directly, added to the per-MB value
+	   - per-MB delta; not exported directly; the final per-MB quantizer
+	     parameter - QP_Y - minus the value in AVVideoEncParams.qp is exported
+	     as AVVideoBlockParams.qp_delta.
+	*/
+	AVVideoEncParamsH264 AVVideoEncParamsType = C.AV_VIDEO_ENC_PARAMS_H264
+	// AVVideoEncParamsMpeg2 wraps AV_VIDEO_ENC_PARAMS_MPEG2.
+	/*
+	   MPEG-2-compatible quantizer.
+
+	   Summing the frame-level qp with the per-block delta_qp gives the
+	   resulting quantizer for the block.
+	*/
+	AVVideoEncParamsMpeg2 AVVideoEncParamsType = C.AV_VIDEO_ENC_PARAMS_MPEG2
+)
+
+// --- Enum AVVideoHintType ---
+
+// AVVideoHintType wraps AVVideoHintType.
+type AVVideoHintType C.AVVideoHintType
+
+const SizeOfAVVideoHintType = C.sizeof_AVVideoHintType
+
+func ToAVVideoHintTypeArray(ptr unsafe.Pointer) *Array[AVVideoHintType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVVideoHintType]{
+		elemSize: SizeOfAVVideoHintType,
+		loadPtr: func(pointer unsafe.Pointer) AVVideoHintType {
+			ptr := (*AVVideoHintType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVVideoHintType) {
+			ptr := (*AVVideoHintType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVVideoHintTypeArray(size uint64) *Array[AVVideoHintType] {
+	return ToAVVideoHintTypeArray(AVCalloc(size, SizeOfAVVideoHintType))
+}
+
+const (
+	// AVVideoHintTypeConstant wraps AV_VIDEO_HINT_TYPE_CONSTANT.
+	//
+	//	rectangled delimit the constant areas (unchanged), default is changed
+	AVVideoHintTypeConstant AVVideoHintType = C.AV_VIDEO_HINT_TYPE_CONSTANT
+	// AVVideoHintTypeChanged wraps AV_VIDEO_HINT_TYPE_CHANGED.
+	//
+	//	rectangled delimit the constant areas (changed), default is not changed
+	AVVideoHintTypeChanged AVVideoHintType = C.AV_VIDEO_HINT_TYPE_CHANGED
 )
 
 // --- Enum SwrDitherType ---
