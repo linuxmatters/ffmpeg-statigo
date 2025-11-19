@@ -37,6 +37,10 @@ build:
     just build-examples
     ./introspect
 
+# Generate Go bindings
+generate:
+    go run ./internal/generator
+
 # Run tests
 test:
     go test -v ./...

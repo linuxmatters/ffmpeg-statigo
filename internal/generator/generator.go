@@ -984,6 +984,13 @@ outer:
 				o.Line()
 				continue outer
 
+			case *ConstArray:
+				params = append(params, jen.Id(pName).Id("TODO"))
+
+				o.Commentf("%v skipped due to const array param %v", fn.Name, pName)
+				o.Line()
+				continue outer
+
 			default:
 				log.Panicln("unexpected type", reflect.TypeOf(arg.Type))
 			}
