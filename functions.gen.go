@@ -440,15 +440,72 @@ func AVCodecDefaultGetEncodeBuffer(s *AVCodecContext, pkt *AVPacket, flags int) 
 
 // --- Function avcodec_align_dimensions ---
 
-// avcodec_align_dimensions skipped due to width
+// AVCodecAlignDimensions wraps avcodec_align_dimensions.
+/*
+  Modify width and height values so that they will result in a memory
+  buffer that is acceptable for the codec if you do not use any horizontal
+  padding.
+
+  May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
+*/
+func AVCodecAlignDimensions(s *AVCodecContext, width *int, height *int) {
+	var tmps *C.AVCodecContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	C.avcodec_align_dimensions(tmps, (*C.int)(unsafe.Pointer(width)), (*C.int)(unsafe.Pointer(height)))
+}
 
 // --- Function avcodec_align_dimensions2 ---
 
-// avcodec_align_dimensions2 skipped due to width
+// avcodec_align_dimensions2 skipped due to const array param linesizeAlign
 
 // --- Function avcodec_decode_subtitle2 ---
 
-// avcodec_decode_subtitle2 skipped due to gotSubPtr
+// AVCodecDecodeSubtitle2 wraps avcodec_decode_subtitle2.
+/*
+  Decode a subtitle message.
+  Return a negative value on error, otherwise return the number of bytes used.
+  If no subtitle could be decompressed, got_sub_ptr is zero.
+  Otherwise, the subtitle is stored in *sub.
+  Note that AV_CODEC_CAP_DR1 is not available for subtitle codecs. This is for
+  simplicity, because the performance difference is expected to be negligible
+  and reusing a get_buffer written for video codecs would probably perform badly
+  due to a potentially very different allocation pattern.
+
+  Some decoders (those marked with AV_CODEC_CAP_DELAY) have a delay between input
+  and output. This means that for some packets they will not immediately
+  produce decoded output and need to be flushed at the end of decoding to get
+  all the decoded data. Flushing is done by calling this function with packets
+  with avpkt->data set to NULL and avpkt->size set to 0 until it stops
+  returning subtitles. It is safe to flush even those decoders that are not
+  marked with AV_CODEC_CAP_DELAY, then no subtitles will be returned.
+
+  @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
+  before packets may be fed to the decoder.
+
+  @param avctx the codec context
+  @param[out] sub The preallocated AVSubtitle in which the decoded subtitle will be stored,
+                  must be freed with avsubtitle_free if *got_sub_ptr is set.
+  @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
+  @param[in] avpkt The input AVPacket containing the input buffer.
+*/
+func AVCodecDecodeSubtitle2(avctx *AVCodecContext, sub *AVSubtitle, gotSubPtr *int, avpkt *AVPacket) (int, error) {
+	var tmpavctx *C.AVCodecContext
+	if avctx != nil {
+		tmpavctx = avctx.ptr
+	}
+	var tmpsub *C.AVSubtitle
+	if sub != nil {
+		tmpsub = sub.ptr
+	}
+	var tmpavpkt *C.AVPacket
+	if avpkt != nil {
+		tmpavpkt = avpkt.ptr
+	}
+	ret := C.avcodec_decode_subtitle2(tmpavctx, tmpsub, (*C.int)(unsafe.Pointer(gotSubPtr)), tmpavpkt)
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function avcodec_send_packet ---
 
@@ -825,7 +882,32 @@ func AVCodecPixFmtToCodecTag(pixFmt AVPixelFormat) uint {
 
 // --- Function avcodec_find_best_pix_fmt_of_list ---
 
-// avcodec_find_best_pix_fmt_of_list skipped due to lossPtr
+// AVCodecFindBestPixFmtOfList wraps avcodec_find_best_pix_fmt_of_list.
+/*
+  Find the best pixel format to convert to given a certain source pixel
+  format.  When converting from one pixel format to another, information loss
+  may occur.  For example, when converting from RGB24 to GRAY, the color
+  information will be lost. Similarly, other losses occur when converting from
+  some formats to other formats. avcodec_find_best_pix_fmt_of_2() searches which of
+  the given pixel formats should be used to suffer the least amount of loss.
+  The pixel formats from which it chooses one, are determined by the
+  pix_fmt_list parameter.
+
+
+  @param[in] pix_fmt_list AV_PIX_FMT_NONE terminated array of pixel formats to choose from
+  @param[in] src_pix_fmt source pixel format
+  @param[in] has_alpha Whether the source pixel format alpha channel is used.
+  @param[out] loss_ptr Combination of flags informing you what kind of losses will occur.
+  @return The best pixel format to convert to or -1 if none was found.
+*/
+func AVCodecFindBestPixFmtOfList(pixFmtList *AVPixelFormat, srcPixFmt AVPixelFormat, hasAlpha int, lossPtr *int) AVPixelFormat {
+	var tmppixFmtList *C.enum_AVPixelFormat
+	if pixFmtList != nil {
+		tmppixFmtList = (*C.enum_AVPixelFormat)(unsafe.Pointer(pixFmtList))
+	}
+	ret := C.avcodec_find_best_pix_fmt_of_list(tmppixFmtList, C.enum_AVPixelFormat(srcPixFmt), C.int(hasAlpha), (*C.int)(unsafe.Pointer(lossPtr)))
+	return AVPixelFormat(ret)
+}
 
 // --- Function avcodec_default_get_format ---
 
@@ -948,11 +1030,28 @@ func AVGetAudioFrameDuration(avctx *AVCodecContext, frameBytes int) (int, error)
 
 // --- Function av_fast_padded_malloc ---
 
-// av_fast_padded_malloc skipped due to size
+// AVFastPaddedMalloc wraps av_fast_padded_malloc.
+/*
+  Same behaviour av_fast_malloc but the buffer has additional
+  AV_INPUT_BUFFER_PADDING_SIZE at the end which will always be 0.
+
+  In addition the whole buffer will initially and after resizes
+  be 0-initialized so that no uninitialized data will ever appear.
+*/
+func AVFastPaddedMalloc(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	C.av_fast_padded_malloc(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
+}
 
 // --- Function av_fast_padded_mallocz ---
 
-// av_fast_padded_mallocz skipped due to size
+// AVFastPaddedMallocz wraps av_fast_padded_mallocz.
+/*
+  Same behaviour av_fast_padded_malloc except that buffer will always
+  be 0-initialized after call.
+*/
+func AVFastPaddedMallocz(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	C.av_fast_padded_mallocz(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
+}
 
 // --- Function avcodec_is_open ---
 
@@ -1829,7 +1928,24 @@ func AVGetAudioFrameDuration2(par *AVCodecParameters, frameBytes int) (int, erro
 
 // --- Function av_cpb_properties_alloc ---
 
-// av_cpb_properties_alloc skipped due to size
+// AVCpbPropertiesAlloc wraps av_cpb_properties_alloc.
+/*
+  Allocate a CPB properties structure and initialize its fields to default
+  values.
+
+  @param size if non-NULL, the size of the allocated struct will be written
+              here. This is useful for embedding it in side data.
+
+  @return the newly allocated struct or NULL on failure
+*/
+func AVCpbPropertiesAlloc(size *uint64) *AVCPBProperties {
+	ret := C.av_cpb_properties_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVCPBProperties
+	if ret != nil {
+		retMapped = &AVCPBProperties{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_xiphlacing ---
 
@@ -1848,11 +1964,96 @@ func AVXiphlacing(s unsafe.Pointer, v uint) uint {
 
 // --- Function av_packet_side_data_new ---
 
-// av_packet_side_data_new skipped due to pnbSd
+// AVPacketSideDataNew wraps av_packet_side_data_new.
+/*
+  Allocate a new packet side data.
+
+  @param sd    pointer to an array of side data to which the side data should
+               be added. *sd may be NULL, in which case the array will be
+               initialized.
+  @param nb_sd pointer to an integer containing the number of entries in
+               the array. The integer value will be increased by 1 on success.
+  @param type  side data type
+  @param size  desired side data size
+  @param flags currently unused. Must be zero
+
+  @return pointer to freshly allocated side data on success, or NULL otherwise.
+*/
+func AVPacketSideDataNew(psd **AVPacketSideData, pnbSd *int, _type AVPacketSideDataType, size uint64, flags int) *AVPacketSideData {
+	var ptrpsd **C.AVPacketSideData
+	var tmppsd *C.AVPacketSideData
+	var oldTmppsd *C.AVPacketSideData
+	if psd != nil {
+		innerpsd := *psd
+		if innerpsd != nil {
+			tmppsd = innerpsd.ptr
+			oldTmppsd = tmppsd
+		}
+		ptrpsd = &tmppsd
+	}
+	ret := C.av_packet_side_data_new(ptrpsd, (*C.int)(unsafe.Pointer(pnbSd)), C.enum_AVPacketSideDataType(_type), C.size_t(size), C.int(flags))
+	if tmppsd != oldTmppsd && psd != nil {
+		if tmppsd != nil {
+			*psd = &AVPacketSideData{ptr: tmppsd}
+		} else {
+			*psd = nil
+		}
+	}
+	var retMapped *AVPacketSideData
+	if ret != nil {
+		retMapped = &AVPacketSideData{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_packet_side_data_add ---
 
-// av_packet_side_data_add skipped due to nbSd
+// AVPacketSideDataAdd wraps av_packet_side_data_add.
+/*
+  Wrap existing data as packet side data.
+
+  @param sd    pointer to an array of side data to which the side data should
+               be added. *sd may be NULL, in which case the array will be
+               initialized
+  @param nb_sd pointer to an integer containing the number of entries in
+               the array. The integer value will be increased by 1 on success.
+  @param type  side data type
+  @param data  a data array. It must be allocated with the av_malloc() family
+               of functions. The ownership of the data is transferred to the
+               side data array on success
+  @param size  size of the data array
+  @param flags currently unused. Must be zero
+
+  @return pointer to freshly allocated side data on success, or NULL otherwise
+          On failure, the side data array is unchanged and the data remains
+          owned by the caller.
+*/
+func AVPacketSideDataAdd(sd **AVPacketSideData, nbSd *int, _type AVPacketSideDataType, data unsafe.Pointer, size uint64, flags int) *AVPacketSideData {
+	var ptrsd **C.AVPacketSideData
+	var tmpsd *C.AVPacketSideData
+	var oldTmpsd *C.AVPacketSideData
+	if sd != nil {
+		innersd := *sd
+		if innersd != nil {
+			tmpsd = innersd.ptr
+			oldTmpsd = tmpsd
+		}
+		ptrsd = &tmpsd
+	}
+	ret := C.av_packet_side_data_add(ptrsd, (*C.int)(unsafe.Pointer(nbSd)), C.enum_AVPacketSideDataType(_type), data, C.size_t(size), C.int(flags))
+	if tmpsd != oldTmpsd && sd != nil {
+		if tmpsd != nil {
+			*sd = &AVPacketSideData{ptr: tmpsd}
+		} else {
+			*sd = nil
+		}
+	}
+	var retMapped *AVPacketSideData
+	if ret != nil {
+		retMapped = &AVPacketSideData{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_packet_side_data_get ---
 
@@ -1881,11 +2082,57 @@ func AVPacketSideDataGet(sd *AVPacketSideData, nbSd int, _type AVPacketSideDataT
 
 // --- Function av_packet_side_data_remove ---
 
-// av_packet_side_data_remove skipped due to nbSd
+// AVPacketSideDataRemove wraps av_packet_side_data_remove.
+/*
+  Remove side data of the given type from a side data array.
+
+  @param sd    the array from which the side data should be removed
+  @param nb_sd pointer to an integer containing the number of entries in
+               the array. Will be reduced by the amount of entries removed
+               upon return
+  @param type  side information type
+*/
+func AVPacketSideDataRemove(sd *AVPacketSideData, nbSd *int, _type AVPacketSideDataType) {
+	var tmpsd *C.AVPacketSideData
+	if sd != nil {
+		tmpsd = sd.ptr
+	}
+	C.av_packet_side_data_remove(tmpsd, (*C.int)(unsafe.Pointer(nbSd)), C.enum_AVPacketSideDataType(_type))
+}
 
 // --- Function av_packet_side_data_free ---
 
-// av_packet_side_data_free skipped due to nbSd
+// AVPacketSideDataFree wraps av_packet_side_data_free.
+/*
+  Convenience function to free all the side data stored in an array, and
+  the array itself.
+
+  @param sd    pointer to array of side data to free. Will be set to NULL
+               upon return.
+  @param nb_sd pointer to an integer containing the number of entries in
+               the array. Will be set to 0 upon return.
+*/
+func AVPacketSideDataFree(sd **AVPacketSideData, nbSd *int) {
+	var ptrsd **C.AVPacketSideData
+	var tmpsd *C.AVPacketSideData
+	var oldTmpsd *C.AVPacketSideData
+	if sd != nil {
+		innersd := *sd
+		if innersd != nil {
+			tmpsd = innersd.ptr
+			oldTmpsd = tmpsd
+		}
+		ptrsd = &tmpsd
+	}
+	C.av_packet_side_data_free(ptrsd, (*C.int)(unsafe.Pointer(nbSd)))
+	if tmpsd != oldTmpsd && sd != nil {
+		if tmpsd != nil {
+			*sd = &AVPacketSideData{ptr: tmpsd}
+		} else {
+			*sd = nil
+		}
+	}
+}
 
 // --- Function av_packet_side_data_name ---
 
@@ -2148,11 +2395,43 @@ func AVPacketShrinkSideData(pkt *AVPacket, _type AVPacketSideDataType, size uint
 
 // --- Function av_packet_get_side_data ---
 
-// av_packet_get_side_data skipped due to size
+// AVPacketGetSideData wraps av_packet_get_side_data.
+/*
+  Get side information from packet.
+
+  @param pkt packet
+  @param type desired side information type
+  @param size If supplied, *size will be set to the size of the side data
+              or to zero if the desired side data is not present.
+  @return pointer to data if present or NULL otherwise
+*/
+func AVPacketGetSideData(pkt *AVPacket, _type AVPacketSideDataType, size *uint64) unsafe.Pointer {
+	var tmppkt *C.AVPacket
+	if pkt != nil {
+		tmppkt = pkt.ptr
+	}
+	ret := C.av_packet_get_side_data(tmppkt, C.enum_AVPacketSideDataType(_type), (*C.size_t)(unsafe.Pointer(size)))
+	return unsafe.Pointer(ret)
+}
 
 // --- Function av_packet_pack_dictionary ---
 
-// av_packet_pack_dictionary skipped due to size
+// AVPacketPackDictionary wraps av_packet_pack_dictionary.
+/*
+  Pack a dictionary for use in side_data.
+
+  @param dict The dictionary to pack.
+  @param size pointer to store the size of the returned data
+  @return pointer to data if successful, NULL otherwise
+*/
+func AVPacketPackDictionary(dict *AVDictionary, size *uint64) unsafe.Pointer {
+	var tmpdict *C.AVDictionary
+	if dict != nil {
+		tmpdict = dict.ptr
+	}
+	ret := C.av_packet_pack_dictionary(tmpdict, (*C.size_t)(unsafe.Pointer(size)))
+	return unsafe.Pointer(ret)
+}
 
 // --- Function av_packet_unpack_dictionary ---
 
@@ -4203,7 +4482,7 @@ func AVBuffersinkGetHWFramesCtx(ctx *AVFilterContext) *AVBufferRef {
 
 // --- Function av_buffersink_get_side_data ---
 
-// av_buffersink_get_side_data skipped due to nbSideData
+// av_buffersink_get_side_data skipped due to pointer-to-pointer return type
 
 // --- Function av_buffersink_get_frame ---
 
@@ -4957,11 +5236,30 @@ func AVProbeInputFormat(pd *AVProbeData, isOpened int) *AVInputFormat {
 
 // --- Function av_probe_input_format2 ---
 
-// av_probe_input_format2 skipped due to scoreMax
+// av_probe_input_format2 skipped due to scoreMax (non-output primitive pointer)
 
 // --- Function av_probe_input_format3 ---
 
-// av_probe_input_format3 skipped due to scoreRet
+// AVProbeInputFormat3 wraps av_probe_input_format3.
+/*
+  Guess the file format.
+
+  @param is_opened Whether the file is already opened; determines whether
+                   demuxers with or without AVFMT_NOFILE are probed.
+  @param score_ret The score of the best detection.
+*/
+func AVProbeInputFormat3(pd *AVProbeData, isOpened int, scoreRet *int) *AVInputFormat {
+	var tmppd *C.AVProbeData
+	if pd != nil {
+		tmppd = pd.ptr
+	}
+	ret := C.av_probe_input_format3(tmppd, C.int(isOpened), (*C.int)(unsafe.Pointer(scoreRet)))
+	var retMapped *AVInputFormat
+	if ret != nil {
+		retMapped = &AVInputFormat{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_probe_input_buffer2 ---
 
@@ -5849,11 +6147,11 @@ func AVGuessCodec(fmt *AVOutputFormat, shortName *CStr, filename *CStr, mimeType
 
 // --- Function av_get_output_timestamp ---
 
-// av_get_output_timestamp skipped due to dts
+// av_get_output_timestamp skipped due to dts (non-output primitive pointer)
 
 // --- Function av_hex_dump ---
 
-// av_hex_dump skipped due to f
+// av_hex_dump skipped due to f (non-output primitive pointer)
 
 // --- Function av_hex_dump_log ---
 
@@ -5876,7 +6174,7 @@ func AVHexDumpLog(avcl unsafe.Pointer, level int, buf unsafe.Pointer, size int) 
 
 // --- Function av_pkt_dump2 ---
 
-// av_pkt_dump2 skipped due to f
+// av_pkt_dump2 skipped due to f (non-output primitive pointer)
 
 // --- Function av_pkt_dump_log2 ---
 
@@ -5974,7 +6272,7 @@ func AVCodecGetTag(tags **AVCodecTag, id AVCodecID) uint {
 
 // --- Function av_codec_get_tag2 ---
 
-// av_codec_get_tag2 skipped due to tag
+// av_codec_get_tag2 skipped due to tag (non-output primitive pointer)
 
 // --- Function av_find_default_stream_index ---
 
@@ -6107,7 +6405,49 @@ func AVAddIndexEntry(st *AVStream, pos int64, timestamp int64, size int, distanc
 
 // --- Function av_url_split ---
 
-// av_url_split skipped due to portPtr
+// AVUrlSplit wraps av_url_split.
+/*
+  Split a URL string into components.
+
+  The pointers to buffers for storing individual components may be null,
+  in order to ignore that component. Buffers for components not found are
+  set to empty strings. If the port is not found, it is set to a negative
+  value.
+
+  @param proto the buffer for the protocol
+  @param proto_size the size of the proto buffer
+  @param authorization the buffer for the authorization
+  @param authorization_size the size of the authorization buffer
+  @param hostname the buffer for the host name
+  @param hostname_size the size of the hostname buffer
+  @param port_ptr a pointer to store the port number in
+  @param path the buffer for the path
+  @param path_size the size of the path buffer
+  @param url the URL to split
+*/
+func AVUrlSplit(proto *CStr, protoSize int, authorization *CStr, authorizationSize int, hostname *CStr, hostnameSize int, portPtr *int, path *CStr, pathSize int, url *CStr) {
+	var tmpproto *C.char
+	if proto != nil {
+		tmpproto = proto.ptr
+	}
+	var tmpauthorization *C.char
+	if authorization != nil {
+		tmpauthorization = authorization.ptr
+	}
+	var tmphostname *C.char
+	if hostname != nil {
+		tmphostname = hostname.ptr
+	}
+	var tmppath *C.char
+	if path != nil {
+		tmppath = path.ptr
+	}
+	var tmpurl *C.char
+	if url != nil {
+		tmpurl = url.ptr
+	}
+	C.av_url_split(tmpproto, C.int(protoSize), tmpauthorization, C.int(authorizationSize), tmphostname, C.int(hostnameSize), (*C.int)(unsafe.Pointer(portPtr)), tmppath, C.int(pathSize), tmpurl)
+}
 
 // --- Function av_dump_format ---
 
@@ -7803,7 +8143,20 @@ func AVAesCtrIncrementIv(a *AVAESCTR) {
 
 // --- Function av_ambient_viewing_environment_alloc ---
 
-// av_ambient_viewing_environment_alloc skipped due to size
+// AVAmbientViewingEnvironmentAlloc wraps av_ambient_viewing_environment_alloc.
+/*
+  Allocate an AVAmbientViewingEnvironment structure.
+
+  @return the newly allocated struct or NULL on failure
+*/
+func AVAmbientViewingEnvironmentAlloc(size *uint64) *AVAmbientViewingEnvironment {
+	ret := C.av_ambient_viewing_environment_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVAmbientViewingEnvironment
+	if ret != nil {
+		retMapped = &AVAmbientViewingEnvironment{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_ambient_viewing_environment_create_side_data ---
 
@@ -8369,7 +8722,7 @@ func AVAppendPathComponent(path *CStr, component *CStr) *CStr {
 
 // --- Function av_utf8_decode ---
 
-// av_utf8_decode skipped due to codep
+// av_utf8_decode skipped due to codep (non-output primitive pointer)
 
 // --- Function av_match_list ---
 
@@ -8600,7 +8953,7 @@ func AVBlowfishInit(ctx *AVBlowfish, key unsafe.Pointer, keyLen int) {
 
 // --- Function av_blowfish_crypt_ecb ---
 
-// av_blowfish_crypt_ecb skipped due to xl
+// av_blowfish_crypt_ecb skipped due to xl (non-output primitive pointer)
 
 // --- Function av_blowfish_crypt ---
 
@@ -10138,7 +10491,7 @@ func AVForceCpuFlags(flags int) {
 
 // --- Function av_parse_cpu_caps ---
 
-// av_parse_cpu_caps skipped due to flags
+// av_parse_cpu_caps skipped due to flags (non-output primitive pointer)
 
 // --- Function av_cpu_count ---
 
@@ -10481,7 +10834,24 @@ func AVGetDetectionBbox(header *AVDetectionBBoxHeader, idx uint) *AVDetectionBBo
 
 // --- Function av_detection_bbox_alloc ---
 
-// av_detection_bbox_alloc skipped due to outSize
+// AVDetectionBboxAlloc wraps av_detection_bbox_alloc.
+/*
+  Allocates memory for AVDetectionBBoxHeader, plus an array of {@code nb_bboxes}
+  AVDetectionBBox, and initializes the variables.
+  Can be freed with a normal av_free() call.
+
+  @param nb_bboxes number of AVDetectionBBox structures to allocate
+  @param out_size if non-NULL, the size in bytes of the resulting data array is
+  written here.
+*/
+func AVDetectionBboxAlloc(nbBboxes uint32, outSize *uint64) *AVDetectionBBoxHeader {
+	ret := C.av_detection_bbox_alloc(C.uint32_t(nbBboxes), (*C.size_t)(unsafe.Pointer(outSize)))
+	var retMapped *AVDetectionBBoxHeader
+	if ret != nil {
+		retMapped = &AVDetectionBBoxHeader{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_detection_bbox_create_side_data ---
 
@@ -10836,7 +11206,21 @@ func AVDictFree(m **AVDictionary) {
 
 // --- Function av_dovi_alloc ---
 
-// av_dovi_alloc skipped due to size
+// AVDoviAlloc wraps av_dovi_alloc.
+/*
+  Allocate a AVDOVIDecoderConfigurationRecord structure and initialize its
+  fields to default values.
+
+  @return the newly allocated struct or NULL on failure
+*/
+func AVDoviAlloc(size *uint64) *AVDOVIDecoderConfigurationRecord {
+	ret := C.av_dovi_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVDOVIDecoderConfigurationRecord
+	if ret != nil {
+		retMapped = &AVDOVIDecoderConfigurationRecord{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_dovi_get_header ---
 
@@ -10924,7 +11308,24 @@ func AVDoviFindLevel(data *AVDOVIMetadata, level uint8) *AVDOVIDmData {
 
 // --- Function av_dovi_metadata_alloc ---
 
-// av_dovi_metadata_alloc skipped due to size
+// AVDoviMetadataAlloc wraps av_dovi_metadata_alloc.
+/*
+  Allocate an AVDOVIMetadata structure and initialize its
+  fields to default values.
+
+  @param size If this parameter is non-NULL, the size in bytes of the
+              allocated struct will be written here on success
+
+  @return the newly allocated struct or NULL on failure
+*/
+func AVDoviMetadataAlloc(size *uint64) *AVDOVIMetadata {
+	ret := C.av_dovi_metadata_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVDOVIMetadata
+	if ret != nil {
+		retMapped = &AVDOVIMetadata{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_downmix_info_update_side_data ---
 
@@ -11031,7 +11432,22 @@ func AVEncryptionInfoGetSideData(sideData unsafe.Pointer, sideDataSize uint64) *
 
 // --- Function av_encryption_info_add_side_data ---
 
-// av_encryption_info_add_side_data skipped due to sideDataSize
+// AVEncryptionInfoAddSideData wraps av_encryption_info_add_side_data.
+/*
+  Allocates and initializes side data that holds a copy of the given encryption
+  info.  The resulting pointer should be either freed using av_free or given
+  to av_packet_add_side_data().
+
+  @return The new side-data pointer, or NULL.
+*/
+func AVEncryptionInfoAddSideData(info *AVEncryptionInfo, sideDataSize *uint64) unsafe.Pointer {
+	var tmpinfo *C.AVEncryptionInfo
+	if info != nil {
+		tmpinfo = info.ptr
+	}
+	ret := C.av_encryption_info_add_side_data(tmpinfo, (*C.size_t)(unsafe.Pointer(sideDataSize)))
+	return unsafe.Pointer(ret)
+}
 
 // --- Function av_encryption_init_info_alloc ---
 
@@ -11087,7 +11503,22 @@ func AVEncryptionInitInfoGetSideData(sideData unsafe.Pointer, sideDataSize uint6
 
 // --- Function av_encryption_init_info_add_side_data ---
 
-// av_encryption_init_info_add_side_data skipped due to sideDataSize
+// AVEncryptionInitInfoAddSideData wraps av_encryption_init_info_add_side_data.
+/*
+  Allocates and initializes side data that holds a copy of the given encryption
+  init info.  The resulting pointer should be either freed using av_free or
+  given to av_packet_add_side_data().
+
+  @return The new side-data pointer, or NULL.
+*/
+func AVEncryptionInitInfoAddSideData(info *AVEncryptionInitInfo, sideDataSize *uint64) unsafe.Pointer {
+	var tmpinfo *C.AVEncryptionInitInfo
+	if info != nil {
+		tmpinfo = info.ptr
+	}
+	ret := C.av_encryption_init_info_add_side_data(tmpinfo, (*C.size_t)(unsafe.Pointer(sideDataSize)))
+	return unsafe.Pointer(ret)
+}
 
 // --- Function av_strerror ---
 
@@ -11137,7 +11568,7 @@ func AVMakeErrorString(errbuf *CStr, errbufSize uint64, errnum int) *CStr {
 
 // --- Function av_expr_parse_and_eval ---
 
-// av_expr_parse_and_eval skipped due to res
+// av_expr_parse_and_eval skipped due to res (non-output primitive pointer)
 
 // --- Function av_expr_parse ---
 
@@ -11145,15 +11576,53 @@ func AVMakeErrorString(errbuf *CStr, errbufSize uint64, errnum int) *CStr {
 
 // --- Function av_expr_eval ---
 
-// av_expr_eval skipped due to constValues
+// av_expr_eval skipped due to constValues (non-output primitive pointer)
 
 // --- Function av_expr_count_vars ---
 
-// av_expr_count_vars skipped due to counter
+// AVExprCountVars wraps av_expr_count_vars.
+/*
+  Track the presence of variables and their number of occurrences in a parsed expression
+
+  @param e the AVExpr to track variables in
+  @param counter a zero-initialized array where the count of each variable will be stored
+  @param size size of array
+  @return 0 on success, a negative value indicates that no expression or array was passed
+  or size was zero
+*/
+func AVExprCountVars(e *AVExpr, counter *uint, size int) (int, error) {
+	var tmpe *C.AVExpr
+	if e != nil {
+		tmpe = e.ptr
+	}
+	ret := C.av_expr_count_vars(tmpe, (*C.uint)(unsafe.Pointer(counter)), C.int(size))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_expr_count_func ---
 
-// av_expr_count_func skipped due to counter
+// AVExprCountFunc wraps av_expr_count_func.
+/*
+  Track the presence of user provided functions and their number of occurrences
+  in a parsed expression.
+
+  @param e the AVExpr to track user provided functions in
+  @param counter a zero-initialized array where the count of each function will be stored
+                 if you passed 5 functions with 2 arguments to av_expr_parse()
+                 then for arg=2 this will use up to 5 entries.
+  @param size size of array
+  @param arg number of arguments the counted functions have
+  @return 0 on success, a negative value indicates that no expression or array was passed
+  or size was zero
+*/
+func AVExprCountFunc(e *AVExpr, counter *uint, size int, arg int) (int, error) {
+	var tmpe *C.AVExpr
+	if e != nil {
+		tmpe = e.ptr
+	}
+	ret := C.av_expr_count_func(tmpe, (*C.uint)(unsafe.Pointer(counter)), C.int(size), C.int(arg))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_expr_free ---
 
@@ -11385,7 +11854,7 @@ func AVFifoWrite(f *AVFifo, buf unsafe.Pointer, nbElems uint64) (int, error) {
 
 // --- Function av_fifo_write_from_cb ---
 
-// av_fifo_write_from_cb skipped due to nbElems
+// av_fifo_write_from_cb skipped due to readCb (callback by value)
 
 // --- Function av_fifo_read ---
 
@@ -11414,7 +11883,7 @@ func AVFifoRead(f *AVFifo, buf unsafe.Pointer, nbElems uint64) (int, error) {
 
 // --- Function av_fifo_read_to_cb ---
 
-// av_fifo_read_to_cb skipped due to nbElems
+// av_fifo_read_to_cb skipped due to writeCb (callback by value)
 
 // --- Function av_fifo_peek ---
 
@@ -11444,7 +11913,7 @@ func AVFifoPeek(f *AVFifo, buf unsafe.Pointer, nbElems uint64, offset uint64) (i
 
 // --- Function av_fifo_peek_to_cb ---
 
-// av_fifo_peek_to_cb skipped due to nbElems
+// av_fifo_peek_to_cb skipped due to writeCb (callback by value)
 
 // --- Function av_fifo_drain2 ---
 
@@ -11526,7 +11995,23 @@ func AVFileUnmap(bufptr unsafe.Pointer, size uint64) {
 
 // --- Function av_film_grain_params_alloc ---
 
-// av_film_grain_params_alloc skipped due to size
+// AVFilmGrainParamsAlloc wraps av_film_grain_params_alloc.
+/*
+  Allocate an AVFilmGrainParams structure and set its fields to
+  default values. The resulting struct can be freed using av_freep().
+  If size is not NULL it will be set to the number of bytes allocated.
+
+  @return An AVFilmGrainParams filled with default values or NULL
+          on failure.
+*/
+func AVFilmGrainParamsAlloc(size *uint64) *AVFilmGrainParams {
+	ret := C.av_film_grain_params_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVFilmGrainParams
+	if ret != nil {
+		retMapped = &AVFilmGrainParams{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_film_grain_params_create_side_data ---
 
@@ -12408,7 +12893,22 @@ func AVHashFreep(ctx **AVHashContext) {
 
 // --- Function av_dynamic_hdr_plus_alloc ---
 
-// av_dynamic_hdr_plus_alloc skipped due to size
+// AVDynamicHdrPlusAlloc wraps av_dynamic_hdr_plus_alloc.
+/*
+  Allocate an AVDynamicHDRPlus structure and set its fields to
+  default values. The resulting struct can be freed using av_freep().
+
+  @return An AVDynamicHDRPlus filled with default values or NULL
+          on failure.
+*/
+func AVDynamicHdrPlusAlloc(size *uint64) *AVDynamicHDRPlus {
+	ret := C.av_dynamic_hdr_plus_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVDynamicHDRPlus
+	if ret != nil {
+		retMapped = &AVDynamicHDRPlus{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_dynamic_hdr_plus_create_side_data ---
 
@@ -12461,7 +12961,22 @@ func AVDynamicHdrPlusFromT35(s *AVDynamicHDRPlus, data unsafe.Pointer, size uint
 
 // --- Function av_dynamic_hdr_vivid_alloc ---
 
-// av_dynamic_hdr_vivid_alloc skipped due to size
+// AVDynamicHdrVividAlloc wraps av_dynamic_hdr_vivid_alloc.
+/*
+  Allocate an AVDynamicHDRVivid structure and set its fields to
+  default values. The resulting struct can be freed using av_freep().
+
+  @return An AVDynamicHDRVivid filled with default values or NULL
+          on failure.
+*/
+func AVDynamicHdrVividAlloc(size *uint64) *AVDynamicHDRVivid {
+	ret := C.av_dynamic_hdr_vivid_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVDynamicHDRVivid
+	if ret != nil {
+		retMapped = &AVDynamicHDRVivid{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_dynamic_hdr_vivid_create_side_data ---
 
@@ -13163,7 +13678,22 @@ func AVIamfParamDefinitionGetClass() *AVClass {
 
 // --- Function av_iamf_param_definition_alloc ---
 
-// av_iamf_param_definition_alloc skipped due to size
+// AVIamfParamDefinitionAlloc wraps av_iamf_param_definition_alloc.
+/*
+  Allocates memory for AVIAMFParamDefinition, plus an array of {@code nb_subblocks}
+  amount of subblocks of the given type and initializes the variables. Can be
+  freed with a normal av_free() call.
+
+  @param size if non-NULL, the size in bytes of the resulting data array is written here.
+*/
+func AVIamfParamDefinitionAlloc(_type AVIAMFParamDefinitionType, nbSubblocks uint, size *uint64) *AVIAMFParamDefinition {
+	ret := C.av_iamf_param_definition_alloc(C.enum_AVIAMFParamDefinitionType(_type), C.uint(nbSubblocks), (*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVIAMFParamDefinition
+	if ret != nil {
+		retMapped = &AVIAMFParamDefinition{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_iamf_param_definition_get_subblock ---
 
@@ -13784,7 +14314,7 @@ func AVLogGetFlags() (int, error) {
 
 // --- Function av_lzo1x_decode ---
 
-// av_lzo1x_decode skipped due to outlen
+// av_lzo1x_decode skipped due to inlen (non-output primitive pointer)
 
 // --- Function av_mastering_display_metadata_alloc ---
 
@@ -13807,7 +14337,22 @@ func AVMasteringDisplayMetadataAlloc() *AVMasteringDisplayMetadata {
 
 // --- Function av_mastering_display_metadata_alloc_size ---
 
-// av_mastering_display_metadata_alloc_size skipped due to size
+// AVMasteringDisplayMetadataAllocSize wraps av_mastering_display_metadata_alloc_size.
+/*
+  Allocate an AVMasteringDisplayMetadata structure and set its fields to
+  default values. The resulting struct can be freed using av_freep().
+
+  @return An AVMasteringDisplayMetadata filled with default values or NULL
+          on failure.
+*/
+func AVMasteringDisplayMetadataAllocSize(size *uint64) *AVMasteringDisplayMetadata {
+	ret := C.av_mastering_display_metadata_alloc_size((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVMasteringDisplayMetadata
+	if ret != nil {
+		retMapped = &AVMasteringDisplayMetadata{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_mastering_display_metadata_create_side_data ---
 
@@ -13834,7 +14379,22 @@ func AVMasteringDisplayMetadataCreateSideData(frame *AVFrame) *AVMasteringDispla
 
 // --- Function av_content_light_metadata_alloc ---
 
-// av_content_light_metadata_alloc skipped due to size
+// AVContentLightMetadataAlloc wraps av_content_light_metadata_alloc.
+/*
+  Allocate an AVContentLightMetadata structure and set its fields to
+  default values. The resulting struct can be freed using av_freep().
+
+  @return An AVContentLightMetadata filled with default values or NULL
+          on failure.
+*/
+func AVContentLightMetadataAlloc(size *uint64) *AVContentLightMetadata {
+	ret := C.av_content_light_metadata_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVContentLightMetadata
+	if ret != nil {
+		retMapped = &AVContentLightMetadata{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_content_light_metadata_create_side_data ---
 
@@ -13991,7 +14551,7 @@ func AVCompareMod(a uint64, b uint64, mod uint64) int64 {
 
 // --- Function av_rescale_delta ---
 
-// av_rescale_delta skipped due to last
+// av_rescale_delta skipped due to last (non-output primitive pointer)
 
 // --- Function av_add_stable ---
 
@@ -14226,15 +14786,104 @@ func AVReallocpArray(ptr unsafe.Pointer, nmemb uint64, size uint64) (int, error)
 
 // --- Function av_fast_realloc ---
 
-// av_fast_realloc skipped due to size
+// AVFastRealloc wraps av_fast_realloc.
+/*
+  Reallocate the given buffer if it is not large enough, otherwise do nothing.
+
+  If the given buffer is `NULL`, then a new uninitialized buffer is allocated.
+
+  If the given buffer is not large enough, and reallocation fails, `NULL` is
+  returned and `*size` is set to 0, but the original buffer is not changed or
+  freed.
+
+  A typical use pattern follows:
+
+  @code{.c}
+  uint8_t *buf = ...;
+  uint8_t *new_buf = av_fast_realloc(buf, &current_size, size_needed);
+  if (!new_buf) {
+      // Allocation failed; clean up original buffer
+      av_freep(&buf);
+      return AVERROR(ENOMEM);
+  }
+  @endcode
+
+  @param[in,out] ptr      Already allocated buffer, or `NULL`
+  @param[in,out] size     Pointer to the size of buffer `ptr`. `*size` is
+                          updated to the new allocated size, in particular 0
+                          in case of failure.
+  @param[in]     min_size Desired minimal size of buffer `ptr`
+  @return `ptr` if the buffer is large enough, a pointer to newly reallocated
+          buffer if the buffer was not large enough, or `NULL` in case of
+          error
+  @see av_realloc()
+  @see av_fast_malloc()
+*/
+func AVFastRealloc(ptr unsafe.Pointer, size *uint, minSize uint64) unsafe.Pointer {
+	ret := C.av_fast_realloc(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
+	return ret
+}
 
 // --- Function av_fast_malloc ---
 
-// av_fast_malloc skipped due to size
+// AVFastMalloc wraps av_fast_malloc.
+/*
+  Allocate a buffer, reusing the given one if large enough.
+
+  Contrary to av_fast_realloc(), the current buffer contents might not be
+  preserved and on error the old buffer is freed, thus no special handling to
+  avoid memleaks is necessary.
+
+  `*ptr` is allowed to be `NULL`, in which case allocation always happens if
+  `size_needed` is greater than 0.
+
+  @code{.c}
+  uint8_t *buf = ...;
+  av_fast_malloc(&buf, &current_size, size_needed);
+  if (!buf) {
+      // Allocation failed; buf already freed
+      return AVERROR(ENOMEM);
+  }
+  @endcode
+
+  @param[in,out] ptr      Pointer to pointer to an already allocated buffer.
+                          `*ptr` will be overwritten with pointer to new
+                          buffer on success or `NULL` on failure
+  @param[in,out] size     Pointer to the size of buffer `*ptr`. `*size` is
+                          updated to the new allocated size, in particular 0
+                          in case of failure.
+  @param[in]     min_size Desired minimal size of buffer `*ptr`
+  @see av_realloc()
+  @see av_fast_mallocz()
+*/
+func AVFastMalloc(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	C.av_fast_malloc(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
+}
 
 // --- Function av_fast_mallocz ---
 
-// av_fast_mallocz skipped due to size
+// AVFastMallocz wraps av_fast_mallocz.
+/*
+  Allocate and clear a buffer, reusing the given one if large enough.
+
+  Like av_fast_malloc(), but all newly allocated space is initially cleared.
+  Reused buffer is not cleared.
+
+  `*ptr` is allowed to be `NULL`, in which case allocation always happens if
+  `size_needed` is greater than 0.
+
+  @param[in,out] ptr      Pointer to pointer to an already allocated buffer.
+                          `*ptr` will be overwritten with pointer to new
+                          buffer on success or `NULL` on failure
+  @param[in,out] size     Pointer to the size of buffer `*ptr`. `*size` is
+                          updated to the new allocated size, in particular 0
+                          in case of failure.
+  @param[in]     min_size Desired minimal size of buffer `*ptr`
+  @see av_fast_malloc()
+*/
+func AVFastMallocz(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	C.av_fast_mallocz(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
+}
 
 // --- Function av_free ---
 
@@ -14359,11 +15008,49 @@ func AVMemcpyBackptr(dst unsafe.Pointer, back int, cnt int) {
 
 // --- Function av_dynarray_add ---
 
-// av_dynarray_add skipped due to nbPtr
+// AVDynarrayAdd wraps av_dynarray_add.
+/*
+  Add the pointer to an element to a dynamic array.
+
+  The array to grow is supposed to be an array of pointers to
+  structures, and the element to add must be a pointer to an already
+  allocated structure.
+
+  The array is reallocated when its size reaches powers of 2.
+  Therefore, the amortized cost of adding an element is constant.
+
+  In case of success, the pointer to the array is updated in order to
+  point to the new grown array, and the number pointed to by `nb_ptr`
+  is incremented.
+  In case of failure, the array is freed, `*tab_ptr` is set to `NULL` and
+  `*nb_ptr` is set to 0.
+
+  @param[in,out] tab_ptr Pointer to the array to grow
+  @param[in,out] nb_ptr  Pointer to the number of elements in the array
+  @param[in]     elem    Element to add
+  @see av_dynarray_add_nofree(), av_dynarray2_add()
+*/
+func AVDynarrayAdd(tabPtr unsafe.Pointer, nbPtr *int, elem unsafe.Pointer) {
+	C.av_dynarray_add(tabPtr, (*C.int)(unsafe.Pointer(nbPtr)), elem)
+}
 
 // --- Function av_dynarray_add_nofree ---
 
-// av_dynarray_add_nofree skipped due to nbPtr
+// AVDynarrayAddNofree wraps av_dynarray_add_nofree.
+/*
+  Add an element to a dynamic array.
+
+  Function has the same functionality as av_dynarray_add(),
+  but it doesn't free memory on fails. It returns error code
+  instead and leave current buffer untouched.
+
+  @return >=0 on success, negative otherwise
+  @see av_dynarray_add(), av_dynarray2_add()
+*/
+func AVDynarrayAddNofree(tabPtr unsafe.Pointer, nbPtr *int, elem unsafe.Pointer) (int, error) {
+	ret := C.av_dynarray_add_nofree(tabPtr, (*C.int)(unsafe.Pointer(nbPtr)), elem)
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_dynarray2_add ---
 
@@ -14371,7 +15058,7 @@ func AVMemcpyBackptr(dst unsafe.Pointer, back int, cnt int) {
 
 // --- Function av_size_mult ---
 
-// av_size_mult skipped due to r
+// av_size_mult skipped due to r (non-output primitive pointer)
 
 // --- Function av_max_alloc ---
 
@@ -15012,11 +15699,27 @@ func AVOptSetArray(obj unsafe.Pointer, name *CStr, searchFlags int, startElem ui
 
 // --- Function av_opt_get_int ---
 
-// av_opt_get_int skipped due to outVal
+// AVOptGetInt wraps av_opt_get_int.
+func AVOptGetInt(obj unsafe.Pointer, name *CStr, searchFlags int, outVal *int64) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_opt_get_int(obj, tmpname, C.int(searchFlags), (*C.int64_t)(unsafe.Pointer(outVal)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_get_double ---
 
-// av_opt_get_double skipped due to outVal
+// AVOptGetDouble wraps av_opt_get_double.
+func AVOptGetDouble(obj unsafe.Pointer, name *CStr, searchFlags int, outVal *float64) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_opt_get_double(obj, tmpname, C.int(searchFlags), (*C.double)(unsafe.Pointer(outVal)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_get_q ---
 
@@ -15024,7 +15727,15 @@ func AVOptSetArray(obj unsafe.Pointer, name *CStr, searchFlags int, startElem ui
 
 // --- Function av_opt_get_image_size ---
 
-// av_opt_get_image_size skipped due to wOut
+// AVOptGetImageSize wraps av_opt_get_image_size.
+func AVOptGetImageSize(obj unsafe.Pointer, name *CStr, searchFlags int, wOut *int, hOut *int) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_opt_get_image_size(obj, tmpname, C.int(searchFlags), (*C.int)(unsafe.Pointer(wOut)), (*C.int)(unsafe.Pointer(hOut)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_get_pixel_fmt ---
 
@@ -15118,7 +15829,17 @@ func AVOptGetDictVal(obj unsafe.Pointer, name *CStr, searchFlags int, outVal **A
 
 // --- Function av_opt_get_array_size ---
 
-// av_opt_get_array_size skipped due to outVal
+// AVOptGetArraySize wraps av_opt_get_array_size.
+//
+//	For an array-type option, get the number of elements in the array.
+func AVOptGetArraySize(obj unsafe.Pointer, name *CStr, searchFlags int, outVal *uint) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_opt_get_array_size(obj, tmpname, C.int(searchFlags), (*C.uint)(unsafe.Pointer(outVal)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_get_array ---
 
@@ -15164,27 +15885,111 @@ func AVOptGetArray(obj unsafe.Pointer, name *CStr, searchFlags int, startElem ui
 
 // --- Function av_opt_eval_flags ---
 
-// av_opt_eval_flags skipped due to flagsOut
+// AVOptEvalFlags wraps av_opt_eval_flags.
+/*
+  This group of functions can be used to evaluate option strings
+  and get numbers out of them. They do the same thing as av_opt_set(),
+  except the result is written into the caller-supplied pointer.
+
+  @param obj a struct whose first element is a pointer to AVClass.
+  @param o an option for which the string is to be evaluated.
+  @param val string to be evaluated.
+  @param *_out value of the string will be written here.
+
+  @return 0 on success, a negative number on failure.
+*/
+func AVOptEvalFlags(obj unsafe.Pointer, o *AVOption, val *CStr, flagsOut *int) (int, error) {
+	var tmpo *C.AVOption
+	if o != nil {
+		tmpo = o.ptr
+	}
+	var tmpval *C.char
+	if val != nil {
+		tmpval = val.ptr
+	}
+	ret := C.av_opt_eval_flags(obj, tmpo, tmpval, (*C.int)(unsafe.Pointer(flagsOut)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_eval_int ---
 
-// av_opt_eval_int skipped due to intOut
+// AVOptEvalInt wraps av_opt_eval_int.
+func AVOptEvalInt(obj unsafe.Pointer, o *AVOption, val *CStr, intOut *int) (int, error) {
+	var tmpo *C.AVOption
+	if o != nil {
+		tmpo = o.ptr
+	}
+	var tmpval *C.char
+	if val != nil {
+		tmpval = val.ptr
+	}
+	ret := C.av_opt_eval_int(obj, tmpo, tmpval, (*C.int)(unsafe.Pointer(intOut)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_eval_uint ---
 
-// av_opt_eval_uint skipped due to uintOut
+// AVOptEvalUint wraps av_opt_eval_uint.
+func AVOptEvalUint(obj unsafe.Pointer, o *AVOption, val *CStr, uintOut *uint) (int, error) {
+	var tmpo *C.AVOption
+	if o != nil {
+		tmpo = o.ptr
+	}
+	var tmpval *C.char
+	if val != nil {
+		tmpval = val.ptr
+	}
+	ret := C.av_opt_eval_uint(obj, tmpo, tmpval, (*C.uint)(unsafe.Pointer(uintOut)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_eval_int64 ---
 
-// av_opt_eval_int64 skipped due to int64Out
+// AVOptEvalInt64 wraps av_opt_eval_int64.
+func AVOptEvalInt64(obj unsafe.Pointer, o *AVOption, val *CStr, int64Out *int64) (int, error) {
+	var tmpo *C.AVOption
+	if o != nil {
+		tmpo = o.ptr
+	}
+	var tmpval *C.char
+	if val != nil {
+		tmpval = val.ptr
+	}
+	ret := C.av_opt_eval_int64(obj, tmpo, tmpval, (*C.int64_t)(unsafe.Pointer(int64Out)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_eval_float ---
 
-// av_opt_eval_float skipped due to floatOut
+// AVOptEvalFloat wraps av_opt_eval_float.
+func AVOptEvalFloat(obj unsafe.Pointer, o *AVOption, val *CStr, floatOut *float32) (int, error) {
+	var tmpo *C.AVOption
+	if o != nil {
+		tmpo = o.ptr
+	}
+	var tmpval *C.char
+	if val != nil {
+		tmpval = val.ptr
+	}
+	ret := C.av_opt_eval_float(obj, tmpo, tmpval, (*C.float)(unsafe.Pointer(floatOut)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_eval_double ---
 
-// av_opt_eval_double skipped due to doubleOut
+// AVOptEvalDouble wraps av_opt_eval_double.
+func AVOptEvalDouble(obj unsafe.Pointer, o *AVOption, val *CStr, doubleOut *float64) (int, error) {
+	var tmpo *C.AVOption
+	if o != nil {
+		tmpo = o.ptr
+	}
+	var tmpval *C.char
+	if val != nil {
+		tmpval = val.ptr
+	}
+	ret := C.av_opt_eval_double(obj, tmpo, tmpval, (*C.double)(unsafe.Pointer(doubleOut)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_opt_eval_q ---
 
@@ -15410,7 +16215,26 @@ func AVOptQueryRangesDefault(param0 **AVOptionRanges, obj unsafe.Pointer, key *C
 
 // --- Function av_parse_video_size ---
 
-// av_parse_video_size skipped due to widthPtr
+// AVParseVideoSize wraps av_parse_video_size.
+/*
+  Parse str and put in width_ptr and height_ptr the detected values.
+
+  @param[in,out] width_ptr pointer to the variable which will contain the detected
+  width value
+  @param[in,out] height_ptr pointer to the variable which will contain the detected
+  height value
+  @param[in] str the string to parse: it has to be a string in the format
+  width x height or a valid video size abbreviation.
+  @return >= 0 on success, a negative error code otherwise
+*/
+func AVParseVideoSize(widthPtr *int, heightPtr *int, str *CStr) (int, error) {
+	var tmpstr *C.char
+	if str != nil {
+		tmpstr = str.ptr
+	}
+	ret := C.av_parse_video_size((*C.int)(unsafe.Pointer(widthPtr)), (*C.int)(unsafe.Pointer(heightPtr)), tmpstr)
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_parse_video_rate ---
 
@@ -15457,7 +16281,7 @@ func AVParseColor(rgbaColor unsafe.Pointer, colorString *CStr, slen int, logCtx 
 
 // --- Function av_parse_time ---
 
-// av_parse_time skipped due to timeval
+// av_parse_time skipped due to timeval (non-output primitive pointer)
 
 // --- Function av_find_info_tag ---
 
@@ -15587,7 +16411,21 @@ func AVPixFmtDescGetId(desc *AVPixFmtDescriptor) AVPixelFormat {
 
 // --- Function av_pix_fmt_get_chroma_sub_sample ---
 
-// av_pix_fmt_get_chroma_sub_sample skipped due to hShift
+// AVPixFmtGetChromaSubSample wraps av_pix_fmt_get_chroma_sub_sample.
+/*
+  Utility function to access log2_chroma_w log2_chroma_h from
+  the pixel format AVPixFmtDescriptor.
+
+  @param[in]  pix_fmt the pixel format
+  @param[out] h_shift store log2_chroma_w (horizontal/width shift)
+  @param[out] v_shift store log2_chroma_h (vertical/height shift)
+
+  @return 0 on success, AVERROR(ENOSYS) on invalid or unknown pixel format
+*/
+func AVPixFmtGetChromaSubSample(pixFmt AVPixelFormat, hShift *int, vShift *int) (int, error) {
+	ret := C.av_pix_fmt_get_chroma_sub_sample(C.enum_AVPixelFormat(pixFmt), (*C.int)(unsafe.Pointer(hShift)), (*C.int)(unsafe.Pointer(vShift)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_pix_fmt_count_planes ---
 
@@ -15723,7 +16561,7 @@ func AVChromaLocationFromName(name *CStr) (int, error) {
 
 // --- Function av_chroma_location_enum_to_pos ---
 
-// av_chroma_location_enum_to_pos skipped due to xpos
+// av_chroma_location_enum_to_pos skipped due to xpos (non-output primitive pointer)
 
 // --- Function av_chroma_location_pos_to_enum ---
 
@@ -15807,7 +16645,7 @@ func AVGetPixFmtString(buf *CStr, bufSize int, pixFmt AVPixelFormat) *CStr {
 
 // --- Function av_read_image_line ---
 
-// av_read_image_line skipped due to dst
+// av_read_image_line skipped due to dst (non-output primitive pointer)
 
 // --- Function av_write_image_line2 ---
 
@@ -15815,7 +16653,7 @@ func AVGetPixFmtString(buf *CStr, bufSize int, pixFmt AVPixelFormat) *CStr {
 
 // --- Function av_write_image_line ---
 
-// av_write_image_line skipped due to src
+// av_write_image_line skipped due to src (non-output primitive pointer)
 
 // --- Function av_pix_fmt_swap_endianness ---
 
@@ -15861,7 +16699,29 @@ func AVGetPixFmtLoss(dstPixFmt AVPixelFormat, srcPixFmt AVPixelFormat, hasAlpha 
 
 // --- Function av_find_best_pix_fmt_of_2 ---
 
-// av_find_best_pix_fmt_of_2 skipped due to lossPtr
+// AVFindBestPixFmtOf2 wraps av_find_best_pix_fmt_of_2.
+/*
+  Compute what kind of losses will occur when converting from one specific
+  pixel format to another.
+  When converting from one pixel format to another, information loss may occur.
+  For example, when converting from RGB24 to GRAY, the color information will
+  be lost. Similarly, other losses occur when converting from some formats to
+  other formats. These losses can involve loss of chroma, but also loss of
+  resolution, loss of color depth, loss due to the color space conversion, loss
+  of the alpha bits or loss due to color quantization.
+  av_get_fix_fmt_loss() informs you about the various types of losses
+  which will occur when converting from one pixel format to another.
+
+  @param[in] dst_pix_fmt destination pixel format
+  @param[in] src_pix_fmt source pixel format
+  @param[in] has_alpha Whether the source pixel format alpha channel is used.
+  @return Combination of flags informing you what kind of losses will occur
+  (maximum loss for an invalid dst_pix_fmt).
+*/
+func AVFindBestPixFmtOf2(dstPixFmt1 AVPixelFormat, dstPixFmt2 AVPixelFormat, srcPixFmt AVPixelFormat, hasAlpha int, lossPtr *int) AVPixelFormat {
+	ret := C.av_find_best_pix_fmt_of_2(C.enum_AVPixelFormat(dstPixFmt1), C.enum_AVPixelFormat(dstPixFmt2), C.enum_AVPixelFormat(srcPixFmt), C.int(hasAlpha), (*C.int)(unsafe.Pointer(lossPtr)))
+	return AVPixelFormat(ret)
+}
 
 // --- Function av_pixelutils_get_sad_fn ---
 
@@ -15974,7 +16834,23 @@ func AVQ2D(a *AVRational) float64 {
 
 // --- Function av_reduce ---
 
-// av_reduce skipped due to dstNum
+// AVReduce wraps av_reduce.
+/*
+  Reduce a fraction.
+
+  This is useful for framerate calculations.
+
+  @param[out] dst_num Destination numerator
+  @param[out] dst_den Destination denominator
+  @param[in]      num Source numerator
+  @param[in]      den Source denominator
+  @param[in]      max Maximum allowed values for `dst_num` & `dst_den`
+  @return 1 if the operation is exact, 0 otherwise
+*/
+func AVReduce(dstNum *int, dstDen *int, num int64, den int64, max int64) (int, error) {
+	ret := C.av_reduce((*C.int)(unsafe.Pointer(dstNum)), (*C.int)(unsafe.Pointer(dstDen)), C.int64_t(num), C.int64_t(den), C.int64_t(max))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_mul_q ---
 
@@ -16375,7 +17251,21 @@ func AVSampleFmtIsPlanar(sampleFmt AVSampleFormat) (int, error) {
 
 // --- Function av_samples_get_buffer_size ---
 
-// av_samples_get_buffer_size skipped due to linesize
+// AVSamplesGetBufferSize wraps av_samples_get_buffer_size.
+/*
+  Get the required buffer size for the given audio parameters.
+
+  @param[out] linesize calculated linesize, may be NULL
+  @param nb_channels   the number of channels
+  @param nb_samples    the number of samples in a single channel
+  @param sample_fmt    the sample format
+  @param align         buffer size alignment (0 = default, 1 = no alignment)
+  @return              required buffer size, or negative error code on failure
+*/
+func AVSamplesGetBufferSize(linesize *int, nbChannels int, nbSamples int, sampleFmt AVSampleFormat, align int) (int, error) {
+	ret := C.av_samples_get_buffer_size((*C.int)(unsafe.Pointer(linesize)), C.int(nbChannels), C.int(nbSamples), C.enum_AVSampleFormat(sampleFmt), C.int(align))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_samples_fill_arrays ---
 
@@ -16535,11 +17425,25 @@ func AVSha512Final(context *AVSHA512, digest unsafe.Pointer) {
 
 // --- Function av_spherical_alloc ---
 
-// av_spherical_alloc skipped due to size
+// AVSphericalAlloc wraps av_spherical_alloc.
+/*
+  Allocate a AVSphericalVideo structure and initialize its fields to default
+  values.
+
+  @return the newly allocated struct or NULL on failure
+*/
+func AVSphericalAlloc(size *uint64) *AVSphericalMapping {
+	ret := C.av_spherical_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVSphericalMapping
+	if ret != nil {
+		retMapped = &AVSphericalMapping{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_spherical_tile_bounds ---
 
-// av_spherical_tile_bounds skipped due to left
+// av_spherical_tile_bounds skipped due to left (non-output primitive pointer)
 
 // --- Function av_spherical_projection_name ---
 
@@ -16595,7 +17499,21 @@ func AVStereo3DAlloc() *AVStereo3D {
 
 // --- Function av_stereo3d_alloc_size ---
 
-// av_stereo3d_alloc_size skipped due to size
+// AVStereo3DAllocSize wraps av_stereo3d_alloc_size.
+/*
+  Allocate an AVStereo3D structure and set its fields to default values.
+  The resulting struct can be freed using av_freep().
+
+  @return An AVStereo3D filled with default values or NULL on failure.
+*/
+func AVStereo3DAllocSize(size *uint64) *AVStereo3D {
+	ret := C.av_stereo3d_alloc_size((*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AVStereo3D
+	if ret != nil {
+		retMapped = &AVStereo3D{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_stereo3d_create_side_data ---
 
@@ -16740,7 +17658,21 @@ func AVTdrdiGetDisplay(tdrdi *AV3DReferenceDisplaysInfo, idx uint) *AV3DReferenc
 
 // --- Function av_tdrdi_alloc ---
 
-// av_tdrdi_alloc skipped due to size
+// AVTdrdiAlloc wraps av_tdrdi_alloc.
+/*
+  Allocate a AV3DReferenceDisplaysInfo structure and initialize its fields to default
+  values.
+
+  @return the newly allocated struct or NULL on failure
+*/
+func AVTdrdiAlloc(nbDisplays uint, size *uint64) *AV3DReferenceDisplaysInfo {
+	ret := C.av_tdrdi_alloc(C.uint(nbDisplays), (*C.size_t)(unsafe.Pointer(size)))
+	var retMapped *AV3DReferenceDisplaysInfo
+	if ret != nil {
+		retMapped = &AV3DReferenceDisplaysInfo{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_tea_alloc ---
 
@@ -17521,7 +18453,23 @@ func AVVideoEncParamsBlock(par *AVVideoEncParams, idx uint) *AVVideoBlockParams 
 
 // --- Function av_video_enc_params_alloc ---
 
-// av_video_enc_params_alloc skipped due to outSize
+// AVVideoEncParamsAlloc wraps av_video_enc_params_alloc.
+/*
+  Allocates memory for AVVideoEncParams of the given type, plus an array of
+  {@code nb_blocks} AVVideoBlockParams and initializes the variables. Can be
+  freed with a normal av_free() call.
+
+  @param out_size if non-NULL, the size in bytes of the resulting data array is
+  written here.
+*/
+func AVVideoEncParamsAlloc(_type AVVideoEncParamsType, nbBlocks uint, outSize *uint64) *AVVideoEncParams {
+	ret := C.av_video_enc_params_alloc(C.enum_AVVideoEncParamsType(_type), C.uint(nbBlocks), (*C.size_t)(unsafe.Pointer(outSize)))
+	var retMapped *AVVideoEncParams
+	if ret != nil {
+		retMapped = &AVVideoEncParams{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_video_enc_params_create_side_data ---
 
@@ -17579,7 +18527,35 @@ func AVVideoHintGetRect(hints *AVVideoHint, idx uint64) *AVVideoRect {
 
 // --- Function av_video_hint_alloc ---
 
-// av_video_hint_alloc skipped due to outSize
+// AVVideoHintAlloc wraps av_video_hint_alloc.
+/*
+  Allocate memory for the AVVideoHint struct along with an nb_rects-sized
+  arrays of AVVideoRect.
+
+  The side data contains a list of rectangles for the portions of the frame
+  which changed from the last encoded one (and the remainder are assumed to be
+  changed), or, alternately (depending on the type parameter) the unchanged
+  ones (and the remaining ones are those which changed).
+  Macroblocks will thus be hinted either to be P_SKIP-ped or go through the
+  regular encoding procedure.
+
+  It's responsibility of the caller to fill the AVRects accordingly, and to set
+  the proper AVVideoHintType field.
+
+  @param out_size if non-NULL, the size in bytes of the resulting data array is
+                  written here
+
+  @return newly allocated AVVideoHint struct (must be freed by the caller using
+          av_free()) on success, NULL on memory allocation failure
+*/
+func AVVideoHintAlloc(nbRects uint64, outSize *uint64) *AVVideoHint {
+	ret := C.av_video_hint_alloc(C.size_t(nbRects), (*C.size_t)(unsafe.Pointer(outSize)))
+	var retMapped *AVVideoHint
+	if ret != nil {
+		retMapped = &AVVideoHint{ptr: ret}
+	}
+	return retMapped
+}
 
 // --- Function av_video_hint_create_side_data ---
 
@@ -17918,15 +18894,31 @@ func SwrSetCompensation(s *SwrContext, sampleDelta int, compensationDistance int
 
 // --- Function swr_set_channel_mapping ---
 
-// swr_set_channel_mapping skipped due to channelMap
+// SwrSetChannelMapping wraps swr_set_channel_mapping.
+/*
+  Set a customized input channel mapping.
+
+  @param[in,out] s           allocated Swr context, not yet initialized
+  @param[in]     channel_map customized input channel mapping (array of channel
+                             indexes, -1 for a muted channel)
+  @return >= 0 on success, or AVERROR error code in case of failure.
+*/
+func SwrSetChannelMapping(s *SwrContext, channelMap *int) (int, error) {
+	var tmps *C.SwrContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.swr_set_channel_mapping(tmps, (*C.int)(unsafe.Pointer(channelMap)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function swr_build_matrix2 ---
 
-// swr_build_matrix2 skipped due to matrix
+// swr_build_matrix2 skipped due to matrix (non-output primitive pointer)
 
 // --- Function swr_set_matrix ---
 
-// swr_set_matrix skipped due to matrix
+// swr_set_matrix skipped due to matrix (non-output primitive pointer)
 
 // --- Function swr_drop_output ---
 
@@ -18539,7 +19531,7 @@ func SwsFreecontext(swsContext *SwsContext) {
 
 // --- Function sws_getContext ---
 
-// sws_getContext skipped due to param
+// sws_getContext skipped due to param (non-output primitive pointer)
 
 // --- Function sws_scale ---
 
@@ -18785,7 +19777,7 @@ func SwsFreefilter(filter *SwsFilter) {
 
 // --- Function sws_getCachedContext ---
 
-// sws_getCachedContext skipped due to param
+// sws_getCachedContext skipped due to param (non-output primitive pointer)
 
 // --- Function sws_convertPalette8ToPacked32 ---
 

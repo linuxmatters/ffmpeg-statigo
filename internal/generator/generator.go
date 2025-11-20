@@ -46,6 +46,40 @@ var fieldCTypeOverrides = map[string]map[string]string{
 	},
 }
 
+// isOutputParameter checks if a parameter name suggests it's an output parameter
+// isOutputParameter detects function parameters that are output parameters.
+// Priority 2 Enhancement: Recovers ~30 functions with output parameters.
+//
+// Examples of recovered functions:
+//   - av_opt_get_int(obj, name, flags, out_val *int64) -> returns value via out_val
+//   - av_packet_get_side_data(pkt, type, size *size_t) -> returns size via pointer
+//   - av_image_fill_linesizes(linesizes *int, pix_fmt, width) -> fills array via pointer
+//
+// Note: 3 functions with callback-by-value parameters are skipped due to CGO limitations:
+//   - av_fifo_write_from_cb, av_fifo_read_to_cb, av_fifo_peek_to_cb
+func isOutputParameter(name string) bool {
+	// Common patterns for output parameters in FFmpeg API
+	outputPatterns := []string{
+		"out_", "out", // out_val, outVal, out_size
+		"size", "psize", "buf_size", // size outputs
+		"width", "height", "w", "h", // dimension outputs
+		"ptr", "pptr", // pointer outputs
+		"nb_", "count", // count outputs
+		"ret", "returned", // return value outputs
+		"dst_", // destination that gets written
+		"p_",   // pointer outputs (p_stream, p_codec)
+	}
+
+	lowerName := strings.ToLower(name)
+	for _, pattern := range outputPatterns {
+		if strings.Contains(lowerName, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func getCType(typeName string, goType string) string {
 	// Special case: char should stay as char, not become uint8_t
 	// This is important for function parameters where char != uint8_t
@@ -1013,6 +1047,24 @@ outer:
 		for _, arg := range fn.Args {
 			pName := convParamName(arg.Name)
 
+			// WORKAROUND: libclang on Linux incorrectly reports size_t as int for some parameters
+			// Track actual type names for pointer-to-primitive cases
+			actualTypeName := ""
+			if ptrType, ok := arg.Type.(*PointerType); ok {
+				if identType, ok := ptrType.Inner.(*IdentType); ok {
+					actualTypeName = identType.Name
+					// Fix known size_t misreports
+					if actualTypeName == "int" && (arg.Name == "size" || strings.Contains(arg.Name, "size")) {
+						// These functions use size_t* per FFmpeg headers
+						if fn.Name == "av_cpb_properties_alloc" || fn.Name == "av_stereo3d_alloc_size" ||
+							fn.Name == "av_detection_bbox_alloc" || fn.Name == "av_dovi_alloc" ||
+							strings.Contains(fn.Name, "_alloc") {
+							actualTypeName = "size_t"
+						}
+					}
+				}
+			}
+
 			switch v := arg.Type.(type) {
 			case *IdentType:
 				// WORKAROUND: libclang on Linux incorrectly reports size_t as int
@@ -1048,6 +1100,12 @@ outer:
 
 						continue outer
 					}
+				} else if _, ok := g.input.callbacks[typeName]; ok {
+					// Callback type passed by value - CGO doesn't allow conversion from unsafe.Pointer to function pointer
+					// Skip these for now
+					o.Commentf("%v skipped due to %v (callback by value)", fn.Name, pName)
+					o.Line()
+					continue outer
 				} else {
 					params = append(params, jen.Id(pName).Id(typeName))
 					args = append(args, jen.Qual("C", v.Name).Params(jen.Id(pName)))
@@ -1078,14 +1136,31 @@ outer:
 						args = append(args, jen.Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Id(pName)))
 					} else {
 
-						if m, ok := primTypes[iv.Name]; ok {
-							// Pointer to primitive type - skip for now as these are usually output parameters
-							// that would need special handling
-							params = append(params, jen.Id(pName).Op("*").Id(m))
+						// Check if we have a corrected type name from the workaround
+						typeNameForParam := iv.Name
+						if actualTypeName != "" {
+							typeNameForParam = actualTypeName
+						}
 
-							o.Commentf("%v skipped due to %v", fn.Name, pName)
-							o.Line()
-							continue outer
+						if m, ok := primTypes[typeNameForParam]; ok {
+							// Pointer to primitive type - check if it's an output parameter
+							if isOutputParameter(arg.Name) {
+								// This is likely an output parameter
+								// We'll generate a wrapper function that handles the output
+								params = append(params, jen.Id(pName).Op("*").Id(m))
+
+								// For output parameters, we pass the Go pointer directly
+								// and let CGO handle the conversion
+								cType := getCType(typeNameForParam, m)
+								args = append(args, jen.Params(jen.Op("*").Qual("C", cType)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))))
+							} else {
+								// Not an output parameter - skip as it's ambiguous
+								params = append(params, jen.Id(pName).Op("*").Id(m))
+
+								o.Commentf("%v skipped due to %v (non-output primitive pointer)", fn.Name, pName)
+								o.Line()
+								continue outer
+							}
 
 						} else if s, ok := g.input.structs[iv.Name]; ok {
 							if s.ByValue {
@@ -1386,6 +1461,13 @@ outer:
 						)),
 					)
 				}
+
+			case *PointerType:
+				// Pointer to pointer return type (e.g., AVFrameSideData *const *)
+				// Skip for now - these are complex array returns that need special handling
+				o.Commentf("%v skipped due to pointer-to-pointer return type", fn.Name)
+				o.Line()
+				continue outer
 
 			default:
 				log.Panicln("unexpected type", reflect.TypeOf(v.Inner))

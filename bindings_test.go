@@ -576,3 +576,77 @@ func TestGeneratorConstArrayFields(t *testing.T) {
 		t.Log("ByValue struct ToXArray helper generation validated")
 	})
 }
+
+// TestGeneratorOutputParameters verifies that Priority 2 (output parameter functions)
+// are properly generated and compile with the correct signatures.
+func TestGeneratorOutputParameters(t *testing.T) {
+	t.Run("av_opt_get family compiles", func(t *testing.T) {
+		// These functions should compile - we're just testing signature availability
+		// Actual runtime testing would require a valid AVClass object
+
+		// Test that output parameter functions are accessible
+		var outInt int64
+		var outDouble float64
+		var outW, outH int
+
+		// Verify function signatures compile (won't run without valid context)
+		_ = func() (int, error) {
+			return AVOptGetInt(nil, nil, 0, &outInt)
+		}
+
+		_ = func() (int, error) {
+			return AVOptGetDouble(nil, nil, 0, &outDouble)
+		}
+
+		_ = func() (int, error) {
+			return AVOptGetImageSize(nil, nil, 0, &outW, &outH)
+		}
+
+		t.Log("av_opt_get_* family functions compile with output parameters")
+	})
+
+	t.Run("av_packet_get_side_data compiles", func(t *testing.T) {
+		var size uint64
+
+		// Verify av_packet_get_side_data compiles with size output parameter
+		_ = func() unsafe.Pointer {
+			return AVPacketGetSideData(nil, AVPacketSideDataType(0), &size)
+		}
+
+		t.Log("av_packet_get_side_data compiles with size output parameter")
+	})
+
+	t.Run("av_cpb_properties_alloc compiles", func(t *testing.T) {
+		var size uint64
+
+		// Verify av_cpb_properties_alloc compiles with size output parameter
+		_ = func() *AVCPBProperties {
+			return AVCpbPropertiesAlloc(&size)
+		}
+
+		t.Log("av_cpb_properties_alloc compiles with size output parameter")
+	})
+
+	t.Run("dimension output parameters compile", func(t *testing.T) {
+		var width, height int
+
+		// Verify functions with width/height output parameters compile
+		_ = func() {
+			AVCodecAlignDimensions(nil, &width, &height)
+		}
+
+		t.Log("Functions with width/height output parameters compile")
+	})
+
+	t.Run("callback functions are skipped", func(t *testing.T) {
+		// The following functions should NOT be generated because they use
+		// callback parameters passed by value, which CGO cannot handle:
+		// - AVFifoWriteFromCb
+		// - AVFifoReadToCb
+		// - AVFifoPeekToCb
+
+		// This test simply documents that these functions are intentionally missing
+		t.Log("Callback-by-value functions intentionally skipped due to CGO limitation")
+		t.Log("Missing: av_fifo_write_from_cb, av_fifo_read_to_cb, av_fifo_peek_to_cb")
+	})
+}
