@@ -310,6 +310,51 @@ func (g *Generator) generateStructs() {
 			o.Type().Id(goName).Struct(
 				jen.Id("value").Qual("C", cName),
 			)
+
+			o.Line()
+
+			// Generate ToXArray helper for ByValue structs
+			o.Func().
+				Id(fmt.Sprintf("To%vArray", goName)).
+				Params(jen.Id("ptr").Qual("unsafe", "Pointer")).
+				Op("*").Id("Array").Types(jen.Op("*").Id(goName)).
+				Block(
+					jen.If(jen.Id("ptr").Op("==").Id("nil")).Block(
+						jen.Return(jen.Id("nil")),
+					),
+					jen.Line(),
+					jen.Return(
+						jen.Op("&").Id("Array").Types(jen.Op("*").Id(goName)).Values(jen.Dict{
+							jen.Id("ptr"):      jen.Id("ptr"),
+							jen.Id("elemSize"): jen.Qual("C", fmt.Sprintf("sizeof_%v", cName)),
+
+							jen.Id("loadPtr"): jen.Func().
+								Params(jen.Id("pointer").Qual("unsafe", "Pointer")).
+								Op("*").Id(goName).
+								Block(
+									jen.Id("cValue").Op(":=").Parens(jen.Op("*").Qual("C", cName)).Parens(jen.Id("pointer")),
+									jen.Return(
+										jen.Op("&").Id(goName).Values(jen.Dict{
+											jen.Id("value"): jen.Op("*").Id("cValue"),
+										}),
+									),
+								),
+
+							jen.Id("storePtr"): jen.Func().
+								Params(
+									jen.Id("pointer").Qual("unsafe", "Pointer"),
+									jen.Id("value").Op("*").Id(goName),
+								).
+								Block(
+									jen.Id("dest").Op(":=").Parens(jen.Op("*").Qual("C", cName)).Parens(jen.Id("pointer")),
+									jen.Op("*").Id("dest").Op("=").Id("value").Dot("value"),
+								),
+						}),
+					),
+				)
+
+			o.Line()
+
 		} else {
 			o.Type().Id(goName).Struct(
 				jen.Id("ptr").Op("*").Qual("C", cName),
@@ -688,6 +733,7 @@ func (g *Generator) generateStructs() {
 				switch iv := v.Inner.(type) {
 				case *IdentType:
 					if pt, ok := primTypes[iv.Name]; ok {
+						// Primitive type array (e.g., uint8_t[64])
 						getRetType = []jen.Code{
 							jen.Op("*").Id("Array").Types(jen.Id(pt)),
 						}
@@ -700,8 +746,42 @@ func (g *Generator) generateStructs() {
 								jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
 							)),
 						)
+					} else if en, ok := g.input.enums[iv.Name]; ok {
+						// Enum type array (e.g., AVDOVIMappingMethod[AV_DOVI_MAX_PIECES])
+						getRetType = []jen.Code{
+							jen.Op("*").Id("Array").Types(jen.Id(en.Name)),
+						}
+
+						getBody = append(
+							getBody,
+							jen.Return(jen.Id(fmt.Sprintf("To%vArray", en.Name)).Params(
+								jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+							)),
+						)
+					} else if st, ok := g.input.structs[iv.Name]; ok {
+						// Struct type array (e.g., AVDOVIReshapingCurve[3])
+						if st.ByValue {
+							// Array of struct values
+							getRetType = []jen.Code{
+								jen.Op("*").Id("Array").Types(jen.Op("*").Id(st.Name)),
+							}
+
+							getBody = append(
+								getBody,
+								jen.Return(jen.Id(fmt.Sprintf("To%vArray", st.Name)).Params(
+									jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+								)),
+							)
+						} else {
+							// Array of struct pointers - skip for now (complex)
+							o.Commentf("%v skipped due to const array of struct pointers", field.Name)
+							o.Line()
+
+							continue fieldLoop
+						}
 					} else {
-						o.Commentf("%v skipped due to unknown const array", field.Name)
+						// Unknown type - might be typedef or forward declaration
+						o.Commentf("%v skipped due to unknown const array type %v", field.Name, iv.Name)
 						o.Line()
 
 						continue fieldLoop
