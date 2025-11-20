@@ -23,34 +23,6 @@ import (
 	"unsafe"
 )
 
-// AVBitStreamFilter represents an FFmpeg bitstream filter.
-// This is a minimal wrapper for the C struct.
-type AVBitStreamFilter struct {
-	ptr *C.AVBitStreamFilter
-}
-
-// Name returns the bitstream filter's name.
-func (bsf *AVBitStreamFilter) Name() string {
-	return C.GoString(bsf.ptr.name)
-}
-
-// CodecIds returns the array of codec IDs supported by this filter.
-// Returns nil if the filter supports all codecs.
-func (bsf *AVBitStreamFilter) CodecIds() *AVCodecID {
-	if bsf.ptr.codec_ids == nil {
-		return nil
-	}
-	return (*AVCodecID)(unsafe.Pointer(bsf.ptr.codec_ids))
-}
-
-// PrivClass returns the AVClass for private data options, or nil if none.
-func (bsf *AVBitStreamFilter) PrivClass() *AVClass {
-	if bsf.ptr.priv_class == nil {
-		return nil
-	}
-	return &AVClass{ptr: bsf.ptr.priv_class}
-}
-
 // AVMuxerIterate iterates over all registered muxers.
 //
 // @param opaque a pointer where libavformat will store the iteration state. Must

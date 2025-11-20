@@ -18,7 +18,7 @@ var (
 
 var files = []string{
 	"libavcodec/avcodec.h",
-	////"libavcodec/bsf.h", // include manually defined bindings
+	"libavcodec/bsf.h",
 	"libavcodec/codec.h",
 	"libavcodec/codec_desc.h",
 	"libavcodec/codec_id.h",
