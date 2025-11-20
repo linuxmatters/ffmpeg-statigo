@@ -33,6 +33,7 @@ package ffmpeg
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
 // #include <libavutil/blowfish.h>
+// #include <libavutil/bprint.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -1512,6 +1513,15 @@ const AVFourccMaxStringSize = C.AV_FOURCC_MAX_STRING_SIZE
 
 // AVBfRounds wraps AV_BF_ROUNDS.
 const AVBfRounds = C.AV_BF_ROUNDS
+
+// AVBprintSizeUnlimited wraps AV_BPRINT_SIZE_UNLIMITED.
+const AVBprintSizeUnlimited = C.AV_BPRINT_SIZE_UNLIMITED
+
+// AVBprintSizeAutomatic wraps AV_BPRINT_SIZE_AUTOMATIC.
+const AVBprintSizeAutomatic = C.AV_BPRINT_SIZE_AUTOMATIC
+
+// AVBprintSizeCountOnly wraps AV_BPRINT_SIZE_COUNT_ONLY.
+const AVBprintSizeCountOnly = C.AV_BPRINT_SIZE_COUNT_ONLY
 
 // AVBufferFlagReadonly wraps AV_BUFFER_FLAG_READONLY.
 const AVBufferFlagReadonly = C.AV_BUFFER_FLAG_READONLY

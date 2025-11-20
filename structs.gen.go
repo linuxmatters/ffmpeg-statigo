@@ -35,6 +35,7 @@ import "unsafe"
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
 // #include <libavutil/blowfish.h>
+// #include <libavutil/bprint.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -14863,6 +14864,335 @@ func (s *AVBlowfish) P() *Array[uint32] {
 
 // s skipped due to multi dim const array
 
+// --- Struct ff_pad_helper_AVBPrint ---
+
+// ff_pad_helper_AVBPrint wraps ff_pad_helper_AVBPrint.
+/*
+  Buffer to print data progressively
+
+  The string buffer grows as necessary and is always 0-terminated.
+  The content of the string is never accessed, and thus is
+  encoding-agnostic and can even hold binary data.
+
+  Small buffers are kept in the structure itself, and thus require no
+  memory allocation at all (unless the contents of the buffer is needed
+  after the structure goes out of scope). This is almost as lightweight as
+  declaring a local `char buf[512]`.
+
+  The length of the string can go beyond the allocated size: the buffer is
+  then truncated, but the functions still keep account of the actual total
+  length.
+
+  In other words, AVBPrint.len can be greater than AVBPrint.size and records
+  the total length of what would have been to the buffer if there had been
+  enough memory.
+
+  Append operations do not need to be tested for failure: if a memory
+  allocation fails, data stop being appended to the buffer, but the length
+  is still updated. This situation can be tested with
+  av_bprint_is_complete().
+
+  The AVBPrint.size_max field determines several possible behaviours:
+  - `size_max = -1` (= `UINT_MAX`) or any large value will let the buffer be
+    reallocated as necessary, with an amortized linear cost.
+  - `size_max = 0` prevents writing anything to the buffer: only the total
+    length is computed. The write operations can then possibly be repeated in
+    a buffer with exactly the necessary size
+    (using `size_init = size_max = len + 1`).
+  - `size_max = 1` is automatically replaced by the exact size available in the
+    structure itself, thus ensuring no dynamic memory allocation. The
+    internal buffer is large enough to hold a reasonable paragraph of text,
+    such as the current paragraph.
+*/
+type ff_pad_helper_AVBPrint struct {
+	ptr *C.struct_ff_pad_helper_AVBPrint
+}
+
+func (s *ff_pad_helper_AVBPrint) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func Toff_pad_helper_AVBPrintArray(ptr unsafe.Pointer) *Array[*ff_pad_helper_AVBPrint] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*ff_pad_helper_AVBPrint]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *ff_pad_helper_AVBPrint {
+			ptr := (**C.struct_ff_pad_helper_AVBPrint)(pointer)
+			value := *ptr
+			var valueMapped *ff_pad_helper_AVBPrint
+			if value != nil {
+				valueMapped = &ff_pad_helper_AVBPrint{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *ff_pad_helper_AVBPrint) {
+			ptr := (**C.struct_ff_pad_helper_AVBPrint)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Str gets the str field.
+//
+//	string so far
+func (s *ff_pad_helper_AVBPrint) Str() *CStr {
+	value := s.ptr.str
+	return wrapCStr(value)
+}
+
+// SetStr sets the str field.
+//
+//	string so far
+func (s *ff_pad_helper_AVBPrint) SetStr(value *CStr) {
+	s.ptr.str = value.ptr
+}
+
+// Len gets the len field.
+//
+//	length so far
+func (s *ff_pad_helper_AVBPrint) Len() uint {
+	value := s.ptr.len
+	return uint(value)
+}
+
+// SetLen sets the len field.
+//
+//	length so far
+func (s *ff_pad_helper_AVBPrint) SetLen(value uint) {
+	s.ptr.len = (C.uint)(value)
+}
+
+// Size gets the size field.
+//
+//	allocated memory
+func (s *ff_pad_helper_AVBPrint) Size() uint {
+	value := s.ptr.size
+	return uint(value)
+}
+
+// SetSize sets the size field.
+//
+//	allocated memory
+func (s *ff_pad_helper_AVBPrint) SetSize(value uint) {
+	s.ptr.size = (C.uint)(value)
+}
+
+// SizeMax gets the size_max field.
+//
+//	maximum allocated memory
+func (s *ff_pad_helper_AVBPrint) SizeMax() uint {
+	value := s.ptr.size_max
+	return uint(value)
+}
+
+// SetSizeMax sets the size_max field.
+//
+//	maximum allocated memory
+func (s *ff_pad_helper_AVBPrint) SetSizeMax(value uint) {
+	s.ptr.size_max = (C.uint)(value)
+}
+
+// ReservedInternalBuffer gets the reserved_internal_buffer field.
+func (s *ff_pad_helper_AVBPrint) ReservedInternalBuffer() *Array[uint8] {
+	value := &s.ptr.reserved_internal_buffer
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// --- Struct AVBPrint ---
+
+// AVBPrint wraps AVBPrint.
+/*
+  Buffer to print data progressively
+
+  The string buffer grows as necessary and is always 0-terminated.
+  The content of the string is never accessed, and thus is
+  encoding-agnostic and can even hold binary data.
+
+  Small buffers are kept in the structure itself, and thus require no
+  memory allocation at all (unless the contents of the buffer is needed
+  after the structure goes out of scope). This is almost as lightweight as
+  declaring a local `char buf[512]`.
+
+  The length of the string can go beyond the allocated size: the buffer is
+  then truncated, but the functions still keep account of the actual total
+  length.
+
+  In other words, AVBPrint.len can be greater than AVBPrint.size and records
+  the total length of what would have been to the buffer if there had been
+  enough memory.
+
+  Append operations do not need to be tested for failure: if a memory
+  allocation fails, data stop being appended to the buffer, but the length
+  is still updated. This situation can be tested with
+  av_bprint_is_complete().
+
+  The AVBPrint.size_max field determines several possible behaviours:
+  - `size_max = -1` (= `UINT_MAX`) or any large value will let the buffer be
+    reallocated as necessary, with an amortized linear cost.
+  - `size_max = 0` prevents writing anything to the buffer: only the total
+    length is computed. The write operations can then possibly be repeated in
+    a buffer with exactly the necessary size
+    (using `size_init = size_max = len + 1`).
+  - `size_max = 1` is automatically replaced by the exact size available in the
+    structure itself, thus ensuring no dynamic memory allocation. The
+    internal buffer is large enough to hold a reasonable paragraph of text,
+    such as the current paragraph.
+*/
+type AVBPrint struct {
+	ptr *C.AVBPrint
+}
+
+func (s *AVBPrint) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVBPrintArray(ptr unsafe.Pointer) *Array[*AVBPrint] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVBPrint]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVBPrint {
+			ptr := (**C.AVBPrint)(pointer)
+			value := *ptr
+			var valueMapped *AVBPrint
+			if value != nil {
+				valueMapped = &AVBPrint{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVBPrint) {
+			ptr := (**C.AVBPrint)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Str gets the str field.
+//
+//	string so far
+func (s *AVBPrint) Str() *CStr {
+	value := s.ptr.str
+	return wrapCStr(value)
+}
+
+// SetStr sets the str field.
+//
+//	string so far
+func (s *AVBPrint) SetStr(value *CStr) {
+	s.ptr.str = value.ptr
+}
+
+// Len gets the len field.
+//
+//	length so far
+func (s *AVBPrint) Len() uint {
+	value := s.ptr.len
+	return uint(value)
+}
+
+// SetLen sets the len field.
+//
+//	length so far
+func (s *AVBPrint) SetLen(value uint) {
+	s.ptr.len = (C.uint)(value)
+}
+
+// Size gets the size field.
+//
+//	allocated memory
+func (s *AVBPrint) Size() uint {
+	value := s.ptr.size
+	return uint(value)
+}
+
+// SetSize sets the size field.
+//
+//	allocated memory
+func (s *AVBPrint) SetSize(value uint) {
+	s.ptr.size = (C.uint)(value)
+}
+
+// SizeMax gets the size_max field.
+//
+//	maximum allocated memory
+func (s *AVBPrint) SizeMax() uint {
+	value := s.ptr.size_max
+	return uint(value)
+}
+
+// SetSizeMax sets the size_max field.
+//
+//	maximum allocated memory
+func (s *AVBPrint) SetSizeMax(value uint) {
+	s.ptr.size_max = (C.uint)(value)
+}
+
+// ReservedInternalBuffer gets the reserved_internal_buffer field.
+func (s *AVBPrint) ReservedInternalBuffer() *Array[uint8] {
+	value := &s.ptr.reserved_internal_buffer
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// ReservedPadding gets the reserved_padding field.
+func (s *AVBPrint) ReservedPadding() *Array[uint8] {
+	value := &s.ptr.reserved_padding
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// --- Struct tm ---
+
+// tm wraps tm.
+type tm struct {
+	ptr *C.struct_tm
+}
+
+func (s *tm) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func TotmArray(ptr unsafe.Pointer) *Array[*tm] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*tm]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *tm {
+			ptr := (**C.struct_tm)(pointer)
+			value := *ptr
+			var valueMapped *tm
+			if value != nil {
+				valueMapped = &tm{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *tm) {
+			ptr := (**C.struct_tm)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
 // --- Struct AVBuffer ---
 
 // AVBuffer wraps AVBuffer.
@@ -15312,45 +15642,6 @@ func (s *AVChannelLayout) Opaque() unsafe.Pointer {
 //	For some private data of the user.
 func (s *AVChannelLayout) SetOpaque(value unsafe.Pointer) {
 	s.ptr.opaque = value
-}
-
-// --- Struct AVBPrint ---
-
-// AVBPrint wraps AVBPrint.
-type AVBPrint struct {
-	ptr *C.struct_AVBPrint
-}
-
-func (s *AVBPrint) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToAVBPrintArray(ptr unsafe.Pointer) *Array[*AVBPrint] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*AVBPrint]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *AVBPrint {
-			ptr := (**C.struct_AVBPrint)(pointer)
-			value := *ptr
-			var valueMapped *AVBPrint
-			if value != nil {
-				valueMapped = &AVBPrint{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *AVBPrint) {
-			ptr := (**C.struct_AVBPrint)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
 }
 
 // --- Struct AVContainerFifo ---

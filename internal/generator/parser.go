@@ -43,7 +43,7 @@ var files = []string{
 	"libavutil/aes.h",
 	"libavutil/aes_ctr.h",
 	"libavutil/ambient_viewing_environment.h",
-	////"libavutil/attributes.h", // could not determine what C.attribute_deprecated refers to
+	////"libavutil/attributes.h", // a compiler attribute macro collection, not an API header
 	"libavutil/audio_fifo.h",
 	"libavutil/avassert.h",
 	"libavutil/avconfig.h",
@@ -51,7 +51,7 @@ var files = []string{
 	"libavutil/avutil.h",
 	"libavutil/base64.h",
 	"libavutil/blowfish.h",
-	////"libavutil/bprint.h", // could not determine what C.AVEscapeMode refers to
+	"libavutil/bprint.h",
 	"libavutil/bswap.h",
 	"libavutil/buffer.h",
 	"libavutil/camellia.h",
@@ -107,7 +107,7 @@ var files = []string{
 	"libavutil/random_seed.h",
 	"libavutil/rational.h",
 	"libavutil/rc4.h",
-	////"libavutil/refstruct.h", //typedef name AVRefStructOpaque
+	////"libavutil/refstruct.h", // reference-counted object API introduced as an alternative to AVBuffer for managing complex objects
 	"libavutil/replaygain.h",
 	"libavutil/ripemd.h",
 	"libavutil/samplefmt.h",
