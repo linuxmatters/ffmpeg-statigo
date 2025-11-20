@@ -101,7 +101,7 @@ var files = []string{
 	"libavutil/murmur3.h",
 	"libavutil/opt.h",
 	"libavutil/parseutils.h",
-	//"libavutil/pixdesc.h", // segfault on parsing
+	"libavutil/pixdesc.h",
 	"libavutil/pixelutils.h",
 	"libavutil/pixfmt.h",
 	"libavutil/random_seed.h",
@@ -632,13 +632,20 @@ func (p *Parser) parseStruct(indent string, c clang.Cursor, typedef bool) {
 
 			fIndent := fmt.Sprintf("%v[%v]", indent, name)
 
-			ty := p.parseType(fIndent, cursor.Type())
+			// Capture the original C type name before it gets canonicalized
+			cursorType := cursor.Type()
+			cTypeName := strings.TrimSpace(cursorType.Spelling())
+			// Remove "const " prefix if present
+			cTypeName = strings.TrimPrefix(cTypeName, "const ")
+
+			ty := p.parseType(fIndent, cursorType)
 
 			s.Fields = append(s.Fields, &Field{
-				Name:     name,
-				Type:     ty,
-				BitWidth: cursor.FieldDeclBitWidth(),
-				Comment:  cmt,
+				Name:      name,
+				Type:      ty,
+				CTypeName: cTypeName,
+				BitWidth:  cursor.FieldDeclBitWidth(),
+				Comment:   cmt,
 			})
 		}
 

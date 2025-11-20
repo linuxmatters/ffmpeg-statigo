@@ -50,10 +50,11 @@ func (s *Struct) CName() string {
 }
 
 type Field struct {
-	Name     string
-	Type     Type
-	BitWidth int32
-	Comment  string
+	Name      string
+	Type      Type
+	CTypeName string // Original C type name (e.g., "uint8_t" before canonicalization to "int")
+	BitWidth  int32
+	Comment   string
 }
 
 type Enum struct {

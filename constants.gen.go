@@ -77,6 +77,7 @@ package ffmpeg
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixdesc.h>
 // #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
@@ -2324,6 +2325,60 @@ const AVOptSerializeSearchChildren = C.AV_OPT_SERIALIZE_SEARCH_CHILDREN
 
 // AVOptFlagImplicitKey wraps AV_OPT_FLAG_IMPLICIT_KEY.
 const AVOptFlagImplicitKey = C.AV_OPT_FLAG_IMPLICIT_KEY
+
+// AVPixFmtFlagBe wraps AV_PIX_FMT_FLAG_BE.
+const AVPixFmtFlagBe = C.AV_PIX_FMT_FLAG_BE
+
+// AVPixFmtFlagPal wraps AV_PIX_FMT_FLAG_PAL.
+const AVPixFmtFlagPal = C.AV_PIX_FMT_FLAG_PAL
+
+// AVPixFmtFlagBitstream wraps AV_PIX_FMT_FLAG_BITSTREAM.
+const AVPixFmtFlagBitstream = C.AV_PIX_FMT_FLAG_BITSTREAM
+
+// AVPixFmtFlagHWAccel wraps AV_PIX_FMT_FLAG_HWACCEL.
+const AVPixFmtFlagHWAccel = C.AV_PIX_FMT_FLAG_HWACCEL
+
+// AVPixFmtFlagPlanar wraps AV_PIX_FMT_FLAG_PLANAR.
+const AVPixFmtFlagPlanar = C.AV_PIX_FMT_FLAG_PLANAR
+
+// AVPixFmtFlagRgb wraps AV_PIX_FMT_FLAG_RGB.
+const AVPixFmtFlagRgb = C.AV_PIX_FMT_FLAG_RGB
+
+// AVPixFmtFlagAlpha wraps AV_PIX_FMT_FLAG_ALPHA.
+const AVPixFmtFlagAlpha = C.AV_PIX_FMT_FLAG_ALPHA
+
+// AVPixFmtFlagBayer wraps AV_PIX_FMT_FLAG_BAYER.
+const AVPixFmtFlagBayer = C.AV_PIX_FMT_FLAG_BAYER
+
+// AVPixFmtFlagFloat wraps AV_PIX_FMT_FLAG_FLOAT.
+const AVPixFmtFlagFloat = C.AV_PIX_FMT_FLAG_FLOAT
+
+// AVPixFmtFlagXyz wraps AV_PIX_FMT_FLAG_XYZ.
+const AVPixFmtFlagXyz = C.AV_PIX_FMT_FLAG_XYZ
+
+// FFLossResolution wraps FF_LOSS_RESOLUTION.
+const FFLossResolution = C.FF_LOSS_RESOLUTION
+
+// FFLossDepth wraps FF_LOSS_DEPTH.
+const FFLossDepth = C.FF_LOSS_DEPTH
+
+// FFLossColorspace wraps FF_LOSS_COLORSPACE.
+const FFLossColorspace = C.FF_LOSS_COLORSPACE
+
+// FFLossAlpha wraps FF_LOSS_ALPHA.
+const FFLossAlpha = C.FF_LOSS_ALPHA
+
+// FFLossColorquant wraps FF_LOSS_COLORQUANT.
+const FFLossColorquant = C.FF_LOSS_COLORQUANT
+
+// FFLossChroma wraps FF_LOSS_CHROMA.
+const FFLossChroma = C.FF_LOSS_CHROMA
+
+// FFLossExcessResolution wraps FF_LOSS_EXCESS_RESOLUTION.
+const FFLossExcessResolution = C.FF_LOSS_EXCESS_RESOLUTION
+
+// FFLossExcessDepth wraps FF_LOSS_EXCESS_DEPTH.
+const FFLossExcessDepth = C.FF_LOSS_EXCESS_DEPTH
 
 // AVPaletteSize wraps AVPALETTE_SIZE.
 const AVPaletteSize = C.AVPALETTE_SIZE
