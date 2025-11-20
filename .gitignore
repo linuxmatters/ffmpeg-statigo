@@ -36,3 +36,4 @@ coverage.html
 result
 result-*
 
+lib/linux_amd64/*.a
