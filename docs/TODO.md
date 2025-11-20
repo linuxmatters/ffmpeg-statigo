@@ -11,68 +11,13 @@
 - [x] Review default codecs:
   - https://ffmpeg.martin-riedl.de/
   - https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg
+- [ ] Create some test cases that exercise some of the FFmpeg API surface
 
 ## From the original author
 
 - [x] Expose more headers.
 - [ ] Expose platform specific headers.
 - [ ] Cleanup internal packages.
-
-## More headers
-
-### Adding Headers to the Generator
-
-1. Modify the Generator Configuration
-
-The header list is defined in a generator configuration file `generator/parser.go`. AI dd entries like:
-
-```go
-headers = append(headers,
-    "libswscale/swscale.h",
-    "libswresample/swresample.h",
-    "libavformat/rtmp.h",
-    "libavdevice/avdevice.h"
-)
-```
-
-2. Regenerate Bindings
-
-Run the generator with the updated clang (which you've already fixed for Linux compatibility):
-
-```bash
-just generate
-```
-
-### Critical Missing Headers for Streaming
-
-#### Network Protocol Headers
-
-- `libavformat/rtmp*.h` - RTMP/RTMPS protocol internals for custom handshaking and stream key management
-- `libavformat/srt*.h` - SRT (Secure Reliable Transport) for low-latency streaming, increasingly required by platforms
-- `libavformat/hls*.h` & libavformat/dash*.h - For generating adaptive bitrate streams with proper segment control
-
-#### Real-time Processing Headers
-
-- `libavfilter/buffersrc.h` & `libavfilter/buffersink.h` - Essential for building custom filter graphs for overlays, watermarks, and scene transitions
-- `libavdevice/avdevice.h` - Capture device integration (webcams, capture cards, screen recording)
-- `libavutil/fifo.h` - Thread-safe FIFO buffers for managing multiple output streams
-
-#### Advanced Streaming Control
-
-- `libavformat/avio_internal.h` - Custom I/O contexts for authentication and stream routing
-- `libavcodec/bsf.h` - Bitstream filters for H.264/HEVC Annex B conversion (required by some platforms)
-- `libavutil/threadmessage.h` - Inter-thread communication for multiple simultaneous outputs
-
-### Missing Headers for Scaling and Resampling
-
-- `libswresample/swresample.h` and `libswscale/swscale.h`
-  - Creating adaptive bitrate ladders - scaling from a single 1080p input to 720p, 480p, 360p variants
-  - Audio normalisation - resampling between 44.1kHz and 48kHz, converting 5.1 to stereo
-  - Pixel format conversion - converting between YUV420P, NV12, and platform-specific requirements
-
-## Testing
-
-- [ ] Create some test cases that exercise some of the FFmpeg API surface
 
 # Onboard
 
