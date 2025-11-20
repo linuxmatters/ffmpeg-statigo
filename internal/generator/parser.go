@@ -89,7 +89,7 @@ var files = []string{
 	"libavutil/iamf.h",
 	"libavutil/imgutils.h",
 	"libavutil/intfloat.h",
-	////"libavutil/intreadwrite.h", //Unknown typedef kind UnionDecl
+	////"libavutil/intreadwrite.h", //Union types - CGO doesn't expose union fields
 	"libavutil/lfg.h",
 	"libavutil/log.h",
 	"libavutil/lzo.h",
@@ -371,6 +371,14 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 
 	switch dec.Kind() {
 	case clang.Cursor_StructDecl:
+		p.parseStruct(indent, dec, true)
+
+	case clang.Cursor_UnionDecl:
+		// Unions are similar to structs but all fields share the same memory location.
+		// NOTE: CGO does not expose union fields directly - unions are treated as opaque types.
+		// Field accessor generation will fail at compile time. Headers with only union-based
+		// utilities (like intreadwrite.h) should remain excluded from the files list.
+		// We parse the structure anyway to avoid panics and for potential future use.
 		p.parseStruct(indent, dec, true)
 
 	case clang.Cursor_EnumDecl:
