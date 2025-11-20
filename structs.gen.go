@@ -15824,7 +15824,11 @@ func (s *AVDetectionBBox) SetClassifyCount(value uint32) {
 
 // classify_labels skipped due to multi dim const array
 
-// classify_confidences skipped due to unknown const array
+// ClassifyConfidences gets the classify_confidences field.
+func (s *AVDetectionBBox) ClassifyConfidences() *Array[*AVRational] {
+	value := &s.ptr.classify_confidences
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
 // --- Struct AVDetectionBBoxHeader ---
 
@@ -16498,7 +16502,11 @@ func (s *AVDOVIReshapingCurve) Pivots() *Array[uint16] {
 	return ToUint16Array(unsafe.Pointer(value))
 }
 
-// mapping_idc skipped due to unknown const array
+// MappingIdc gets the mapping_idc field.
+func (s *AVDOVIReshapingCurve) MappingIdc() *Array[AVDOVIMappingMethod] {
+	value := &s.ptr.mapping_idc
+	return ToAVDOVIMappingMethodArray(unsafe.Pointer(value))
+}
 
 // PolyOrder gets the poly_order field.
 //
@@ -16694,7 +16702,7 @@ func (s *AVDOVIDataMapping) SetMappingChromaFormatIdc(value uint8) {
 	s.ptr.mapping_chroma_format_idc = (C.uint8_t)(value)
 }
 
-// curves skipped due to unknown const array
+// curves skipped due to const array of struct pointers
 
 // NlqMethodIdc gets the nlq_method_idc field.
 //
@@ -16733,7 +16741,7 @@ func (s *AVDOVIDataMapping) SetNumYPartitions(value uint32) {
 	s.ptr.num_y_partitions = (C.uint32_t)(value)
 }
 
-// nlq skipped due to unknown const array
+// nlq skipped due to const array of struct pointers
 
 // NlqPivots gets the nlq_pivots field.
 func (s *AVDOVIDataMapping) NlqPivots() *Array[uint16] {
@@ -16807,11 +16815,29 @@ func (s *AVDOVIColorMetadata) SetSceneRefreshFlag(value uint8) {
 	s.ptr.scene_refresh_flag = (C.uint8_t)(value)
 }
 
-// ycc_to_rgb_matrix skipped due to unknown const array
+// YccToRgbMatrix gets the ycc_to_rgb_matrix field.
+//
+//	before PQ linearization
+func (s *AVDOVIColorMetadata) YccToRgbMatrix() *Array[*AVRational] {
+	value := &s.ptr.ycc_to_rgb_matrix
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
-// ycc_to_rgb_offset skipped due to unknown const array
+// YccToRgbOffset gets the ycc_to_rgb_offset field.
+//
+//	input offset of neutral value
+func (s *AVDOVIColorMetadata) YccToRgbOffset() *Array[*AVRational] {
+	value := &s.ptr.ycc_to_rgb_offset
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
-// rgb_to_lms_matrix skipped due to unknown const array
+// RgbToLmsMatrix gets the rgb_to_lms_matrix field.
+//
+//	after PQ linearization
+func (s *AVDOVIColorMetadata) RgbToLmsMatrix() *Array[*AVRational] {
+	value := &s.ptr.rgb_to_lms_matrix
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
 // SignalEotf gets the signal_eotf field.
 //
@@ -21285,7 +21311,17 @@ func (s *AVHDRPlusColorTransformParams) SetOverlapProcessOption(value AVHDRPlusO
 	s.ptr.overlap_process_option = (C.enum_AVHDRPlusOverlapProcessOption)(value)
 }
 
-// maxscl skipped due to unknown const array
+// Maxscl gets the maxscl field.
+/*
+  The maximum of the color components of linearized RGB values in the
+  processing window in the scene. The values should be in the range of 0 to
+  1, inclusive and in multiples of 0.00001. maxscl[ 0 ], maxscl[ 1 ], and
+  maxscl[ 2 ] are corresponding to R, G, B color components respectively.
+*/
+func (s *AVHDRPlusColorTransformParams) Maxscl() *Array[*AVRational] {
+	value := &s.ptr.maxscl
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
 // AverageMaxrgb gets the average_maxrgb field.
 /*
@@ -21327,7 +21363,7 @@ func (s *AVHDRPlusColorTransformParams) SetNumDistributionMaxrgbPercentiles(valu
 	s.ptr.num_distribution_maxrgb_percentiles = (C.uint8_t)(value)
 }
 
-// distribution_maxrgb skipped due to unknown const array
+// distribution_maxrgb skipped due to const array of struct pointers
 
 // FractionBrightPixels gets the fraction_bright_pixels field.
 /*
@@ -21430,7 +21466,16 @@ func (s *AVHDRPlusColorTransformParams) SetNumBezierCurveAnchors(value uint8) {
 	s.ptr.num_bezier_curve_anchors = (C.uint8_t)(value)
 }
 
-// bezier_curve_anchors skipped due to unknown const array
+// BezierCurveAnchors gets the bezier_curve_anchors field.
+/*
+  The intermediate anchor parameters of the tone mapping function in the
+  processing window in the scene. The values should be in the range of 0
+  to 1, inclusive and in multiples of 1/1023.
+*/
+func (s *AVHDRPlusColorTransformParams) BezierCurveAnchors() *Array[*AVRational] {
+	value := &s.ptr.bezier_curve_anchors
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
 // ColorSaturationMappingFlag gets the color_saturation_mapping_flag field.
 /*
@@ -21575,7 +21620,7 @@ func (s *AVDynamicHDRPlus) SetNumWindows(value uint8) {
 	s.ptr.num_windows = (C.uint8_t)(value)
 }
 
-// params skipped due to unknown const array
+// params skipped due to const array of struct pointers
 
 // TargetedSystemDisplayMaximumLuminance gets the targeted_system_display_maximum_luminance field.
 /*
@@ -22204,7 +22249,7 @@ func (s *AVHDRVividColorToneMappingParams) SetThreeSplineNum(value int) {
 	s.ptr.three_Spline_num = (C.int)(value)
 }
 
-// three_spline skipped due to unknown const array
+// three_spline skipped due to const array of struct pointers
 
 // --- Struct AVHDRVividColorTransformParams ---
 
@@ -22371,7 +22416,7 @@ func (s *AVHDRVividColorTransformParams) SetToneMappingParamNum(value int) {
 	s.ptr.tone_mapping_param_num = (C.int)(value)
 }
 
-// tm_params skipped due to unknown const array
+// tm_params skipped due to const array of struct pointers
 
 // ColorSaturationMappingFlag gets the color_saturation_mapping_flag field.
 /*
@@ -22411,7 +22456,16 @@ func (s *AVHDRVividColorTransformParams) SetColorSaturationNum(value int) {
 	s.ptr.color_saturation_num = (C.int)(value)
 }
 
-// color_saturation_gain skipped due to unknown const array
+// ColorSaturationGain gets the color_saturation_gain field.
+/*
+  Indicates the color correction strength parameter.
+  The values should be in the range of 0.0 to 2.0, inclusive
+  and in multiples of 1/128.
+*/
+func (s *AVHDRVividColorTransformParams) ColorSaturationGain() *Array[*AVRational] {
+	value := &s.ptr.color_saturation_gain
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
 // --- Struct AVDynamicHDRVivid ---
 
@@ -22497,7 +22551,7 @@ func (s *AVDynamicHDRVivid) SetNumWindows(value uint8) {
 	s.ptr.num_windows = (C.uint8_t)(value)
 }
 
-// params skipped due to unknown const array
+// params skipped due to const array of struct pointers
 
 // --- Struct AVHMAC ---
 
@@ -25250,7 +25304,13 @@ func ToAVMasteringDisplayMetadataArray(ptr unsafe.Pointer) *Array[*AVMasteringDi
 
 // display_primaries skipped due to multi dim const array
 
-// white_point skipped due to unknown const array
+// WhitePoint gets the white_point field.
+//
+//	CIE 1931 xy chromaticity coords of white point.
+func (s *AVMasteringDisplayMetadata) WhitePoint() *Array[*AVRational] {
+	value := &s.ptr.white_point
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
 
 // MinLuminance gets the min_luminance field.
 //
@@ -26513,7 +26573,7 @@ func (s *AVPixFmtDescriptor) SetFlags(value int) {
 	s.ptr.flags = (C.uint64_t)(value)
 }
 
-// comp skipped due to unknown const array
+// comp skipped due to const array of struct pointers
 
 // Alias gets the alias field.
 //
@@ -26537,6 +26597,25 @@ func (s *AVPixFmtDescriptor) SetAlias(value *CStr) {
 //	Rational number (pair of numerator and denominator).
 type AVRational struct {
 	value C.AVRational
+}
+
+func ToAVRationalArray(ptr unsafe.Pointer) *Array[*AVRational] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVRational]{
+		elemSize: C.sizeof_AVRational,
+		loadPtr: func(pointer unsafe.Pointer) *AVRational {
+			cValue := (*C.AVRational)(pointer)
+			return &AVRational{value: *cValue}
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVRational) {
+			dest := (*C.AVRational)(pointer)
+			*dest = value.value
+		},
+	}
 }
 
 // Num gets the num field.
