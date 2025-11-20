@@ -35,6 +35,7 @@ import "unsafe"
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
 // #include <libavutil/blowfish.h>
+// #include <libavutil/bprint.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>

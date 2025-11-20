@@ -35,6 +35,7 @@ import "unsafe"
 // #include <libavutil/avutil.h>
 // #include <libavutil/base64.h>
 // #include <libavutil/blowfish.h>
+// #include <libavutil/bprint.h>
 // #include <libavutil/bswap.h>
 // #include <libavutil/buffer.h>
 // #include <libavutil/camellia.h>
@@ -7857,7 +7858,7 @@ func AVIOReadToBprint(h *AVIOContext, pb *AVBPrint, maxSize uint64) (int, error)
 	if h != nil {
 		tmph = h.ptr
 	}
-	var tmppb *C.struct_AVBPrint
+	var tmppb *C.AVBPrint
 	if pb != nil {
 		tmppb = pb.ptr
 	}
@@ -8976,6 +8977,175 @@ func AVBlowfishCrypt(ctx *AVBlowfish, dst unsafe.Pointer, src unsafe.Pointer, co
 	C.av_blowfish_crypt(tmpctx, (*C.uint8_t)(dst), (*C.uint8_t)(src), C.int(count), (*C.uint8_t)(iv), C.int(decrypt))
 }
 
+// --- Function av_bprint_init ---
+
+// AVBprintInit wraps av_bprint_init.
+/*
+  Init a print buffer.
+
+  @param buf        buffer to init
+  @param size_init  initial size (including the final 0)
+  @param size_max   maximum size;
+                    - `0` means do not write anything, just count the length
+                    - `1` is replaced by the maximum value for automatic storage
+                        any large value means that the internal buffer will be
+                        reallocated as needed up to that limit
+                    - `-1` is converted to `UINT_MAX`, the largest limit possible.
+                    Check also `AV_BPRINT_SIZE_*` macros.
+*/
+func AVBprintInit(buf *AVBPrint, sizeInit uint, sizeMax uint) {
+	var tmpbuf *C.AVBPrint
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	C.av_bprint_init(tmpbuf, C.uint(sizeInit), C.uint(sizeMax))
+}
+
+// --- Function av_bprint_init_for_buffer ---
+
+// AVBprintInitForBuffer wraps av_bprint_init_for_buffer.
+/*
+  Init a print buffer using a pre-existing buffer.
+
+  The buffer will not be reallocated.
+  In case size equals zero, the AVBPrint will be initialized to use
+  the internal buffer as if using AV_BPRINT_SIZE_COUNT_ONLY with
+  av_bprint_init().
+
+  @param buf     buffer structure to init
+  @param buffer  byte buffer to use for the string data
+  @param size    size of buffer
+*/
+func AVBprintInitForBuffer(buf *AVBPrint, buffer *CStr, size uint) {
+	var tmpbuf *C.AVBPrint
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	var tmpbuffer *C.char
+	if buffer != nil {
+		tmpbuffer = buffer.ptr
+	}
+	C.av_bprint_init_for_buffer(tmpbuf, tmpbuffer, C.uint(size))
+}
+
+// --- Function av_bprintf ---
+
+// av_bprintf skipped due to variadic arg.
+
+// --- Function av_vbprintf ---
+
+// av_vbprintf skipped due to vl_arg.
+
+// --- Function av_bprint_chars ---
+
+// AVBprintChars wraps av_bprint_chars.
+//
+//	Append char c n times to a print buffer.
+func AVBprintChars(buf *AVBPrint, c uint8, n uint) {
+	var tmpbuf *C.AVBPrint
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	C.av_bprint_chars(tmpbuf, C.char(c), C.uint(n))
+}
+
+// --- Function av_bprint_append_data ---
+
+// AVBprintAppendData wraps av_bprint_append_data.
+/*
+  Append data to a print buffer.
+
+  @param buf  bprint buffer to use
+  @param data pointer to data
+  @param size size of data
+*/
+func AVBprintAppendData(buf *AVBPrint, data *CStr, size uint) {
+	var tmpbuf *C.AVBPrint
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	var tmpdata *C.char
+	if data != nil {
+		tmpdata = data.ptr
+	}
+	C.av_bprint_append_data(tmpbuf, tmpdata, C.uint(size))
+}
+
+// --- Function av_bprint_strftime ---
+
+// av_bprint_strftime skipped due to tm.
+
+// --- Function av_bprint_get_buffer ---
+
+// av_bprint_get_buffer skipped due to mem
+
+// --- Function av_bprint_clear ---
+
+// AVBprintClear wraps av_bprint_clear.
+//
+//	Reset the string to "" but keep internal allocated data.
+func AVBprintClear(buf *AVBPrint) {
+	var tmpbuf *C.AVBPrint
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	C.av_bprint_clear(tmpbuf)
+}
+
+// --- Function av_bprint_is_complete ---
+
+// AVBprintIsComplete wraps av_bprint_is_complete.
+/*
+  Test if the print buffer is complete (not truncated).
+
+  It may have been truncated due to a memory allocation failure
+  or the size_max limit (compare size and size_max if necessary).
+*/
+func AVBprintIsComplete(buf *AVBPrint) (int, error) {
+	var tmpbuf *C.AVBPrint
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_bprint_is_complete(tmpbuf)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bprint_finalize ---
+
+// av_bprint_finalize skipped due to retStr
+
+// --- Function av_bprint_escape ---
+
+// AVBprintEscape wraps av_bprint_escape.
+/*
+  Escape the content in src and append it to dstbuf.
+
+  @param dstbuf        already inited destination bprint buffer
+  @param src           string containing the text to escape
+  @param special_chars string containing the special characters which
+                       need to be escaped, can be NULL
+  @param mode          escape mode to employ, see AV_ESCAPE_MODE_* macros.
+                       Any unknown value for mode will be considered equivalent to
+                       AV_ESCAPE_MODE_BACKSLASH, but this behaviour can change without
+                       notice.
+  @param flags         flags which control how to escape, see AV_ESCAPE_FLAG_* macros
+*/
+func AVBprintEscape(dstbuf *AVBPrint, src *CStr, specialChars *CStr, mode AVEscapeMode, flags int) {
+	var tmpdstbuf *C.AVBPrint
+	if dstbuf != nil {
+		tmpdstbuf = dstbuf.ptr
+	}
+	var tmpsrc *C.char
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	var tmpspecialChars *C.char
+	if specialChars != nil {
+		tmpspecialChars = specialChars.ptr
+	}
+	C.av_bprint_escape(tmpdstbuf, tmpsrc, tmpspecialChars, C.enum_AVEscapeMode(mode), C.int(flags))
+}
+
 // --- Function av_bswap16 ---
 
 // AVBswap16 wraps av_bswap16.
@@ -9517,7 +9687,7 @@ func AVChannelName(buf *CStr, bufSize uint64, channel AVChannel) (int, error) {
   @note the string will be appended to the bprint buffer.
 */
 func AVChannelNameBprint(bp *AVBPrint, channelId AVChannel) {
-	var tmpbp *C.struct_AVBPrint
+	var tmpbp *C.AVBPrint
 	if bp != nil {
 		tmpbp = bp.ptr
 	}
@@ -9555,7 +9725,7 @@ func AVChannelDescription(buf *CStr, bufSize uint64, channel AVChannel) (int, er
   @note the string will be appended to the bprint buffer.
 */
 func AVChannelDescriptionBprint(bp *AVBPrint, channelId AVChannel) {
-	var tmpbp *C.struct_AVBPrint
+	var tmpbp *C.AVBPrint
 	if bp != nil {
 		tmpbp = bp.ptr
 	}
@@ -9773,7 +9943,7 @@ func AVChannelLayoutDescribeBprint(channelLayout *AVChannelLayout, bp *AVBPrint)
 	if channelLayout != nil {
 		tmpchannelLayout = channelLayout.ptr
 	}
-	var tmpbp *C.struct_AVBPrint
+	var tmpbp *C.AVBPrint
 	if bp != nil {
 		tmpbp = bp.ptr
 	}
