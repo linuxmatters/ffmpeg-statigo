@@ -3,6 +3,7 @@ package ffmpeg
 import "unsafe"
 
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
@@ -965,6 +966,483 @@ func AVCodecIsOpen(s *AVCodecContext) (int, error) {
 		tmps = s.ptr
 	}
 	ret := C.avcodec_is_open(tmps)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_get_by_name ---
+
+// AVBsfGetByName wraps av_bsf_get_by_name.
+/*
+  @return a bitstream filter with the specified name or NULL if no such
+          bitstream filter exists.
+*/
+func AVBsfGetByName(name *CStr) *AVBitStreamFilter {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_bsf_get_by_name(tmpname)
+	var retMapped *AVBitStreamFilter
+	if ret != nil {
+		retMapped = &AVBitStreamFilter{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_bsf_iterate ---
+
+// av_bsf_iterate skipped due to opaque
+
+// --- Function av_bsf_alloc ---
+
+// AVBsfAlloc wraps av_bsf_alloc.
+/*
+  Allocate a context for a given bitstream filter. The caller must fill in the
+  context parameters as described in the documentation and then call
+  av_bsf_init() before sending any data to the filter.
+
+  @param filter the filter for which to allocate an instance.
+  @param[out] ctx a pointer into which the pointer to the newly-allocated context
+                  will be written. It must be freed with av_bsf_free() after the
+                  filtering is done.
+
+  @return 0 on success, a negative AVERROR code on failure
+*/
+func AVBsfAlloc(filter *AVBitStreamFilter, ctx **AVBSFContext) (int, error) {
+	var tmpfilter *C.AVBitStreamFilter
+	if filter != nil {
+		tmpfilter = filter.ptr
+	}
+	var ptrctx **C.AVBSFContext
+	var tmpctx *C.AVBSFContext
+	var oldTmpctx *C.AVBSFContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	ret := C.av_bsf_alloc(tmpfilter, ptrctx)
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &AVBSFContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_init ---
+
+// AVBsfInit wraps av_bsf_init.
+/*
+  Prepare the filter for use, after all the parameters and options have been
+  set.
+
+  @param ctx a AVBSFContext previously allocated with av_bsf_alloc()
+*/
+func AVBsfInit(ctx *AVBSFContext) (int, error) {
+	var tmpctx *C.AVBSFContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_bsf_init(tmpctx)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_send_packet ---
+
+// AVBsfSendPacket wraps av_bsf_send_packet.
+/*
+  Submit a packet for filtering.
+
+  After sending each packet, the filter must be completely drained by calling
+  av_bsf_receive_packet() repeatedly until it returns AVERROR(EAGAIN) or
+  AVERROR_EOF.
+
+  @param ctx an initialized AVBSFContext
+  @param pkt the packet to filter. The bitstream filter will take ownership of
+  the packet and reset the contents of pkt. pkt is not touched if an error occurs.
+  If pkt is empty (i.e. NULL, or pkt->data is NULL and pkt->side_data_elems zero),
+  it signals the end of the stream (i.e. no more non-empty packets will be sent;
+  sending more empty packets does nothing) and will cause the filter to output
+  any packets it may have buffered internally.
+
+  @return
+   - 0 on success.
+   - AVERROR(EAGAIN) if packets need to be retrieved from the filter (using
+     av_bsf_receive_packet()) before new input can be consumed.
+   - Another negative AVERROR value if an error occurs.
+*/
+func AVBsfSendPacket(ctx *AVBSFContext, pkt *AVPacket) (int, error) {
+	var tmpctx *C.AVBSFContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	var tmppkt *C.AVPacket
+	if pkt != nil {
+		tmppkt = pkt.ptr
+	}
+	ret := C.av_bsf_send_packet(tmpctx, tmppkt)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_receive_packet ---
+
+// AVBsfReceivePacket wraps av_bsf_receive_packet.
+/*
+  Retrieve a filtered packet.
+
+  @param ctx an initialized AVBSFContext
+  @param[out] pkt this struct will be filled with the contents of the filtered
+                  packet. It is owned by the caller and must be freed using
+                  av_packet_unref() when it is no longer needed.
+                  This parameter should be "clean" (i.e. freshly allocated
+                  with av_packet_alloc() or unreffed with av_packet_unref())
+                  when this function is called. If this function returns
+                  successfully, the contents of pkt will be completely
+                  overwritten by the returned data. On failure, pkt is not
+                  touched.
+
+  @return
+   - 0 on success.
+   - AVERROR(EAGAIN) if more packets need to be sent to the filter (using
+     av_bsf_send_packet()) to get more output.
+   - AVERROR_EOF if there will be no further output from the filter.
+   - Another negative AVERROR value if an error occurs.
+
+  @note one input packet may result in several output packets, so after sending
+  a packet with av_bsf_send_packet(), this function needs to be called
+  repeatedly until it stops returning 0. It is also possible for a filter to
+  output fewer packets than were sent to it, so this function may return
+  AVERROR(EAGAIN) immediately after a successful av_bsf_send_packet() call.
+*/
+func AVBsfReceivePacket(ctx *AVBSFContext, pkt *AVPacket) (int, error) {
+	var tmpctx *C.AVBSFContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	var tmppkt *C.AVPacket
+	if pkt != nil {
+		tmppkt = pkt.ptr
+	}
+	ret := C.av_bsf_receive_packet(tmpctx, tmppkt)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_flush ---
+
+// AVBsfFlush wraps av_bsf_flush.
+//
+//	Reset the internal bitstream filter state. Should be called e.g. when seeking.
+func AVBsfFlush(ctx *AVBSFContext) {
+	var tmpctx *C.AVBSFContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_bsf_flush(tmpctx)
+}
+
+// --- Function av_bsf_free ---
+
+// AVBsfFree wraps av_bsf_free.
+/*
+  Free a bitstream filter context and everything associated with it; write NULL
+  into the supplied pointer.
+*/
+func AVBsfFree(ctx **AVBSFContext) {
+	var ptrctx **C.AVBSFContext
+	var tmpctx *C.AVBSFContext
+	var oldTmpctx *C.AVBSFContext
+	if ctx != nil {
+		innerctx := *ctx
+		if innerctx != nil {
+			tmpctx = innerctx.ptr
+			oldTmpctx = tmpctx
+		}
+		ptrctx = &tmpctx
+	}
+	C.av_bsf_free(ptrctx)
+	if tmpctx != oldTmpctx && ctx != nil {
+		if tmpctx != nil {
+			*ctx = &AVBSFContext{ptr: tmpctx}
+		} else {
+			*ctx = nil
+		}
+	}
+}
+
+// --- Function av_bsf_get_class ---
+
+// AVBsfGetClass wraps av_bsf_get_class.
+/*
+  Get the AVClass for AVBSFContext. It can be used in combination with
+  AV_OPT_SEARCH_FAKE_OBJ for examining options.
+
+  @see av_opt_find().
+*/
+func AVBsfGetClass() *AVClass {
+	ret := C.av_bsf_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_bsf_list_alloc ---
+
+// AVBsfListAlloc wraps av_bsf_list_alloc.
+/*
+  Allocate empty list of bitstream filters.
+  The list must be later freed by av_bsf_list_free()
+  or finalized by av_bsf_list_finalize().
+
+  @return Pointer to @ref AVBSFList on success, NULL in case of failure
+*/
+func AVBsfListAlloc() *AVBSFList {
+	ret := C.av_bsf_list_alloc()
+	var retMapped *AVBSFList
+	if ret != nil {
+		retMapped = &AVBSFList{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_bsf_list_free ---
+
+// AVBsfListFree wraps av_bsf_list_free.
+/*
+  Free list of bitstream filters.
+
+  @param lst Pointer to pointer returned by av_bsf_list_alloc()
+*/
+func AVBsfListFree(lst **AVBSFList) {
+	var ptrlst **C.AVBSFList
+	var tmplst *C.AVBSFList
+	var oldTmplst *C.AVBSFList
+	if lst != nil {
+		innerlst := *lst
+		if innerlst != nil {
+			tmplst = innerlst.ptr
+			oldTmplst = tmplst
+		}
+		ptrlst = &tmplst
+	}
+	C.av_bsf_list_free(ptrlst)
+	if tmplst != oldTmplst && lst != nil {
+		if tmplst != nil {
+			*lst = &AVBSFList{ptr: tmplst}
+		} else {
+			*lst = nil
+		}
+	}
+}
+
+// --- Function av_bsf_list_append ---
+
+// AVBsfListAppend wraps av_bsf_list_append.
+/*
+  Append bitstream filter to the list of bitstream filters.
+
+  @param lst List to append to
+  @param bsf Filter context to be appended
+
+  @return >=0 on success, negative AVERROR in case of failure
+*/
+func AVBsfListAppend(lst *AVBSFList, bsf *AVBSFContext) (int, error) {
+	var tmplst *C.AVBSFList
+	if lst != nil {
+		tmplst = lst.ptr
+	}
+	var tmpbsf *C.AVBSFContext
+	if bsf != nil {
+		tmpbsf = bsf.ptr
+	}
+	ret := C.av_bsf_list_append(tmplst, tmpbsf)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_list_append2 ---
+
+// AVBsfListAppend2 wraps av_bsf_list_append2.
+/*
+  Construct new bitstream filter context given it's name and options
+  and append it to the list of bitstream filters.
+
+  @param lst      List to append to
+  @param bsf_name Name of the bitstream filter
+  @param options  Options for the bitstream filter, can be set to NULL
+
+  @return >=0 on success, negative AVERROR in case of failure
+*/
+func AVBsfListAppend2(lst *AVBSFList, bsfName *CStr, options **AVDictionary) (int, error) {
+	var tmplst *C.AVBSFList
+	if lst != nil {
+		tmplst = lst.ptr
+	}
+	var tmpbsfName *C.char
+	if bsfName != nil {
+		tmpbsfName = bsfName.ptr
+	}
+	var ptroptions **C.AVDictionary
+	var tmpoptions *C.AVDictionary
+	var oldTmpoptions *C.AVDictionary
+	if options != nil {
+		inneroptions := *options
+		if inneroptions != nil {
+			tmpoptions = inneroptions.ptr
+			oldTmpoptions = tmpoptions
+		}
+		ptroptions = &tmpoptions
+	}
+	ret := C.av_bsf_list_append2(tmplst, tmpbsfName, ptroptions)
+	if tmpoptions != oldTmpoptions && options != nil {
+		if tmpoptions != nil {
+			*options = &AVDictionary{ptr: tmpoptions}
+		} else {
+			*options = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_list_finalize ---
+
+// AVBsfListFinalize wraps av_bsf_list_finalize.
+/*
+  Finalize list of bitstream filters.
+
+  This function will transform @ref AVBSFList to single @ref AVBSFContext,
+  so the whole chain of bitstream filters can be treated as single filter
+  freshly allocated by av_bsf_alloc().
+  If the call is successful, @ref AVBSFList structure is freed and lst
+  will be set to NULL. In case of failure, caller is responsible for
+  freeing the structure by av_bsf_list_free()
+
+  @param      lst Filter list structure to be transformed
+  @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
+                  representing the chain of bitstream filters
+
+  @return >=0 on success, negative AVERROR in case of failure
+*/
+func AVBsfListFinalize(lst **AVBSFList, bsf **AVBSFContext) (int, error) {
+	var ptrlst **C.AVBSFList
+	var tmplst *C.AVBSFList
+	var oldTmplst *C.AVBSFList
+	if lst != nil {
+		innerlst := *lst
+		if innerlst != nil {
+			tmplst = innerlst.ptr
+			oldTmplst = tmplst
+		}
+		ptrlst = &tmplst
+	}
+	var ptrbsf **C.AVBSFContext
+	var tmpbsf *C.AVBSFContext
+	var oldTmpbsf *C.AVBSFContext
+	if bsf != nil {
+		innerbsf := *bsf
+		if innerbsf != nil {
+			tmpbsf = innerbsf.ptr
+			oldTmpbsf = tmpbsf
+		}
+		ptrbsf = &tmpbsf
+	}
+	ret := C.av_bsf_list_finalize(ptrlst, ptrbsf)
+	if tmplst != oldTmplst && lst != nil {
+		if tmplst != nil {
+			*lst = &AVBSFList{ptr: tmplst}
+		} else {
+			*lst = nil
+		}
+	}
+	if tmpbsf != oldTmpbsf && bsf != nil {
+		if tmpbsf != nil {
+			*bsf = &AVBSFContext{ptr: tmpbsf}
+		} else {
+			*bsf = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_list_parse_str ---
+
+// AVBsfListParseStr wraps av_bsf_list_parse_str.
+/*
+  Parse string describing list of bitstream filters and create single
+  @ref AVBSFContext describing the whole chain of bitstream filters.
+  Resulting @ref AVBSFContext can be treated as any other @ref AVBSFContext freshly
+  allocated by av_bsf_alloc().
+
+  @param      str String describing chain of bitstream filters in format
+                  `bsf1[=opt1=val1:opt2=val2][,bsf2]`
+  @param[out] bsf Pointer to be set to newly created @ref AVBSFContext structure
+                  representing the chain of bitstream filters
+
+  @return >=0 on success, negative AVERROR in case of failure
+*/
+func AVBsfListParseStr(str *CStr, bsf **AVBSFContext) (int, error) {
+	var tmpstr *C.char
+	if str != nil {
+		tmpstr = str.ptr
+	}
+	var ptrbsf **C.AVBSFContext
+	var tmpbsf *C.AVBSFContext
+	var oldTmpbsf *C.AVBSFContext
+	if bsf != nil {
+		innerbsf := *bsf
+		if innerbsf != nil {
+			tmpbsf = innerbsf.ptr
+			oldTmpbsf = tmpbsf
+		}
+		ptrbsf = &tmpbsf
+	}
+	ret := C.av_bsf_list_parse_str(tmpstr, ptrbsf)
+	if tmpbsf != oldTmpbsf && bsf != nil {
+		if tmpbsf != nil {
+			*bsf = &AVBSFContext{ptr: tmpbsf}
+		} else {
+			*bsf = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_bsf_get_null_filter ---
+
+// AVBsfGetNullFilter wraps av_bsf_get_null_filter.
+/*
+  Get null/pass-through bitstream filter.
+
+  @param[out] bsf Pointer to be set to new instance of pass-through bitstream filter
+
+  @return
+*/
+func AVBsfGetNullFilter(bsf **AVBSFContext) (int, error) {
+	var ptrbsf **C.AVBSFContext
+	var tmpbsf *C.AVBSFContext
+	var oldTmpbsf *C.AVBSFContext
+	if bsf != nil {
+		innerbsf := *bsf
+		if innerbsf != nil {
+			tmpbsf = innerbsf.ptr
+			oldTmpbsf = tmpbsf
+		}
+		ptrbsf = &tmpbsf
+	}
+	ret := C.av_bsf_get_null_filter(ptrbsf)
+	if tmpbsf != oldTmpbsf && bsf != nil {
+		if tmpbsf != nil {
+			*bsf = &AVBSFContext{ptr: tmpbsf}
+		} else {
+			*bsf = nil
+		}
+	}
 	return int(ret), WrapErr(int(ret))
 }
 

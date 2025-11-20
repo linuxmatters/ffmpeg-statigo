@@ -57,7 +57,7 @@ func main() {
 func listCodecs() {
 	fmt.Println("==================================================")
 	fmt.Println("CODECS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf(" %s  %-24s %-42s %s\n", "DE", "NAME", "DESCRIPTION", "TYPE")
 	fmt.Println()
 
@@ -198,7 +198,7 @@ func getCodecName(codecID ffmpeg.AVCodecID) string {
 func listFormats() {
 	fmt.Println("\n==================================================")
 	fmt.Println("FORMATS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf("%s  %-24s %-42s %-35s %s\n", "DE", "NAME", "DESCRIPTION", "CODECS", "MIME TYPE")
 	fmt.Println()
 
@@ -413,7 +413,7 @@ func listFormats() {
 func listBSFs() {
 	fmt.Println("\n==================================================")
 	fmt.Println("BITSTREAM FILTERS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf("    %-24s %-42s\n", "NAME", "SUPPORTED CODECS")
 	fmt.Println()
 
@@ -429,11 +429,11 @@ func listBSFs() {
 		count++
 
 		// Get the bitstream filter name
-		name := bsf.Name()
+		nameStr := bsf.Name().String()
 
 		// Truncate name if too long
-		if len(name) > 24 {
-			name = name[:24]
+		if len(nameStr) > 24 {
+			nameStr = nameStr[:24]
 		}
 
 		// Get supported codec IDs
@@ -443,11 +443,11 @@ func listBSFs() {
 			codecSpecificCount++
 			var codecs []string
 			for i := uintptr(0); ; i++ {
-				codecID := (*ffmpeg.AVCodecID)(unsafe.Pointer(uintptr(unsafe.Pointer(codecIDs)) + i*unsafe.Sizeof(*codecIDs)))
-				if *codecID == ffmpeg.AVCodecIdNone {
+				codecID := codecIDs.Get(i)
+				if codecID == ffmpeg.AVCodecIdNone {
 					break
 				}
-				codecName := getCodecName(*codecID)
+				codecName := getCodecName(codecID)
 				codecs = append(codecs, codecName)
 			}
 			if len(codecs) > 0 {
@@ -458,7 +458,7 @@ func listBSFs() {
 			}
 		}
 
-		fmt.Printf("    %-24s %-42s\n", name, codecList)
+		fmt.Printf("    %-24s %-42s\n", nameStr, codecList)
 	}
 
 	fmt.Printf("\nSummary:\n")
@@ -470,7 +470,7 @@ func listBSFs() {
 func listParsers() {
 	fmt.Println("\n==================================================")
 	fmt.Println("PARSERS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf("    %-24s %-42s\n", "NAME", "SUPPORTED CODECS")
 	fmt.Println()
 
@@ -538,7 +538,7 @@ func listParsers() {
 func listProtocols() {
 	fmt.Println("\n==================================================")
 	fmt.Println("PROTOCOLS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf("%s  %-24s\n", "IO", "NAME")
 	fmt.Println()
 
@@ -701,7 +701,7 @@ func getHWDeviceTypeFromCodec(codec *ffmpeg.AVCodec) ffmpeg.AVHWDeviceType {
 func listHWAccels() {
 	fmt.Println("\n==================================================")
 	fmt.Println("HARDWARE ACCELERATORS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 
 	// First list hardware device types
 	fmt.Printf("    %-24s\n", "NAME")
@@ -749,7 +749,7 @@ func listHWAccels() {
 	// Unified list of hardware acceleration (hwaccels + hardware codecs)
 	fmt.Println("\n==================================================")
 	fmt.Println("HARDWARE CODECS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf(" %s  %-24s %-42s %s %s\n", "DEH", "NAME", "DESCRIPTION", "TYPE", "PRESENT")
 	fmt.Println()
 
@@ -981,7 +981,7 @@ func listHWAccels() {
 func listFilters() {
 	fmt.Println("\n==================================================")
 	fmt.Println("FILTERS")
-	fmt.Println("==================================================\n")
+	fmt.Println("==================================================")
 	fmt.Printf(" %s  %-24s %-42s %s\n", "TSHM", "NAME", "DESCRIPTION", "TYPE")
 	fmt.Println()
 
@@ -1556,7 +1556,7 @@ func buildBSFMap() map[ffmpeg.AVCodecID][]string {
 			break
 		}
 
-		name := bsf.Name()
+		name := bsf.Name().String()
 		codecIDs := bsf.CodecIds()
 
 		if codecIDs == nil {
@@ -1565,11 +1565,11 @@ func buildBSFMap() map[ffmpeg.AVCodecID][]string {
 		} else {
 			// Codec-specific BSF
 			for i := uintptr(0); ; i++ {
-				codecID := (*ffmpeg.AVCodecID)(unsafe.Pointer(uintptr(unsafe.Pointer(codecIDs)) + i*unsafe.Sizeof(*codecIDs)))
-				if *codecID == ffmpeg.AVCodecIdNone {
+				codecID := codecIDs.Get(i)
+				if codecID == ffmpeg.AVCodecIdNone {
 					break
 				}
-				bsfMap[*codecID] = append(bsfMap[*codecID], name)
+				bsfMap[codecID] = append(bsfMap[codecID], name)
 			}
 		}
 	}

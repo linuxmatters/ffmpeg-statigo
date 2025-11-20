@@ -3,6 +3,7 @@ package ffmpeg
 import "unsafe"
 
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
@@ -4774,6 +4775,365 @@ func (s *AVCodecParser) SetPrivDataSize(value int) {
 // parser_close skipped due to func ptr
 
 // split skipped due to func ptr
+
+// --- Struct AVBSFContext ---
+
+// AVBSFContext wraps AVBSFContext.
+/*
+  The bitstream filter state.
+
+  This struct must be allocated with av_bsf_alloc() and freed with
+  av_bsf_free().
+
+  The fields in the struct will only be changed (by the caller or by the
+  filter) as described in their documentation, and are to be considered
+  immutable otherwise.
+*/
+type AVBSFContext struct {
+	ptr *C.AVBSFContext
+}
+
+func (s *AVBSFContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVBSFContextArray(ptr unsafe.Pointer) *Array[*AVBSFContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVBSFContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVBSFContext {
+			ptr := (**C.AVBSFContext)(pointer)
+			value := *ptr
+			var valueMapped *AVBSFContext
+			if value != nil {
+				valueMapped = &AVBSFContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVBSFContext) {
+			ptr := (**C.AVBSFContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+//
+//	A class for logging and AVOptions
+func (s *AVBSFContext) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+//
+//	A class for logging and AVOptions
+func (s *AVBSFContext) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// Filter gets the filter field.
+//
+//	The bitstream filter this context is an instance of.
+func (s *AVBSFContext) Filter() *AVBitStreamFilter {
+	value := s.ptr.filter
+	var valueMapped *AVBitStreamFilter
+	if value != nil {
+		valueMapped = &AVBitStreamFilter{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetFilter sets the filter field.
+//
+//	The bitstream filter this context is an instance of.
+func (s *AVBSFContext) SetFilter(value *AVBitStreamFilter) {
+	if value != nil {
+		s.ptr.filter = value.ptr
+	} else {
+		s.ptr.filter = nil
+	}
+}
+
+// PrivData gets the priv_data field.
+/*
+  Opaque filter-specific private data. If filter->priv_class is non-NULL,
+  this is an AVOptions-enabled struct.
+*/
+func (s *AVBSFContext) PrivData() unsafe.Pointer {
+	value := s.ptr.priv_data
+	return value
+}
+
+// SetPrivData sets the priv_data field.
+/*
+  Opaque filter-specific private data. If filter->priv_class is non-NULL,
+  this is an AVOptions-enabled struct.
+*/
+func (s *AVBSFContext) SetPrivData(value unsafe.Pointer) {
+	s.ptr.priv_data = value
+}
+
+// ParIn gets the par_in field.
+/*
+  Parameters of the input stream. This field is allocated in
+  av_bsf_alloc(), it needs to be filled by the caller before
+  av_bsf_init().
+*/
+func (s *AVBSFContext) ParIn() *AVCodecParameters {
+	value := s.ptr.par_in
+	var valueMapped *AVCodecParameters
+	if value != nil {
+		valueMapped = &AVCodecParameters{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetParIn sets the par_in field.
+/*
+  Parameters of the input stream. This field is allocated in
+  av_bsf_alloc(), it needs to be filled by the caller before
+  av_bsf_init().
+*/
+func (s *AVBSFContext) SetParIn(value *AVCodecParameters) {
+	if value != nil {
+		s.ptr.par_in = value.ptr
+	} else {
+		s.ptr.par_in = nil
+	}
+}
+
+// ParOut gets the par_out field.
+/*
+  Parameters of the output stream. This field is allocated in
+  av_bsf_alloc(), it is set by the filter in av_bsf_init().
+*/
+func (s *AVBSFContext) ParOut() *AVCodecParameters {
+	value := s.ptr.par_out
+	var valueMapped *AVCodecParameters
+	if value != nil {
+		valueMapped = &AVCodecParameters{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetParOut sets the par_out field.
+/*
+  Parameters of the output stream. This field is allocated in
+  av_bsf_alloc(), it is set by the filter in av_bsf_init().
+*/
+func (s *AVBSFContext) SetParOut(value *AVCodecParameters) {
+	if value != nil {
+		s.ptr.par_out = value.ptr
+	} else {
+		s.ptr.par_out = nil
+	}
+}
+
+// TimeBaseIn gets the time_base_in field.
+/*
+  The timebase used for the timestamps of the input packets. Set by the
+  caller before av_bsf_init().
+*/
+func (s *AVBSFContext) TimeBaseIn() *AVRational {
+	value := s.ptr.time_base_in
+	return &AVRational{value: value}
+}
+
+// SetTimeBaseIn sets the time_base_in field.
+/*
+  The timebase used for the timestamps of the input packets. Set by the
+  caller before av_bsf_init().
+*/
+func (s *AVBSFContext) SetTimeBaseIn(value *AVRational) {
+	s.ptr.time_base_in = value.value
+}
+
+// TimeBaseOut gets the time_base_out field.
+/*
+  The timebase used for the timestamps of the output packets. Set by the
+  filter in av_bsf_init().
+*/
+func (s *AVBSFContext) TimeBaseOut() *AVRational {
+	value := s.ptr.time_base_out
+	return &AVRational{value: value}
+}
+
+// SetTimeBaseOut sets the time_base_out field.
+/*
+  The timebase used for the timestamps of the output packets. Set by the
+  filter in av_bsf_init().
+*/
+func (s *AVBSFContext) SetTimeBaseOut(value *AVRational) {
+	s.ptr.time_base_out = value.value
+}
+
+// --- Struct AVBitStreamFilter ---
+
+// AVBitStreamFilter wraps AVBitStreamFilter.
+type AVBitStreamFilter struct {
+	ptr *C.AVBitStreamFilter
+}
+
+func (s *AVBitStreamFilter) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVBitStreamFilterArray(ptr unsafe.Pointer) *Array[*AVBitStreamFilter] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVBitStreamFilter]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVBitStreamFilter {
+			ptr := (**C.AVBitStreamFilter)(pointer)
+			value := *ptr
+			var valueMapped *AVBitStreamFilter
+			if value != nil {
+				valueMapped = &AVBitStreamFilter{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVBitStreamFilter) {
+			ptr := (**C.AVBitStreamFilter)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Name gets the name field.
+func (s *AVBitStreamFilter) Name() *CStr {
+	value := s.ptr.name
+	return wrapCStr(value)
+}
+
+// SetName sets the name field.
+func (s *AVBitStreamFilter) SetName(value *CStr) {
+	s.ptr.name = value.ptr
+}
+
+// CodecIds gets the codec_ids field.
+/*
+  A list of codec ids supported by the filter, terminated by
+  AV_CODEC_ID_NONE.
+  May be NULL, in that case the bitstream filter works with any codec id.
+*/
+func (s *AVBitStreamFilter) CodecIds() *Array[AVCodecID] {
+	value := s.ptr.codec_ids
+	return ToAVCodecIDArray(unsafe.Pointer(value))
+}
+
+// SetCodecIds sets the codec_ids field.
+/*
+  A list of codec ids supported by the filter, terminated by
+  AV_CODEC_ID_NONE.
+  May be NULL, in that case the bitstream filter works with any codec id.
+*/
+func (s *AVBitStreamFilter) SetCodecIds(value *Array[AVCodecID]) {
+	if value != nil {
+		s.ptr.codec_ids = (*C.enum_AVCodecID)(value.ptr)
+	} else {
+		s.ptr.codec_ids = nil
+	}
+}
+
+// PrivClass gets the priv_class field.
+/*
+  A class for the private data, used to declare bitstream filter private
+  AVOptions. This field is NULL for bitstream filters that do not declare
+  any options.
+
+  If this field is non-NULL, the first member of the filter private data
+  must be a pointer to AVClass, which will be set by libavcodec generic
+  code to this class.
+*/
+func (s *AVBitStreamFilter) PrivClass() *AVClass {
+	value := s.ptr.priv_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetPrivClass sets the priv_class field.
+/*
+  A class for the private data, used to declare bitstream filter private
+  AVOptions. This field is NULL for bitstream filters that do not declare
+  any options.
+
+  If this field is non-NULL, the first member of the filter private data
+  must be a pointer to AVClass, which will be set by libavcodec generic
+  code to this class.
+*/
+func (s *AVBitStreamFilter) SetPrivClass(value *AVClass) {
+	if value != nil {
+		s.ptr.priv_class = value.ptr
+	} else {
+		s.ptr.priv_class = nil
+	}
+}
+
+// --- Struct AVBSFList ---
+
+// AVBSFList wraps AVBSFList.
+type AVBSFList struct {
+	ptr *C.AVBSFList
+}
+
+func (s *AVBSFList) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVBSFListArray(ptr unsafe.Pointer) *Array[*AVBSFList] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVBSFList]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVBSFList {
+			ptr := (**C.AVBSFList)(pointer)
+			value := *ptr
+			var valueMapped *AVBSFList
+			if value != nil {
+				valueMapped = &AVBSFList{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVBSFList) {
+			ptr := (**C.AVBSFList)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
 
 // --- Struct AVProfile ---
 
