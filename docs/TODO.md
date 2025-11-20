@@ -11,7 +11,7 @@
 - [x] Review default codecs:
   - https://ffmpeg.martin-riedl.de/
   - https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg
-- [ ] Create some test cases that exercise some of the FFmpeg API surface
+- [x] Create some test cases that exercise some of the FFmpeg API surface
 
 ## From the original author
 
