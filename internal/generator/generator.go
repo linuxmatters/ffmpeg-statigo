@@ -34,13 +34,69 @@ var primTypes = map[string]string{
 }
 
 // getCType returns the correct C type name to use in C.xxx() conversions.
-// This handles cases where libclang might report the wrong type (e.g., int instead of size_t).
+// This handles cases where libclang might report the wrong type.
+// fieldCTypeOverrides provides explicit C type names for fields that libclang misreports.
+// This is needed when libclang can't find system headers and resolves typedefs incorrectly.
+var fieldCTypeOverrides = map[string]map[string]string{
+	"AVPixFmtDescriptor": {
+		"nb_components": "uint8_t",
+		"log2_chroma_w": "uint8_t",
+		"log2_chroma_h": "uint8_t",
+		"flags":         "uint64_t",
+	},
+}
+
 func getCType(typeName string, goType string) string {
-	// If the Go type is uint64, check if this should be size_t
-	if goType == "uint64" && (typeName == "size_t" || typeName == "int") {
-		// Always use size_t for uint64 parameters to handle libclang inconsistencies
-		return "size_t"
+	// Special case: char should stay as char, not become uint8_t
+	// This is important for function parameters where char != uint8_t
+	if typeName == "char" {
+		return "char"
 	}
+
+	// Map Go types to their correct C types
+	// Returns the type name to use after "C." in generated code
+	switch goType {
+	case "int":
+		return "int"
+	case "uint":
+		return "uint" // CGO accepts C.uint
+	case "int8":
+		return "int8_t"
+	case "int16":
+		return "int16_t"
+	case "int32":
+		return "int32_t"
+	case "int64":
+		return "int64_t"
+	case "uint8":
+		return "uint8_t"
+	case "uint16":
+		return "uint16_t"
+	case "uint32":
+		return "uint32_t"
+	case "uint64":
+		// Could be uint64_t or size_t - prefer size_t for size-related fields
+		if typeName == "size_t" {
+			return "size_t"
+		}
+		return "uint64_t"
+	case "float32":
+		return "float"
+	case "float64":
+		return "double"
+	}
+
+	// For other types, map Go pseudo-types to CGO types
+	switch typeName {
+	case "uchar":
+		return "uchar" // C.uchar is valid
+	case "ulong":
+		return "ulong" // C.ulong is valid
+	case "long":
+		return "long" // C.long is valid
+	}
+
+	// Default: use the reported type name
 	return typeName
 }
 
@@ -369,9 +425,28 @@ func (g *Generator) generateStructs() {
 							tgt.Op("=").Id("value"),
 						)
 					} else {
+						// Use the original C type name if available, otherwise try override, otherwise map from Go type
+						cType := field.CTypeName
+						// Normalize C type names that have spaces (not valid after "C.")
+						cType = strings.ReplaceAll(cType, "unsigned long", "ulong")
+						cType = strings.ReplaceAll(cType, "unsigned int", "uint")
+						cType = strings.ReplaceAll(cType, "unsigned char", "uchar")
+						cType = strings.ReplaceAll(cType, "unsigned short", "ushort")
+
+						if cType == "" || cType == "int" || cType == "uint" {
+							// Check for struct-specific override
+							if overrides, ok := fieldCTypeOverrides[st.Name]; ok {
+								if override, ok := overrides[field.Name]; ok {
+									cType = override
+								}
+							}
+						}
+						if cType == "" || cType == "int" || cType == "uint" {
+							cType = getCType(v.Name, m)
+						}
 						setBody = append(
 							setBody,
-							tgt.Op("=").Params(jen.Qual("C", v.Name)).Params(jen.Id("value")),
+							tgt.Op("=").Params(jen.Qual("C", cType)).Params(jen.Id("value")),
 						)
 					}
 				} else if s, ok := g.input.structs[v.Name]; ok {
@@ -1256,6 +1331,7 @@ outer:
 
 	err := o.Save("functions.gen.go")
 	if err != nil {
+		log.Println("ERROR saving functions.gen.go:", err)
 		log.Panicln(err)
 	}
 }
@@ -1263,7 +1339,7 @@ outer:
 func convParamName(val string) string {
 	val = strcase.ToLowerCamel(val)
 
-	if val == "type" {
+	if val == "type" || val == "range" {
 		val = fmt.Sprintf("_%v", val)
 	}
 

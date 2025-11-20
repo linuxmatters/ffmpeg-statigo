@@ -164,6 +164,21 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 
 	case clang.Type_Int, clang.Type_UInt, clang.Type_Long, clang.Type_ULong, clang.Type_UChar, clang.Type_Char_S,
 		clang.Type_Float, clang.Type_Double, clang.Type_Enum, clang.Type_Record:
+
+		// First try to use the original type spelling (preserves typedefs like uint8_t)
+		spelling := t.Spelling()
+		spelling = strings.TrimPrefix(spelling, "const ")
+		spelling = strings.TrimPrefix(spelling, "struct ")
+		spelling = strings.TrimPrefix(spelling, "enum ")
+
+		// If the spelling is a standard typedef (ends with _t), use it directly
+		if spelling != "" && (strings.HasSuffix(spelling, "_t") || spelling == "size_t" || spelling == "ptrdiff_t") {
+			log.Println(indent, "Parsing type", t.Spelling(), "as ident (using typedef spelling)")
+			return &IdentType{
+				Name: spelling,
+			}
+		}
+
 		log.Println(indent, "Parsing type", t.Spelling(), "as ident")
 		name := t.CanonicalType().Spelling()
 		name = strings.TrimPrefix(name, "const ")

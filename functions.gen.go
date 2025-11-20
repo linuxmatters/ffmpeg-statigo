@@ -79,6 +79,7 @@ import "unsafe"
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixdesc.h>
 // #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
@@ -13471,7 +13472,7 @@ func AVImageCopyPlane(dst unsafe.Pointer, dstLinesize int, src unsafe.Pointer, s
         size (i.e. 64) to get improved performance.
 */
 func AVImageCopyPlaneUcFrom(dst unsafe.Pointer, dstLinesize int64, src unsafe.Pointer, srcLinesize int64, bytewidth int64, height int) {
-	C.av_image_copy_plane_uc_from((*C.uint8_t)(dst), C.ptrdiff_t(dstLinesize), (*C.uint8_t)(src), C.ptrdiff_t(srcLinesize), C.ptrdiff_t(bytewidth), C.int(height))
+	C.av_image_copy_plane_uc_from((*C.uint8_t)(dst), C.int64_t(dstLinesize), (*C.uint8_t)(src), C.int64_t(srcLinesize), C.int64_t(bytewidth), C.int(height))
 }
 
 // --- Function av_image_copy ---
@@ -15491,6 +15492,376 @@ func AVFindInfoTag(arg *CStr, argSize int, tag1 *CStr, info *CStr) (int, error) 
 // --- Function av_timegm ---
 
 // av_timegm skipped due to tm.
+
+// --- Function av_get_bits_per_pixel ---
+
+// AVGetBitsPerPixel wraps av_get_bits_per_pixel.
+/*
+  Return the number of bits per pixel used by the pixel format
+  described by pixdesc. Note that this is not the same as the number
+  of bits per sample.
+
+  The returned number of bits refers to the number of bits actually
+  used for storing the pixel information, that is padding bits are
+  not counted.
+*/
+func AVGetBitsPerPixel(pixdesc *AVPixFmtDescriptor) (int, error) {
+	var tmppixdesc *C.AVPixFmtDescriptor
+	if pixdesc != nil {
+		tmppixdesc = pixdesc.ptr
+	}
+	ret := C.av_get_bits_per_pixel(tmppixdesc)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_get_padded_bits_per_pixel ---
+
+// AVGetPaddedBitsPerPixel wraps av_get_padded_bits_per_pixel.
+/*
+  Return the number of bits per pixel for the pixel format
+  described by pixdesc, including any padding or unused bits.
+*/
+func AVGetPaddedBitsPerPixel(pixdesc *AVPixFmtDescriptor) (int, error) {
+	var tmppixdesc *C.AVPixFmtDescriptor
+	if pixdesc != nil {
+		tmppixdesc = pixdesc.ptr
+	}
+	ret := C.av_get_padded_bits_per_pixel(tmppixdesc)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_pix_fmt_desc_get ---
+
+// AVPixFmtDescGet wraps av_pix_fmt_desc_get.
+/*
+  @return a pixel format descriptor for provided pixel format or NULL if
+  this pixel format is unknown.
+*/
+func AVPixFmtDescGet(pixFmt AVPixelFormat) *AVPixFmtDescriptor {
+	ret := C.av_pix_fmt_desc_get(C.enum_AVPixelFormat(pixFmt))
+	var retMapped *AVPixFmtDescriptor
+	if ret != nil {
+		retMapped = &AVPixFmtDescriptor{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_pix_fmt_desc_next ---
+
+// AVPixFmtDescNext wraps av_pix_fmt_desc_next.
+/*
+  Iterate over all pixel format descriptors known to libavutil.
+
+  @param prev previous descriptor. NULL to get the first descriptor.
+
+  @return next descriptor or NULL after the last descriptor
+*/
+func AVPixFmtDescNext(prev *AVPixFmtDescriptor) *AVPixFmtDescriptor {
+	var tmpprev *C.AVPixFmtDescriptor
+	if prev != nil {
+		tmpprev = prev.ptr
+	}
+	ret := C.av_pix_fmt_desc_next(tmpprev)
+	var retMapped *AVPixFmtDescriptor
+	if ret != nil {
+		retMapped = &AVPixFmtDescriptor{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_pix_fmt_desc_get_id ---
+
+// AVPixFmtDescGetId wraps av_pix_fmt_desc_get_id.
+/*
+  @return an AVPixelFormat id described by desc, or AV_PIX_FMT_NONE if desc
+  is not a valid pointer to a pixel format descriptor.
+*/
+func AVPixFmtDescGetId(desc *AVPixFmtDescriptor) AVPixelFormat {
+	var tmpdesc *C.AVPixFmtDescriptor
+	if desc != nil {
+		tmpdesc = desc.ptr
+	}
+	ret := C.av_pix_fmt_desc_get_id(tmpdesc)
+	return AVPixelFormat(ret)
+}
+
+// --- Function av_pix_fmt_get_chroma_sub_sample ---
+
+// av_pix_fmt_get_chroma_sub_sample skipped due to hShift
+
+// --- Function av_pix_fmt_count_planes ---
+
+// AVPixFmtCountPlanes wraps av_pix_fmt_count_planes.
+/*
+  @return number of planes in pix_fmt, a negative AVERROR if pix_fmt is not a
+  valid pixel format.
+*/
+func AVPixFmtCountPlanes(pixFmt AVPixelFormat) (int, error) {
+	ret := C.av_pix_fmt_count_planes(C.enum_AVPixelFormat(pixFmt))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_color_range_name ---
+
+// AVColorRangeName wraps av_color_range_name.
+//
+//	@return the name for provided color range or NULL if unknown.
+func AVColorRangeName(_range AVColorRange) *CStr {
+	ret := C.av_color_range_name(C.enum_AVColorRange(_range))
+	return wrapCStr(ret)
+}
+
+// --- Function av_color_range_from_name ---
+
+// AVColorRangeFromName wraps av_color_range_from_name.
+//
+//	@return the AVColorRange value for name or an AVError if not found.
+func AVColorRangeFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_color_range_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_color_primaries_name ---
+
+// AVColorPrimariesName wraps av_color_primaries_name.
+//
+//	@return the name for provided color primaries or NULL if unknown.
+func AVColorPrimariesName(primaries AVColorPrimaries) *CStr {
+	ret := C.av_color_primaries_name(C.enum_AVColorPrimaries(primaries))
+	return wrapCStr(ret)
+}
+
+// --- Function av_color_primaries_from_name ---
+
+// AVColorPrimariesFromName wraps av_color_primaries_from_name.
+//
+//	@return the AVColorPrimaries value for name or an AVError if not found.
+func AVColorPrimariesFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_color_primaries_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_color_transfer_name ---
+
+// AVColorTransferName wraps av_color_transfer_name.
+//
+//	@return the name for provided color transfer or NULL if unknown.
+func AVColorTransferName(transfer AVColorTransferCharacteristic) *CStr {
+	ret := C.av_color_transfer_name(C.enum_AVColorTransferCharacteristic(transfer))
+	return wrapCStr(ret)
+}
+
+// --- Function av_color_transfer_from_name ---
+
+// AVColorTransferFromName wraps av_color_transfer_from_name.
+//
+//	@return the AVColorTransferCharacteristic value for name or an AVError if not found.
+func AVColorTransferFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_color_transfer_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_color_space_name ---
+
+// AVColorSpaceName wraps av_color_space_name.
+//
+//	@return the name for provided color space or NULL if unknown.
+func AVColorSpaceName(space AVColorSpace) *CStr {
+	ret := C.av_color_space_name(C.enum_AVColorSpace(space))
+	return wrapCStr(ret)
+}
+
+// --- Function av_color_space_from_name ---
+
+// AVColorSpaceFromName wraps av_color_space_from_name.
+//
+//	@return the AVColorSpace value for name or an AVError if not found.
+func AVColorSpaceFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_color_space_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_chroma_location_name ---
+
+// AVChromaLocationName wraps av_chroma_location_name.
+//
+//	@return the name for provided chroma location or NULL if unknown.
+func AVChromaLocationName(location AVChromaLocation) *CStr {
+	ret := C.av_chroma_location_name(C.enum_AVChromaLocation(location))
+	return wrapCStr(ret)
+}
+
+// --- Function av_chroma_location_from_name ---
+
+// AVChromaLocationFromName wraps av_chroma_location_from_name.
+//
+//	@return the AVChromaLocation value for name or an AVError if not found.
+func AVChromaLocationFromName(name *CStr) (int, error) {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_chroma_location_from_name(tmpname)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_chroma_location_enum_to_pos ---
+
+// av_chroma_location_enum_to_pos skipped due to xpos
+
+// --- Function av_chroma_location_pos_to_enum ---
+
+// AVChromaLocationPosToEnum wraps av_chroma_location_pos_to_enum.
+/*
+  Converts swscale x/y chroma position to AVChromaLocation.
+
+  The positions represent the chroma (0,0) position in a coordinates system
+  with luma (0,0) representing the origin and luma(1,1) representing 256,256
+
+  @param xpos  horizontal chroma sample position
+  @param ypos  vertical   chroma sample position
+*/
+func AVChromaLocationPosToEnum(xpos int, ypos int) AVChromaLocation {
+	ret := C.av_chroma_location_pos_to_enum(C.int(xpos), C.int(ypos))
+	return AVChromaLocation(ret)
+}
+
+// --- Function av_get_pix_fmt ---
+
+// AVGetPixFmt wraps av_get_pix_fmt.
+/*
+  Return the pixel format corresponding to name.
+
+  If there is no pixel format with name name, then looks for a
+  pixel format with the name corresponding to the native endian
+  format of name.
+  For example in a little-endian system, first looks for "gray16",
+  then for "gray16le".
+
+  Finally if no pixel format has been found, returns AV_PIX_FMT_NONE.
+*/
+func AVGetPixFmt(name *CStr) AVPixelFormat {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_get_pix_fmt(tmpname)
+	return AVPixelFormat(ret)
+}
+
+// --- Function av_get_pix_fmt_name ---
+
+// AVGetPixFmtName wraps av_get_pix_fmt_name.
+/*
+  Return the short name for a pixel format, NULL in case pix_fmt is
+  unknown.
+
+  @see av_get_pix_fmt(), av_get_pix_fmt_string()
+*/
+func AVGetPixFmtName(pixFmt AVPixelFormat) *CStr {
+	ret := C.av_get_pix_fmt_name(C.enum_AVPixelFormat(pixFmt))
+	return wrapCStr(ret)
+}
+
+// --- Function av_get_pix_fmt_string ---
+
+// AVGetPixFmtString wraps av_get_pix_fmt_string.
+/*
+  Print in buf the string corresponding to the pixel format with
+  number pix_fmt, or a header if pix_fmt is negative.
+
+  @param buf the buffer where to write the string
+  @param buf_size the size of buf
+  @param pix_fmt the number of the pixel format to print the
+  corresponding info string, or a negative value to print the
+  corresponding header.
+*/
+func AVGetPixFmtString(buf *CStr, bufSize int, pixFmt AVPixelFormat) *CStr {
+	var tmpbuf *C.char
+	if buf != nil {
+		tmpbuf = buf.ptr
+	}
+	ret := C.av_get_pix_fmt_string(tmpbuf, C.int(bufSize), C.enum_AVPixelFormat(pixFmt))
+	return wrapCStr(ret)
+}
+
+// --- Function av_read_image_line2 ---
+
+// av_read_image_line2 skipped due to const array param data
+
+// --- Function av_read_image_line ---
+
+// av_read_image_line skipped due to dst
+
+// --- Function av_write_image_line2 ---
+
+// av_write_image_line2 skipped due to const array param data
+
+// --- Function av_write_image_line ---
+
+// av_write_image_line skipped due to src
+
+// --- Function av_pix_fmt_swap_endianness ---
+
+// AVPixFmtSwapEndianness wraps av_pix_fmt_swap_endianness.
+/*
+  Utility function to swap the endianness of a pixel format.
+
+  @param[in]  pix_fmt the pixel format
+
+  @return pixel format with swapped endianness if it exists,
+  otherwise AV_PIX_FMT_NONE
+*/
+func AVPixFmtSwapEndianness(pixFmt AVPixelFormat) AVPixelFormat {
+	ret := C.av_pix_fmt_swap_endianness(C.enum_AVPixelFormat(pixFmt))
+	return AVPixelFormat(ret)
+}
+
+// --- Function av_get_pix_fmt_loss ---
+
+// AVGetPixFmtLoss wraps av_get_pix_fmt_loss.
+/*
+  Compute what kind of losses will occur when converting from one specific
+  pixel format to another.
+  When converting from one pixel format to another, information loss may occur.
+  For example, when converting from RGB24 to GRAY, the color information will
+  be lost. Similarly, other losses occur when converting from some formats to
+  other formats. These losses can involve loss of chroma, but also loss of
+  resolution, loss of color depth, loss due to the color space conversion, loss
+  of the alpha bits or loss due to color quantization.
+  av_get_fix_fmt_loss() informs you about the various types of losses
+  which will occur when converting from one pixel format to another.
+
+  @param[in] dst_pix_fmt destination pixel format
+  @param[in] src_pix_fmt source pixel format
+  @param[in] has_alpha Whether the source pixel format alpha channel is used.
+  @return Combination of flags informing you what kind of losses will occur
+  (maximum loss for an invalid dst_pix_fmt).
+*/
+func AVGetPixFmtLoss(dstPixFmt AVPixelFormat, srcPixFmt AVPixelFormat, hasAlpha int) (int, error) {
+	ret := C.av_get_pix_fmt_loss(C.enum_AVPixelFormat(dstPixFmt), C.enum_AVPixelFormat(srcPixFmt), C.int(hasAlpha))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_find_best_pix_fmt_of_2 ---
+
+// av_find_best_pix_fmt_of_2 skipped due to lossPtr
 
 // --- Function av_pixelutils_get_sad_fn ---
 

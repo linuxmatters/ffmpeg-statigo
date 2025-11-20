@@ -79,6 +79,7 @@ import "unsafe"
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixdesc.h>
 // #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>

@@ -79,6 +79,7 @@ import "unsafe"
 // #include <libavutil/murmur3.h>
 // #include <libavutil/opt.h>
 // #include <libavutil/parseutils.h>
+// #include <libavutil/pixdesc.h>
 // #include <libavutil/pixelutils.h>
 // #include <libavutil/pixfmt.h>
 // #include <libavutil/random_seed.h>
@@ -26245,6 +26246,288 @@ func (s *AVOptionRanges) NbComponents() int {
 //	Number of components.
 func (s *AVOptionRanges) SetNbComponents(value int) {
 	s.ptr.nb_components = (C.int)(value)
+}
+
+// --- Struct AVComponentDescriptor ---
+
+// AVComponentDescriptor wraps AVComponentDescriptor.
+type AVComponentDescriptor struct {
+	ptr *C.AVComponentDescriptor
+}
+
+func (s *AVComponentDescriptor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVComponentDescriptorArray(ptr unsafe.Pointer) *Array[*AVComponentDescriptor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVComponentDescriptor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVComponentDescriptor {
+			ptr := (**C.AVComponentDescriptor)(pointer)
+			value := *ptr
+			var valueMapped *AVComponentDescriptor
+			if value != nil {
+				valueMapped = &AVComponentDescriptor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVComponentDescriptor) {
+			ptr := (**C.AVComponentDescriptor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Plane gets the plane field.
+//
+//	Which of the 4 planes contains the component.
+func (s *AVComponentDescriptor) Plane() int {
+	value := s.ptr.plane
+	return int(value)
+}
+
+// SetPlane sets the plane field.
+//
+//	Which of the 4 planes contains the component.
+func (s *AVComponentDescriptor) SetPlane(value int) {
+	s.ptr.plane = (C.int)(value)
+}
+
+// Step gets the step field.
+/*
+  Number of elements between 2 horizontally consecutive pixels.
+  Elements are bits for bitstream formats, bytes otherwise.
+*/
+func (s *AVComponentDescriptor) Step() int {
+	value := s.ptr.step
+	return int(value)
+}
+
+// SetStep sets the step field.
+/*
+  Number of elements between 2 horizontally consecutive pixels.
+  Elements are bits for bitstream formats, bytes otherwise.
+*/
+func (s *AVComponentDescriptor) SetStep(value int) {
+	s.ptr.step = (C.int)(value)
+}
+
+// Offset gets the offset field.
+/*
+  Number of elements before the component of the first pixel.
+  Elements are bits for bitstream formats, bytes otherwise.
+*/
+func (s *AVComponentDescriptor) Offset() int {
+	value := s.ptr.offset
+	return int(value)
+}
+
+// SetOffset sets the offset field.
+/*
+  Number of elements before the component of the first pixel.
+  Elements are bits for bitstream formats, bytes otherwise.
+*/
+func (s *AVComponentDescriptor) SetOffset(value int) {
+	s.ptr.offset = (C.int)(value)
+}
+
+// Shift gets the shift field.
+/*
+  Number of least significant bits that must be shifted away
+  to get the value.
+*/
+func (s *AVComponentDescriptor) Shift() int {
+	value := s.ptr.shift
+	return int(value)
+}
+
+// SetShift sets the shift field.
+/*
+  Number of least significant bits that must be shifted away
+  to get the value.
+*/
+func (s *AVComponentDescriptor) SetShift(value int) {
+	s.ptr.shift = (C.int)(value)
+}
+
+// Depth gets the depth field.
+//
+//	Number of bits in the component.
+func (s *AVComponentDescriptor) Depth() int {
+	value := s.ptr.depth
+	return int(value)
+}
+
+// SetDepth sets the depth field.
+//
+//	Number of bits in the component.
+func (s *AVComponentDescriptor) SetDepth(value int) {
+	s.ptr.depth = (C.int)(value)
+}
+
+// --- Struct AVPixFmtDescriptor ---
+
+// AVPixFmtDescriptor wraps AVPixFmtDescriptor.
+/*
+  Descriptor that unambiguously describes how the bits of a pixel are
+  stored in the up to 4 data planes of an image. It also stores the
+  subsampling factors and number of components.
+
+  @note This is separate of the colorspace (RGB, YCbCr, YPbPr, JPEG-style YUV
+        and all the YUV variants) AVPixFmtDescriptor just stores how values
+        are stored not what these values represent.
+*/
+type AVPixFmtDescriptor struct {
+	ptr *C.AVPixFmtDescriptor
+}
+
+func (s *AVPixFmtDescriptor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVPixFmtDescriptorArray(ptr unsafe.Pointer) *Array[*AVPixFmtDescriptor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVPixFmtDescriptor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVPixFmtDescriptor {
+			ptr := (**C.AVPixFmtDescriptor)(pointer)
+			value := *ptr
+			var valueMapped *AVPixFmtDescriptor
+			if value != nil {
+				valueMapped = &AVPixFmtDescriptor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVPixFmtDescriptor) {
+			ptr := (**C.AVPixFmtDescriptor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Name gets the name field.
+func (s *AVPixFmtDescriptor) Name() *CStr {
+	value := s.ptr.name
+	return wrapCStr(value)
+}
+
+// SetName sets the name field.
+func (s *AVPixFmtDescriptor) SetName(value *CStr) {
+	s.ptr.name = value.ptr
+}
+
+// NbComponents gets the nb_components field.
+//
+//	The number of components each pixel has, (1-4)
+func (s *AVPixFmtDescriptor) NbComponents() int {
+	value := s.ptr.nb_components
+	return int(value)
+}
+
+// SetNbComponents sets the nb_components field.
+//
+//	The number of components each pixel has, (1-4)
+func (s *AVPixFmtDescriptor) SetNbComponents(value int) {
+	s.ptr.nb_components = (C.uint8_t)(value)
+}
+
+// Log2ChromaW gets the log2_chroma_w field.
+/*
+  Amount to shift the luma width right to find the chroma width.
+  For YV12 this is 1 for example.
+  chroma_width = AV_CEIL_RSHIFT(luma_width, log2_chroma_w)
+  The note above is needed to ensure rounding up.
+  This value only refers to the chroma components.
+*/
+func (s *AVPixFmtDescriptor) Log2ChromaW() int {
+	value := s.ptr.log2_chroma_w
+	return int(value)
+}
+
+// SetLog2ChromaW sets the log2_chroma_w field.
+/*
+  Amount to shift the luma width right to find the chroma width.
+  For YV12 this is 1 for example.
+  chroma_width = AV_CEIL_RSHIFT(luma_width, log2_chroma_w)
+  The note above is needed to ensure rounding up.
+  This value only refers to the chroma components.
+*/
+func (s *AVPixFmtDescriptor) SetLog2ChromaW(value int) {
+	s.ptr.log2_chroma_w = (C.uint8_t)(value)
+}
+
+// Log2ChromaH gets the log2_chroma_h field.
+/*
+  Amount to shift the luma height right to find the chroma height.
+  For YV12 this is 1 for example.
+  chroma_height= AV_CEIL_RSHIFT(luma_height, log2_chroma_h)
+  The note above is needed to ensure rounding up.
+  This value only refers to the chroma components.
+*/
+func (s *AVPixFmtDescriptor) Log2ChromaH() int {
+	value := s.ptr.log2_chroma_h
+	return int(value)
+}
+
+// SetLog2ChromaH sets the log2_chroma_h field.
+/*
+  Amount to shift the luma height right to find the chroma height.
+  For YV12 this is 1 for example.
+  chroma_height= AV_CEIL_RSHIFT(luma_height, log2_chroma_h)
+  The note above is needed to ensure rounding up.
+  This value only refers to the chroma components.
+*/
+func (s *AVPixFmtDescriptor) SetLog2ChromaH(value int) {
+	s.ptr.log2_chroma_h = (C.uint8_t)(value)
+}
+
+// Flags gets the flags field.
+//
+//	Combination of AV_PIX_FMT_FLAG_... flags.
+func (s *AVPixFmtDescriptor) Flags() int {
+	value := s.ptr.flags
+	return int(value)
+}
+
+// SetFlags sets the flags field.
+//
+//	Combination of AV_PIX_FMT_FLAG_... flags.
+func (s *AVPixFmtDescriptor) SetFlags(value int) {
+	s.ptr.flags = (C.uint64_t)(value)
+}
+
+// comp skipped due to unknown const array
+
+// Alias gets the alias field.
+//
+//	Alternative comma-separated names.
+func (s *AVPixFmtDescriptor) Alias() *CStr {
+	value := s.ptr.alias
+	return wrapCStr(value)
+}
+
+// SetAlias sets the alias field.
+//
+//	Alternative comma-separated names.
+func (s *AVPixFmtDescriptor) SetAlias(value *CStr) {
+	s.ptr.alias = value.ptr
 }
 
 // --- Struct AVRational ---
