@@ -352,3 +352,173 @@ func TestUUID(t *testing.T) {
 		t.Logf("UUID URN parse test passed: %s", result)
 	})
 }
+
+// TestGeneratorCharVsUint8 verifies that char parameters use C.char, not C.uint8_t
+// This is a regression test for the av_match_list compilation error.
+func TestGeneratorCharVsUint8(t *testing.T) {
+	// av_match_list has signature: int av_match_list(const char *name, const char *list, char separator)
+	// The third parameter 'separator' is type char (not uint8_t)
+	
+	// Test that the function accepts uint8 (Go's char mapping) and compiles without error
+	name := ToCStr("test")
+	defer name.Free()
+	list := ToCStr("test,foo,bar")
+	defer list.Free()
+	
+	// If this compiles, the char→C.char mapping is working correctly
+	// (Previously this would fail: cannot use _Ctype_uint8_t as _Ctype_char)
+	result, err := AVMatchList(name, list, ',')
+	
+	if err != nil {
+		t.Fatalf("AVMatchList failed: %v", err)
+	}
+	if result != 1 {
+		t.Errorf("Expected match result 1, got %d", result)
+	}
+}
+
+// TestGeneratorPixFmtDescriptorTypes validates that AVPixFmtDescriptor fields use correct C types
+// This is a regression test for uint8_t fields being incorrectly cast to C.int
+func TestGeneratorPixFmtDescriptorTypes(t *testing.T) {
+	// Get a pixel format descriptor (any format will do)
+	desc := AVPixFmtDescGet(AVPixFmtRgb24)
+	if desc == nil {
+		t.Fatal("RGB24 pixel format should exist")
+	}
+	
+	// Test uint8_t fields (nb_components, log2_chroma_w, log2_chroma_h)
+	// These should use C.uint8_t casts, not C.int
+	// The fact that these compile and run proves the types are correct
+	nbComponents := desc.NbComponents()
+	if nbComponents <= 0 || nbComponents > 4 {
+		t.Errorf("RGB24 components should be 1-4, got %d", nbComponents)
+	}
+	
+	log2ChromaW := desc.Log2ChromaW()
+	log2ChromaH := desc.Log2ChromaH()
+	// RGB24 has no chroma subsampling
+	if log2ChromaW != 0 {
+		t.Errorf("RGB24 log2_chroma_w should be 0, got %d", log2ChromaW)
+	}
+	if log2ChromaH != 0 {
+		t.Errorf("RGB24 log2_chroma_h should be 0, got %d", log2ChromaH)
+	}
+	
+	// Test uint64_t field (flags)
+	// This should use C.uint64_t cast, not C.int
+	flags := desc.Flags()
+	if flags < 0 {
+		t.Errorf("flags should be readable, got %d", flags)
+	}
+	// RGB24 should have RGB flag set
+	if (flags & AVPixFmtFlagRgb) == 0 {
+		t.Error("RGB24 should have RGB flag set")
+	}
+}
+
+// TestGeneratorPrimitiveTypeMapping validates that primitive types map to correct CGO types
+// This is a smoke test for the getCType() function
+func TestGeneratorPrimitiveTypeMapping(t *testing.T) {
+	t.Run("ptrdiff_t", func(t *testing.T) {
+		// av_image_copy_plane_uc_from uses ptrdiff_t (mapped to int64)
+		// Verify it compiles and doesn't panic
+		dst := make([]byte, 100)
+		src := make([]byte, 100)
+		AVImageCopyPlaneUcFrom(
+			unsafe.Pointer(&dst[0]), 10,
+			unsafe.Pointer(&src[0]), 10,
+			10, 10,
+		)
+		t.Log("ptrdiff_t parameters map to C.int64_t correctly")
+	})
+	
+	t.Run("size_t", func(t *testing.T) {
+		// AVMalloc uses size_t
+		ptr := AVMalloc(1024)
+		if ptr != nil {
+			AVFree(ptr)
+		}
+		t.Log("size_t parameters map to C.size_t correctly")
+	})
+}
+
+// TestGeneratorManualBindings documents which patterns are intentionally skipped and have manual bindings
+func TestGeneratorManualBindings(t *testing.T) {
+	t.Run("variadic_functions", func(t *testing.T) {
+		// av_log is variadic and intentionally skipped in favor of manual binding
+		// Just verify that our manual logging system works
+		callback := func(ctx *LogCtx, level int, msg string) {
+			// Test callback
+		}
+		AVLogSetCallback(callback)
+		// If we reach here without panic, logging system initialized correctly
+		t.Log("Variadic logging functions have manual bindings")
+	})
+	
+	t.Run("iterator_functions", func(t *testing.T) {
+		// Iterator functions with opaque pointers are manually bound
+		// Verify at least one iterator works
+		var opaque unsafe.Pointer
+		codec := AVCodecIterate(&opaque)
+		if codec == nil {
+			t.Error("codec iterator should return at least one codec")
+		}
+		t.Log("Iterator functions with opaque pointers have manual bindings")
+	})
+}
+
+// TestGeneratorTypePreservation validates that the CTypeName field preservation works
+// This is a meta-test that the generator correctly handles typedef preservation
+func TestGeneratorTypePreservation(t *testing.T) {
+	t.Run("char_params_compile", func(t *testing.T) {
+		// Functions with char parameters should compile
+		// (regression test for char→uint8_t→C.uint8_t bug)
+		name := ToCStr("rgb24")
+		defer name.Free()
+		
+		pixFmt := AVGetPixFmt(name)
+		if pixFmt != AVPixFmtRgb24 {
+			t.Errorf("Expected AVPixFmtRgb24, got %v", pixFmt)
+		}
+	})
+	
+	t.Run("uint8_fields_compile", func(t *testing.T) {
+		// Struct fields with uint8_t should use C.uint8_t
+		// (regression test for uint8_t→int→C.int bug)
+		desc := AVPixFmtDescGet(AVPixFmtYuv420P)
+		if desc == nil {
+			t.Fatal("YUV420P pixel format should exist")
+		}
+		
+		// YUV420P has 3 components
+		components := desc.NbComponents()
+		if components != 3 {
+			t.Errorf("YUV420P should have 3 components, got %d", components)
+		}
+		
+		// And chroma subsampling (log2_chroma_w/h should be 1)
+		chromaW := desc.Log2ChromaW()
+		chromaH := desc.Log2ChromaH()
+		if chromaW != 1 {
+			t.Errorf("YUV420P log2_chroma_w should be 1, got %d", chromaW)
+		}
+		if chromaH != 1 {
+			t.Errorf("YUV420P log2_chroma_h should be 1, got %d", chromaH)
+		}
+	})
+	
+	t.Run("uint64_fields_compile", func(t *testing.T) {
+		// Struct fields with uint64_t should use C.uint64_t
+		// (regression test for uint64_t→int→C.int bug)
+		desc := AVPixFmtDescGet(AVPixFmtRgb24)
+		if desc == nil {
+			t.Fatal("RGB24 pixel format should exist")
+		}
+		
+		flags := desc.Flags()
+		// RGB24 should have RGB flag set
+		if (flags & AVPixFmtFlagRgb) == 0 {
+			t.Error("RGB24 should have RGB flag set")
+		}
+	})
+}
