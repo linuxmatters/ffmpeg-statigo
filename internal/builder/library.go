@@ -170,8 +170,14 @@ func fileExists(path string) bool {
 
 // pkgConfigPath returns the PKG_CONFIG_PATH environment variable
 func pkgConfigPath(installDir string) string {
-	// Include both lib and lib64 pkgconfig directories
-	return filepath.Join(installDir, "lib", "pkgconfig") + ":" + filepath.Join(installDir, "lib64", "pkgconfig")
+	// Include standard lib paths plus Ubuntu multiarch paths
+	paths := []string{
+		filepath.Join(installDir, "lib", "pkgconfig"),
+		filepath.Join(installDir, "lib64", "pkgconfig"),
+		filepath.Join(installDir, "lib", "x86_64-linux-gnu", "pkgconfig"),  // Ubuntu amd64
+		filepath.Join(installDir, "lib", "aarch64-linux-gnu", "pkgconfig"), // Ubuntu arm64
+	}
+	return strings.Join(paths, ":")
 }
 
 // buildEnv returns environment variables for building
