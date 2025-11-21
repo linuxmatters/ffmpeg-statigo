@@ -60,7 +60,25 @@ jobs:
         run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
 
       - name: Build FFmpeg library
-        run: go run ./internal/builder/
+        run: |
+          # Enable detailed build output
+          go run ./internal/builder/ 2>&1 | tee build.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.os }}-${{ matrix.arch }}
+          path: build.log
+
+      - name: Verify library was built
+        run: |
+          if [ ! -f "lib/${{ matrix.os }}_${{ matrix.arch }}/libffmpeg.a" ]; then
+            echo "ERROR: libffmpeg.a was not built!"
+            ls -la lib/ || echo "lib/ directory doesn't exist"
+            ls -la lib/${{ matrix.os }}_${{ matrix.arch }}/ || echo "lib/${{ matrix.os }}_${{ matrix.arch }}/ directory doesn't exist"
+            exit 1
+          fi
 
       - name: List built files
         run: ls -la lib/${{ matrix.os }}_${{ matrix.arch }}/
