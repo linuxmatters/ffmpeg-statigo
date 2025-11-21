@@ -163,6 +163,8 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		buildDir,
 		srcPath,
 		fmt.Sprintf("--prefix=%s", installDir),
+		"--libdir=lib",
+		"--pkgconfigdir=lib/pkgconfig",
 		"--buildtype=release",
 		"--default-library=static",
 	}

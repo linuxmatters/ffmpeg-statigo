@@ -44,3 +44,11 @@ generate:
 # Run tests
 test:
     go test -v ./...
+
+# Trigger library release workflow
+release-lib VERSION:
+    gh workflow run release-libs.yml -f version={{VERSION}}
+
+# Check library release workflow status
+release-lib-status:
+    gh run list --workflow=release-libs.yml --limit 5
