@@ -27,7 +27,7 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 		libDir := filepath.Join(installDir, "lib")
 
 		args = append(args,
-			fmt.Sprintf("CFLAGS=-I%s", incDir),
+			fmt.Sprintf("CFLAGS=-O3 -I%s", incDir),
 			fmt.Sprintf("CPPFLAGS=-I%s", incDir),
 			fmt.Sprintf("LDFLAGS=-L%s", libDir),
 		)
