@@ -45,6 +45,10 @@ generate:
 test:
     go test -v ./...
 
+# Download FFmpeg static libraries
+download-lib:
+    go run ./cmd/download-lib/
+
 # Trigger Ffmpeg library release
 ffmpeg-release VERSION:
     gh workflow run ffmpeg-release.yml -f version={{VERSION}}

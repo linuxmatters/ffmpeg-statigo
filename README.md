@@ -22,6 +22,52 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 
 *Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.0, Go 1.24, hardware acceleration and a 99.5% smaller git history.*
 
+## Installation
+
+ffmpeg-statigo includes large static libraries (~100MB per platform) that cannot be distributed via `go get`. This requires a simple manual setup:
+
+### Using Git Submodules
+
+For clean project integration, use ffmpeg-statigo as a git submodule:
+
+1. Add ffmpeg-statigo as a submodule in your project
+```bash
+git submodule add https://github.com/linuxmatters/ffmpeg-statigo vendor/ffmpeg-statigo
+```
+
+2. Add a replace directive pointing to the submodule
+```bash
+go mod edit -replace github.com/linuxmatters/ffmpeg-statigo=./vendor/ffmpeg-statigo
+```
+
+3. Get the dependency
+```bash
+go get github.com/linuxmatters/ffmpeg-statigo
+```
+
+4. Download the static libraries
+```bash
+cd vendor/ffmpeg-statigo
+go run ./cmd/download-lib
+cd ../..
+```
+
+5. Build your project
+```bash
+go build
+```
+
+6. Commit only the submodule reference
+
+The static libraries (`lib/*/libffmpeg.a`) won't be committed - they're gitignored
+
+```bash
+git add .gitmodules vendor/ffmpeg-statigo
+git commit -m "Add ffmpeg-statigo as submodule"
+```
+
+**See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for alternative installation methods, CI/CD integration, and troubleshooting.**
+
 ## Codec Inclusion Policy
 
 ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core strengths of FFmpeg: **decoding, processing, and encoding** audio and video streams. ffmpeg-statigo is designed for **Go developers building modern streaming applications**. The pattern is:

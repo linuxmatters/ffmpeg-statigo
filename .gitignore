@@ -36,4 +36,7 @@ coverage.html
 result
 result-*
 
-lib/linux_amd64/*.a
+# FFmpeg static libraries
+lib/*/
+!lib/fetch.go
+!lib/README.md
