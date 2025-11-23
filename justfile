@@ -45,10 +45,10 @@ generate:
 test:
     go test -v ./...
 
-# Trigger library release workflow
-release-lib VERSION:
-    gh workflow run release-libs.yml -f version={{VERSION}}
+# Trigger Ffmpeg library release
+ffmpeg-release VERSION:
+    gh workflow run ffmpeg-release.yml -f version={{VERSION}}
 
 # Check library release workflow status
-release-lib-status:
-    gh run list --workflow=release-libs.yml --limit 5
+ffmpeg-release-status:
+    gh run list --workflow=ffmpeg-release.yml --limit 5

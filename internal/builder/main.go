@@ -211,19 +211,35 @@ func combineLibraries(libs []*Library, stagingDir, output string) error {
 }
 
 // combineMac uses libtool to combine static libraries on macOS
+// This is more efficient than ar as it doesn't require extracting all object files
 func combineMac(libFiles []string, output string) error {
-	log.Println("Using libtool to merge libraries (macOS)")
+	log.Println("Using libtool -static approach (macOS)")
 
-	cmd := exec.Command("libtool", "-static", "-o", output)
-	cmd.Args = append(cmd.Args, libFiles...)
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("libtool failed: %w", err)
+	// Ensure output directory exists
+	outputDir := filepath.Dir(output)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Strip the library
-	cmd = exec.Command("strip", "-S", output)
-	if err := cmd.Run(); err != nil {
+	// Remove existing output file if present
+	os.Remove(output)
+
+	// Use libtool to combine libraries directly
+	// libtool -static is Apple's tool specifically designed for this purpose
+	args := append([]string{"-static", "-o", output}, libFiles...)
+	libtoolCmd := exec.Command("libtool", args...)
+
+	// Capture output for debugging
+	var stdout, stderr bytes.Buffer
+	libtoolCmd.Stdout = &stdout
+	libtoolCmd.Stderr = &stderr
+
+	if err := libtoolCmd.Run(); err != nil {
+		return fmt.Errorf("libtool failed: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
+	}
+
+	// Strip the library to reduce size
+	if err := exec.Command("strip", "-S", output).Run(); err != nil {
 		return fmt.Errorf("strip failed: %w", err)
 	}
 
@@ -232,30 +248,59 @@ func combineMac(libFiles []string, output string) error {
 
 // combineLinux uses ar to combine static libraries on Linux
 func combineLinux(libFiles []string, output string) error {
-	log.Println("Using ar to merge libraries (Linux)")
+	log.Println("Using thin archive approach to merge libraries (Linux)")
 
-	var mriScript []string
-	mriScript = append(mriScript, fmt.Sprintf("create %s", output))
+	// Stack Overflow solution: create thin archive (low memory), then convert to normal archive
+	// Thin archives use pointers instead of copying data, avoiding memory exhaustion
+	// Source: https://stackoverflow.com/a/23621751
 
-	for _, lib := range libFiles {
-		log.Printf("  Adding %s\n", filepath.Base(lib))
-		mriScript = append(mriScript, fmt.Sprintf("addlib %s", lib))
+	var stderr bytes.Buffer
+
+	// Ensure output directory exists
+	outputDir := filepath.Dir(output)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	mriScript = append(mriScript, "save", "end")
-	mri := strings.Join(mriScript, "\n")
+	// Remove existing output file if present
+	os.Remove(output)
 
-	cmd := exec.Command("ar", "-M")
-	cmd.Stdin = bytes.NewBufferString(mri)
+	// Step 1: Create thin archive with -T flag (pointers only, minimal memory)
+	log.Println("  Creating thin archive...")
+	args := append([]string{"cqT", output}, libFiles...)
+	thinCmd := exec.Command("ar", args...)
+	thinCmd.Stderr = &stderr
+	stderr.Reset()
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("ar failed: %w", err)
+	if err := thinCmd.Run(); err != nil {
+		return fmt.Errorf("thin archive creation failed: %w (stderr: %s)", err, stderr.String())
+	}
+
+	// Step 2: Convert thin archive to normal archive using MRI script
+	// This extracts and rebuilds, but from a single thin archive (less memory than 32 separate libraries)
+	log.Println("  Converting to normal archive...")
+	mriScript := fmt.Sprintf("create %s.tmp\naddlib %s\nsave\nend", output, output)
+
+	convertCmd := exec.Command("ar", "-M")
+	convertCmd.Stdin = bytes.NewBufferString(mriScript)
+	convertCmd.Stderr = &stderr
+	stderr.Reset()
+
+	if err := convertCmd.Run(); err != nil {
+		return fmt.Errorf("thin archive conversion failed: %w (stderr: %s)", err, stderr.String())
+	}
+
+	// Replace original with converted archive
+	if err := os.Rename(output+".tmp", output); err != nil {
+		return fmt.Errorf("failed to rename converted archive: %w", err)
 	}
 
 	// Strip the library
-	cmd = exec.Command("strip", "--strip-unneeded", output)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("strip failed: %w", err)
+	stripCmd := exec.Command("strip", "--strip-unneeded", output)
+	stripCmd.Stderr = &stderr
+	stderr.Reset()
+	if err := stripCmd.Run(); err != nil {
+		return fmt.Errorf("strip failed: %w (stderr: %s)", err, stderr.String())
 	}
 
 	return nil

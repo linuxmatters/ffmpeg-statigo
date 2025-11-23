@@ -19,10 +19,10 @@
 
 **Implementation:**
 
-Create `.github/workflows/release-libs.yml`:
+Create `.github/workflows/ffmpeg-release.yml`:
 
 ```yaml
-name: Release Static Libraries
+name: FFmpeg library release
 
 on:
   workflow_dispatch:
@@ -34,83 +34,163 @@ on:
     tags:
       - 'lib-*'
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
-  build-and-release:
+  ffmpeg-release:
+    name: Release FFmpeg library for ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux
+          - os: linux
             arch: amd64
-          - os: ubuntu-latest
-            platform: linux
+            runner: ubuntu-24.04
+          - os: linux
             arch: arm64
-          - os: macos-latest
-            platform: darwin
+            runner: ubuntu-24.04-arm
+          - os: darwin
             arch: amd64
-          - os: macos-latest
-            platform: darwin
+            runner: macos-15-intel
+          - os: darwin
             arch: arm64
-
-    runs-on: ${{ matrix.os }}
+            runner: macos-latest
+      fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Validate version format
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^lib- ]]; then
+            echo "Error: Version must start with 'lib-' prefix (e.g., 'lib-8.0.0.0')"
+            exit 1
+          fi
 
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
+          # hashFiles() broken on macOS runners as of 2024-11-23, using static key temporarily
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ matrix.os == 'darwin' && 'static-v1' || hashFiles('go.sum', 'go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-go-
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-stable
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
+
+      - name: Install cargo-c
+        run: cargo install cargo-c
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y yasm nasm meson gperf python3
+
+      - name: Install macOS dependencies
+        if: matrix.os == 'darwin'
+        run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
+
+      - name: Cache FFmpeg source downloads
+        uses: actions/cache@v4
+        with:
+          path: .build/downloads
+          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
+          # hashFiles() broken on macOS runners as of 2024-11-23, using static key temporarily
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-${{ matrix.os == 'darwin' && 'static-v1' || hashFiles('internal/builder/libraries.go') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-
+
+      - name: Cache compiled dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build/staging
+            .build/build
+          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
+          # hashFiles() broken on macOS runners as of 2024-11-23, using static key temporarily
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-${{ matrix.os == 'darwin' && 'static-v1' || hashFiles('internal/builder/libraries.go', 'internal/builder/buildsystems.go') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-
+
+      - name: Clean FFmpeg build
+        run: go run ./internal/builder/ ffmpeg --clean
 
       - name: Build FFmpeg library
-        run: |
-          nix develop --command just build-ffmpeg
+        run: go run ./internal/builder/
+
+      - name: List built files
+        run: ls -lh lib/${{ matrix.os }}_${{ matrix.arch }}/
 
       - name: Create tarball
         run: |
           cd lib
-          tar -czf ../ffmpeg-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz ${{ matrix.platform }}_${{ matrix.arch }}/libffmpeg.a
-
-      - name: Generate checksum
-        run: |
-          sha256sum ffmpeg-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz > ffmpeg-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz.sha256
+          tar -czf ../ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.tar.gz ${{ matrix.os }}_${{ matrix.arch }}/libffmpeg.a
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ffmpeg-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
-            ffmpeg-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz.sha256
-          tag_name: ${{ github.ref_name }}
+          files: ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          tag_name: ${{ inputs.version }}
           body: |
-            FFmpeg static libraries for ffmpeg-statigo
+            ## FFmpeg Static Libraries
 
-            Version: ${{ inputs.version || github.ref_name }}
+            **Version:** ${{ inputs.version }}
 
-            Platform: ${{ matrix.platform }}-${{ matrix.arch }}
+            **Platforms:**
+            - Linux amd64
+            - Linux arm64
+            - macOS x86 (Intel)
+            - macOS arm64 (Apple Silicon)
 ```
 
 **Justfile integration:**
 
 ```just
 # Trigger library release workflow
-release-lib VERSION:
-    gh workflow run release-libs.yml -f version={{VERSION}}
+ffmpeg-release VERSION:
+    gh workflow run ffmpeg-release.yml -f version={{VERSION}}
 
 # Check library release workflow status
-release-lib-status:
-    gh run list --workflow=release-libs.yml --limit 5
+ffmpeg-release-status:
+    gh run list --workflow=ffmpeg-release.yml --limit 5
 ```
 
 **Testing:**
 ```bash
 # Test via justfile
-just release-lib 8.0.0.0
+just ffmpeg-release lib-8.0.0.0
 
 # Or trigger manually
-gh workflow run release-libs.yml -f version=8.0.0.0
+gh workflow run ffmpeg-release.yml -f version=lib-8.0.0.0
 
 # Monitor progress
-just release-lib-status
+just ffmpeg-release-status
 ```
 
 **Version Discovery Logic:**
@@ -235,9 +315,8 @@ func ensureLibrary() error {
 	}
 	defer os.Remove(tmpTarball)
 
-	// Verify checksum
-	checksumURL := downloadURL + ".sha256"
-	if err := verifyChecksum(tmpTarball, checksumURL); err != nil {
+	// Verify checksum using GitHub's automatic SHA256 digest
+	if err := verifyChecksum(tmpTarball, release, tarballName); err != nil {
 		return fmt.Errorf("checksum verification failed: %w", err)
 	}
 
@@ -321,15 +400,22 @@ func downloadFile(url, dest string) error {
 	}
 }
 
-func verifyChecksum(file, checksumURL string) error {
-	// Download .sha256 file
-	resp, err := http.Get(checksumURL)
+func verifyChecksum(file, release, tarballName string) error {
+	// Fetch GitHub's automatic SHA256 digest from release API
+	digestURL := fmt.Sprintf(
+		"https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s",
+		release,
+	)
+
+	resp, err := http.Get(digestURL)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	expectedSum, _ := io.ReadAll(resp.Body)
+	// Parse JSON to extract SHA256 digest for this asset
+	// GitHub automatically generates digests for all release assets
+	// (Simplified - production would use encoding/json to parse asset digests)
 
 	// Calculate file checksum
 	f, err := os.Open(file)
@@ -339,7 +425,7 @@ func verifyChecksum(file, checksumURL string) error {
 	defer f.Close()
 
 	// (Simplified - production would use crypto/sha256)
-	// Compare checksums
+	// Compare calculated checksum with GitHub's digest
 
 	return nil
 }
@@ -409,10 +495,10 @@ func extractTarball(tarball, destDir string) error {
   - Enables independent library updates without changing Go code
   - Uses GitHub API to query available releases
 
-- **Checksum Validation:** SHA256 verification
-  - `release.yml` generates `.sha256` files for each tarball
-  - `lib/fetch.go` downloads and verifies before extraction
-  - Provides integrity guarantee
+- **Checksum Validation:** SHA256 verification using GitHub's automatic digests
+  - GitHub automatically generates SHA256 digests for all release assets
+  - `lib/fetch.go` fetches digest via GitHub API and verifies before extraction
+  - Provides integrity guarantee without manual checksum file management
 
 - **Tarball Structure:** Library file only (Option A)
   - Tarball contains just `libffmpeg.a`
@@ -474,9 +560,9 @@ wget https://github.com/linuxmatters/ffmpeg-statigo/releases/download/${RELEASE}
 # Extract to lib directory
 tar -xzf ffmpeg-${PLATFORM}-${ARCH}.tar.gz -C lib/
 
-# Verify checksum
-wget https://github.com/linuxmatters/ffmpeg-statigo/releases/download/${RELEASE}/ffmpeg-${PLATFORM}-${ARCH}.tar.gz.sha256
-sha256sum -c ffmpeg-${PLATFORM}-${ARCH}.tar.gz.sha256
+# Verify checksum using GitHub's automatic digest
+# GitHub automatically generates SHA256 digests for all release assets
+# Access via: https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/${RELEASE}
 ```
 
 ## Verification
@@ -485,7 +571,7 @@ sha256sum -c ffmpeg-${PLATFORM}-${ARCH}.tar.gz.sha256
 # Verify libraries exist and are valid
 ls -lh lib/*/libffmpeg.a
 
-# Each library should be ~75-100MB
+# Each library should be ~60-100MB
 ```
 
 ## Structure
@@ -501,50 +587,11 @@ lib/
 └── darwin_arm64/
     └── libffmpeg.a
 ```
-```
-
-## Phase 3: Update Existing Workflows
-
-**Goal:** Modify ffmpeg.yml to NOT commit libraries to git, only validate builds. Add library caching for CI efficiency.
-
-### Update FFmpeg Build Workflow
-
-**File:** `.github/workflows/ffmpeg.yml`
-
-**Changes:**
-
-1. Remove pull request creation step entirely
-2. Add library caching to speed up validation builds
-3. Libraries built for validation only
-4. Add comment noting: "Libraries released separately via release-libs.yml workflow"
-
-```yaml
-# ... existing build steps ...
-
-# NEW: Cache downloaded libraries
-- name: Cache FFmpeg libraries
-  uses: actions/cache@v4
-  with:
-    path: lib/
-    key: ffmpeg-lib-${{ matrix.platform }}-${{ matrix.arch }}-${{ hashFiles('lib/fetch.go') }}
-
-# OLD: Create pull request with libraries
-# - name: Create Pull Request
-#   uses: peter-evans/create-pull-request@v6
-#   ...
-
-# NEW: Just validate that build succeeded
-- name: Validate build
-  run: |
-    ls -lh lib/${{ matrix.os }}_${{ matrix.arch }}/libffmpeg.a
-    echo "✓ Library built successfully for ${{ matrix.os }}_${{ matrix.arch }}"
-    echo "Libraries are distributed via GitHub Releases using release-libs.yml workflow"
-```
 
 **Library Release Strategy:**
 
-- **Validation builds:** `ffmpeg.yml` runs on every push to validate libraries compile
-- **Library releases:** Manual trigger of `release-libs.yml` when FFmpeg libraries need updating (e.g., `just release-lib 8.0.0.0`)
+- **Validation builds:** `ffmpeg-test.yml` runs on every push to validate libraries compile
+- **Library releases:** Manual trigger of `ffmpeg-release.yml` when FFmpeg libraries need updating (e.g., `just ffmpeg-release 8.0.0.0`)
 - **Module releases:** Separate workflow (not part of this plan) triggered by version tags like `v8.0.0.1`
 - **CI reuse logic:** When building from CI:
   1. Check if compatible library release exists (`lib-8.0.0.x`)
@@ -552,7 +599,7 @@ lib/
   3. If no, build from source (validation workflow)
   4. This keeps CI fast while ensuring current code can build libraries if needed
 
-## Phase 4: Update Documentation
+## Phase 3: Update Documentation
 
 ### Update README.md
 
@@ -595,10 +642,9 @@ wget https://github.com/linuxmatters/ffmpeg-statigo/releases/download/${RELEASE}
 # Extract to lib directory
 tar -xzf ffmpeg-linux-amd64.tar.gz
 
-# Verify checksum
-wget https://github.com/linuxmatters/ffmpeg-statigo/releases/download/${RELEASE}/ffmpeg-linux-amd64.tar.gz.sha256
-sha256sum -c ffmpeg-linux-amd64.tar.gz.sha256
-```
+# Verify checksum using GitHub's automatic digest (optional)
+# GitHub provides SHA256 digests via release API:
+# curl -s https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/${RELEASE} | jq -r '.assets[] | select(.name=="ffmpeg-linux-amd64.tar.gz") | .browser_download_url'
 
 ### Offline / Air-Gapped Environments
 
@@ -633,7 +679,7 @@ If behind a corporate proxy, ensure:
 2. GitHub API and GitHub Releases are accessible
 3. If using manual download, transfer tarballs to the build environment
 
-## Phase 5: Testing & Validation
+## Phase 4: Testing & Validation
 
 ### Pre-Release Testing Checklist
 
@@ -659,14 +705,15 @@ go build ./examples/metadata
 
 ```bash
 # Corrupt tarball and verify download fails gracefully
+# GitHub's automatic SHA256 digests are fetched via API and verified
 ```
 
 **Test all platforms via GitHub Actions:**
 
 ```bash
-just release-lib 8.0.0.0
+just ffmpeg-release 8.0.0.0
 # Monitor workflow completion
-just release-lib-status
+just ffmpeg-release-status
 ```
 
 **Test Go module import:**
@@ -699,12 +746,12 @@ GOOS=darwin GOARCH=arm64 go build -v ./examples/metadata
 - ✅ Libraries automatically download on first import
 - ✅ No static libraries committed to git repository (except during active development)
 - ✅ Release workflow creates GitHub Release with all platform libraries
-- ✅ Checksums verify download integrity
+- ✅ Checksums verify download integrity using GitHub's automatic SHA256 digests
 - ✅ Clear error messages if download fails with manual fallback instructions
 - ✅ Manual fallback documented and tested
-- ✅ CI/CD workflows updated: validation builds via ffmpeg.yml with caching, library releases via release-libs.yml
+- ✅ CI/CD workflows updated: validation builds via `ffmpeg-test.yml` with caching, library releases via `ffmpeg-release`.yml
 - ✅ Documentation complete and accurate
-- ✅ Justfile provides easy library release triggering via `just release-lib VERSION`
+- ✅ Justfile provides easy library release triggering via `just ffmpeg-release VERSION`
 - ✅ Cross-compilation support working correctly
 - ✅ GitHub API fallback mechanism tested
 - ✅ Module proxy behaviour documented
@@ -713,22 +760,21 @@ GOOS=darwin GOARCH=arm64 go build -v ./examples/metadata
 
 - **Phase 1:** 2-3 hours (release workflow + justfile integration)
 - **Phase 2:** 4-5 hours (lib/fetch.go + GitHub API integration + checksum validation + sync.Once + cross-compilation + rate limit fallback)
-- **Phase 3:** 1-2 hours (ffmpeg.yml update + library caching + CI reuse logic)
-- **Phase 4:** 1-2 hours (README.md updates + proxy documentation)
-- **Phase 5:** 2-3 hours (comprehensive testing across platforms + cross-compilation + fallback scenarios)
+- **Phase 3:** 1-2 hours (README.md updates + proxy documentation)
+- **Phase 4:** 2-3 hours (comprehensive testing across platforms + cross-compilation + fallback scenarios)
 
 **Total:** ~11-15 hours
 
 ## Notes
 
 - **Two distinct release workflows:**
-  - `release-libs.yml` - Static library releases (`lib-8.0.0.x` tags)
+  - `ffmpeg-release.yml` - Static library releases (`lib-8.0.0.x` tags)
   - Module release workflow (separate, not part of this plan) - Go module versions (`v8.0.0.x` tags)
 - **No backward compatibility needed:** Clean git history means no legacy support required
 - **Library releases independent from Go releases:** Can update FFmpeg libraries without tagging new Go version
 - **CI efficiency:** Library caching via GitHub Actions cache + reuse existing releases when available
 - **Simple approach:** GitHub Releases + auto-download is well-understood, idiomatic for Go ecosystem
-- **Justfile integration:** Makes library releases as easy as `just release-lib 8.0.0.0`
+- **Justfile integration:** Makes library releases as easy as `just ffmpeg-release 8.0.0.0`
 - **Robust error handling:** sync.Once prevents races, GitHub API fallback for rate limits, clear error messages
 - **Cross-compilation friendly:** Respects GOOS/GOARCH environment variables
 - **Module proxy compatible:** Documents expected behaviour with GOPROXY
