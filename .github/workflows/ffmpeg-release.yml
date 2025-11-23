@@ -44,43 +44,24 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24'
+          cache: true
 
-      - name: Cache Go modules and build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('go.sum', 'go.mod') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-go-
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
 
-      - name: Cache Rust cargo
-        uses: actions/cache@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-stable
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+          cache-bin: false
 
-      - name: Install cargo-c
-        run: cargo install cargo-c
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: cargo-c
 
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
@@ -90,11 +71,19 @@ jobs:
         if: matrix.os == 'darwin'
         run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
 
+      - name: Calculate file hashes
+        id: file-hashes
+        run: |
+          echo "libraries-hash=$(sha256sum internal/builder/libraries.go | cut -d' ' -f1 | head -c 8)" >> $GITHUB_OUTPUT
+          echo "buildsystems-hash=$(sha256sum internal/builder/buildsystems.go | cut -d' ' -f1 | head -c 8)" >> $GITHUB_OUTPUT
+
       - name: Cache FFmpeg source downloads
         uses: actions/cache@v4
         with:
           path: .build/downloads
-          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-${{ hashFiles('internal/builder/libraries.go') }}
+          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
+          # hashFiles() broken on macOS runners as of 2024-11-23, using calculated hash instead
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-${{ matrix.os == 'darwin' && steps.file-hashes.outputs.libraries-hash || hashFiles('internal/builder/libraries.go') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-
 
@@ -104,7 +93,9 @@ jobs:
           path: |
             .build/staging
             .build/build
-          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-${{ hashFiles('internal/builder/libraries.go', 'internal/builder/buildsystems.go') }}
+          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
+          # hashFiles() broken on macOS runners as of 2024-11-23, using calculated hash instead
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-${{ matrix.os == 'darwin' && format('{0}-{1}', steps.file-hashes.outputs.libraries-hash, steps.file-hashes.outputs.buildsystems-hash) || hashFiles('internal/builder/libraries.go', 'internal/builder/buildsystems.go') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-
 
