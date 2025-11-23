@@ -57,7 +57,6 @@ func main() {
 		filepath.Join(buildRoot, "downloads"),
 		filepath.Join(buildRoot, "build"),
 		filepath.Join(stagingDir, "lib"),
-		filepath.Join(stagingDir, "lib64"),
 		filepath.Join(stagingDir, "include"),
 	}
 
@@ -94,7 +93,7 @@ func main() {
 			// Also remove installed libraries from staging
 			if lib.LinkLibs != nil {
 				for _, libName := range lib.LinkLibs {
-					for _, dir := range []string{"lib", "lib64"} {
+					for _, dir := range []string{"lib"} {
 						libPath := filepath.Join(stagingDir, dir, libName+".a")
 						if fileExists(libPath) {
 							os.Remove(libPath)
@@ -171,10 +170,9 @@ func combineLibraries(libs []*Library, stagingDir, output string) error {
 		}
 	}
 
-	// Search for the specific .a files in lib and lib64
+	// Search for the specific .a files in lib
 	libDirs := []string{
 		filepath.Join(stagingDir, "lib"),
-		filepath.Join(stagingDir, "lib64"),
 	}
 
 	for _, libDir := range libDirs {

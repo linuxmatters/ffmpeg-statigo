@@ -118,7 +118,6 @@ Build the project using `just build`. Using `just build` is the only valid way t
     ├── etc
     ├── include
     ├── lib
-    ├── lib64
     ├── share
     └── var
 ```

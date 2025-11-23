@@ -705,12 +705,11 @@ var ffmpeg = &Library{
 		stagingDir, _ := filepath.Abs(".build/staging")
 		incDir := filepath.Join(stagingDir, "include")
 		libDir := filepath.Join(stagingDir, "lib")
-		lib64Dir := filepath.Join(stagingDir, "lib64")
 
 		args := []string{
 			"--pkg-config-flags=--static",
 			fmt.Sprintf("--extra-cflags=-I%s", incDir),
-			fmt.Sprintf("--extra-ldflags=-L%s -L%s", libDir, lib64Dir),
+			fmt.Sprintf("--extra-ldflags=-L%s", libDir),
 		}
 
 		// Add common FFmpeg arguments (platform-specific)

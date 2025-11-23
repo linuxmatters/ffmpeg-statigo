@@ -88,8 +88,7 @@ func (s *BuildState) CanSkip(installDir string) bool {
 	}
 
 	// For libraries with LinkLibs, check that all expected .a files exist
-	// Try both lib and lib64 directories (CMake may use either)
-	for _, dir := range []string{"lib", "lib64"} {
+	for _, dir := range []string{"lib"} {
 		libDir := filepath.Join(installDir, dir)
 		allFound := true
 		for _, libName := range s.lib.LinkLibs {

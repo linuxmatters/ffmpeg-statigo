@@ -25,12 +25,11 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 	if !lib.SkipAutoFlags {
 		incDir := filepath.Join(installDir, "include")
 		libDir := filepath.Join(installDir, "lib")
-		lib64Dir := filepath.Join(installDir, "lib64")
 
 		args = append(args,
 			fmt.Sprintf("CFLAGS=-I%s", incDir),
 			fmt.Sprintf("CPPFLAGS=-I%s", incDir),
-			fmt.Sprintf("LDFLAGS=-L%s -L%s", libDir, lib64Dir),
+			fmt.Sprintf("LDFLAGS=-L%s", libDir),
 		)
 	}
 
@@ -107,6 +106,7 @@ func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		actualSrcPath,
 		fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%s", installDir),
 		"-DCMAKE_BUILD_TYPE=Release",
+		"-DCMAKE_INSTALL_LIBDIR=lib",
 	}
 
 	if lib.ConfigureArgs != nil {
@@ -163,10 +163,9 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		buildDir,
 		srcPath,
 		fmt.Sprintf("--prefix=%s", installDir),
-		"--libdir=lib",
-		"--pkgconfigdir=lib/pkgconfig",
 		"--buildtype=release",
 		"--default-library=static",
+		"--libdir=lib",
 	}
 
 	if lib.ConfigureArgs != nil {

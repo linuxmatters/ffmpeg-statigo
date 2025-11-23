@@ -4,7 +4,7 @@ default:
 
 # Clean build artifacts and downloads
 clean:
-    @rm -rf .build/ 2>/dev/null || true
+    @rm -rf .build/{build,src,staging} 2>/dev/null || true
     @rm examples/asciiplayer/asciiplayer 2>/dev/null || true
     @rm examples/introspect/introspect 2>/dev/null || true
     @rm examples/metadata/metadata 2>/dev/null || true
