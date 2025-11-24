@@ -207,20 +207,5 @@ func buildEnv(installDir string) []string {
 		env = append(env, "PATH="+binPath)
 	}
 
-	// Set minimum macOS deployment target to avoid version mismatch warnings
-	// This ensures libraries work on macOS 13.0 and later (supports Intel and Apple Silicon)
-	if runtime.GOOS == "darwin" {
-		hasDeploymentTarget := false
-		for _, e := range env {
-			if strings.HasPrefix(e, "MACOSX_DEPLOYMENT_TARGET=") {
-				hasDeploymentTarget = true
-				break
-			}
-		}
-		if !hasDeploymentTarget {
-			env = append(env, "MACOSX_DEPLOYMENT_TARGET=13.0")
-		}
-	}
-
 	return env
 }
