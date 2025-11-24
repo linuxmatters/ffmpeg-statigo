@@ -14172,7 +14172,7 @@ func AVImageCopyPlane(dst unsafe.Pointer, dstLinesize int, src unsafe.Pointer, s
         size (i.e. 64) to get improved performance.
 */
 func AVImageCopyPlaneUcFrom(dst unsafe.Pointer, dstLinesize int64, src unsafe.Pointer, srcLinesize int64, bytewidth int64, height int) {
-	C.av_image_copy_plane_uc_from((*C.uint8_t)(dst), C.int64_t(dstLinesize), (*C.uint8_t)(src), C.int64_t(srcLinesize), C.int64_t(bytewidth), C.int(height))
+	C.av_image_copy_plane_uc_from((*C.uint8_t)(dst), C.ptrdiff_t(dstLinesize), (*C.uint8_t)(src), C.ptrdiff_t(srcLinesize), C.ptrdiff_t(bytewidth), C.int(height))
 }
 
 // --- Function av_image_copy ---

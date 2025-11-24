@@ -87,6 +87,13 @@ func getCType(typeName string, goType string) string {
 		return "char"
 	}
 
+	// Special case: ptrdiff_t and size_t must be preserved
+	// On macOS, ptrdiff_t is a distinct type from int64_t even though they're the same size
+	// Using C.int64_t instead of C.ptrdiff_t causes type mismatch errors
+	if typeName == "ptrdiff_t" {
+		return "ptrdiff_t"
+	}
+
 	// Map Go types to their correct C types
 	// Returns the type name to use after "C." in generated code
 	switch goType {
