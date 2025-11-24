@@ -6152,7 +6152,7 @@ func AVGuessCodec(fmt *AVOutputFormat, shortName *CStr, filename *CStr, mimeType
 
 // --- Function av_hex_dump ---
 
-// av_hex_dump skipped due to f (non-output primitive pointer)
+// av_hex_dump skipped due to f.
 
 // --- Function av_hex_dump_log ---
 
@@ -6175,7 +6175,7 @@ func AVHexDumpLog(avcl unsafe.Pointer, level int, buf unsafe.Pointer, size int) 
 
 // --- Function av_pkt_dump2 ---
 
-// av_pkt_dump2 skipped due to f (non-output primitive pointer)
+// av_pkt_dump2 skipped due to f.
 
 // --- Function av_pkt_dump_log2 ---
 

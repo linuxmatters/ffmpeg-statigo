@@ -26787,15 +26787,15 @@ func (s *AVPixFmtDescriptor) SetName(value *CStr) {
 // NbComponents gets the nb_components field.
 //
 //	The number of components each pixel has, (1-4)
-func (s *AVPixFmtDescriptor) NbComponents() int {
+func (s *AVPixFmtDescriptor) NbComponents() uint8 {
 	value := s.ptr.nb_components
-	return int(value)
+	return uint8(value)
 }
 
 // SetNbComponents sets the nb_components field.
 //
 //	The number of components each pixel has, (1-4)
-func (s *AVPixFmtDescriptor) SetNbComponents(value int) {
+func (s *AVPixFmtDescriptor) SetNbComponents(value uint8) {
 	s.ptr.nb_components = (C.uint8_t)(value)
 }
 
@@ -26807,9 +26807,9 @@ func (s *AVPixFmtDescriptor) SetNbComponents(value int) {
   The note above is needed to ensure rounding up.
   This value only refers to the chroma components.
 */
-func (s *AVPixFmtDescriptor) Log2ChromaW() int {
+func (s *AVPixFmtDescriptor) Log2ChromaW() uint8 {
 	value := s.ptr.log2_chroma_w
-	return int(value)
+	return uint8(value)
 }
 
 // SetLog2ChromaW sets the log2_chroma_w field.
@@ -26820,7 +26820,7 @@ func (s *AVPixFmtDescriptor) Log2ChromaW() int {
   The note above is needed to ensure rounding up.
   This value only refers to the chroma components.
 */
-func (s *AVPixFmtDescriptor) SetLog2ChromaW(value int) {
+func (s *AVPixFmtDescriptor) SetLog2ChromaW(value uint8) {
 	s.ptr.log2_chroma_w = (C.uint8_t)(value)
 }
 
@@ -26832,9 +26832,9 @@ func (s *AVPixFmtDescriptor) SetLog2ChromaW(value int) {
   The note above is needed to ensure rounding up.
   This value only refers to the chroma components.
 */
-func (s *AVPixFmtDescriptor) Log2ChromaH() int {
+func (s *AVPixFmtDescriptor) Log2ChromaH() uint8 {
 	value := s.ptr.log2_chroma_h
-	return int(value)
+	return uint8(value)
 }
 
 // SetLog2ChromaH sets the log2_chroma_h field.
@@ -26845,22 +26845,22 @@ func (s *AVPixFmtDescriptor) Log2ChromaH() int {
   The note above is needed to ensure rounding up.
   This value only refers to the chroma components.
 */
-func (s *AVPixFmtDescriptor) SetLog2ChromaH(value int) {
+func (s *AVPixFmtDescriptor) SetLog2ChromaH(value uint8) {
 	s.ptr.log2_chroma_h = (C.uint8_t)(value)
 }
 
 // Flags gets the flags field.
 //
 //	Combination of AV_PIX_FMT_FLAG_... flags.
-func (s *AVPixFmtDescriptor) Flags() int {
+func (s *AVPixFmtDescriptor) Flags() uint64 {
 	value := s.ptr.flags
-	return int(value)
+	return uint64(value)
 }
 
 // SetFlags sets the flags field.
 //
 //	Combination of AV_PIX_FMT_FLAG_... flags.
-func (s *AVPixFmtDescriptor) SetFlags(value int) {
+func (s *AVPixFmtDescriptor) SetFlags(value uint64) {
 	s.ptr.flags = (C.uint64_t)(value)
 }
 

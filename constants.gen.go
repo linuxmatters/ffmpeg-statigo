@@ -2195,24 +2195,6 @@ const AVLzoInputPadding = C.AV_LZO_INPUT_PADDING
 // AVLzoOutputPadding wraps AV_LZO_OUTPUT_PADDING.
 const AVLzoOutputPadding = C.AV_LZO_OUTPUT_PADDING
 
-// ME wraps M_E.
-const ME = C.M_E
-
-// MEf wraps M_Ef.
-const MEf = C.M_Ef
-
-// MLn2 wraps M_LN2.
-const MLn2 = C.M_LN2
-
-// MLn2F wraps M_LN2f.
-const MLn2F = C.M_LN2f
-
-// MLn10 wraps M_LN10.
-const MLn10 = C.M_LN10
-
-// MLn10F wraps M_LN10f.
-const MLn10F = C.M_LN10f
-
 // MLog210 wraps M_LOG2_10.
 const MLog210 = C.M_LOG2_10
 
@@ -2224,54 +2206,6 @@ const MPhi = C.M_PHI
 
 // MPhif wraps M_PHIf.
 const MPhif = C.M_PHIf
-
-// MPi wraps M_PI.
-const MPi = C.M_PI
-
-// MPif wraps M_PIf.
-const MPif = C.M_PIf
-
-// MPi2 wraps M_PI_2.
-const MPi2 = C.M_PI_2
-
-// MPi2F wraps M_PI_2f.
-const MPi2F = C.M_PI_2f
-
-// MPi4 wraps M_PI_4.
-const MPi4 = C.M_PI_4
-
-// MPi4F wraps M_PI_4f.
-const MPi4F = C.M_PI_4f
-
-// M1Pi wraps M_1_PI.
-const M1Pi = C.M_1_PI
-
-// M1Pif wraps M_1_PIf.
-const M1Pif = C.M_1_PIf
-
-// M2Pi wraps M_2_PI.
-const M2Pi = C.M_2_PI
-
-// M2Pif wraps M_2_PIf.
-const M2Pif = C.M_2_PIf
-
-// M2Sqrtpi wraps M_2_SQRTPI.
-const M2Sqrtpi = C.M_2_SQRTPI
-
-// M2Sqrtpif wraps M_2_SQRTPIf.
-const M2Sqrtpif = C.M_2_SQRTPIf
-
-// MSqrt12 wraps M_SQRT1_2.
-const MSqrt12 = C.M_SQRT1_2
-
-// MSqrt12F wraps M_SQRT1_2f.
-const MSqrt12F = C.M_SQRT1_2f
-
-// MSqrt2 wraps M_SQRT2.
-const MSqrt2 = C.M_SQRT2
-
-// MSqrt2F wraps M_SQRT2f.
-const MSqrt2F = C.M_SQRT2f
 
 // AVOptFlagEncodingParam wraps AV_OPT_FLAG_ENCODING_PARAM.
 const AVOptFlagEncodingParam = C.AV_OPT_FLAG_ENCODING_PARAM
