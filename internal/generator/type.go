@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-clang/bootstrap/clang"
+	"github.com/Newbluecake/bootstrap/clang"
 )
 
 type Type interface {

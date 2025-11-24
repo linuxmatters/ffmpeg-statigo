@@ -1,3 +1,5 @@
+github.com/Newbluecake/bootstrap v0.17.1 h1:yfUxLou9syPjVQ4x+m7NJ46PL0bMMUHqtRONT+t4/8U=
+github.com/Newbluecake/bootstrap v0.17.1/go.mod h1:xiE9XKFdGKeolTKzUZxyxEhrxNOUEyjlGIPXFkGqq4Y=
 github.com/cavaliergopher/grab/v3 v3.0.1 h1:4z7TkBfmPjmLAAmkkAZNX/6QJ1nNFdv3SdIHXju0Fr4=
 github.com/cavaliergopher/grab/v3 v3.0.1/go.mod h1:1U/KNnD+Ft6JJiYoYBAimKH2XrYptb8Kl3DFGmsjpq4=
 github.com/dave/jennifer v1.7.1 h1:B4jJJDHelWcDhlRQxWeo0Npa/pYKBLrirAQoTN45txo=
@@ -8,8 +10,6 @@ github.com/gdamore/encoding v1.0.1 h1:YzKZckdBL6jVt2Gc+5p82qhrGiqMdG/eNs6Wy0u3Uh
 github.com/gdamore/encoding v1.0.1/go.mod h1:0Z0cMFinngz9kS1QfMjCP8TY7em3bZYeeklsSDPivEo=
 github.com/gdamore/tcell/v2 v2.10.0 h1:u/czxSDixtjOR7UzXXtxHyO4Av2aoZvr2te9TGOaANo=
 github.com/gdamore/tcell/v2 v2.10.0/go.mod h1:K2DslmrxoadNP0709mqdgVuM6QcJjzYvJisintiFBfY=
-github.com/go-clang/bootstrap v0.14.0 h1:pT2dHsqEfW3zxzNibo1svrtpbh+s/ET6SNohFaIakYM=
-github.com/go-clang/bootstrap v0.14.0/go.mod h1:a4EmDb8BXcdDBkMbvviEzrDd2LNZXqY7PwHmeyHKy1k=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
 github.com/iancoleman/strcase v0.3.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/lucasb-eyer/go-colorful v1.3.0 h1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=

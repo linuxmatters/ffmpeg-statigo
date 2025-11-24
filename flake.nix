@@ -41,8 +41,8 @@
             # LLVM/Clang for code generator (go-clang requires libclang)
             # llvmPackages.libclang provides: clang compiler + libclang library
             # llvmPackages.llvm provides: llvm-config command
-            llvmPackages.libclang
-            llvmPackages.llvm
+            llvmPackages_18.libclang
+            llvmPackages_18.llvm
             pkg-config
             python3
             yasm

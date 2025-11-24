@@ -40,18 +40,23 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "linux" ]; then
             sudo apt-get update
-            sudo apt-get install -y libclang-20-dev llvm-20-dev
-            echo "CGO_LDFLAGS=-L/usr/lib/llvm-20/lib" >> $GITHUB_ENV
-            echo "CGO_CFLAGS=-I/usr/lib/llvm-20/include" >> $GITHUB_ENV
-            # Also try the generic path
-            echo "LD_LIBRARY_PATH=/usr/lib/llvm-20/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+            # Use libclang-18 which works with Newbluecake/bootstrap v0.17.1 (supports clang 17+)
+            sudo apt-get install -y libclang-18-dev llvm-18-dev
+            echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib" >> $GITHUB_ENV
+            echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include" >> $GITHUB_ENV
+            echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           elif [ "${{ matrix.os }}" = "darwin" ]; then
-            brew install llvm
-            LLVM_PREFIX=$(brew --prefix llvm)
+            # On macOS, use LLVM 18 to match Linux environment
+            brew install llvm@18 || brew install llvm
+            if [ -d "$(brew --prefix llvm@18)" ]; then
+              LLVM_PREFIX=$(brew --prefix llvm@18)
+            else
+              LLVM_PREFIX=$(brew --prefix llvm)
+              echo "::warning::Using latest LLVM on macOS instead of version 18"
+            fi
             echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib" >> $GITHUB_ENV
             echo "CGO_CFLAGS=-I${LLVM_PREFIX}/include" >> $GITHUB_ENV
             echo "PATH=${LLVM_PREFIX}/bin:$PATH" >> $GITHUB_ENV
-            # macOS needs explicit library path
             echo "DYLD_LIBRARY_PATH=${LLVM_PREFIX}/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
           fi
 
@@ -69,10 +74,11 @@ jobs:
 
       # The generator creates Go bindings from FFmpeg headers using libclang.
       # It's only needed during development when FFmpeg is updated.
-      # Failures here are acceptable in CI as the generated files are committed.
+      # Using Newbluecake/bootstrap v0.17.1 which supports LLVM/Clang 17+
       - name: Run generator (optional - for development only)
         run: |
-          echo "::notice::Generator requires libclang. Failures are expected if libclang setup differs from development environment."
+          echo "::notice::Generator uses Newbluecake/bootstrap v0.17.1 which supports LLVM 17+"
+          echo "::notice::Using LLVM 18 in CI, compatible with the fork's clang 17 support"
           echo "Running generator with environment:"
           echo "CGO_LDFLAGS=$CGO_LDFLAGS"
           echo "CGO_CFLAGS=$CGO_CFLAGS"

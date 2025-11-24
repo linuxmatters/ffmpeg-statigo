@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/go-clang/bootstrap/clang"
+	"github.com/Newbluecake/bootstrap/clang"
 )
 
 var (

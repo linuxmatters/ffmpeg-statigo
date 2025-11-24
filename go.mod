@@ -3,10 +3,10 @@ module github.com/linuxmatters/ffmpeg-statigo
 go 1.24.0
 
 require (
+	github.com/Newbluecake/bootstrap v0.17.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/dave/jennifer v1.7.1
 	github.com/gdamore/tcell/v2 v2.10.0
-	github.com/go-clang/bootstrap v0.14.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/stretchr/testify v1.11.1
 	github.com/ulikunitz/xz v0.5.15
