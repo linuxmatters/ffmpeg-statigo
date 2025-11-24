@@ -221,14 +221,16 @@ func TestGeneratorConstants(t *testing.T) {
 	})
 
 	t.Run("MathConstants", func(t *testing.T) {
-		// Test that math constants are generated (except NAN/INFINITY which conflict)
-		if ME == 0 {
-			t.Error("M_E should not be 0")
+		// Test that FFmpeg-specific math constants are generated
+		// Note: Standard constants like M_E and M_PI may come from system headers
+		// on Linux/NixOS and won't be redefined by FFmpeg
+		if MLog210 == 0 {
+			t.Error("M_LOG2_10 should not be 0")
 		}
-		if MPi == 0 {
-			t.Error("M_PI should not be 0")
+		if MPhi == 0 {
+			t.Error("M_PHI should not be 0")
 		}
-		t.Logf("M_E: %f, M_PI: %f", ME, MPi)
+		t.Logf("M_LOG2_10: %f, M_PHI: %f", MLog210, MPhi)
 	})
 }
 

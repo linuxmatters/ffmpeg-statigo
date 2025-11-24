@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -166,6 +168,37 @@ type Parser struct {
 	tu   clang.TranslationUnit
 }
 
+// getSystemIncludes gets system include paths from the compiler
+func getSystemIncludes() []string {
+	// Try to get include paths from gcc -v output
+	cmd := exec.Command("gcc", "-E", "-x", "c", "-v", "/dev/null")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(string(output), "\n")
+	inIncludes := false
+	var includes []string
+
+	for _, line := range lines {
+		if strings.Contains(line, "#include <...> search starts here:") {
+			inIncludes = true
+			continue
+		}
+		if strings.Contains(line, "End of search list.") {
+			break
+		}
+		if inIncludes && strings.TrimSpace(line) != "" {
+			// The path is preceded by a space
+			path := strings.TrimSpace(line)
+			includes = append(includes, "-I"+path)
+		}
+	}
+
+	return includes
+}
+
 func getPlatformArgs() []string {
 	args := []string{
 		"-fparse-all-comments",
@@ -175,20 +208,26 @@ func getPlatformArgs() []string {
 		"-D__STDC_CONSTANT_MACROS",
 	}
 
-	// Add platform-specific includes
-	switch runtime.GOOS {
-	case "darwin":
-		args = append(args, "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Headers/")
-	case "linux":
-		// For standard Linux distributions, add common include paths
-		// These will be ignored if they don't exist, so it's safe to add them
-		// NixOS will use its own paths through environment variables
-		if runtime.GOARCH == "amd64" {
-			args = append(args, "-I/usr/include/x86_64-linux-gnu")
-		} else if runtime.GOARCH == "arm64" {
-			args = append(args, "-I/usr/include/aarch64-linux-gnu")
+	// Check if we're on NixOS by looking for NIX_CC environment variable
+	if os.Getenv("NIX_CC") != "" {
+		// On NixOS, get system includes from gcc
+		systemIncludes := getSystemIncludes()
+		args = append(args, systemIncludes...)
+	} else {
+		// Add platform-specific includes
+		switch runtime.GOOS {
+		case "darwin":
+			args = append(args, "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Headers/")
+		case "linux":
+			// For standard Linux distributions, add common include paths
+			// These will be ignored if they don't exist, so it's safe to add them
+			if runtime.GOARCH == "amd64" {
+				args = append(args, "-I/usr/include/x86_64-linux-gnu")
+			} else if runtime.GOARCH == "arm64" {
+				args = append(args, "-I/usr/include/aarch64-linux-gnu")
+			}
+			args = append(args, "-I/usr/include")
 		}
-		args = append(args, "-I/usr/include")
 	}
 
 	return args
