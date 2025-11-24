@@ -5,6 +5,7 @@ import (
 	"log"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"unicode"
@@ -165,6 +166,34 @@ type Parser struct {
 	tu   clang.TranslationUnit
 }
 
+func getPlatformArgs() []string {
+	args := []string{
+		"-fparse-all-comments",
+		fmt.Sprintf("-I%v", AVLibPath),
+		"-D_GNU_SOURCE",
+		"-D_DEFAULT_SOURCE",
+		"-D__STDC_CONSTANT_MACROS",
+	}
+
+	// Add platform-specific includes
+	switch runtime.GOOS {
+	case "darwin":
+		args = append(args, "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Headers/")
+	case "linux":
+		// For standard Linux distributions, add common include paths
+		// These will be ignored if they don't exist, so it's safe to add them
+		// NixOS will use its own paths through environment variables
+		if runtime.GOARCH == "amd64" {
+			args = append(args, "-I/usr/include/x86_64-linux-gnu")
+		} else if runtime.GOARCH == "arm64" {
+			args = append(args, "-I/usr/include/aarch64-linux-gnu")
+		}
+		args = append(args, "-I/usr/include")
+	}
+
+	return args
+}
+
 func (p *Parser) parseFile(indent string, path string) {
 	p.path = path
 
@@ -173,11 +202,7 @@ func (p *Parser) parseFile(indent string, path string) {
 
 	tu := idx.ParseTranslationUnit(
 		path,
-		[]string{
-			"-fparse-all-comments",
-			fmt.Sprintf("-I%v", AVLibPath),
-			"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Headers/",
-		},
+		getPlatformArgs(),
 		nil,
 		clang.TranslationUnit_IncludeBriefCommentsInCodeCompletion|clang.TranslationUnit_DetailedPreprocessingRecord,
 	)
