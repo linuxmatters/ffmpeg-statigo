@@ -706,10 +706,19 @@ var ffmpeg = &Library{
 		incDir := filepath.Join(stagingDir, "include")
 		libDir := filepath.Join(stagingDir, "lib")
 
+		extraCflags := fmt.Sprintf("-I%s", incDir)
+		extraLdflags := fmt.Sprintf("-L%s", libDir)
+
+		// Add macOS deployment target to ensure compatibility
+		if os == "darwin" {
+			extraCflags += " -mmacosx-version-min=13.0"
+			extraLdflags += " -mmacosx-version-min=13.0"
+		}
+
 		args := []string{
 			"--pkg-config-flags=--static",
-			fmt.Sprintf("--extra-cflags=-I%s", incDir),
-			fmt.Sprintf("--extra-ldflags=-L%s", libDir),
+			fmt.Sprintf("--extra-cflags=%s", extraCflags),
+			fmt.Sprintf("--extra-ldflags=%s", extraLdflags),
 		}
 
 		// Add common FFmpeg arguments (platform-specific)

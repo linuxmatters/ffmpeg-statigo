@@ -25,7 +25,7 @@ jobs:
             runner: macos-15-intel
           - os: darwin
             arch: arm64
-            runner: macos-latest
+            runner: macos-15
       fail-fast: false
 
     steps:

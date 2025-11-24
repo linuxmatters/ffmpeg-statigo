@@ -26,10 +26,22 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 		incDir := filepath.Join(installDir, "include")
 		libDir := filepath.Join(installDir, "lib")
 
+		cflags := fmt.Sprintf("-O3 -I%s", incDir)
+		cppflags := fmt.Sprintf("-I%s", incDir)
+		ldflags := fmt.Sprintf("-L%s", libDir)
+
+		// Add macOS deployment target to ensure compatibility
+		if runtime.GOOS == "darwin" {
+			deploymentTarget := " -mmacosx-version-min=13.0"
+			cflags += deploymentTarget
+			cppflags += deploymentTarget
+			ldflags += deploymentTarget
+		}
+
 		args = append(args,
-			fmt.Sprintf("CFLAGS=-O3 -I%s", incDir),
-			fmt.Sprintf("CPPFLAGS=-I%s", incDir),
-			fmt.Sprintf("LDFLAGS=-L%s", libDir),
+			fmt.Sprintf("CFLAGS=%s", cflags),
+			fmt.Sprintf("CPPFLAGS=%s", cppflags),
+			fmt.Sprintf("LDFLAGS=%s", ldflags),
 		)
 	}
 

@@ -209,6 +209,8 @@ func buildEnv(installDir string) []string {
 
 	// Set minimum macOS deployment target to avoid version mismatch warnings
 	// This ensures libraries work on macOS 13.0 and later (supports Intel and Apple Silicon)
+	// Note: We also set -mmacosx-version-min=13.0 in compiler flags, but some build
+	// tools may check this environment variable directly
 	if runtime.GOOS == "darwin" {
 		hasDeploymentTarget := false
 		for _, e := range env {
