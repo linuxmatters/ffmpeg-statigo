@@ -24,49 +24,19 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 
 ## Installation
 
-ffmpeg-statigo includes large static libraries (~100MB per platform) that cannot be distributed via `go get`. This requires a simple manual setup:
+Static libraries (~100MB per platform) cannot be distributed via `go get`. Use as a git submodule with a replace directive:
 
-### Using Git Submodules
+1. Add submodule: `git submodule add https://github.com/linuxmatters/ffmpeg-statigo third_party/ffmpeg-statigo`
+2. Add replace directive to `go.mod`: `replace github.com/linuxmatters/ffmpeg-statigo => ./third_party/ffmpeg-statigo`
+3. Download libraries: `cd third_party/ffmpeg-statigo && go run ./cmd/download-lib`
+4. Configure git for submodule-friendly pulls: `git config pull.ff only && git config submodule.recurse true`
+5. Build: `go build ./...`
 
-For clean project integration, use ffmpeg-statigo as a git submodule:
+Step 4 prevents `git pull --rebase` from breaking submodule references. Fast-forward only pulls ensure submodule commits stay in sync with the parent repository.
 
-1. Add ffmpeg-statigo as a submodule in your project
-```bash
-git submodule add https://github.com/linuxmatters/ffmpeg-statigo vendor/ffmpeg-statigo
-```
+Static libraries are gitignored—only the submodule reference is committed.
 
-2. Add a replace directive pointing to the submodule
-```bash
-go mod edit -replace github.com/linuxmatters/ffmpeg-statigo=./vendor/ffmpeg-statigo
-```
-
-3. Get the dependency
-```bash
-go get github.com/linuxmatters/ffmpeg-statigo
-```
-
-4. Download the static libraries
-```bash
-cd vendor/ffmpeg-statigo
-go run ./cmd/download-lib
-cd ../..
-```
-
-5. Build your project
-```bash
-go build
-```
-
-6. Commit only the submodule reference
-
-The static libraries (`lib/*/libffmpeg.a`) won't be committed - they're gitignored
-
-```bash
-git add .gitmodules vendor/ffmpeg-statigo
-git commit -m "Add ffmpeg-statigo as submodule"
-```
-
-**See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for alternative installation methods, CI/CD integration, and troubleshooting.**
+**See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for CI/CD integration, cross-compilation, and troubleshooting.**
 
 ## Codec Inclusion Policy
 
