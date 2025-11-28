@@ -1,0 +1,106 @@
+name: Go module release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Go module version (e.g., 8.0.0.1)'
+        required: true
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Go module release
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Validate version format
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format X.Y.Z.N (e.g., 8.0.0.1)"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Verify module builds
+        run: go build -v ./...
+
+      - name: Run tests
+        run: |
+          go run ./cmd/download-lib/
+          go test -v ./...
+
+      - name: Create tag (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Go modules require v prefix for version tags
+          git tag -a "v${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=v${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "display_version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "display_version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DISPLAY_VERSION="${{ steps.version.outputs.display_version }}"
+
+          # Get previous tag (look for v8.* tags)
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog from $PREV_TAG to $VERSION"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG"..HEAD --no-merges)
+          else
+            echo "No previous version tag found, using recent commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" -20 --no-merges)
+          fi
+
+          # Write changelog to file (handles multiline)
+          {
+            echo "## What's Changed"
+            echo ""
+            echo "$COMMITS"
+            echo ""
+            echo "## Installation"
+            echo ""
+            echo '```bash'
+            echo "go get github.com/linuxmatters/ffmpeg-statigo@$VERSION"
+            echo '```'
+            echo ""
+            echo "**Full Changelog**: https://github.com/linuxmatters/ffmpeg-statigo/compare/${PREV_TAG:-main}...$VERSION"
+          } > changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.display_version }}
+          body_path: changelog.md
+          draft: false
+          prerelease: false

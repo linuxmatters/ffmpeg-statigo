@@ -56,3 +56,11 @@ ffmpeg-release VERSION:
 # Check library release workflow status
 ffmpeg-release-status:
     gh run list --workflow=ffmpeg-release.yml --limit 5
+
+# Trigger Go module release
+go-release VERSION:
+    gh workflow run go-release.yml -f version={{VERSION}}
+
+# Check Go module release workflow status
+go-release-status:
+    gh run list --workflow=go-release.yml --limit 5
