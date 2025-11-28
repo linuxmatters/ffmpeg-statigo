@@ -950,29 +950,6 @@ typedef struct AVStream {
  * sizeof(AVStreamGroupTileGrid) is not a part of the ABI and may only be
  * allocated by avformat_stream_group_create().
  */
-
-/**
- * Tile grid offset structure.
- */
-struct UnnamedStruct_avformat_986_5 {
-    /**
-     * Index of the stream in the group this tile references.
-     *
-     * Must be < @ref AVStreamGroup.nb_streams "nb_streams".
-     */
-    unsigned int idx;
-    /**
-     * Offset in pixels from the left edge of the canvas where the tile
-     * should be placed.
-     */
-    int horizontal;
-    /**
-     * Offset in pixels from the top edge of the canvas where the tile
-     * should be placed.
-     */
-    int vertical;
-};
-
 typedef struct AVStreamGroupTileGrid {
     const AVClass *av_class;
 
@@ -1006,7 +983,24 @@ typedef struct AVStreamGroupTileGrid {
      *
      * Freed by libavformat in avformat_free_context().
      */
-    struct UnnamedStruct_avformat_986_5 *offsets;
+    struct {
+        /**
+         * Index of the stream in the group this tile references.
+         *
+         * Must be < @ref AVStreamGroup.nb_streams "nb_streams".
+         */
+        unsigned int idx;
+        /**
+         * Offset in pixels from the left edge of the canvas where the tile
+         * should be placed.
+         */
+        int horizontal;
+        /**
+         * Offset in pixels from the top edge of the canvas where the tile
+         * should be placed.
+         */
+        int vertical;
+    } *offsets;
 
     /**
      * The pixel value per channel in RGBA format used if no pixel of any tile

@@ -11039,109 +11039,70 @@ func (s *AVStream) SetPtsWrapBits(value int) {
 	s.ptr.pts_wrap_bits = (C.int)(value)
 }
 
-// --- Struct UnnamedStruct_avformat_986_5 ---
-
-// UnnamedStruct_avformat_986_5 wraps UnnamedStruct_avformat_986_5.
-//
-//	Tile grid offset structure.
-type UnnamedStruct_avformat_986_5 struct {
-	ptr *C.struct_UnnamedStruct_avformat_986_5
-}
-
-func (s *UnnamedStruct_avformat_986_5) RawPtr() unsafe.Pointer {
-	return unsafe.Pointer(s.ptr)
-}
-
-func ToUnnamedStruct_avformat_986_5Array(ptr unsafe.Pointer) *Array[*UnnamedStruct_avformat_986_5] {
-	if ptr == nil {
-		return nil
-	}
-
-	return &Array[*UnnamedStruct_avformat_986_5]{
-		elemSize: ptrSize,
-		loadPtr: func(pointer unsafe.Pointer) *UnnamedStruct_avformat_986_5 {
-			ptr := (**C.struct_UnnamedStruct_avformat_986_5)(pointer)
-			value := *ptr
-			var valueMapped *UnnamedStruct_avformat_986_5
-			if value != nil {
-				valueMapped = &UnnamedStruct_avformat_986_5{ptr: value}
-			}
-			return valueMapped
-		},
-		ptr: ptr,
-		storePtr: func(pointer unsafe.Pointer, value *UnnamedStruct_avformat_986_5) {
-			ptr := (**C.struct_UnnamedStruct_avformat_986_5)(pointer)
-			if value != nil {
-				*ptr = value.ptr
-			} else {
-				*ptr = nil
-			}
-		},
-	}
-}
-
-// Idx gets the idx field.
-/*
-  Index of the stream in the group this tile references.
-
-  Must be < @ref AVStreamGroup.nb_streams "nb_streams".
-*/
-func (s *UnnamedStruct_avformat_986_5) Idx() uint {
-	value := s.ptr.idx
-	return uint(value)
-}
-
-// SetIdx sets the idx field.
-/*
-  Index of the stream in the group this tile references.
-
-  Must be < @ref AVStreamGroup.nb_streams "nb_streams".
-*/
-func (s *UnnamedStruct_avformat_986_5) SetIdx(value uint) {
-	s.ptr.idx = (C.uint)(value)
-}
-
-// Horizontal gets the horizontal field.
-/*
-  Offset in pixels from the left edge of the canvas where the tile
-  should be placed.
-*/
-func (s *UnnamedStruct_avformat_986_5) Horizontal() int {
-	value := s.ptr.horizontal
-	return int(value)
-}
-
-// SetHorizontal sets the horizontal field.
-/*
-  Offset in pixels from the left edge of the canvas where the tile
-  should be placed.
-*/
-func (s *UnnamedStruct_avformat_986_5) SetHorizontal(value int) {
-	s.ptr.horizontal = (C.int)(value)
-}
-
-// Vertical gets the vertical field.
-/*
-  Offset in pixels from the top edge of the canvas where the tile
-  should be placed.
-*/
-func (s *UnnamedStruct_avformat_986_5) Vertical() int {
-	value := s.ptr.vertical
-	return int(value)
-}
-
-// SetVertical sets the vertical field.
-/*
-  Offset in pixels from the top edge of the canvas where the tile
-  should be placed.
-*/
-func (s *UnnamedStruct_avformat_986_5) SetVertical(value int) {
-	s.ptr.vertical = (C.int)(value)
-}
-
 // --- Struct AVStreamGroupTileGrid ---
 
 // AVStreamGroupTileGrid wraps AVStreamGroupTileGrid.
+/*
+  AVStreamGroupTileGrid holds information on how to combine several
+  independent images on a single canvas for presentation.
+
+  The output should be a @ref AVStreamGroupTileGrid.background "background"
+  colored @ref AVStreamGroupTileGrid.coded_width "coded_width" x
+  @ref AVStreamGroupTileGrid.coded_height "coded_height" canvas where a
+  @ref AVStreamGroupTileGrid.nb_tiles "nb_tiles" amount of tiles are placed in
+  the order they appear in the @ref AVStreamGroupTileGrid.offsets "offsets"
+  array, at the exact offset described for them. In particular, if two or more
+  tiles overlap, the image with higher index in the
+  @ref AVStreamGroupTileGrid.offsets "offsets" array takes priority.
+  Note that a single image may be used multiple times, i.e. multiple entries
+  in @ref AVStreamGroupTileGrid.offsets "offsets" may have the same value of
+  idx.
+
+  The following is an example of a simple grid with 3 rows and 4 columns:
+
+  +---+---+---+---+
+  | 0 | 1 | 2 | 3 |
+  +---+---+---+---+
+  | 4 | 5 | 6 | 7 |
+  +---+---+---+---+
+  | 8 | 9 |10 |11 |
+  +---+---+---+---+
+
+  Assuming all tiles have a dimension of 512x512, the
+  @ref AVStreamGroupTileGrid.offsets "offset" of the topleft pixel of
+  the first @ref AVStreamGroup.streams "stream" in the group is "0,0", the
+  @ref AVStreamGroupTileGrid.offsets "offset" of the topleft pixel of
+  the second @ref AVStreamGroup.streams "stream" in the group is "512,0", the
+  @ref AVStreamGroupTileGrid.offsets "offset" of the topleft pixel of
+  the fifth @ref AVStreamGroup.streams "stream" in the group is "0,512", the
+  @ref AVStreamGroupTileGrid.offsets "offset", of the topleft pixel of
+  the sixth @ref AVStreamGroup.streams "stream" in the group is "512,512",
+  etc.
+
+  The following is an example of a canvas with overlapping tiles:
+
+  +-----------+
+  |   %%%%%   |
+  |***%%3%%@@@|
+  |**0%%%%%2@@|
+  |***##1@@@@@|
+  |   #####   |
+  +-----------+
+
+  Assuming a canvas with size 1024x1024 and all tiles with a dimension of
+  512x512, a possible @ref AVStreamGroupTileGrid.offsets "offset" for the
+  topleft pixel of the first @ref AVStreamGroup.streams "stream" in the group
+  would be 0x256, the @ref AVStreamGroupTileGrid.offsets "offset" for the
+  topleft pixel of the second @ref AVStreamGroup.streams "stream" in the group
+  would be 256x512, the @ref AVStreamGroupTileGrid.offsets "offset" for the
+  topleft pixel of the third @ref AVStreamGroup.streams "stream" in the group
+  would be 512x256, and the @ref AVStreamGroupTileGrid.offsets "offset" for
+  the topleft pixel of the fourth @ref AVStreamGroup.streams "stream" in the
+  group would be 256x0.
+
+  sizeof(AVStreamGroupTileGrid) is not a part of the ABI and may only be
+  allocated by avformat_stream_group_create().
+*/
 type AVStreamGroupTileGrid struct {
 	ptr *C.AVStreamGroupTileGrid
 }
@@ -11260,44 +11221,7 @@ func (s *AVStreamGroupTileGrid) SetCodedHeight(value int) {
 	s.ptr.coded_height = (C.int)(value)
 }
 
-// Offsets gets the offsets field.
-/*
-  An @ref nb_tiles sized array of offsets in pixels from the topleft edge
-  of the canvas, indicating where each stream should be placed.
-  It must be allocated with the av_malloc() family of functions.
-
-  - demuxing: set by libavformat, must not be modified by the caller.
-  - muxing: set by the caller before avformat_write_header().
-
-  Freed by libavformat in avformat_free_context().
-*/
-func (s *AVStreamGroupTileGrid) Offsets() *UnnamedStruct_avformat_986_5 {
-	value := s.ptr.offsets
-	var valueMapped *UnnamedStruct_avformat_986_5
-	if value != nil {
-		valueMapped = &UnnamedStruct_avformat_986_5{ptr: value}
-	}
-	return valueMapped
-}
-
-// SetOffsets sets the offsets field.
-/*
-  An @ref nb_tiles sized array of offsets in pixels from the topleft edge
-  of the canvas, indicating where each stream should be placed.
-  It must be allocated with the av_malloc() family of functions.
-
-  - demuxing: set by libavformat, must not be modified by the caller.
-  - muxing: set by the caller before avformat_write_header().
-
-  Freed by libavformat in avformat_free_context().
-*/
-func (s *AVStreamGroupTileGrid) SetOffsets(value *UnnamedStruct_avformat_986_5) {
-	if value != nil {
-		s.ptr.offsets = value.ptr
-	} else {
-		s.ptr.offsets = nil
-	}
-}
+// offsets skipped (manual binding in custom.go)
 
 // Background gets the background field.
 /*

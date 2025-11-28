@@ -46,6 +46,26 @@ var fieldCTypeOverrides = map[string]map[string]string{
 	},
 }
 
+// skippedStructs contains struct names that should not be generated.
+// These require manual bindings in custom.go, typically because they are
+// anonymous C structs that CGO cannot directly reference by name.
+var skippedStructs = map[string]bool{
+	// Anonymous struct inside AVStreamGroupTileGrid - CGO generates an internal
+	// name like "struct___12" which is unstable across compilations.
+	"UnnamedStruct_avformat_986_5": true,
+}
+
+// skippedFields contains struct.field combinations that should not be generated.
+// These require manual bindings in custom.go, typically because they reference
+// types that CGO cannot directly access (like anonymous structs).
+var skippedFields = map[string]map[string]bool{
+	"AVStreamGroupTileGrid": {
+		// The offsets field is a pointer to an anonymous struct that CGO
+		// assigns an internal name. Manual binding in custom.go handles this.
+		"offsets": true,
+	},
+}
+
 // isOutputParameter checks if a parameter name suggests it's an output parameter
 // isOutputParameter detects function parameters that are output parameters.
 // Priority 2 Enhancement: Recovers ~30 functions with output parameters.
@@ -333,6 +353,12 @@ func (g *Generator) generateStructs() {
 	for _, stName := range i.structOrder {
 		st := i.structs[stName]
 
+		// Skip structs that require manual bindings
+		if skippedStructs[st.Name] {
+			log.Println("Skipping struct", st.Name, "(manual binding in custom.go)")
+			continue
+		}
+
 		log.Println("Generating struct", st.Name)
 		o.Commentf("--- Struct %v ---", st.Name)
 		o.Line()
@@ -464,6 +490,15 @@ func (g *Generator) generateStructs() {
 
 	fieldLoop:
 		for _, field := range st.Fields {
+			// Check if this field should be skipped (manual binding in custom.go)
+			if fields, ok := skippedFields[st.Name]; ok {
+				if fields[field.Name] {
+					o.Commentf("%v skipped (manual binding in custom.go)", field.Name)
+					o.Line()
+					continue fieldLoop
+				}
+			}
+
 			fName := strcase.ToCamel(field.Name)
 
 			cName := field.Name

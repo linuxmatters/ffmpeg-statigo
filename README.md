@@ -12,7 +12,7 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 
 ## Features
 
-- **FFmpeg 8.0** - Latest release with AV1, H.265, H.264, VP8/9
+- **FFmpeg 8.0.1** - Latest release with AV1, H.265, H.264, VP8/9
 - **Truly static** - Builds into your binary (just needs system `m` and `stdc++` libraries)
 - **Cross-platform** - Linux and macOS (arm64, amd64)
 - **Hardware acceleration** - NVENC/NVDEC, VideoToolbox, Vulkan and QuickSync support
@@ -83,7 +83,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 
 | Library          | Version     | Description                                                                        |
 |------------------|-------------|------------------------------------------------------------------------------------|
-| FFmpeg           | 8.0         | A complete, cross-platform solution to record, convert and stream audio and video  |
+| FFmpeg           | 8.0.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
 | dav1d            | 1.5.2       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
 | glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
 | libsrt           | 1.5.5-rc.0a | A transport protocol for ultra low latency live video and audio streaming          |
@@ -93,16 +93,17 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | libxml2          | 2.15.1      | An XML parser and toolkit implemented in C                                         |
 | libiconv         | 1.18        | A character set conversion library (*macOS only*)                                  |
 | mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                  |
-| nv-codec-headers | 11.1.5.3    | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
+| nv-codec-headers | 12.2.72.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
 | openssl          | 3.6.0       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
 | opus             | 1.5.2       | A totally open, royalty-free, highly versatile audio codec                         |
-| rav1e            | 0.8.2       | The fastest and safest AV1 encoder.                                                |
-| Vulkan-Headers   | 1.4.332     | Vulkan header files and API registry                                               |
-| VVenC            | 1.13.1      | Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder  |
+| rav1e            | 0.8.1       | The fastest and safest AV1 encoder.                                                |
+| Vulkan-Headers   | 1.4.335     | Vulkan header files and API registry                                               |
 | x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams             |
 | x265             | head        | H.265/MPEG-H HEVC compression format library for encoding video streams            |
 | zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                              |
 | zlib             | 1.3.1       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
+
+VVenC 1.13.1 (Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder) is in the build configuration, **but currently disabled**, as it adds ~25MB to the static ffmpeg library and is too slow for practical use.
 
 ### Enabled Codecs
 
