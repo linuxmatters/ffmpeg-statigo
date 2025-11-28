@@ -49,8 +49,14 @@ test:
 download-lib:
     go run ./cmd/download-lib/
 
-# Trigger Ffmpeg library release
+# Trigger FFmpeg library release
 ffmpeg-release VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! "{{VERSION}}" =~ ^lib-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Error: VERSION must start with 'lib-' and match format lib-X.Y.Z.N (e.g., lib-8.0.1.0)"
+        exit 1
+    fi
     gh workflow run ffmpeg-release.yml -f version={{VERSION}}
 
 # Check library release workflow status
@@ -59,6 +65,12 @@ ffmpeg-release-status:
 
 # Trigger Go module release
 go-release VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Error: VERSION must be in format X.Y.Z.N (e.g., 8.0.1.0)"
+        exit 1
+    fi
     gh workflow run go-release.yml -f version={{VERSION}}
 
 # Check Go module release workflow status
