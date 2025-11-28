@@ -231,7 +231,7 @@ var nvcodecheaders = &Library{
 // vulkanheaders - Vulkan API headers (cross-platform)
 var vulkanheaders = &Library{
 	Name:          "Vulkan-Headers",
-	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.332.tar.gz",
+	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.335.tar.gz",
 	FFmpegEnables: []string{"vulkan"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
