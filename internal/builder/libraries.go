@@ -26,6 +26,7 @@ var allLibraryDefinitions = []*Library{
 	libxml2,
 
 	// Hardware acceleration
+	libdrm,
 	libvpl,
 	nvcodecheaders,
 	vulkanheaders,
@@ -286,6 +287,37 @@ var glslang = &Library{
 		"libSPIRV-Tools-opt",
 	},
 	Dependencies: []*Library{vulkanheaders},
+}
+
+// libdrm - Direct Rendering Manager library (Linux only, required by libva)
+var libdrm = &Library{
+	Name:        "libdrm",
+	URL:         "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.129/drm-libdrm-2.4.129.tar.gz",
+	Platform:    []string{"linux"},
+	BuildSystem: &MesonBuild{},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			// Note: -Ddefault_library=static is added automatically by MesonBuild
+			"-Dintel=disabled",
+			"-Dradeon=disabled",
+			"-Damdgpu=disabled",
+			"-Dnouveau=disabled",
+			"-Dvmwgfx=disabled",
+			"-Domap=disabled",
+			"-Dexynos=disabled",
+			"-Dfreedreno=disabled",
+			"-Dtegra=disabled",
+			"-Dvc4=disabled",
+			"-Detnaviv=disabled",
+			"-Dcairo-tests=disabled",
+			"-Dman-pages=disabled",
+			"-Dvalgrind=disabled",
+			"-Dtests=false",
+			"-Dinstall-test-programs=false",
+			"-Dudev=false",
+		}
+	},
+	LinkLibs: []string{"libdrm"},
 }
 
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)

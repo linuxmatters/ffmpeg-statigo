@@ -86,12 +86,13 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | FFmpeg           | 8.0.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
 | dav1d            | 1.5.2       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
 | glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
+| libdrm           | 2.4.129     | Direct Rendering Manager library and headers                                       |
+| libiconv         | 1.18        | A character set conversion library (*macOS only*)                                  |
 | libsrt           | 1.5.5-rc.0a | A transport protocol for ultra low latency live video and audio streaming          |
 | libvpl           | 2.15.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
 | libvpx           | 1.15.2      | High-quality, open video format for the web that's freely available to everyone    |
 | libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression            |
 | libxml2          | 2.15.1      | An XML parser and toolkit implemented in C                                         |
-| libiconv         | 1.18        | A character set conversion library (*macOS only*)                                  |
 | mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                  |
 | nv-codec-headers | 12.2.72.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
 | openssl          | 3.6.0       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
