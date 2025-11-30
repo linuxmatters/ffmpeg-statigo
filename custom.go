@@ -364,3 +364,13 @@ func (s *AVStreamGroupTileGrid) SetOffsets(value *AVStreamGroupTileGridOffset) {
 		*(*unsafe.Pointer)(unsafe.Pointer(&s.ptr.offsets)) = nil
 	}
 }
+
+// ToAVHWFramesContext converts an unsafe.Pointer (typically from AVBufferRef.Data())
+// to an AVHWFramesContext wrapper. This is needed for configuring hardware frames
+// contexts returned by AVHWFrameCtxAlloc().
+func ToAVHWFramesContext(ptr unsafe.Pointer) *AVHWFramesContext {
+	if ptr == nil {
+		return nil
+	}
+	return &AVHWFramesContext{ptr: (*C.AVHWFramesContext)(ptr)}
+}
