@@ -57,7 +57,7 @@
               # Hardware acceleration runtime (Linux only)
               vulkan-loader # Required for Vulkan accelerated encoders
               intel-media-driver # VA-API driver for Intel GPUs (iHD_drv_video.so)
-              vpl-gpu-rt # oneVPL runtime for Intel GPUs (QSV backend)
+              vpl-gpu-rt # oneVPL runtime for 11th gen+ Intel (Tiger Lake+) QSV
             ];
 
           # Environment for go-clang CGO compilation and hardware acceleration
@@ -82,7 +82,23 @@
             # Intel media driver and oneVPL runtime for QuickSync
             export LD_LIBRARY_PATH="${pkgs.intel-media-driver}/lib:$LD_LIBRARY_PATH"
             export LD_LIBRARY_PATH="${pkgs.vpl-gpu-rt}/lib:$LD_LIBRARY_PATH"
+            # oneVPL search path for QSV (11th gen+ Intel only)
             export ONEVPL_SEARCH_PATH="${pkgs.vpl-gpu-rt}/lib"
+            # VA-API driver discovery for libva
+            # Use system drivers if available, fall back to nix package for Intel
+            if [ -d "/run/opengl-driver/lib/dri" ]; then
+              export LIBVA_DRIVERS_PATH="/run/opengl-driver/lib/dri"
+            fi
+            # Auto-detect VA-API driver based on GPU vendor (prefer Intel for VA-API)
+            if lspci -d ::0300 2>/dev/null | grep -qi intel; then
+              export LIBVA_DRIVER_NAME="iHD"
+              # Ensure Intel driver path is set even without system drivers
+              export LIBVA_DRIVERS_PATH="${pkgs.intel-media-driver}/lib/dri:''${LIBVA_DRIVERS_PATH:-}"
+            elif lspci -d ::0300 2>/dev/null | grep -qi amd; then
+              export LIBVA_DRIVER_NAME="radeonsi"
+            elif lspci -d ::0300 2>/dev/null | grep -qi nvidia; then
+              export LIBVA_DRIVER_NAME="nvidia"
+            fi
 
             # Vulkan ICD discovery: tell vulkan-loader where to find GPU drivers
             # NixOS installs ICDs under /run/opengl-driver/share/vulkan/icd.d/

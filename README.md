@@ -15,7 +15,7 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 - **FFmpeg 8.0.1** - Latest release with AV1, H.265, H.264, VP8/9
 - **Truly static** - Builds into your binary (just needs system `m` and `stdc++` libraries)
 - **Cross-platform** - Linux and macOS (arm64, amd64)
-- **Hardware acceleration** - NVENC/NVDEC, VideoToolbox, Vulkan and QuickSync support
+- **Hardware acceleration** - NVENC/NVDEC, QuickSync, VA-API, VideoToolbox, and Vulkan support
 - **GPL build** - x264, x265, and all the good codecs included
 - **Auto-generated** - Thin, predictable bindings directly from FFmpeg headers
 - **Preserved documentation** - Original FFmpeg comments in your IDE
@@ -50,7 +50,7 @@ ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core 
 
 - **Decoders**: All contemporary formats (H.264, H.265, AV1, VP8/9, Opus, AAC, MP3)
 - **Encoders**: Modern codecs for streaming and transcoding (x264, x265, dav1d, rav1e, vpx, lame, opus)
-- **Hardware acceleration**: NVENC, QuickSync, VideoToolbox, Vulkan Video
+- **Hardware acceleration**: NVENC, QuickSync, VA-API, VideoToolbox, Vulkan Video
 - **Containers**: MP4, MKV, WebM, DASH, HLS, and all major formats
 - **Filters**: Video scaling, colour conversion, audio resampling, and processing filters
 - **Streaming protocols**: RTMP, SRT, HLS, DASH
@@ -86,9 +86,10 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | FFmpeg           | 8.0.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
 | dav1d            | 1.5.2       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
 | glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
-| libdrm           | 2.4.129     | Direct Rendering Manager library and headers                                       |
+| libdrm           | 2.4.129     | Direct Rendering Manager library and headers (*Linux only*)                        |
 | libiconv         | 1.18        | A character set conversion library (*macOS only*)                                  |
 | libsrt           | 1.5.5-rc.0a | A transport protocol for ultra low latency live video and audio streaming          |
+| libva            | 2.22.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)               |
 | libvpl           | 2.15.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
 | libvpx           | 1.15.2      | High-quality, open video format for the web that's freely available to everyone    |
 | libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression            |
@@ -112,16 +113,16 @@ Details of codecs, muxers and parsers available in enable in the static ffmpeg l
 
 ### Hardware Acceleration Support Matrix
 
-| Codec          | NVENC (Linux)    | QuickSync (Linux) | VideoToolbox (macOS) | Vulkan Video (Cross-platform) |
-|----------------|------------------|-------------------|----------------------|-------------------------------|
-| **AV1**        | ✅ Encode/Decode | ✅ Encode/Decode  | ☑️ Decode            | ✅ Encode/Decode              |
-| **H.266/VVC**  | ❌               | ☑️ Decode         | ❌                   | ☑️ Decode                     |
-| **H.265/HEVC** | ✅ Encode/Decode | ✅ Encode/Decode  | ✅ Encode/Decode     | ✅ Encode/Decode              |
-| **H.264/AVC**  | ✅ Encode/Decode | ✅ Encode/Decode  | ✅ Encode/Decode     | ✅ Encode/Decode              |
-| **VP9**        | ✅ Encode/Decode | ✅ Encode/Decode  | ❌                   | ☑️ Decode                     |
-| **VP8**        | ☑️ Dec️ode        | ☑️ Decode         | ❌                   | ❌                            |
-| **MPEG-2**     | ☑️ Decode        | ✅ Encode/Decode  | ❌                   | ❌                            |
-| **JPEG/MJPEG** | ☑️ Decode        | ✅ Encode/Decode  | ❌                   | ❌                            |
+| Codec          | NVENC (Linux)    | VA-API (Linux)    | QuickSync (Linux) | VideoToolbox (macOS) | Vulkan Video (Cross-platform) |
+|----------------|------------------|-------------------|-------------------|----------------------|-------------------------------|
+| **AV1**        | ✅ Encode/Decode | ☑️ Encode         | ✅ Encode/Decode  | ☑️ Decode            | ✅ Encode/Decode              |
+| **H.266/VVC**  | ❌               | ❌                | ☑️ Decode         | ❌                   | ☑️ Decode                     |
+| **H.265/HEVC** | ✅ Encode/Decode | ☑️ Encode         | ✅ Encode/Decode  | ✅ Encode/Decode     | ✅ Encode/Decode              |
+| **H.264/AVC**  | ✅ Encode/Decode | ☑️ Encode         | ✅ Encode/Decode  | ✅ Encode/Decode     | ✅ Encode/Decode              |
+| **VP9**        | ✅ Encode/Decode | ☑️ Encode         | ✅ Encode/Decode  | ❌                   | ☑️ Decode                     |
+| **VP8**        | ☑️ Decode        | ☑️ Encode         | ☑️ Decode         | ❌                   | ❌                            |
+| **MPEG-2**     | ☑️ Decode        | ☑️ Encode         | ✅ Encode/Decode  | ❌                   | ❌                            |
+| **MJPEG**      | ☑️ Decode        | ☑️ Encode         | ✅ Encode/Decode  | ❌                   | ❌                            |
 
 ### Capabilities
 
@@ -132,7 +133,12 @@ Details of codecs, muxers and parsers available in enable in the static ffmpeg l
   - Encoding HEVC 10-bit - Pascal and newer
   - Decoding AV1 8/10-bit - Ampere and newer
   - Encoding AV1 8/10-bit - Ada Lovelace and newer
-- **QuickSync (QSV)**: Requires Intel CPU (6th gen Skylake+) or Intel Arc GPU. Uses libvpl/oneVPL dispatcher.
+- **VA-API**: Video Acceleration API for Intel, AMD, and NVIDIA (via `nvidia-vaapi-driver`) GPUs on Linux. Provides hardware encoding; decoding uses FFmpeg's hwaccel framework.
+  - Encoding H.264, HEVC, AV1, VP8, VP9, MPEG-2, MJPEG - Hardware dependent
+  - Intel: Use `iHD` driver (intel-media-driver) for broadest codec support
+  - AMD: Use `radeonsi` driver (Mesa) for RDNA/GCN GPUs
+  - NVIDIA: Use `nvidia` driver (nvidia-vaapi-driver) which translates to NVENC
+- **QuickSync (QSV)**: Requires Intel CPU (11th gen Tiger Lake+) or Intel Arc GPU. Uses libvpl/oneVPL dispatcher. Older Intel CPUs (6th-10th gen) should use VA-API instead.
   - Decoding & Encoding H.264 8-bit - Any Intel GPU that supports Quick Sync Video
   - Decoding & Encoding HEVC 8-bit - Gen 9 Skylake (6th Gen Core) and newer
   - Decoding & Encoding HEVC 10-bit - Gen 9.5 Kaby Lake (7th Gen Core), Apollo Lake, Gemini Lake (Pentium and Celeron) and newer

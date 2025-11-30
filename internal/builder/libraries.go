@@ -27,6 +27,7 @@ var allLibraryDefinitions = []*Library{
 
 	// Hardware acceleration
 	libdrm,
+	libva,
 	libvpl,
 	nvcodecheaders,
 	vulkanheaders,
@@ -318,6 +319,46 @@ var libdrm = &Library{
 		}
 	},
 	LinkLibs: []string{"libdrm"},
+}
+
+// libva - Video Acceleration API (Linux only, provides VA-API backend for QSV)
+var libva = &Library{
+	Name:          "libva",
+	URL:           "https://github.com/intel/libva/releases/download/2.22.0/libva-2.22.0.tar.bz2",
+	Platform:      []string{"linux"},
+	Dependencies:  []*Library{libdrm},
+	FFmpegEnables: []string{"vaapi"},
+	BuildSystem:   &MesonBuild{},
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			// Note: -Ddefault_library=static is added automatically by MesonBuild
+			"-Dwith_x11=no",
+			"-Dwith_glx=no",
+			"-Dwith_wayland=no",
+			"-Dwith_win32=no",
+			"-Dwith_legacy=",
+			"-Denable_docs=false",
+		}
+	},
+	PostExtract: func(srcPath string) error {
+		// Patch va/meson.build to use library() instead of shared_library()
+		// This allows respecting the default_library=static option
+		mesonBuild := filepath.Join(srcPath, "va", "meson.build")
+		content, err := os.ReadFile(mesonBuild)
+		if err != nil {
+			return fmt.Errorf("failed to read va/meson.build: %w", err)
+		}
+
+		// Replace shared_library with library (respects default_library option)
+		patched := strings.ReplaceAll(string(content), "shared_library(", "library(")
+
+		if err := os.WriteFile(mesonBuild, []byte(patched), 0644); err != nil {
+			return fmt.Errorf("failed to write patched va/meson.build: %w", err)
+		}
+
+		return nil
+	},
+	LinkLibs: []string{"libva", "libva-drm"},
 }
 
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)

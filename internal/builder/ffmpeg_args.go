@@ -360,32 +360,33 @@ func FFmpegArgsCommon(os string) []string {
 		"--disable-encoder=h263",
 	}
 
-	// Linux-specific hardware acceleration (NVENC, CUVID, QuickSync)
+	// Linux-specific hardware acceleration (NVENC, CUVID, QuickSync, VA-API)
 	if os == "linux" {
 		args = append(args,
 			// AV1 hardware acceleration
-			"--enable-encoder=av1_nvenc,av1_qsv",
+			"--enable-encoder=av1_nvenc,av1_qsv,av1_vaapi",
 			"--enable-decoder=av1_cuvid,av1_qsv",
 			// H.264 hardware acceleration
-			"--enable-encoder=h264_nvenc,h264_qsv",
+			"--enable-encoder=h264_nvenc,h264_qsv,h264_vaapi",
 			"--enable-decoder=h264_cuvid,h264_qsv",
 			// H.265 hardware acceleration
-			"--enable-encoder=hevc_nvenc,hevc_qsv",
+			"--enable-encoder=hevc_nvenc,hevc_qsv,hevc_vaapi",
 			"--enable-decoder=hevc_cuvid,hevc_qsv",
 			// MJPEG hardware acceleration
-			"--enable-encoder=mjpeg_qsv",
+			"--enable-encoder=mjpeg_qsv,mjpeg_vaapi",
 			"--enable-decoder=mjpeg_cuvid,mjpeg_qsv",
 			// MPEG-2 hardware acceleration
-			"--enable-encoder=mpeg2_qsv",
+			"--enable-encoder=mpeg2_qsv,mpeg2_vaapi",
 			"--enable-decoder=mpeg2_cuvid,mpeg2_qsv",
 			// MPEG-4 Part 2 hardware acceleration
 			"--enable-decoder=mpeg4_cuvid",
 			// VC-1 hardware acceleration
 			"--enable-decoder=vc1_cuvid,vc1_qsv",
 			// VP8 hardware acceleration
+			"--enable-encoder=vp8_vaapi",
 			"--enable-decoder=vp8_cuvid,vp8_qsv",
 			// VP9 hardware acceleration
-			"--enable-encoder=vp9_qsv",
+			"--enable-encoder=vp9_qsv,vp9_vaapi",
 			"--enable-decoder=vp9_cuvid,vp9_qsv",
 			// VVC hardware acceleration
 			"--enable-decoder=vvc_qsv",
