@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -120,6 +121,176 @@ func TestFindViaAPI_ReleaseSorting(t *testing.T) {
 		if highest != "lib-8.0.1.2" {
 			t.Logf("Note: Current sorting is lexicographic, not semver-aware")
 		}
+	})
+}
+
+// =============================================================================
+// Test 5: Release Version Semantic Sort Bug
+// =============================================================================
+
+// TestReleaseVersionSemanticSortBug demonstrates the bug where lexicographic
+// sorting picks the wrong version when patch numbers have different digit counts.
+// Example: lib-8.0.1.10 should be > lib-8.0.1.2 semantically, but
+// lexicographically lib-8.0.1.10 < lib-8.0.1.2 (string "10" < "2")
+func TestReleaseVersionSemanticSortBug(t *testing.T) {
+	t.Run("lexicographic_sort_picks_wrong_version", func(t *testing.T) {
+		// Releases with double-digit patch number
+		releases := []string{
+			"lib-8.0.1.2",
+			"lib-8.0.1.10",
+		}
+
+		// Use sort.Strings (current implementation in fetch.go line 169)
+		sorted := make([]string, len(releases))
+		copy(sorted, releases)
+		sort.Strings(sorted)
+
+		// With lexicographic sort, "lib-8.0.1.10" comes before "lib-8.0.1.2"
+		// because '1' < '2' when comparing character by character
+		if sorted[0] != "lib-8.0.1.10" {
+			t.Errorf("Expected lib-8.0.1.10 to be first (lexicographically), got %s", sorted[0])
+		}
+		if sorted[1] != "lib-8.0.1.2" {
+			t.Errorf("Expected lib-8.0.1.2 to be last (lexicographically), got %s", sorted[1])
+		}
+
+		// The bug: last element is selected as "highest" version
+		selectedVersion := sorted[len(sorted)-1]
+
+		// BUG: This selects lib-8.0.1.2 instead of lib-8.0.1.10
+		if selectedVersion != "lib-8.0.1.2" {
+			t.Errorf("Expected bug to select lib-8.0.1.2 (lexicographically last), got %s", selectedVersion)
+		}
+
+		t.Logf("BUG: Lexicographic sort selected %s instead of semantically correct lib-8.0.1.10", selectedVersion)
+	})
+
+	t.Run("demonstrates_bug_with_realistic_release_sequence", func(t *testing.T) {
+		// Realistic scenario: multiple patch releases
+		releases := []string{
+			"lib-8.0.1.0",
+			"lib-8.0.1.1",
+			"lib-8.0.1.2",
+			"lib-8.0.1.3",
+			"lib-8.0.1.10", // Latest release (semantic version 8.0.1.10)
+		}
+
+		sorted := make([]string, len(releases))
+		copy(sorted, releases)
+		sort.Strings(sorted)
+
+		// Lexicographic sort order: 0, 1, 10, 2, 3
+		expectedLexOrder := []string{
+			"lib-8.0.1.0",
+			"lib-8.0.1.1",
+			"lib-8.0.1.10", // BUG: 10 comes before 2 lexicographically
+			"lib-8.0.1.2",
+			"lib-8.0.1.3",
+		}
+
+		for i, expected := range expectedLexOrder {
+			if sorted[i] != expected {
+				t.Errorf("Position %d: expected %s, got %s", i, expected, sorted[i])
+			}
+		}
+
+		// The bug: selects lib-8.0.1.3 instead of lib-8.0.1.10
+		selectedVersion := sorted[len(sorted)-1]
+		if selectedVersion != "lib-8.0.1.3" {
+			t.Errorf("Expected bug to select lib-8.0.1.3, got %s", selectedVersion)
+		}
+
+		t.Logf("BUG: Selected %s instead of latest release lib-8.0.1.10", selectedVersion)
+		t.Logf("Lexicographic order: %v", sorted)
+	})
+
+	t.Run("bug_affects_all_double_digit_versions", func(t *testing.T) {
+		// Test that any double-digit component causes the issue
+		testCases := []struct {
+			name             string
+			releases         []string
+			wrongSelection   string // What gets selected (lexicographically last)
+			correctSelection string // What should be selected (semantically latest)
+		}{
+			{
+				name:             "patch_version_10_vs_9",
+				releases:         []string{"lib-8.0.1.9", "lib-8.0.1.10"},
+				wrongSelection:   "lib-8.0.1.9",
+				correctSelection: "lib-8.0.1.10",
+			},
+			{
+				name:             "patch_version_19_vs_100",
+				releases:         []string{"lib-8.0.1.19", "lib-8.0.1.100"},
+				wrongSelection:   "lib-8.0.1.19",
+				correctSelection: "lib-8.0.1.100",
+			},
+			{
+				name:             "patch_version_2_vs_12",
+				releases:         []string{"lib-8.0.1.2", "lib-8.0.1.12"},
+				wrongSelection:   "lib-8.0.1.2",
+				correctSelection: "lib-8.0.1.12",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				sorted := make([]string, len(tc.releases))
+				copy(sorted, tc.releases)
+				sort.Strings(sorted)
+
+				selectedVersion := sorted[len(sorted)-1]
+
+				// Verify the bug: lexicographic sort picks wrong version
+				if selectedVersion != tc.wrongSelection {
+					t.Errorf("Expected bug to select %s (lexicographically), got %s", tc.wrongSelection, selectedVersion)
+				}
+
+				// Document what should be selected semantically
+				if selectedVersion == tc.correctSelection {
+					t.Logf("Note: This case happens to work correctly")
+				} else {
+					t.Logf("BUG: Selected %s instead of semantically correct %s", selectedVersion, tc.correctSelection)
+				}
+			})
+		}
+	})
+
+	t.Run("documents_correct_semantic_version_comparison", func(t *testing.T) {
+		// This test documents how semantic versioning should work
+		// to prevent the bug in future implementations
+
+		type semver struct {
+			prefix string
+			major  int
+			minor  int
+			patch  int
+			build  int
+		}
+
+		releases := []semver{
+			{prefix: "lib", major: 8, minor: 0, patch: 1, build: 0},
+			{prefix: "lib", major: 8, minor: 0, patch: 1, build: 2},
+			{prefix: "lib", major: 8, minor: 0, patch: 1, build: 10},
+		}
+
+		// Find semantically highest version
+		highest := releases[0]
+		for _, r := range releases {
+			if r.major > highest.major ||
+				(r.major == highest.major && r.minor > highest.minor) ||
+				(r.major == highest.major && r.minor == highest.minor && r.patch > highest.patch) ||
+				(r.major == highest.major && r.minor == highest.minor && r.patch == highest.patch && r.build > highest.build) {
+				highest = r
+			}
+		}
+
+		// Semantically, lib-8.0.1.10 should be selected
+		if highest.build != 10 {
+			t.Errorf("Semantic version comparison failed: expected build 10, got %d", highest.build)
+		}
+
+		t.Logf("Correct semantic selection: %s-%d.%d.%d.%d",
+			highest.prefix, highest.major, highest.minor, highest.patch, highest.build)
 	})
 }
 
