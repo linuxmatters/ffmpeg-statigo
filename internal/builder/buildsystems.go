@@ -14,6 +14,24 @@ func stagingDir(buildDir string) string {
 	return filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
 }
 
+// openBuildLog opens a build log file and returns a multiwriter that writes to both
+// the log file and stdout. The returned cleanup function must be called when done.
+// If append is true, the log file is opened in append mode; otherwise it is truncated.
+func openBuildLog(buildDir string, append bool) (io.Writer, func(), error) {
+	logFile := filepath.Join(buildDir, "build.log")
+	var logger *os.File
+	var err error
+	if append {
+		logger, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	} else {
+		logger, err = os.Create(logFile)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	return io.MultiWriter(logger, os.Stdout), func() { logger.Close() }, nil
+}
+
 // AutoconfBuild implements the BuildSystem interface for autoconf-based builds
 type AutoconfBuild struct{}
 
@@ -55,16 +73,13 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 		return fmt.Errorf("failed to make configure executable: %w", err)
 	}
 
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.Create(logFile)
+	output, cleanup, err := openBuildLog(buildDir, false)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
+	defer cleanup()
 
-	multiWriter := io.MultiWriter(logger, os.Stdout)
-
-	if err := runCommand(srcPath, multiWriter, installDir, configurePath, args...); err != nil {
+	if err := runCommand(srcPath, output, installDir, configurePath, args...); err != nil {
 		return err
 	}
 
@@ -72,14 +87,11 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 }
 
 func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	output, cleanup, err := openBuildLog(buildDir, true)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
-
-	multiWriter := io.MultiWriter(logger, os.Stdout)
+	defer cleanup()
 
 	// Touch automake files to prevent regeneration
 	touchAutomakeFiles(srcPath)
@@ -87,12 +99,12 @@ func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
 	installDir := stagingDir(buildDir)
 
 	// make
-	if err := runCommand(srcPath, multiWriter, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+	if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 		return err
 	}
 
 	// make install
-	if err := runCommand(srcPath, multiWriter, installDir, "make", "install"); err != nil {
+	if err := runCommand(srcPath, output, installDir, "make", "install"); err != nil {
 		return err
 	}
 
@@ -122,16 +134,13 @@ func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
 	}
 
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.Create(logFile)
+	output, cleanup, err := openBuildLog(buildDir, false)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
+	defer cleanup()
 
-	multiWriter := io.MultiWriter(logger, os.Stdout)
-
-	if err := runCommand(buildDir, multiWriter, installDir, "cmake", args...); err != nil {
+	if err := runCommand(buildDir, output, installDir, "cmake", args...); err != nil {
 		return err
 	}
 
@@ -139,23 +148,20 @@ func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 }
 
 func (c *CMakeBuild) Build(lib *Library, srcPath, buildDir string) error {
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	output, cleanup, err := openBuildLog(buildDir, true)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
-
-	multiWriter := io.MultiWriter(logger, os.Stdout)
+	defer cleanup()
 
 	installDir := stagingDir(buildDir)
 
 	// cmake --build . --target install
-	if err := runCommand(buildDir, multiWriter, installDir, "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+	if err := runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 		return err
 	}
 
-	if err := runCommand(buildDir, multiWriter, installDir, "cmake", "--build", ".", "--target", "install"); err != nil {
+	if err := runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--target", "install"); err != nil {
 		return err
 	}
 
@@ -180,16 +186,13 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
 	}
 
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.Create(logFile)
+	output, cleanup, err := openBuildLog(buildDir, false)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
+	defer cleanup()
 
-	multiWriter := io.MultiWriter(logger, os.Stdout)
-
-	if err := runCommand(".", multiWriter, installDir, "meson", args...); err != nil {
+	if err := runCommand(".", output, installDir, "meson", args...); err != nil {
 		return err
 	}
 
@@ -197,24 +200,21 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 }
 
 func (m *MesonBuild) Build(lib *Library, srcPath, buildDir string) error {
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	output, cleanup, err := openBuildLog(buildDir, true)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
-
-	multiWriter := io.MultiWriter(logger, os.Stdout)
+	defer cleanup()
 
 	installDir := stagingDir(buildDir)
 
 	// meson compile
-	if err := runCommand(buildDir, multiWriter, installDir, "meson", "compile"); err != nil {
+	if err := runCommand(buildDir, output, installDir, "meson", "compile"); err != nil {
 		return err
 	}
 
 	// meson install
-	if err := runCommand(buildDir, multiWriter, installDir, "meson", "install"); err != nil {
+	if err := runCommand(buildDir, output, installDir, "meson", "install"); err != nil {
 		return err
 	}
 
@@ -253,20 +253,17 @@ func (m *MakefileBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 }
 
 func (m *MakefileBuild) Build(lib *Library, srcPath, buildDir string) error {
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.Create(logFile)
+	output, cleanup, err := openBuildLog(buildDir, false)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
-
-	multiWriter := io.MultiWriter(logger, os.Stdout)
+	defer cleanup()
 
 	installDir := stagingDir(buildDir)
 
 	// Build the targets
 	args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
-	if err := runCommand(srcPath, multiWriter, installDir, "make", args...); err != nil {
+	if err := runCommand(srcPath, output, installDir, "make", args...); err != nil {
 		return err
 	}
 
@@ -308,16 +305,13 @@ func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir str
 		return fmt.Errorf("failed to make Configure executable: %w", err)
 	}
 
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.Create(logFile)
+	output, cleanup, err := openBuildLog(buildDir, false)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
+	defer cleanup()
 
-	multiWriter := io.MultiWriter(logger, os.Stdout)
-
-	if err := runCommand(srcPath, multiWriter, installDir, configurePath, args...); err != nil {
+	if err := runCommand(srcPath, output, installDir, configurePath, args...); err != nil {
 		return err
 	}
 
@@ -325,24 +319,21 @@ func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir str
 }
 
 func (o *OpenSSLBuild) Build(lib *Library, srcPath, buildDir string) error {
-	logFile := filepath.Join(buildDir, "build.log")
-	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	output, cleanup, err := openBuildLog(buildDir, true)
 	if err != nil {
 		return err
 	}
-	defer logger.Close()
-
-	multiWriter := io.MultiWriter(logger, os.Stdout)
+	defer cleanup()
 
 	installDir := stagingDir(buildDir)
 
 	// make
-	if err := runCommand(srcPath, multiWriter, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+	if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 		return err
 	}
 
 	// make install_sw (install software only, skip docs)
-	if err := runCommand(srcPath, multiWriter, installDir, "make", "install_sw"); err != nil {
+	if err := runCommand(srcPath, output, installDir, "make", "install_sw"); err != nil {
 		return err
 	}
 
