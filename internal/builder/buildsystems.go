@@ -8,6 +8,12 @@ import (
 	"runtime"
 )
 
+// stagingDir derives the staging/install directory from a build directory path.
+// Build directories follow the pattern: .build/<lib>/build, so staging is at .build/staging.
+func stagingDir(buildDir string) string {
+	return filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+}
+
 // AutoconfBuild implements the BuildSystem interface for autoconf-based builds
 type AutoconfBuild struct{}
 
@@ -78,8 +84,7 @@ func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
 	// Touch automake files to prevent regeneration
 	touchAutomakeFiles(srcPath)
 
-	// Get installDir from buildDir path
-	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+	installDir := stagingDir(buildDir)
 
 	// make
 	if err := runCommand(srcPath, multiWriter, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
@@ -143,8 +148,7 @@ func (c *CMakeBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	multiWriter := io.MultiWriter(logger, os.Stdout)
 
-	// Get installDir from buildDir path
-	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+	installDir := stagingDir(buildDir)
 
 	// cmake --build . --target install
 	if err := runCommand(buildDir, multiWriter, installDir, "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
@@ -202,8 +206,7 @@ func (m *MesonBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	multiWriter := io.MultiWriter(logger, os.Stdout)
 
-	// Get installDir from buildDir path
-	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+	installDir := stagingDir(buildDir)
 
 	// meson compile
 	if err := runCommand(buildDir, multiWriter, installDir, "meson", "compile"); err != nil {
@@ -229,8 +232,7 @@ func (c *CargoBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 }
 
 func (c *CargoBuild) Build(lib *Library, srcPath, buildDir string) error {
-	// Get installDir from buildDir path
-	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+	installDir := stagingDir(buildDir)
 
 	// Custom install func handles the full cargo build process if provided
 	if c.InstallFunc != nil {
@@ -260,8 +262,7 @@ func (m *MakefileBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	multiWriter := io.MultiWriter(logger, os.Stdout)
 
-	// Get installDir from buildDir path
-	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+	installDir := stagingDir(buildDir)
 
 	// Build the targets
 	args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
@@ -333,8 +334,7 @@ func (o *OpenSSLBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	multiWriter := io.MultiWriter(logger, os.Stdout)
 
-	// Get installDir from buildDir path
-	installDir := filepath.Join(filepath.Dir(filepath.Dir(buildDir)), "staging")
+	installDir := stagingDir(buildDir)
 
 	// make
 	if err := runCommand(srcPath, multiWriter, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
