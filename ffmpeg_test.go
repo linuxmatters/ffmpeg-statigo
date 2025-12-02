@@ -2,6 +2,7 @@ package ffmpeg_test
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -228,6 +229,212 @@ func TestCStr_BasicOperations(t *testing.T) {
 
 		if cstr.RawPtr() == nil {
 			t.Error("RawPtr should not return nil for valid CStr")
+		}
+	})
+}
+
+// =============================================================================
+// Test 4.1: AVError String Representation
+// =============================================================================
+
+// TestAVError_KnownCodes verifies that standard FFmpeg error codes produce
+// readable error messages containing both the code and a description.
+func TestAVError_KnownCodes(t *testing.T) {
+	t.Run("averror_eof_has_description", func(t *testing.T) {
+		err := ffmpeg.AVErrorEOF
+
+		errStr := err.Error()
+
+		// Should contain the error code
+		if !strings.Contains(errStr, fmt.Sprintf("%d", ffmpeg.AVErrorEofConst)) {
+			t.Errorf("Error string should contain code %d, got: %s", ffmpeg.AVErrorEofConst, errStr)
+		}
+
+		// Should contain "averror" prefix
+		if !strings.Contains(errStr, "averror") {
+			t.Errorf("Error string should contain 'averror', got: %s", errStr)
+		}
+
+		// Should have some description (not empty after the colon)
+		parts := strings.SplitN(errStr, ":", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+			t.Errorf("Error string should have non-empty description, got: %s", errStr)
+		}
+
+		t.Logf("AVErrorEOF: %s", errStr)
+	})
+
+	t.Run("eagain_has_description", func(t *testing.T) {
+		err := ffmpeg.EAgain
+
+		errStr := err.Error()
+
+		// Should contain "averror" prefix
+		if !strings.Contains(errStr, "averror") {
+			t.Errorf("Error string should contain 'averror', got: %s", errStr)
+		}
+
+		// Should have some description
+		parts := strings.SplitN(errStr, ":", 2)
+		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+			t.Errorf("Error string should have non-empty description, got: %s", errStr)
+		}
+
+		t.Logf("EAgain: %s", errStr)
+	})
+
+	t.Run("custom_error_code", func(t *testing.T) {
+		// Test with a generic negative error code
+		err := ffmpeg.AVError{Code: -1}
+
+		errStr := err.Error()
+
+		// Should contain the error code
+		if !strings.Contains(errStr, "-1") {
+			t.Errorf("Error string should contain code -1, got: %s", errStr)
+		}
+
+		// Should contain "averror" prefix
+		if !strings.Contains(errStr, "averror") {
+			t.Errorf("Error string should contain 'averror', got: %s", errStr)
+		}
+
+		t.Logf("Custom error -1: %s", errStr)
+	})
+
+	t.Run("error_implements_error_interface", func(t *testing.T) {
+		var err error = ffmpeg.AVError{Code: -1}
+
+		// Should be usable as error interface
+		if err == nil {
+			t.Error("AVError should not be nil when wrapped as error")
+		}
+
+		// Error() should return a string
+		if err.Error() == "" {
+			t.Error("Error() should return non-empty string")
+		}
+	})
+
+	t.Run("error_code_accessible", func(t *testing.T) {
+		code := ffmpeg.AVErrorEofConst
+		err := ffmpeg.AVError{Code: code}
+
+		if err.Code != code {
+			t.Errorf("Error code mismatch: expected %d, got %d", code, err.Code)
+		}
+	})
+}
+
+// =============================================================================
+// Test 4.2: WrapErr Boundary Conditions
+// =============================================================================
+
+// TestWrapErr_BoundaryConditions verifies that WrapErr correctly handles
+// boundary conditions: zero returns nil, negative returns error.
+func TestWrapErr_BoundaryConditions(t *testing.T) {
+	t.Run("zero_returns_nil", func(t *testing.T) {
+		err := ffmpeg.WrapErr(0)
+
+		if err != nil {
+			t.Errorf("WrapErr(0) should return nil, got: %v", err)
+		}
+	})
+
+	t.Run("positive_returns_nil", func(t *testing.T) {
+		testCases := []int{1, 10, 100, 1000, 1<<30 - 1}
+
+		for _, code := range testCases {
+			err := ffmpeg.WrapErr(code)
+			if err != nil {
+				t.Errorf("WrapErr(%d) should return nil, got: %v", code, err)
+			}
+		}
+	})
+
+	t.Run("negative_one_returns_error", func(t *testing.T) {
+		err := ffmpeg.WrapErr(-1)
+
+		if err == nil {
+			t.Error("WrapErr(-1) should return error, got nil")
+		}
+
+		avErr, ok := err.(ffmpeg.AVError)
+		if !ok {
+			t.Errorf("WrapErr(-1) should return AVError, got %T", err)
+		}
+
+		if avErr.Code != -1 {
+			t.Errorf("AVError.Code should be -1, got %d", avErr.Code)
+		}
+	})
+
+	t.Run("various_negative_codes_return_error", func(t *testing.T) {
+		testCases := []int{-1, -2, -10, -100, -1000, -1 << 30}
+
+		for _, code := range testCases {
+			err := ffmpeg.WrapErr(code)
+			if err == nil {
+				t.Errorf("WrapErr(%d) should return error, got nil", code)
+			}
+
+			avErr, ok := err.(ffmpeg.AVError)
+			if !ok {
+				t.Errorf("WrapErr(%d) should return AVError, got %T", code, err)
+				continue
+			}
+
+			if avErr.Code != code {
+				t.Errorf("AVError.Code should be %d, got %d", code, avErr.Code)
+			}
+		}
+	})
+
+	t.Run("averror_eof_const_wrapped", func(t *testing.T) {
+		// AVERROR_EOF is a known negative constant
+		err := ffmpeg.WrapErr(ffmpeg.AVErrorEofConst)
+
+		if err == nil {
+			t.Error("WrapErr(AVErrorEofConst) should return error, got nil")
+		}
+
+		avErr, ok := err.(ffmpeg.AVError)
+		if !ok {
+			t.Errorf("WrapErr(AVErrorEofConst) should return AVError, got %T", err)
+		}
+
+		if avErr.Code != ffmpeg.AVErrorEofConst {
+			t.Errorf("AVError.Code should be %d, got %d", ffmpeg.AVErrorEofConst, avErr.Code)
+		}
+	})
+
+	t.Run("error_comparison", func(t *testing.T) {
+		// Wrapped errors with same code should be comparable
+		err1 := ffmpeg.WrapErr(-1)
+		err2 := ffmpeg.WrapErr(-1)
+
+		avErr1 := err1.(ffmpeg.AVError)
+		avErr2 := err2.(ffmpeg.AVError)
+
+		if avErr1.Code != avErr2.Code {
+			t.Error("Two AVErrors with same code should have equal Code fields")
+		}
+
+		// Value comparison should work
+		if avErr1 != avErr2 {
+			t.Error("Two AVErrors with same code should be equal")
+		}
+	})
+
+	t.Run("predefined_errors", func(t *testing.T) {
+		// Test predefined error variables
+		if ffmpeg.AVErrorEOF.Code != ffmpeg.AVErrorEofConst {
+			t.Errorf("AVErrorEOF.Code should be %d, got %d", ffmpeg.AVErrorEofConst, ffmpeg.AVErrorEOF.Code)
+		}
+
+		// EAgain should have a negative code
+		if ffmpeg.EAgain.Code >= 0 {
+			t.Errorf("EAgain.Code should be negative, got %d", ffmpeg.EAgain.Code)
 		}
 	})
 }
