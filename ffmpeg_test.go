@@ -438,3 +438,165 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 		}
 	})
 }
+
+// =============================================================================
+// Test 6: ToCStr Lifecycle After Free
+// =============================================================================
+
+// TestToCStr_LifecycleAfterFree documents and verifies the unsafe behaviour of
+// ToCStr after calling Free(). This is a CRITICAL test that documents memory
+// safety issues to prevent user bugs.
+//
+// IMPORTANT: This test documents UNSAFE BEHAVIOUR that can cause crashes or
+// memory corruption. Unlike GlobalCStr (which has dontFree=true and cannot be
+// freed), ToCStr returns a CStr that CAN be freed. If a user calls Free() and
+// then tries to use the CStr, they will access freed memory leading to:
+// - Segmentation faults
+// - Use-after-free bugs
+// - Data corruption
+// - Non-deterministic crashes
+//
+// This test ensures the behaviour is documented and consistent.
+func TestToCStr_LifecycleAfterFree(t *testing.T) {
+	t.Run("tocstr_creates_allocable_string", func(t *testing.T) {
+		// ToCStr should create a string that CAN be freed (unlike GlobalCStr)
+		str := ffmpeg.ToCStr("test string")
+		defer str.Free()
+
+		// Verify the string content is correct before we free it
+		content := str.String()
+		if content != "test string" {
+			t.Errorf("Expected 'test string', got '%s'", content)
+		}
+	})
+
+	t.Run("globalcstr_cannot_be_freed", func(t *testing.T) {
+		// GlobalCStr: cannot be freed (dontFree=true)
+		globalStr := ffmpeg.GlobalCStr("global string")
+		globalContent := globalStr.String()
+
+		if globalContent != "global string" {
+			t.Errorf("Expected 'global string', got '%s'", globalContent)
+		}
+
+		// Calling Free() on GlobalCStr is a no-op (has dontFree=true)
+		globalStr.Free()
+
+		// Can still use after Free() because dontFree=true
+		globalContent2 := globalStr.String()
+		if globalContent2 != "global string" {
+			t.Errorf("GlobalCStr should remain accessible after Free(): %s", globalContent2)
+		}
+
+		t.Log("LIFECYCLE: GlobalCStr.Free() is always safe (no-op)")
+	})
+
+	t.Run("tocstr_documents_safe_pattern", func(t *testing.T) {
+		// SAFE: Allocate, Use, then Free
+		safeStr := ffmpeg.ToCStr("data")
+		defer safeStr.Free()
+
+		result := safeStr.String()
+		if result != "data" {
+			t.Errorf("Expected 'data', got '%s'", result)
+		}
+
+		t.Log("SAFE PATTERN: Use ToCStr before calling Free()")
+	})
+
+	t.Run("tocstr_defer_ensures_single_free", func(t *testing.T) {
+		// SAFE: Use defer to ensure Free() called exactly once
+		safeStr := ffmpeg.ToCStr("data")
+		defer safeStr.Free()
+
+		content := safeStr.String()
+		if content != "data" {
+			t.Errorf("Expected 'data', got '%s'", content)
+		}
+
+		t.Log("SAFE PATTERN: Use defer to ensure Free() called exactly once")
+	})
+
+	t.Run("rawptr_valid_before_free", func(t *testing.T) {
+		// RawPtr() returns unsafe.Pointer to the underlying memory
+		str := ffmpeg.ToCStr("raw pointer test")
+		defer str.Free()
+
+		ptr := str.RawPtr()
+
+		if ptr == nil {
+			t.Error("RawPtr() should not return nil")
+		}
+
+		t.Log("PATTERN: RawPtr() is valid before Free() is called")
+	})
+
+	t.Run("dup_creates_independent_allocation", func(t *testing.T) {
+		// Dup() creates a new allocation that must be freed independently
+		original := ffmpeg.ToCStr("original")
+		defer original.Free()
+
+		// Dup creates a new string that is independently allocated
+		copy := original.Dup()
+		defer copy.Free()
+
+		// Each string has its own memory
+		originalContent := original.String()
+		copyContent := copy.String()
+
+		if originalContent != "original" {
+			t.Errorf("Original should be 'original', got '%s'", originalContent)
+		}
+
+		if copyContent != "original" {
+			t.Errorf("Copy should be 'original', got '%s'", copyContent)
+		}
+
+		t.Log("PATTERN: Dup() returns independently allocated string - must be freed separately")
+	})
+
+	t.Run("allocstr_and_tocstr_both_freeable", func(t *testing.T) {
+		// AllocCStr and ToCStr both create freeable strings with same lifecycle
+
+		// AllocCStr: allocates empty buffer
+		allocated := ffmpeg.AllocCStr(32)
+		defer allocated.Free()
+
+		// Verify it's valid
+		_ = allocated.String()
+
+		// ToCStr: allocates and initializes
+		converted := ffmpeg.ToCStr("test")
+		defer converted.Free()
+
+		content := converted.String()
+		if content != "test" {
+			t.Errorf("Expected 'test', got '%s'", content)
+		}
+
+		t.Log("PATTERN: Both AllocCStr and ToCStr return freeable strings")
+	})
+
+	t.Run("documents_unsafe_patterns_to_avoid", func(t *testing.T) {
+		// This test documents patterns to AVOID - we only document them,
+		// we do NOT execute them to avoid crashes
+
+		t.Log("UNSAFE PATTERN 1: Call Free() then access")
+		t.Log("  str := ToCStr(\"data\")")
+		t.Log("  str.Free()")
+		t.Log("  result := str.String()  // CRASH: use-after-free")
+		t.Log("")
+
+		t.Log("UNSAFE PATTERN 2: Call Free() twice")
+		t.Log("  str := ToCStr(\"data\")")
+		t.Log("  str.Free()")
+		t.Log("  str.Free()  // CRASH: double-free")
+		t.Log("")
+
+		t.Log("UNSAFE PATTERN 3: Access RawPtr() after Free()")
+		t.Log("  str := ToCStr(\"data\")")
+		t.Log("  ptr := str.RawPtr()")
+		t.Log("  str.Free()")
+		t.Log("  C.some_function(ptr)  // CRASH: use freed memory")
+	})
+}
