@@ -337,6 +337,12 @@ func extractTarball(tarball, destDir string) error {
 
 	tr := tar.NewReader(gzr)
 
+	// Resolve destDir to absolute path for security checks
+	absDestDir, err := filepath.Abs(destDir)
+	if err != nil {
+		return fmt.Errorf("resolving destination directory: %w", err)
+	}
+
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -346,7 +352,11 @@ func extractTarball(tarball, destDir string) error {
 			return err
 		}
 
-		target := filepath.Join(destDir, header.Name)
+		// Security: Validate path to prevent path traversal attacks
+		target, err := sanitizeTarPath(absDestDir, header.Name)
+		if err != nil {
+			return err
+		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -368,8 +378,40 @@ func extractTarball(tarball, destDir string) error {
 				return err
 			}
 			outFile.Close()
+		case tar.TypeSymlink, tar.TypeLink:
+			// Skip symlinks and hard links for security - they could point outside destDir
+			continue
 		}
 	}
 
 	return nil
+}
+
+// sanitizeTarPath validates that a tar entry path is safe to extract.
+// It prevents path traversal attacks by ensuring the resolved path
+// stays within the destination directory.
+func sanitizeTarPath(destDir, entryName string) (string, error) {
+	// Reject absolute paths
+	if filepath.IsAbs(entryName) {
+		return "", fmt.Errorf("path traversal detected: absolute path %q not allowed", entryName)
+	}
+
+	// Clean the path to resolve . and .. components
+	cleanName := filepath.Clean(entryName)
+
+	// Reject paths that start with .. after cleaning
+	if strings.HasPrefix(cleanName, "..") {
+		return "", fmt.Errorf("path traversal detected: %q escapes destination directory", entryName)
+	}
+
+	// Construct the full target path
+	target := filepath.Join(destDir, cleanName)
+
+	// Final check: ensure the resolved path is within destDir
+	// This catches edge cases where filepath.Join might not prevent traversal
+	if !strings.HasPrefix(target, destDir+string(filepath.Separator)) && target != destDir {
+		return "", fmt.Errorf("path traversal detected: %q resolves outside destination directory", entryName)
+	}
+
+	return target, nil
 }
