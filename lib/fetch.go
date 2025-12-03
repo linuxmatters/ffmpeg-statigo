@@ -206,61 +206,51 @@ type GitHubReleaseDetail struct {
 	Assets []GitHubAsset `json:"assets"`
 }
 
-func verifyChecksum(file, release, tarballName string) error {
-	// Calculate file checksum
-	f, err := os.Open(file)
+// calculateFileChecksum computes the SHA256 checksum of a file.
+func calculateFileChecksum(path string) (string, error) {
+	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return err
+		return "", err
 	}
-	actualChecksum := hex.EncodeToString(h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
 
-	// Fetch the release details to get the digest
+// fetchReleaseDetails retrieves asset metadata from GitHub API for a release.
+func fetchReleaseDetails(release string) (*GitHubReleaseDetail, error) {
 	apiURL := fmt.Sprintf("https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s", release)
 
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("User-Agent", "ffmpeg-statigo")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		// If we can't verify, warn but don't fail (might be rate limited)
 		fmt.Fprintf(os.Stderr, "WARNING: Could not fetch release details for checksum verification (status %d)\n", resp.StatusCode)
-		return nil
+		return nil, nil // Warn but don't fail (might be rate limited)
 	}
 
-	var releaseDetail GitHubReleaseDetail
-	if err := json.NewDecoder(resp.Body).Decode(&releaseDetail); err != nil {
-		return err
+	var detail GitHubReleaseDetail
+	if err := json.NewDecoder(resp.Body).Decode(&detail); err != nil {
+		return nil, err
 	}
+	return &detail, nil
+}
 
-	// Find our tarball asset and get its digest
-	var assetDigest string
-	for _, asset := range releaseDetail.Assets {
-		if asset.Name == tarballName {
-			assetDigest = asset.Digest
-			break
-		}
-	}
-
-	if assetDigest == "" {
-		// Fallback to SHA256SUMS file if digest not available (older releases)
-		return verifyChecksumFromFile(releaseDetail.Assets, actualChecksum, tarballName)
-	}
-
-	// GitHub provides digests in "sha256:..." format
+// verifyDigest validates a checksum against a GitHub asset digest (sha256:... format).
+func verifyDigest(actualChecksum, assetDigest string) error {
 	if !strings.HasPrefix(assetDigest, "sha256:") {
 		return fmt.Errorf("unexpected digest format: %s", assetDigest)
 	}
@@ -272,6 +262,31 @@ func verifyChecksum(file, release, tarballName string) error {
 
 	fmt.Printf("Checksum verified: %s\n", actualChecksum[:8])
 	return nil
+}
+
+func verifyChecksum(file, release, tarballName string) error {
+	actualChecksum, err := calculateFileChecksum(file)
+	if err != nil {
+		return err
+	}
+
+	releaseDetail, err := fetchReleaseDetails(release)
+	if err != nil {
+		return err
+	}
+	if releaseDetail == nil {
+		return nil // API unavailable, warning already printed
+	}
+
+	// Find our tarball asset's digest
+	for _, asset := range releaseDetail.Assets {
+		if asset.Name == tarballName && asset.Digest != "" {
+			return verifyDigest(actualChecksum, asset.Digest)
+		}
+	}
+
+	// Fallback to SHA256SUMS file for older releases without digest metadata
+	return verifyChecksumFromFile(releaseDetail.Assets, actualChecksum, tarballName)
 }
 
 func verifyChecksumFromFile(assets []GitHubAsset, actualChecksum, tarballName string) error {
