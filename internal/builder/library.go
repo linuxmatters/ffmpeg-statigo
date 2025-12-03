@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -43,13 +44,7 @@ func (lib *Library) ShouldBuild() bool {
 	if len(lib.Platform) == 0 {
 		return true // no platform restriction = build everywhere
 	}
-	currentOS := runtime.GOOS
-	for _, platform := range lib.Platform {
-		if platform == currentOS {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(lib.Platform, runtime.GOOS)
 }
 
 // ArchiveType derives the archive type from the URL
