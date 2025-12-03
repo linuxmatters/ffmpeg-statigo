@@ -47,21 +47,26 @@ func (lib *Library) ShouldBuild() bool {
 	return slices.Contains(lib.Platform, runtime.GOOS)
 }
 
+// archiveExtensions maps file suffixes to canonical archive type names.
+var archiveExtensions = map[string]string{
+	".tar.gz":  "tar.gz",
+	".tgz":     "tar.gz",
+	".tar.bz2": "tar.bz2",
+	".tbz2":    "tar.bz2",
+	".tar.xz":  "tar.xz",
+	".txz":     "tar.xz",
+	".zip":     "zip",
+}
+
 // ArchiveType derives the archive type from the URL
 func (lib *Library) ArchiveType() string {
 	url := strings.ToLower(lib.URL)
-	switch {
-	case strings.HasSuffix(url, ".tar.gz"), strings.HasSuffix(url, ".tgz"):
-		return "tar.gz"
-	case strings.HasSuffix(url, ".tar.bz2"), strings.HasSuffix(url, ".tbz2"):
-		return "tar.bz2"
-	case strings.HasSuffix(url, ".tar.xz"), strings.HasSuffix(url, ".txz"):
-		return "tar.xz"
-	case strings.HasSuffix(url, ".zip"):
-		return "zip"
-	default:
-		return ""
+	for ext, archiveType := range archiveExtensions {
+		if strings.HasSuffix(url, ext) {
+			return archiveType
+		}
 	}
+	return ""
 }
 
 // Build performs the complete build process for this library
