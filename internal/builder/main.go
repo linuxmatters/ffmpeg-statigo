@@ -318,6 +318,26 @@ const (
 	colorGray   = "\033[90m"
 )
 
+// colorize wraps text with an ANSI colour code and reset.
+func colorize(text, color string) string {
+	return color + text + colorReset
+}
+
+// bold wraps text with ANSI bold formatting.
+func bold(text string) string {
+	return colorBold + text + colorReset
+}
+
+// tableCell formats a left-aligned cell with the given width and colour.
+func tableCell(text string, width int, color string) string {
+	return fmt.Sprintf("%s%-*s%s", color, width, text, colorReset)
+}
+
+// tableBorder returns a horizontal border segment of the given width.
+func tableBorder(width int) string {
+	return strings.Repeat("═", width+2)
+}
+
 // printLibraryList displays a formatted table of all libraries
 func printLibraryList(libs []*Library) {
 	// Calculate column widths
@@ -345,31 +365,33 @@ func printLibraryList(libs []*Library) {
 	}
 
 	// Print header
-	fmt.Printf("\n%s%s╔═", colorBold, colorCyan)
-	fmt.Printf("%s", strings.Repeat("═", maxName+6))
-	fmt.Printf("╦═%s", strings.Repeat("═", maxPlatform+2))
-	fmt.Printf("╦═%s", strings.Repeat("═", maxBuildSys+2))
-	fmt.Printf("╦═%s", strings.Repeat("═", maxLinkLibs+2))
-	fmt.Printf("╗%s\n", colorReset)
+	fmt.Printf("\n%s╔═%s╦%s╦%s╦%s╗%s\n",
+		colorize("", colorBold+colorCyan),
+		tableBorder(maxName+3),
+		tableBorder(maxPlatform),
+		tableBorder(maxBuildSys),
+		tableBorder(maxLinkLibs),
+		colorReset)
 
-	fmt.Printf("%s║%s %s #%s   %s%-*s%s %s║%s %-*s %s ║%s %-*s %s ║%s %-*s %s ║%s\n",
+	fmt.Printf("%s║%s %s %s %s ║%s %s %s║%s %s %s║%s %s %s║%s\n",
 		colorCyan, colorReset,
-		colorBold+colorYellow, colorReset,
-		colorBold+colorYellow, maxName, "Library", colorReset,
+		tableCell("#", 2, colorBold+colorYellow),
+		tableCell("Library", maxName, colorBold+colorYellow),
 		colorCyan, colorReset,
-		maxPlatform, "Platform",
+		tableCell("Platform", maxPlatform, colorReset),
 		colorCyan, colorReset,
-		maxBuildSys, "Build System",
+		tableCell("Build System", maxBuildSys, colorReset),
 		colorCyan, colorReset,
-		maxLinkLibs, "Link Libraries",
+		tableCell("Link Libraries", maxLinkLibs, colorReset),
 		colorCyan, colorReset)
 
-	fmt.Printf("%s╠═", colorCyan)
-	fmt.Printf("%s", strings.Repeat("═", maxName+6))
-	fmt.Printf("╬═%s", strings.Repeat("═", maxPlatform+2))
-	fmt.Printf("╬═%s", strings.Repeat("═", maxBuildSys+2))
-	fmt.Printf("╬═%s", strings.Repeat("═", maxLinkLibs+2))
-	fmt.Printf("╣%s\n", colorReset)
+	fmt.Printf("%s╠═%s╬%s╬%s╬%s╣%s\n",
+		colorCyan,
+		tableBorder(maxName+3),
+		tableBorder(maxPlatform),
+		tableBorder(maxBuildSys),
+		tableBorder(maxLinkLibs),
+		colorReset)
 
 	// Print rows
 	for i, lib := range libs {
@@ -395,26 +417,27 @@ func printLibraryList(libs []*Library) {
 			linkLibsColor = colorGray
 		}
 
-		fmt.Printf("%s║%s %s%s%s %s%-*s %s  ║%s %-*s %s ║%s %-*s %s ║%s %s%-*s%s %s ║%s\n",
+		fmt.Printf("%s║%s %s %s %s ║%s %s %s║%s %s %s║%s %s %s║%s\n",
 			colorCyan, colorReset,
-			colorBlue+colorBold, num, colorReset,
-			nameColor, maxName, lib.Name,
+			tableCell(num, 2, colorBlue+colorBold),
+			tableCell(lib.Name, maxName, nameColor),
 			colorCyan, colorReset,
-			maxPlatform, platform,
+			tableCell(platform, maxPlatform, colorReset),
 			colorCyan, colorReset,
-			maxBuildSys, buildSys,
+			tableCell(buildSys, maxBuildSys, colorReset),
 			colorCyan, colorReset,
-			linkLibsColor, maxLinkLibs, linkLibsDisplay, colorReset,
+			tableCell(linkLibsDisplay, maxLinkLibs, linkLibsColor),
 			colorCyan, colorReset)
 	}
 
 	// Print footer
-	fmt.Printf("%s╚═", colorCyan)
-	fmt.Printf("%s", strings.Repeat("═", maxName+6))
-	fmt.Printf("╩═%s", strings.Repeat("═", maxPlatform+2))
-	fmt.Printf("╩═%s", strings.Repeat("═", maxBuildSys+2))
-	fmt.Printf("╩═%s", strings.Repeat("═", maxLinkLibs+2))
-	fmt.Printf("╝%s\n\n", colorReset)
+	fmt.Printf("%s╚═%s╩%s╩%s╩%s╝%s\n\n",
+		colorCyan,
+		tableBorder(maxName+3),
+		tableBorder(maxPlatform),
+		tableBorder(maxBuildSys),
+		tableBorder(maxLinkLibs),
+		colorReset)
 
 	// Summary
 	totalLibs := len(libs)
