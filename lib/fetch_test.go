@@ -701,19 +701,19 @@ func createSymlinkTarball(t *testing.T, linkName, target string) string {
 // Test 3: HTTP Download Failure Recovery
 // =============================================================================
 
-func TestDownloadFile_ErrorHandling(t *testing.T) {
+func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 	t.Run("handles_404_not_found", func(t *testing.T) {
 		// Use a URL that returns 404
 		url := "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/nonexistent/file.tar.gz"
-		dest := filepath.Join(t.TempDir(), "download.tar.gz")
+		destDir := t.TempDir()
 
-		err := downloadFile(url, dest)
+		_, err := streamDownloadAndExtract(url, destDir)
 		if err == nil {
 			t.Error("Expected error for 404 response, got nil")
 		}
 
-		// The grab library returns specific error for 404
-		if err != nil && !strings.Contains(err.Error(), "404") && !strings.Contains(err.Error(), "bad response") {
+		// Should get HTTP 404 error
+		if err != nil && !strings.Contains(err.Error(), "404") {
 			t.Logf("Note: Error message format: %v", err)
 		}
 	})
@@ -721,9 +721,9 @@ func TestDownloadFile_ErrorHandling(t *testing.T) {
 	t.Run("handles_invalid_url", func(t *testing.T) {
 		// Invalid URL format
 		url := "not-a-valid-url"
-		dest := filepath.Join(t.TempDir(), "download.tar.gz")
+		destDir := t.TempDir()
 
-		err := downloadFile(url, dest)
+		_, err := streamDownloadAndExtract(url, destDir)
 		if err == nil {
 			t.Error("Expected error for invalid URL, got nil")
 		}
@@ -732,36 +732,30 @@ func TestDownloadFile_ErrorHandling(t *testing.T) {
 	})
 
 	t.Run("handles_invalid_destination", func(t *testing.T) {
-		// Valid URL but invalid destination (non-existent directory)
+		// Use an invalid destination path that cannot be resolved
 		url := "https://github.com/linuxmatters/ffmpeg-statigo/archive/refs/heads/main.zip"
-		dest := "/nonexistent/path/that/does/not/exist/file.tar.gz"
+		destDir := string([]byte{0}) // Invalid path with null byte
 
-		err := downloadFile(url, dest)
+		_, err := streamDownloadAndExtract(url, destDir)
 		if err == nil {
 			t.Error("Expected error for invalid destination, got nil")
 		}
 
-		// Should get a path error
-		if err != nil && !strings.Contains(err.Error(), "no such file") && !strings.Contains(err.Error(), "cannot create") {
-			t.Logf("Note: Error message format: %v", err)
-		}
+		t.Logf("Invalid destination error: %v", err)
 	})
 
-	t.Run("cleans_up_partial_downloads", func(t *testing.T) {
-		// Download to temp dir to check cleanup behavior
-		dest := filepath.Join(t.TempDir(), "partial.tar.gz")
-
-		// Use invalid URL to cause failure
+	t.Run("cleans_up_on_extraction_failure", func(t *testing.T) {
+		// The streaming approach doesn't create temp files, so cleanup is handled
+		// differently - extracted files are cleaned up on checksum failure
+		// This test verifies that errors are properly returned
 		url := "https://github.com/nonexistent/repo/releases/download/v1.0.0/file.tar.gz"
+		destDir := t.TempDir()
 
-		err := downloadFile(url, dest)
+		_, err := streamDownloadAndExtract(url, destDir)
 		if err == nil {
 			t.Error("Expected download to fail")
 		}
 
-		// grab library may create the file before failing
-		// The caller (ensureLibrary) should clean up using defer os.Remove(tmpTarball)
-		// This test verifies the error is returned, allowing cleanup
 		if err != nil {
 			t.Logf("Download failed as expected: %v", err)
 		}
