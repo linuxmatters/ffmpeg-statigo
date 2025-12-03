@@ -257,7 +257,11 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 			continue
 		}
 
-		target := filepath.Join(destPath, name)
+		// Security: Validate path to prevent path traversal attacks
+		target, err := sanitizePath(destPath, name)
+		if err != nil {
+			return err
+		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -323,7 +327,11 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 			continue
 		}
 
-		target := filepath.Join(destPath, name)
+		// Security: Validate path to prevent path traversal attacks
+		target, err := sanitizePath(destPath, name)
+		if err != nil {
+			return err
+		}
 
 		if file.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, 0755); err != nil {
@@ -357,4 +365,33 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 	}
 
 	return nil
+}
+
+// sanitizePath validates that an archive entry path is safe to extract.
+// It prevents path traversal attacks by ensuring the resolved path
+// stays within the destination directory.
+func sanitizePath(destDir, entryName string) (string, error) {
+	// Reject absolute paths
+	if filepath.IsAbs(entryName) {
+		return "", fmt.Errorf("path traversal detected: absolute path %q not allowed", entryName)
+	}
+
+	// Clean the path to resolve . and .. components
+	cleanName := filepath.Clean(entryName)
+
+	// Reject paths that start with .. after cleaning
+	if strings.HasPrefix(cleanName, "..") {
+		return "", fmt.Errorf("path traversal detected: %q escapes destination directory", entryName)
+	}
+
+	// Construct the full target path
+	target := filepath.Join(destDir, cleanName)
+
+	// Final check: ensure the resolved path is within destDir
+	// This catches edge cases where filepath.Join might not prevent traversal
+	if !strings.HasPrefix(target, destDir+string(filepath.Separator)) && target != destDir {
+		return "", fmt.Errorf("path traversal detected: %q resolves outside destination directory", entryName)
+	}
+
+	return target, nil
 }
