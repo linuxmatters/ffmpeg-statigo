@@ -526,8 +526,7 @@ var libvpx = &Library{
 			"--enable-static",
 		}
 	},
-	LinkLibs:     []string{"libvpx"},
-	Dependencies: []*Library{glslang, libvpl, nvcodecheaders, libwebp},
+	LinkLibs: []string{"libvpx"},
 }
 
 // x264 - H.264/AVC video encoder
@@ -558,8 +557,7 @@ var x264 = &Library{
 		}
 		return nil
 	},
-	LinkLibs:     []string{"libx264"},
-	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
+	LinkLibs: []string{"libx264"},
 }
 
 // x265 - H.265/HEVC video encoder 7.9M
@@ -579,8 +577,7 @@ var x265 = &Library{
 			"-DLOGGED_PRIMITIVES=OFF", // Reduce logging overhead
 		}
 	},
-	LinkLibs:     []string{"libx265"},
-	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
+	LinkLibs: []string{"libx265"},
 }
 
 // dav1d - AV1 video decoder
@@ -597,8 +594,7 @@ var dav1d = &Library{
 			"-Denable_tests=false",
 		}
 	},
-	LinkLibs:     []string{"libdav1d"},
-	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
+	LinkLibs: []string{"libdav1d"},
 }
 
 // rav1e - AV1 video encoder
@@ -621,8 +617,7 @@ var rav1e = &Library{
 				"--release")
 		},
 	},
-	LinkLibs:     []string{"librav1e"},
-	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
+	LinkLibs: []string{"librav1e"},
 }
 
 // vvenc - H.266/VVC video encoder
@@ -641,8 +636,7 @@ var vvenc = &Library{
 			"-DVVENC_ENABLE_BUILD_TYPE_POSTFIX=OFF", // No -s/-ds library postfix
 		}
 	},
-	LinkLibs:     []string{"libvvenc"},
-	Dependencies: []*Library{glslang, libvpl, nvcodecheaders},
+	LinkLibs: []string{"libvvenc"},
 }
 
 // openssl - TLS/SSL library for HTTPS, RTMPS, SRT, RIST protocols

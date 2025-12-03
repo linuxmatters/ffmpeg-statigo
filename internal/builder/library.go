@@ -23,7 +23,7 @@ type Library struct {
 	PostExtract   func(srcPath string) error // optional patches
 	SkipAutoFlags bool                       // Skip automatic CFLAGS/LDFLAGS (for non-standard configure scripts like zlib)
 	LinkLibs      []string                   // Libraries to link in final static lib (nil for header-only)
-	Dependencies  []*Library
+	Dependencies  []*Library                 // Build-time dependencies; platform-specific deps are auto-filtered via ShouldBuild()
 }
 
 // BuildSystem defines the interface for different build systems
