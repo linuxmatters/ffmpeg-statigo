@@ -273,61 +273,43 @@ func streamDownloadAndExtract(url, destDir string) (string, error) {
 	// Extract tar entries
 	tr := tar.NewReader(gzr)
 
-	// Track extraction errors in goroutine-safe way for potential future parallelisation
-	var extractErr error
-	var extractedFiles []string
-
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			extractErr = fmt.Errorf("reading tar header: %w", err)
-			break
+			fmt.Println() // Clear progress line
+			return "", fmt.Errorf("reading tar header: %w", err)
 		}
 
 		// Security: Validate path to prevent path traversal attacks
 		target, err := sanitizeTarPath(absDestDir, header.Name)
 		if err != nil {
-			extractErr = err
-			break
+			fmt.Println() // Clear progress line
+			return "", err
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
-				extractErr = fmt.Errorf("creating directory %s: %w", target, err)
-				break
+				fmt.Println() // Clear progress line
+				return "", fmt.Errorf("creating directory %s: %w", target, err)
 			}
 		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				extractErr = fmt.Errorf("creating parent directory for %s: %w", target, err)
-				break
+				fmt.Println() // Clear progress line
+				return "", fmt.Errorf("creating parent directory for %s: %w", target, err)
 			}
 
 			if err := extractFile(tr, target); err != nil {
-				extractErr = err
-				break
+				fmt.Println() // Clear progress line
+				return "", err
 			}
-			extractedFiles = append(extractedFiles, target)
 		case tar.TypeSymlink, tar.TypeLink:
 			// Skip symlinks and hard links for security - they could point outside destDir
 			continue
 		}
-
-		if extractErr != nil {
-			break
-		}
-	}
-
-	// Clean up on extraction error
-	if extractErr != nil {
-		fmt.Println() // Clear progress line
-		for _, f := range extractedFiles {
-			os.Remove(f)
-		}
-		return "", extractErr
 	}
 
 	fmt.Println() // Clear progress line
@@ -355,9 +337,6 @@ func fetchExpectedChecksum(release, tarballName string) (string, error) {
 	releaseDetail, err := fetchReleaseDetails(release)
 	if err != nil {
 		return "", err
-	}
-	if releaseDetail == nil {
-		return "", nil // API unavailable
 	}
 
 	// Try asset digest first (newer releases)
