@@ -198,6 +198,15 @@ type AVCRC = uint32
 // Binary representation of a UUID per IETF RFC 4122.
 type AVUUID = [16]uint8
 
+// cstrPtr returns the underlying C char pointer from a CStr, or nil if s is nil.
+// This helper simplifies nil-safe access to CStr pointers in CGO calls.
+func cstrPtr(s *CStr) *C.char {
+	if s == nil {
+		return nil
+	}
+	return s.ptr
+}
+
 // --- Manual UUID function wrappers (arrays need pointer conversion in CGO) ---
 
 // AVUuidParse parses a string representation of a UUID formatted according to IETF RFC 4122
@@ -210,11 +219,7 @@ type AVUUID = [16]uint8
 //	@param[out] uu  AVUUID
 //	@return         A non-zero value in case of an error.
 func AVUuidParse(in *CStr, uu *AVUUID) (int, error) {
-	var tmpin *C.char
-	if in != nil {
-		tmpin = in.ptr
-	}
-	ret := C.av_uuid_parse(tmpin, (*C.uint8_t)(unsafe.Pointer(&uu[0])))
+	ret := C.av_uuid_parse(cstrPtr(in), (*C.uint8_t)(unsafe.Pointer(&uu[0])))
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -228,11 +233,7 @@ func AVUuidParse(in *CStr, uu *AVUUID) (int, error) {
 //	@param[out] uu  AVUUID
 //	@return         A non-zero value in case of an error.
 func AVUuidUrnParse(in *CStr, uu *AVUUID) (int, error) {
-	var tmpin *C.char
-	if in != nil {
-		tmpin = in.ptr
-	}
-	ret := C.av_uuid_urn_parse(tmpin, (*C.uint8_t)(unsafe.Pointer(&uu[0])))
+	ret := C.av_uuid_urn_parse(cstrPtr(in), (*C.uint8_t)(unsafe.Pointer(&uu[0])))
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -246,15 +247,7 @@ func AVUuidUrnParse(in *CStr, uu *AVUUID) (int, error) {
 //	@param[out] uu      AVUUID
 //	@return             A non-zero value in case of an error.
 func AVUuidParseRange(inStart *CStr, inEnd *CStr, uu *AVUUID) (int, error) {
-	var tmpinStart *C.char
-	if inStart != nil {
-		tmpinStart = inStart.ptr
-	}
-	var tmpinEnd *C.char
-	if inEnd != nil {
-		tmpinEnd = inEnd.ptr
-	}
-	ret := C.av_uuid_parse_range(tmpinStart, tmpinEnd, (*C.uint8_t)(unsafe.Pointer(&uu[0])))
+	ret := C.av_uuid_parse_range(cstrPtr(inStart), cstrPtr(inEnd), (*C.uint8_t)(unsafe.Pointer(&uu[0])))
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -264,11 +257,7 @@ func AVUuidParseRange(inStart *CStr, inEnd *CStr, uu *AVUUID) (int, error) {
 //	@param[in]  uu  AVUUID
 //	@param[out] out Pointer to an array of no less than 37 characters.
 func AVUuidUnparse(uu *AVUUID, out *CStr) {
-	var tmpout *C.char
-	if out != nil {
-		tmpout = out.ptr
-	}
-	C.av_uuid_unparse((*C.uint8_t)(unsafe.Pointer(&uu[0])), tmpout)
+	C.av_uuid_unparse((*C.uint8_t)(unsafe.Pointer(&uu[0])), cstrPtr(out))
 }
 
 // AVUuidEqual compares two UUIDs for equality.
