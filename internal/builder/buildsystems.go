@@ -32,6 +32,17 @@ func openBuildLog(buildDir string, append bool) (io.Writer, func(), error) {
 	return io.MultiWriter(logger, os.Stdout), func() { logger.Close() }, nil
 }
 
+// withBuildLog opens a build log and executes the provided function with the logger.
+// This helper consolidates the repeated log setup/cleanup pattern across build systems.
+func withBuildLog(buildDir string, append bool, fn func(output io.Writer) error) error {
+	output, cleanup, err := openBuildLog(buildDir, append)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	return fn(output)
+}
+
 // AutoconfBuild implements the BuildSystem interface for autoconf-based builds
 type AutoconfBuild struct{}
 
@@ -73,42 +84,25 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 		return fmt.Errorf("failed to make configure executable: %w", err)
 	}
 
-	output, cleanup, err := openBuildLog(buildDir, false)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	if err := runCommand(srcPath, output, installDir, configurePath, args...); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, false, func(output io.Writer) error {
+		return runCommand(srcPath, output, installDir, configurePath, args...)
+	})
 }
 
 func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
-	output, cleanup, err := openBuildLog(buildDir, true)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	// Touch automake files to prevent regeneration
 	touchAutomakeFiles(srcPath)
 
 	installDir := stagingDir(buildDir)
 
-	// make
-	if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
-		return err
-	}
-
-	// make install
-	if err := runCommand(srcPath, output, installDir, "make", "install"); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, true, func(output io.Writer) error {
+		// make
+		if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+			return err
+		}
+		// make install
+		return runCommand(srcPath, output, installDir, "make", "install")
+	})
 }
 
 // CMakeBuild implements the BuildSystem interface for CMake-based builds
@@ -134,38 +128,21 @@ func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
 	}
 
-	output, cleanup, err := openBuildLog(buildDir, false)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	if err := runCommand(buildDir, output, installDir, "cmake", args...); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, false, func(output io.Writer) error {
+		return runCommand(buildDir, output, installDir, "cmake", args...)
+	})
 }
 
 func (c *CMakeBuild) Build(lib *Library, srcPath, buildDir string) error {
-	output, cleanup, err := openBuildLog(buildDir, true)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	installDir := stagingDir(buildDir)
 
-	// cmake --build . --target install
-	if err := runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
-		return err
-	}
-
-	if err := runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--target", "install"); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, true, func(output io.Writer) error {
+		// cmake --build . --target install
+		if err := runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+			return err
+		}
+		return runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--target", "install")
+	})
 }
 
 // MesonBuild implements the BuildSystem interface for Meson-based builds
@@ -186,39 +163,22 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
 	}
 
-	output, cleanup, err := openBuildLog(buildDir, false)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	if err := runCommand(".", output, installDir, "meson", args...); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, false, func(output io.Writer) error {
+		return runCommand(".", output, installDir, "meson", args...)
+	})
 }
 
 func (m *MesonBuild) Build(lib *Library, srcPath, buildDir string) error {
-	output, cleanup, err := openBuildLog(buildDir, true)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	installDir := stagingDir(buildDir)
 
-	// meson compile
-	if err := runCommand(buildDir, output, installDir, "meson", "compile"); err != nil {
-		return err
-	}
-
-	// meson install
-	if err := runCommand(buildDir, output, installDir, "meson", "install"); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, true, func(output io.Writer) error {
+		// meson compile
+		if err := runCommand(buildDir, output, installDir, "meson", "compile"); err != nil {
+			return err
+		}
+		// meson install
+		return runCommand(buildDir, output, installDir, "meson", "install")
+	})
 }
 
 // CargoBuild implements the BuildSystem interface for Cargo/Rust-based builds
@@ -253,26 +213,21 @@ func (m *MakefileBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 }
 
 func (m *MakefileBuild) Build(lib *Library, srcPath, buildDir string) error {
-	output, cleanup, err := openBuildLog(buildDir, false)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	installDir := stagingDir(buildDir)
 
-	// Build the targets
-	args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
-	if err := runCommand(srcPath, output, installDir, "make", args...); err != nil {
-		return err
-	}
+	return withBuildLog(buildDir, false, func(output io.Writer) error {
+		// Build the targets
+		args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
+		if err := runCommand(srcPath, output, installDir, "make", args...); err != nil {
+			return err
+		}
 
-	// If a custom install function is provided, use it
-	if m.InstallFunc != nil {
-		return m.InstallFunc(srcPath, installDir)
-	}
-
-	return nil
+		// If a custom install function is provided, use it
+		if m.InstallFunc != nil {
+			return m.InstallFunc(srcPath, installDir)
+		}
+		return nil
+	})
 }
 
 // OpenSSLBuild implements the BuildSystem interface for OpenSSL's Configure/make
@@ -305,37 +260,20 @@ func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir str
 		return fmt.Errorf("failed to make Configure executable: %w", err)
 	}
 
-	output, cleanup, err := openBuildLog(buildDir, false)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	if err := runCommand(srcPath, output, installDir, configurePath, args...); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, false, func(output io.Writer) error {
+		return runCommand(srcPath, output, installDir, configurePath, args...)
+	})
 }
 
 func (o *OpenSSLBuild) Build(lib *Library, srcPath, buildDir string) error {
-	output, cleanup, err := openBuildLog(buildDir, true)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	installDir := stagingDir(buildDir)
 
-	// make
-	if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
-		return err
-	}
-
-	// make install_sw (install software only, skip docs)
-	if err := runCommand(srcPath, output, installDir, "make", "install_sw"); err != nil {
-		return err
-	}
-
-	return nil
+	return withBuildLog(buildDir, true, func(output io.Writer) error {
+		// make
+		if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+			return err
+		}
+		// make install_sw (install software only, skip docs)
+		return runCommand(srcPath, output, installDir, "make", "install_sw")
+	})
 }
