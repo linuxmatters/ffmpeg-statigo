@@ -72,7 +72,7 @@ jobs:
         run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
 
       - name: Cache FFmpeg source downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .build/downloads
           key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-${{ hashFiles('internal/builder/libraries.go') }}
@@ -80,7 +80,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-
 
       - name: Cache compiled dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .build/staging
