@@ -59,7 +59,7 @@ jobs:
         with:
           cache-bin: false
 
-      - uses: taiki-e/cache-cargo-install-action@v2
+      - uses: taiki-e/cache-cargo-install-action@v3
         with:
           tool: cargo-c
 
