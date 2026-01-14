@@ -297,7 +297,19 @@ func buildEnv(installDir string) []string {
 				}
 
 				// Also set LIBRARY_PATH for cargo/rustc which may not use LDFLAGS
-				env = append(env, "LIBRARY_PATH="+filepath.Join(sdkPath, "usr", "lib"))
+				libraryPath := filepath.Join(sdkPath, "usr", "lib")
+				updatedLibraryPath := false
+				for i, e := range env {
+					if strings.HasPrefix(e, "LIBRARY_PATH=") {
+						existing := strings.TrimPrefix(e, "LIBRARY_PATH=")
+						env[i] = "LIBRARY_PATH=" + libraryPath + ":" + existing
+						updatedLibraryPath = true
+						break
+					}
+				}
+				if !updatedLibraryPath {
+					env = append(env, "LIBRARY_PATH="+libraryPath)
+				}
 			}
 		}
 	}
