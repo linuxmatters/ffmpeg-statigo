@@ -53,6 +53,11 @@
               cargo-c
               rustc
             ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+              # C++ standard library headers for building C++ dependencies (zimg, etc.)
+              # The .dev output contains include/c++/v1/ with <algorithm>, <iostream>, etc.
+              llvmPackages_18.libcxx
+            ]
             ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
               # Hardware acceleration runtime (Linux only)
               vulkan-loader # Required for Vulkan accelerated encoders
@@ -73,6 +78,9 @@
             # CGO needs both the SDK path and clang's builtin headers (stdarg.h, stddef.h, etc.)
             export CGO_CFLAGS="-isysroot ''${SDKROOT:-$(xcrun --show-sdk-path)} -I${pkgs.llvmPackages_18.libclang.lib}/lib/clang/18/include"
             export CPATH="${pkgs.llvmPackages_18.libclang.dev}/include:$CPATH"
+            # C++ standard library headers path for building C++ dependencies (zimg, etc.)
+            # The builder uses this to add -I flag for <algorithm>, <iostream>, etc.
+            export LIBCXX_INCLUDE="${pkgs.llvmPackages_18.libcxx.dev}/include/c++/v1"
             # Set deployment target to match ffmpeg-statigo build (macOS 13.0+)
             export MACOSX_DEPLOYMENT_TARGET="13.0"
             # macOS uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH

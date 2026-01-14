@@ -537,7 +537,7 @@ var x264 = &Library{
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // x264 has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
-		return []string{
+		args := []string{
 			"--disable-avs",
 			"--disable-cli",
 			"--disable-ffms",
@@ -548,6 +548,12 @@ var x264 = &Library{
 			"--enable-static",
 			"--enable-strip",
 		}
+		// x264's aarch64 assembly uses GNU assembler macros (const, endconst, T())
+		// that aren't compatible with LLVM's integrated assembler on macOS
+		if os == "darwin" && runtime.GOARCH == "arm64" {
+			args = append(args, "--disable-asm")
+		}
+		return args
 	},
 	PostExtract: func(srcPath string) error {
 		// x264 needs to find nasm explicitly on x86/x86_64
@@ -605,16 +611,41 @@ var rav1e = &Library{
 	BuildSystem: &CargoBuild{
 		InstallFunc: func(srcPath, installDir string) error {
 			// Set RUSTFLAGS for native CPU optimization
-			os.Setenv("RUSTFLAGS", "-C target-cpu=native")
+			rustflags := "-C target-cpu=native"
+
+			// On macOS, add SDK library path for any native dependencies
+			if runtime.GOOS == "darwin" {
+				cgoCflags := os.Getenv("CGO_CFLAGS")
+				// Extract SDK path from CGO_CFLAGS (-isysroot <path>)
+				var sdkPath string
+				parts := strings.Fields(cgoCflags)
+				for i, p := range parts {
+					if p == "-isysroot" && i+1 < len(parts) {
+						sdkPath = parts[i+1]
+						break
+					}
+				}
+
+				if sdkPath != "" {
+					sdkLibPath := filepath.Join(sdkPath, "usr", "lib")
+					rustflags += " -C link-arg=-L" + sdkLibPath
+				}
+			}
+
+			os.Setenv("RUSTFLAGS", rustflags)
 			os.Setenv("CARGO_PROFILE_RELEASE_DEBUG", "false")
 
 			// cargo cinstall for C library installation
+			// Use --no-default-features to avoid git_version which pulls in libgit2
+			// Re-enable asm and threading for performance
 			return runCommand(srcPath, os.Stdout, installDir, "cargo", "cinstall",
 				fmt.Sprintf("--prefix=%s", installDir),
 				"--libdir=lib",
 				"--library-type=staticlib",
 				"--crt-static",
-				"--release")
+				"--release",
+				"--no-default-features",
+				"--features=asm,threading")
 		},
 	},
 	LinkLibs: []string{"librav1e"},
@@ -767,7 +798,7 @@ var ffmpeg = &Library{
 		fmt.Printf("Applied OpenSSL 3.6 compatibility patch to tls_openssl.c\n")
 		return nil
 	},
-	ConfigureArgs: func(os string) []string {
+	ConfigureArgs: func(targetOS string) []string {
 		// FFmpeg needs explicit paths to headers and libraries
 		stagingDir, _ := filepath.Abs(".build/staging")
 		incDir := filepath.Join(stagingDir, "include")
@@ -782,8 +813,16 @@ var ffmpeg = &Library{
 			fmt.Sprintf("--extra-ldflags=%s", extraLdflags),
 		}
 
+		// On macOS, force clang as the compiler
+		// The Nix dev shell includes both gcc and clang, but our CFLAGS include
+		// paths to Clang's builtin headers (stddef.h, stdarg.h) which use Clang-specific
+		// features like __has_feature and __building_module that gcc doesn't understand
+		if targetOS == "darwin" {
+			args = append(args, "--cc=clang", "--cxx=clang++")
+		}
+
 		// Add common FFmpeg arguments (platform-specific)
-		args = append(args, FFmpegArgsCommon(os)...)
+		args = append(args, FFmpegArgsCommon(targetOS)...)
 
 		return args
 	},
