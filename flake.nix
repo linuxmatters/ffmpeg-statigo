@@ -62,10 +62,21 @@
 
           # Environment for go-clang CGO compilation and hardware acceleration
           shellHook = ''
-            export CGO_LDFLAGS="-L${pkgs.llvmPackages.libclang.lib}/lib"
-            export CPATH="${pkgs.llvmPackages.libclang.dev}/include"
+            export CGO_LDFLAGS="-L${pkgs.llvmPackages_18.libclang.lib}/lib"
+            export CPATH="${pkgs.llvmPackages_18.libclang.dev}/include"
             # Ensure vpx build finds yasm
             export PATH="${pkgs.yasm}/bin:${pkgs.nasm}/bin:$PATH"
+          ''
+          + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+            # macOS: Export SDK paths for C/C++ compilation
+            # The SDKROOT is set by Nix's stdenv wrapper, use it or fall back to xcrun
+            # CGO needs both the SDK path and clang's builtin headers (stdarg.h, stddef.h, etc.)
+            export CGO_CFLAGS="-isysroot ''${SDKROOT:-$(xcrun --show-sdk-path)} -I${pkgs.llvmPackages_18.libclang.lib}/lib/clang/18/include"
+            export CPATH="${pkgs.llvmPackages_18.libclang.dev}/include:$CPATH"
+            # Set deployment target to match ffmpeg-statigo build (macOS 13.0+)
+            export MACOSX_DEPLOYMENT_TARGET="13.0"
+            # macOS uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+            export DYLD_LIBRARY_PATH="${pkgs.llvmPackages_18.libclang.lib}/lib:''${DYLD_LIBRARY_PATH:-}"
           ''
           + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
             # Hardware acceleration: Make GPU drivers visible
