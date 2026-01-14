@@ -537,7 +537,7 @@ var x264 = &Library{
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // x264 has a custom configure script that rejects CFLAGS/LDFLAGS
 	ConfigureArgs: func(os string) []string {
-		args := []string{
+		return []string{
 			"--disable-avs",
 			"--disable-cli",
 			"--disable-ffms",
@@ -548,18 +548,18 @@ var x264 = &Library{
 			"--enable-static",
 			"--enable-strip",
 		}
-		// x264's aarch64 assembly uses GNU assembler macros (const, endconst, T())
-		// that aren't compatible with LLVM's integrated assembler on macOS
-		if os == "darwin" && runtime.GOARCH == "arm64" {
-			args = append(args, "--disable-asm")
-		}
-		return args
 	},
 	PostExtract: func(srcPath string) error {
-		// x264 needs to find nasm explicitly on x86/x86_64
-		// ARM architectures use the C compiler as assembler instead
-		if runtime.GOARCH == "amd64" || runtime.GOARCH == "386" {
+		// x264 needs explicit assembler configuration per architecture
+		switch runtime.GOARCH {
+		case "amd64", "386":
+			// x86/x86_64 uses nasm for assembly
 			os.Setenv("AS", "nasm")
+		case "arm64":
+			// aarch64 .S files contain macros (T(), const, endconst) that require
+			// C preprocessor expansion before assembly. Using clang as AS ensures
+			// the preprocessor runs, unlike bare 'as' which skips preprocessing.
+			os.Setenv("AS", "clang")
 		}
 		return nil
 	},
