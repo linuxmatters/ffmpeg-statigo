@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // stagingDir derives the staging/install directory from a build directory path.
@@ -63,11 +64,49 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 
 		cflags := fmt.Sprintf("-O3 -I%s", incDir)
 		cppflags := fmt.Sprintf("-I%s", incDir)
+		cxxflags := "-O3" // Start with optimization flag
 		ldflags := fmt.Sprintf("-L%s", libDir)
+
+		// On macOS, configure proper SDK and header paths
+		// This is required for CGO compilation and C++ builds
+		if runtime.GOOS == "darwin" {
+			// CGO_CFLAGS format: -isysroot /path/to/sdk -I/nix/store/.../lib/clang/18/include
+			cgoCflags := os.Getenv("CGO_CFLAGS")
+			libcxxInclude := os.Getenv("LIBCXX_INCLUDE")
+
+			// For C: add SDK path and clang builtins
+			if cgoCflags != "" {
+				cflags = fmt.Sprintf("%s %s", cflags, cgoCflags)
+			}
+
+			// For CPPFLAGS: only add -isysroot, NOT the clang builtin include path
+			// This prevents C++ from finding clang's stddef.h before libc++'s wrapper
+			if cgoCflags != "" {
+				// Extract just the -isysroot part from CGO_CFLAGS
+				// CGO_CFLAGS = "-isysroot /path/to/sdk -I/path/to/clang/include"
+				// We only want the -isysroot portion for CPPFLAGS
+				parts := strings.Fields(cgoCflags)
+				for i, part := range parts {
+					if part == "-isysroot" && i+1 < len(parts) {
+						cppflags = fmt.Sprintf("%s -isysroot %s", cppflags, parts[i+1])
+						break
+					}
+				}
+			}
+
+			// For C++: use -nostdinc++ to disable built-in paths, then add libc++ first,
+			// then clang builtins (for stddef.h, stdarg.h), then SDK path
+			if libcxxInclude != "" && cgoCflags != "" {
+				cxxflags = fmt.Sprintf("%s -nostdinc++ -I%s %s", cxxflags, libcxxInclude, cgoCflags)
+			} else if cgoCflags != "" {
+				cxxflags = fmt.Sprintf("%s %s", cxxflags, cgoCflags)
+			}
+		}
 
 		args = append(args,
 			fmt.Sprintf("CFLAGS=%s", cflags),
 			fmt.Sprintf("CPPFLAGS=%s", cppflags),
+			fmt.Sprintf("CXXFLAGS=%s", cxxflags),
 			fmt.Sprintf("LDFLAGS=%s", ldflags),
 		)
 	}

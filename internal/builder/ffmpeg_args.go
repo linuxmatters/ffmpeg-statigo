@@ -393,5 +393,32 @@ func FFmpegArgsCommon(os string) []string {
 		)
 	}
 
+	// macOS-specific hardware acceleration (VideoToolbox)
+	if os == "darwin" {
+		args = append(args,
+			// H.264 VideoToolbox encoder and hwaccel
+			"--enable-encoder=h264_videotoolbox",
+			"--enable-hwaccel=h264_videotoolbox",
+			// H.265/HEVC VideoToolbox encoder and hwaccel
+			"--enable-encoder=hevc_videotoolbox",
+			"--enable-hwaccel=hevc_videotoolbox",
+			// ProRes VideoToolbox encoder and hwaccel
+			"--enable-encoder=prores_videotoolbox",
+			"--enable-hwaccel=prores_videotoolbox",
+			// AV1 VideoToolbox hwaccel (M3+ decode support)
+			"--enable-hwaccel=av1_videotoolbox",
+			// VP9 VideoToolbox hwaccel
+			"--enable-hwaccel=vp9_videotoolbox",
+			// MPEG-2 VideoToolbox hwaccel
+			"--enable-hwaccel=mpeg2_videotoolbox",
+			// MPEG-4 VideoToolbox hwaccel
+			"--enable-hwaccel=mpeg4_videotoolbox",
+			// H.263 VideoToolbox hwaccel
+			"--enable-hwaccel=h263_videotoolbox",
+			// MPEG-1 VideoToolbox hwaccel
+			"--enable-hwaccel=mpeg1_videotoolbox",
+		)
+	}
+
 	return args
 }

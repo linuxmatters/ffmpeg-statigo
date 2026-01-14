@@ -210,10 +210,10 @@ func combineLibraries(libs []*Library, stagingDir, output string) error {
 	return combineLinux(libFiles, output)
 }
 
-// combineMac uses libtool to combine static libraries on macOS
+// combineMac uses Apple's libtool to combine static libraries on macOS
 // This is more efficient than ar as it doesn't require extracting all object files
 func combineMac(libFiles []string, output string) error {
-	log.Println("Using libtool -static approach (macOS)")
+	log.Println("Using Apple libtool -static approach (macOS)")
 
 	// Ensure output directory exists
 	outputDir := filepath.Dir(output)
@@ -224,10 +224,10 @@ func combineMac(libFiles []string, output string) error {
 	// Remove existing output file if present
 	os.Remove(output)
 
-	// Use libtool to combine libraries directly
-	// libtool -static is Apple's tool specifically designed for this purpose
+	// Use Apple's libtool (not GNU libtool from Nix) to combine libraries directly
+	// Apple's libtool -static is specifically designed for this purpose
 	args := append([]string{"-static", "-o", output}, libFiles...)
-	libtoolCmd := exec.Command("libtool", args...)
+	libtoolCmd := exec.Command("/usr/bin/libtool", args...)
 
 	// Capture output for debugging
 	var stdout, stderr bytes.Buffer

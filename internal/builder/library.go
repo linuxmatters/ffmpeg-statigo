@@ -207,5 +207,100 @@ func buildEnv(installDir string) []string {
 		env = append(env, "PATH="+binPath)
 	}
 
+	// On macOS, remove NIX_CFLAGS_COMPILE which interferes with C++ header search order
+	// The Nix clang wrapper injects -isystem paths that cause libc++ headers to be
+	// searched after C standard library headers, breaking <cstddef> and similar wrappers
+	if runtime.GOOS == "darwin" {
+		filtered := env[:0]
+		for _, e := range env {
+			if !strings.HasPrefix(e, "NIX_CFLAGS_COMPILE=") {
+				filtered = append(filtered, e)
+			}
+		}
+		env = filtered
+
+		// Force clang as the compiler on macOS
+		// The Nix dev shell includes both gcc and clang, but our CFLAGS include
+		// paths to Clang's builtin headers (stddef.h, stdarg.h) which use Clang-specific
+		// features like __has_feature and __building_module that gcc doesn't understand
+		env = append(env, "CC=clang", "CXX=clang++")
+	}
+
+	// On macOS, ensure CFLAGS/CXXFLAGS include SDK path and clang builtin headers
+	// This is required for both C (stdarg.h, stddef.h) and C++ (<algorithm>, <cstring>) compilation
+	if runtime.GOOS == "darwin" {
+		cgoCflags := os.Getenv("CGO_CFLAGS")
+		if cgoCflags != "" {
+			// Set CFLAGS with full CGO_CFLAGS (includes -isysroot and -I.../clang/18/include)
+			updatedCflags := false
+			for i, e := range env {
+				if strings.HasPrefix(e, "CFLAGS=") {
+					existing := strings.TrimPrefix(e, "CFLAGS=")
+					env[i] = "CFLAGS=" + existing + " " + cgoCflags
+					updatedCflags = true
+					break
+				}
+			}
+			if !updatedCflags {
+				env = append(env, "CFLAGS="+cgoCflags)
+			}
+
+			// Build CXXFLAGS with -nostdinc++ and explicit libcxx include path
+			// Use -nostdinc++ to disable built-in C++ paths, preventing NIX_CFLAGS_COMPILE
+			// from interfering with header search order
+			// Then add libc++ headers before clang builtins
+			var cxxExtra string
+			libcxxInclude := os.Getenv("LIBCXX_INCLUDE")
+			if libcxxInclude != "" {
+				cxxExtra = "-nostdinc++ -I" + libcxxInclude + " " + cgoCflags
+			} else {
+				cxxExtra = cgoCflags
+			}
+
+			// Set CXXFLAGS with same flags for C++ builds
+			updatedCxxflags := false
+			for i, e := range env {
+				if strings.HasPrefix(e, "CXXFLAGS=") {
+					existing := strings.TrimPrefix(e, "CXXFLAGS=")
+					env[i] = "CXXFLAGS=" + existing + " " + cxxExtra
+					updatedCxxflags = true
+					break
+				}
+			}
+			if !updatedCxxflags {
+				env = append(env, "CXXFLAGS="+cxxExtra)
+			}
+
+			// Extract SDK path from CGO_CFLAGS (-isysroot <path>) for LDFLAGS
+			// This ensures cargo/rustc can find SDK libraries like libiconv
+			var sdkPath string
+			parts := strings.Fields(cgoCflags)
+			for i, p := range parts {
+				if p == "-isysroot" && i+1 < len(parts) {
+					sdkPath = parts[i+1]
+					break
+				}
+			}
+			if sdkPath != "" {
+				ldExtra := "-L" + filepath.Join(sdkPath, "usr", "lib")
+				updatedLdflags := false
+				for i, e := range env {
+					if strings.HasPrefix(e, "LDFLAGS=") {
+						existing := strings.TrimPrefix(e, "LDFLAGS=")
+						env[i] = "LDFLAGS=" + existing + " " + ldExtra
+						updatedLdflags = true
+						break
+					}
+				}
+				if !updatedLdflags {
+					env = append(env, "LDFLAGS="+ldExtra)
+				}
+
+				// Also set LIBRARY_PATH for cargo/rustc which may not use LDFLAGS
+				env = append(env, "LIBRARY_PATH="+filepath.Join(sdkPath, "usr", "lib"))
+			}
+		}
+	}
+
 	return env
 }
