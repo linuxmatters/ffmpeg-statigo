@@ -162,7 +162,7 @@ func buildLibraryOrder() []*Library {
 // zlib - compression library
 var zlib = &Library{
 	Name:          "zlib",
-	URL:           "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz",
+	URL:           "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz",
 	FFmpegEnables: []string{"zlib"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // zlib has a custom configure script that rejects CFLAGS/LDFLAGS
@@ -177,7 +177,7 @@ var zlib = &Library{
 // libiconv - character encoding conversion (macOS only)
 var libiconv = &Library{
 	Name:        "libiconv",
-	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz",
+	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz",
 	Platform:    []string{"darwin"},
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -194,7 +194,7 @@ var libiconv = &Library{
 // libxml2 - XML parsing library
 var libxml2 = &Library{
 	Name:          "libxml2",
-	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.1.tar.xz",
+	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.2.tar.xz",
 	FFmpegEnables: []string{"libxml2"},
 	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -218,7 +218,7 @@ var libxml2 = &Library{
 // nvcodecheaders - NVIDIA codec SDK headers (Linux only)
 var nvcodecheaders = &Library{
 	Name:          "nv-codec-headers",
-	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.2.72.0/nv-codec-headers-12.2.72.0.tar.gz",
+	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n13.0.19.0/nv-codec-headers-13.0.19.0.tar.gz",
 	Platform:      []string{"linux"},
 	FFmpegEnables: []string{"cuvid", "ffnvcodec", "nvdec", "nvenc"},
 	BuildSystem: &MakefileBuild{
@@ -233,7 +233,7 @@ var nvcodecheaders = &Library{
 // vulkanheaders - Vulkan API headers (cross-platform)
 var vulkanheaders = &Library{
 	Name:          "Vulkan-Headers",
-	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.335.tar.gz",
+	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.345.tar.gz",
 	FFmpegEnables: []string{"vulkan"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -293,7 +293,7 @@ var glslang = &Library{
 // libdrm - Direct Rendering Manager library (Linux only, required by libva)
 var libdrm = &Library{
 	Name:        "libdrm",
-	URL:         "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.129/drm-libdrm-2.4.129.tar.gz",
+	URL:         "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.131/drm-libdrm-2.4.131.tar.gz",
 	Platform:    []string{"linux"},
 	BuildSystem: &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -324,7 +324,7 @@ var libdrm = &Library{
 // libva - Video Acceleration API (Linux only, provides VA-API backend for QSV)
 var libva = &Library{
 	Name:          "libva",
-	URL:           "https://github.com/intel/libva/releases/download/2.22.0/libva-2.22.0.tar.bz2",
+	URL:           "https://github.com/intel/libva/releases/download/2.23.0/libva-2.23.0.tar.bz2",
 	Platform:      []string{"linux"},
 	Dependencies:  []*Library{libdrm},
 	FFmpegEnables: []string{"vaapi"},
@@ -364,7 +364,7 @@ var libva = &Library{
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)
 var libvpl = &Library{
 	Name:          "libvpl",
-	URL:           "https://github.com/intel/libvpl/archive/refs/tags/v2.15.0.tar.gz",
+	URL:           "https://github.com/intel/libvpl/archive/refs/tags/v2.16.0.tar.gz",
 	Platform:      []string{"linux"},
 	FFmpegEnables: []string{"libvpl"},
 	BuildSystem:   &CMakeBuild{},
@@ -488,7 +488,7 @@ var lame = &Library{
 // opus - Opus audio codec
 var opus = &Library{
 	Name:          "opus",
-	URL:           "https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz",
+	URL:           "https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz",
 	FFmpegEnables: []string{"libopus"},
 	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -505,7 +505,7 @@ var opus = &Library{
 // libvpx - VP8/VP9 video codec
 var libvpx = &Library{
 	Name:          "libvpx",
-	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.15.2.tar.gz",
+	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.16.0.tar.gz",
 	FFmpegEnables: []string{"libvpx"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // vpx has a custom configure script that rejects CFLAGS/LDFLAGS
@@ -589,7 +589,7 @@ var x265 = &Library{
 // dav1d - AV1 video decoder
 var dav1d = &Library{
 	Name:          "dav1d",
-	URL:           "https://code.videolan.org/videolan/dav1d/-/archive/1.5.2/dav1d-1.5.2.tar.bz2",
+	URL:           "https://code.videolan.org/videolan/dav1d/-/archive/1.5.3/dav1d-1.5.3.tar.bz2",
 	FFmpegEnables: []string{"libdav1d"},
 	BuildSystem:   &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -654,7 +654,7 @@ var rav1e = &Library{
 // vvenc - H.266/VVC video encoder
 var vvenc = &Library{
 	Name:          "vvenc",
-	URL:           "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.13.1.tar.gz",
+	URL:           "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v1.14.0.tar.gz",
 	FFmpegEnables: []string{"libvvenc"},
 	BuildSystem:   &CMakeBuild{},
 	Enabled:       Disabled(),
@@ -681,7 +681,7 @@ var vvenc = &Library{
 // - BIO, EVP APIs
 var openssl = &Library{
 	Name:          "openssl",
-	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.0/openssl-3.6.0.tar.gz",
+	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.1/openssl-3.6.1.tar.gz",
 	FFmpegEnables: []string{"openssl"},
 	BuildSystem:   &OpenSSLBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -744,7 +744,7 @@ var openssl = &Library{
 // libsrt - Secure Reliable Transport (SRT) protocol library
 var libsrt = &Library{
 	Name:          "libsrt",
-	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5-rc.0a.tar.gz",
+	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5-rc.1.tar.gz",
 	FFmpegEnables: []string{"libsrt"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
