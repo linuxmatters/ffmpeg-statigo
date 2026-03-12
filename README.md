@@ -84,26 +84,26 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | Library          | Version     | Description                                                                        |
 |------------------|-------------|------------------------------------------------------------------------------------|
 | FFmpeg           | 8.0.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
-| dav1d            | 1.5.2       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
+| dav1d            | 1.5.3       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
 | glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
-| libdrm           | 2.4.129     | Direct Rendering Manager library and headers (*Linux only*)                        |
-| libiconv         | 1.18        | A character set conversion library (*macOS only*)                                  |
-| libsrt           | 1.5.5-rc.0a | A transport protocol for ultra low latency live video and audio streaming          |
-| libva            | 2.22.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)               |
-| libvpl           | 2.15.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
-| libvpx           | 1.15.2      | High-quality, open video format for the web that's freely available to everyone    |
+| libdrm           | 2.4.131     | Direct Rendering Manager library and headers (*Linux only*)                        |
+| libiconv         | 1.19        | A character set conversion library (*macOS only*)                                  |
+| libsrt           | 1.5.5-rc.1  | A transport protocol for ultra low latency live video and audio streaming          |
+| libva            | 2.23.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)               |
+| libvpl           | 2.16.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
+| libvpx           | 1.16.0      | High-quality, open video format for the web that's freely available to everyone    |
 | libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression            |
-| libxml2          | 2.15.1      | An XML parser and toolkit implemented in C                                         |
+| libxml2          | 2.15.2      | An XML parser and toolkit implemented in C                                         |
 | mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                  |
-| nv-codec-headers | 12.2.72.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
-| openssl          | 3.6.0       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
-| opus             | 1.5.2       | A totally open, royalty-free, highly versatile audio codec                         |
+| nv-codec-headers | 13.0.19.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
+| openssl          | 3.6.1       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
+| opus             | 1.6.1       | A totally open, royalty-free, highly versatile audio codec                         |
 | rav1e            | 0.8.1       | The fastest and safest AV1 encoder.                                                |
-| Vulkan-Headers   | 1.4.335     | Vulkan header files and API registry                                               |
+| Vulkan-Headers   | 1.4.345     | Vulkan header files and API registry                                               |
 | x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams             |
 | x265             | head        | H.265/MPEG-H HEVC compression format library for encoding video streams            |
 | zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                              |
-| zlib             | 1.3.1       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
+| zlib             | 1.3.2       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
 
 VVenC 1.13.1 (Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder) is in the build configuration, **but currently disabled**, as it adds ~25MB to the static ffmpeg library and is too slow for practical use.
 
