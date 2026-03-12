@@ -88,20 +88,13 @@ func (s *BuildState) CanSkip(installDir string) bool {
 	}
 
 	// For libraries with LinkLibs, check that all expected .a files exist
-	for _, dir := range []string{"lib"} {
-		libDir := filepath.Join(installDir, dir)
-		allFound := true
-		for _, libName := range s.lib.LinkLibs {
-			libPath := filepath.Join(libDir, libName+".a")
-			if !fileExists(libPath) {
-				allFound = false
-				break
-			}
-		}
-		if allFound {
-			return true
+	libDir := filepath.Join(installDir, "lib")
+	for _, libName := range s.lib.LinkLibs {
+		libPath := filepath.Join(libDir, libName+".a")
+		if !fileExists(libPath) {
+			return false
 		}
 	}
 
-	return false
+	return true
 }

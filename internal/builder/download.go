@@ -54,7 +54,6 @@ func DownloadFile(url, dest string, logger io.Writer) error {
 
 		// Monitor progress - update every 2 seconds to avoid log spam
 		ticker := time.NewTicker(2 * time.Second)
-		defer ticker.Stop()
 
 		lastProgress := 0.0
 		for !resp.IsComplete() {
@@ -69,6 +68,8 @@ func DownloadFile(url, dest string, logger io.Writer) error {
 				time.Sleep(100 * time.Millisecond)
 			}
 		}
+
+		ticker.Stop()
 
 		// Check for errors
 		if err := resp.Err(); err != nil {
