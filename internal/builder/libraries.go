@@ -907,7 +907,7 @@ func touchAutomakeFiles(srcPath string) error {
 	}
 
 	// Also touch any Makefile.in files in subdirectories
-	filepath.WalkDir(srcPath, func(path string, d os.DirEntry, err error) error {
+	return filepath.WalkDir(srcPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -916,6 +916,4 @@ func touchAutomakeFiles(srcPath string) error {
 		}
 		return nil
 	})
-
-	return nil
 }
