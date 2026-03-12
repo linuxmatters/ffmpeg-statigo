@@ -12,7 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -161,7 +161,7 @@ func findViaAPI(prefix string) (string, error) {
 	}
 
 	// Sort to find highest version (lib-8.0.0.0 < lib-8.0.0.1 < lib-8.0.0.3)
-	sort.Strings(matchingReleases)
+	slices.Sort(matchingReleases)
 
 	// Return the last (highest) version
 	return matchingReleases[len(matchingReleases)-1], nil

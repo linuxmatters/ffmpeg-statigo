@@ -907,11 +907,11 @@ func touchAutomakeFiles(srcPath string) error {
 	}
 
 	// Also touch any Makefile.in files in subdirectories
-	filepath.Walk(srcPath, func(path string, info os.FileInfo, err error) error {
+	filepath.WalkDir(srcPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == "Makefile.in" {
+		if !d.IsDir() && d.Name() == "Makefile.in" {
 			os.Chtimes(path, now, now)
 		}
 		return nil
