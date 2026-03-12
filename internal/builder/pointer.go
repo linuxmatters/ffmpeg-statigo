@@ -11,9 +11,3 @@ func Ptr[T any](v T) *T {
 func Disabled() *bool {
 	return Ptr(false)
 }
-
-// Enabled is a convenience helper that returns a pointer to true
-// Usage: Enabled: Enabled()
-func Enabled() *bool {
-	return Ptr(true)
-}

@@ -94,15 +94,15 @@ func buildLibraryOrder() []*Library {
 	}
 
 	var result []*Library
-	var ffmpegLib *Library
+	ffmpegSeen := false
 	for len(queue) > 0 {
 		// Pop from queue
 		current := queue[0]
 		queue = queue[1:]
 
 		// Hold FFmpeg aside to add at the end
-		if current.Name == "ffmpeg" {
-			ffmpegLib = current
+		if current == ffmpeg {
+			ffmpegSeen = true
 		} else {
 			result = append(result, current)
 		}
@@ -126,8 +126,8 @@ func buildLibraryOrder() []*Library {
 		for _, lib := range result {
 			processed[lib] = true
 		}
-		if ffmpegLib != nil {
-			processed[ffmpegLib] = true
+		if ffmpegSeen {
+			processed[ffmpeg] = true
 		}
 
 		fmt.Fprintf(os.Stderr, "\nLibraries stuck in cycle:\n")
@@ -152,8 +152,8 @@ func buildLibraryOrder() []*Library {
 	}
 
 	// Always add FFmpeg last as it depends on all other libraries
-	if ffmpegLib != nil {
-		result = append(result, ffmpegLib)
+	if ffmpegSeen {
+		result = append(result, ffmpeg)
 	}
 
 	return result
@@ -616,15 +616,7 @@ var rav1e = &Library{
 			// On macOS, add SDK library path for any native dependencies
 			if runtime.GOOS == "darwin" {
 				cgoCflags := os.Getenv("CGO_CFLAGS")
-				// Extract SDK path from CGO_CFLAGS (-isysroot <path>)
-				var sdkPath string
-				parts := strings.Fields(cgoCflags)
-				for i, p := range parts {
-					if p == "-isysroot" && i+1 < len(parts) {
-						sdkPath = parts[i+1]
-						break
-					}
-				}
+				sdkPath := extractSDKPath(cgoCflags)
 
 				if sdkPath != "" {
 					sdkLibPath := filepath.Join(sdkPath, "usr", "lib")
@@ -840,28 +832,16 @@ var ffmpeg = &Library{
 // CollectFFmpegEnables collects --enable-* flags from all enabled external libraries
 // This must be called AFTER AllLibraries is initialized to inject the enables into ffmpeg's ConfigureArgs
 func CollectFFmpegEnables() {
-	// Find the ffmpeg library
-	var ffmpegLib *Library
-	for _, lib := range AllLibraries {
-		if lib.Name == "ffmpeg" {
-			ffmpegLib = lib
-			break
-		}
-	}
-	if ffmpegLib == nil {
-		return
-	}
-
 	// Wrap the original ConfigureArgs function
-	originalConfigureArgs := ffmpegLib.ConfigureArgs
-	ffmpegLib.ConfigureArgs = func(os string) []string {
+	originalConfigureArgs := ffmpeg.ConfigureArgs
+	ffmpeg.ConfigureArgs = func(os string) []string {
 		// Get base args from original function
 		args := originalConfigureArgs(os)
 
 		// Collect and add --enable-* flags from all enabled external libraries
 		for _, lib := range AllLibraries {
 			// Skip ffmpeg itself and libraries that are disabled or shouldn't build on current platform
-			if lib.Name == "ffmpeg" || !lib.ShouldBuild() {
+			if lib == ffmpeg || !lib.ShouldBuild() {
 				continue
 			}
 			// Add all FFmpeg enable flags for this library

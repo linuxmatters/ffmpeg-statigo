@@ -12,6 +12,18 @@ import (
 	"strings"
 )
 
+// extractSDKPath returns the path following -isysroot in a flags string,
+// or empty string if not found.
+func extractSDKPath(flags string) string {
+	parts := strings.Fields(flags)
+	for i, p := range parts {
+		if p == "-isysroot" && i+1 < len(parts) {
+			return parts[i+1]
+		}
+	}
+	return ""
+}
+
 // Library represents a third-party library to build
 type Library struct {
 	Name          string
@@ -273,14 +285,7 @@ func buildEnv(installDir string) []string {
 
 			// Extract SDK path from CGO_CFLAGS (-isysroot <path>) for LDFLAGS
 			// This ensures cargo/rustc can find SDK libraries like libiconv
-			var sdkPath string
-			parts := strings.Fields(cgoCflags)
-			for i, p := range parts {
-				if p == "-isysroot" && i+1 < len(parts) {
-					sdkPath = parts[i+1]
-					break
-				}
-			}
+			sdkPath := extractSDKPath(cgoCflags)
 			if sdkPath != "" {
 				ldExtra := "-L" + filepath.Join(sdkPath, "usr", "lib")
 				updatedLdflags := false

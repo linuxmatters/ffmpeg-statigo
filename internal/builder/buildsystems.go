@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 )
 
 // stagingDir derives the staging/install directory from a build directory path.
@@ -85,12 +84,8 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 				// Extract just the -isysroot part from CGO_CFLAGS
 				// CGO_CFLAGS = "-isysroot /path/to/sdk -I/path/to/clang/include"
 				// We only want the -isysroot portion for CPPFLAGS
-				parts := strings.Fields(cgoCflags)
-				for i, part := range parts {
-					if part == "-isysroot" && i+1 < len(parts) {
-						cppflags = fmt.Sprintf("%s -isysroot %s", cppflags, parts[i+1])
-						break
-					}
+				if sdkPath := extractSDKPath(cgoCflags); sdkPath != "" {
+					cppflags = fmt.Sprintf("%s -isysroot %s", cppflags, sdkPath)
 				}
 			}
 
