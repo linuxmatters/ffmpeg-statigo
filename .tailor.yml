@@ -17,7 +17,7 @@ repository:
   merge_commit_message: PR_TITLE
   delete_branch_on_merge: true
   allow_update_branch: false
-  allow_auto_merge: false
+  allow_auto_merge: true
   web_commit_signoff_required: false
   default_workflow_permissions: read
   can_approve_pull_request_reviews: false
