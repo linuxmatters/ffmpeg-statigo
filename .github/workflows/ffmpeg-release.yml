@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'FFmpeg library version (e.g., 8.0.0.1)'
+        description: "FFmpeg library version (e.g., 8.0.0.1)"
         required: true
   push:
     tags:
-      - 'lib-[0-9]*.[0-9]*.[0-9]*.[0-9]*'
+      - "lib-[0-9]*.[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
   pull-requests: write
@@ -48,7 +48,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
           cache: true
 
       - uses: dtolnay/rust-toolchain@stable
@@ -118,4 +118,3 @@ jobs:
             - Linux arm64
             - macOS x86 (Intel)
             - macOS arm64 (Apple Silicon)
-

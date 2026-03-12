@@ -2,11 +2,11 @@ name: FFmpeg library test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - '.github/workflows/ffmpeg-test.yml'
-      - 'internal/builder/**'
-      - '*.gen.go'
+      - ".github/workflows/ffmpeg-test.yml"
+      - "internal/builder/**"
+      - "*.gen.go"
   workflow_dispatch:
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
           cache: true
 
       - uses: dtolnay/rust-toolchain@stable

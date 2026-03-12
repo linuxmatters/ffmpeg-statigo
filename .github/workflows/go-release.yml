@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Go module version (e.g., 8.0.0.1)'
+        description: "Go module version (e.g., 8.0.0.1)"
         required: true
   push:
     tags:
-      - 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*'
+      - "v[0-9]*.[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
   contents: write
@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
           cache: true
 
       - name: Install libclang for generator
