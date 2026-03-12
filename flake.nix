@@ -34,7 +34,7 @@
               gcc
               git-filter-repo
               gnumake
-              go
+              go_1_26
               gperf
               just
               meson
