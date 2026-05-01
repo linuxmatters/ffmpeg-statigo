@@ -104,7 +104,7 @@ jobs:
           tar -czf ../ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.tar.gz ${{ matrix.os }}_${{ matrix.arch }}/libffmpeg.a
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ffmpeg-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
           tag_name: ${{ inputs.version }}
