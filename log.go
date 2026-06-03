@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -21,7 +22,7 @@ import "C"
 
 type LogCallback func(ctx *LogCtx, level int, msg string)
 
-var activeLogCallback LogCallback //nolint:gochecknoglobals
+var activeLogCallback atomic.Pointer[LogCallback] //nolint:gochecknoglobals
 
 //export ffgLogCallback
 func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr *C.char) {
@@ -37,8 +38,8 @@ func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr *C.char) {
 	msg := msgWrapper.String()
 	msgWrapper.Free()
 
-	if activeLogCallback != nil {
-		activeLogCallback(ctx, level, msg)
+	if cb := activeLogCallback.Load(); cb != nil && *cb != nil {
+		(*cb)(ctx, level, msg)
 	}
 }
 
@@ -54,7 +55,7 @@ func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr *C.char) {
   @param callback A logging function with a compatible signature.
 */
 func AVLogSetCallback(cb LogCallback) {
-	activeLogCallback = cb
+	activeLogCallback.Store(&cb)
 
 	C.ffg_set_log()
 }
