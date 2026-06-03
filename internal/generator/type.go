@@ -185,9 +185,8 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 		name = strings.TrimPrefix(name, "struct ")
 		name = strings.TrimPrefix(name, "enum ")
 
-		if strings.HasPrefix(name, "unsigned ") {
-			name = strings.TrimPrefix(name, "unsigned ")
-			name = fmt.Sprintf("u%v", name)
+		if rest, ok := strings.CutPrefix(name, "unsigned "); ok {
+			name = fmt.Sprintf("u%v", rest)
 		}
 
 		if name == "" {

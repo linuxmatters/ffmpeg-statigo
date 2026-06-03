@@ -158,8 +158,7 @@ func getCType(typeName string, goType string) string {
 	}
 
 	// For other types, map Go pseudo-types to CGO types
-	switch typeName {
-	case "uchar":
+	if typeName == "uchar" {
 		return "uchar" // C.uchar is valid
 	}
 
@@ -796,6 +795,7 @@ func (g *Generator) generateStructs() {
 								),
 							)
 						} else {
+							//nolint:dupword // "ptr ptr" describes a pointer-to-pointer field; changing it would alter generated output
 							o.Commentf("%v skipped due to unknown ptr ptr", field.Name)
 							o.Line()
 
@@ -934,24 +934,23 @@ func (g *Generator) generateStructs() {
 				log.Panicln("unexpected type", reflect.TypeOf(field.Type))
 			}
 
-			if refField {
-				if st.ByValue {
-					o.Commentf("%v skipped due to ref field of value struct", field.Name)
-					o.Line()
+			switch {
+			case refField && st.ByValue:
+				o.Commentf("%v skipped due to ref field of value struct", field.Name)
+				o.Line()
 
-					continue fieldLoop
-				} else {
-					getBody = slices.Insert(
-						getBody, 0,
-						jen.Code(jen.Id("value").Op(":=").Op("&").Id("s").Dot("ptr").Dot(cName)),
-					)
-				}
-			} else if st.ByValue {
+				continue fieldLoop
+			case refField:
+				getBody = slices.Insert(
+					getBody, 0,
+					jen.Code(jen.Id("value").Op(":=").Op("&").Id("s").Dot("ptr").Dot(cName)),
+				)
+			case st.ByValue:
 				getBody = slices.Insert(
 					getBody, 0,
 					jen.Code(jen.Id("value").Op(":=").Id("s").Dot("value").Dot(cName)),
 				)
-			} else {
+			default:
 				getBody = slices.Insert(
 					getBody, 0,
 					jen.Code(jen.Id("value").Op(":=").Id("s").Dot("ptr").Dot(cName)),
@@ -1062,8 +1061,7 @@ outer:
 				skip = true
 			}
 
-			switch v := arg.Type.(type) {
-			case *PointerType:
+			if v, ok := arg.Type.(*PointerType); ok {
 				switch iv := v.Inner.(type) {
 				case *FuncType:
 					skip = true
@@ -1204,8 +1202,6 @@ outer:
 								args = append(args, jen.Params(jen.Op("*").Qual("C", cType)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))))
 							} else {
 								// Not an output parameter - skip as it's ambiguous
-								params = append(params, jen.Id(pName).Op("*").Id(m))
-
 								o.Commentf("%v skipped due to %v (non-output primitive pointer)", fn.Name, pName)
 								o.Line()
 								continue outer
@@ -1279,10 +1275,6 @@ outer:
 
 							args = append(args, jen.Id(convName))
 						}
-
-						//retType = []jen.Code{
-						//	jen.Op("*").Id(iv.Name),
-						//}
 					}
 
 				case *PointerType:
@@ -1290,77 +1282,61 @@ outer:
 					switch iiv := iv.Inner.(type) {
 					case *IdentType:
 
-						if iiv.Name == "uint8_t" {
-							params = append(params, jen.Id(pName).Id("TODO"))
-
+						if iiv.Name == "uint8_t" || iiv.Name == "char" {
 							o.Commentf("%v skipped due to %v", fn.Name, pName)
 							o.Line()
 							continue outer
-						} else if iiv.Name == "char" {
-							params = append(params, jen.Id(pName).Id("TODO"))
-
-							o.Commentf("%v skipped due to %v", fn.Name, pName)
-							o.Line()
-							continue outer
-						} else {
-							if m, ok := primTypes[iiv.Name]; ok {
-								params = append(params, jen.Id(pName).Op("**").Id(m))
-
-								o.Commentf("%v skipped due to %v", fn.Name, pName)
-								o.Line()
-								continue outer
-							} else if s, ok := g.input.structs[iiv.Name]; ok {
-								params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
-
-								ptrName := fmt.Sprintf("ptr%v", pName)
-								tmpName := fmt.Sprintf("tmp%v", pName)
-								oldName := fmt.Sprintf("oldTmp%v", pName)
-								innerName := fmt.Sprintf("inner%v", pName)
-
-								body = append(
-									body,
-									jen.Var().Id(ptrName).Op("**").Qual("C", s.CName()),
-									jen.Var().Id(tmpName).Op("*").Qual("C", s.CName()),
-									jen.Var().Id(oldName).Op("*").Qual("C", s.CName()),
-									jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-										jen.Id(innerName).Op(":=").Op("*").Id(pName),
-										jen.If(jen.Id(innerName).Op("!=").Id("nil")).Block(
-											jen.Id(tmpName).Op("=").Id(innerName).Dot("ptr"),
-											jen.Id(oldName).Op("=").Id(tmpName),
-										),
-										jen.Id(ptrName).Op("=").Op("&").Id(tmpName),
-									),
-								)
-
-								postCall = append(
-									postCall,
-									jen.If(jen.Id(tmpName).Op("!=").Id(oldName).Op("&&").Id(pName).Op("!=").Id("nil")).Block(
-
-										jen.If(jen.Id(tmpName).Op("!=").Id("nil")).Block(
-											jen.Op("*").Id(pName).Op("=").Op("&").Id(iiv.Name).Values(jen.Dict{
-												jen.Id("ptr"): jen.Id(tmpName),
-											}),
-										).Else().Block(
-											jen.Op("*").Id(pName).Op("=").Id("nil"),
-										),
-									),
-								)
-
-								args = append(args, jen.Id(ptrName))
-							} else {
-								params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
-
-								o.Commentf("%v skipped due to %v", fn.Name, pName)
-								o.Line()
-								continue outer
-							}
 						}
 
-						// params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
+						if _, ok := primTypes[iiv.Name]; ok {
+							o.Commentf("%v skipped due to %v", fn.Name, pName)
+							o.Line()
+							continue outer
+						} else if s, ok := g.input.structs[iiv.Name]; ok {
+							params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
+
+							ptrName := fmt.Sprintf("ptr%v", pName)
+							tmpName := fmt.Sprintf("tmp%v", pName)
+							oldName := fmt.Sprintf("oldTmp%v", pName)
+							innerName := fmt.Sprintf("inner%v", pName)
+
+							body = append(
+								body,
+								jen.Var().Id(ptrName).Op("**").Qual("C", s.CName()),
+								jen.Var().Id(tmpName).Op("*").Qual("C", s.CName()),
+								jen.Var().Id(oldName).Op("*").Qual("C", s.CName()),
+								jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+									jen.Id(innerName).Op(":=").Op("*").Id(pName),
+									jen.If(jen.Id(innerName).Op("!=").Id("nil")).Block(
+										jen.Id(tmpName).Op("=").Id(innerName).Dot("ptr"),
+										jen.Id(oldName).Op("=").Id(tmpName),
+									),
+									jen.Id(ptrName).Op("=").Op("&").Id(tmpName),
+								),
+							)
+
+							postCall = append(
+								postCall,
+								jen.If(jen.Id(tmpName).Op("!=").Id(oldName).Op("&&").Id(pName).Op("!=").Id("nil")).Block(
+
+									jen.If(jen.Id(tmpName).Op("!=").Id("nil")).Block(
+										jen.Op("*").Id(pName).Op("=").Op("&").Id(iiv.Name).Values(jen.Dict{
+											jen.Id("ptr"): jen.Id(tmpName),
+										}),
+									).Else().Block(
+										jen.Op("*").Id(pName).Op("=").Id("nil"),
+									),
+								),
+							)
+
+							args = append(args, jen.Id(ptrName))
+						} else {
+							o.Commentf("%v skipped due to %v", fn.Name, pName)
+							o.Line()
+							continue outer
+						}
 
 					default:
-						params = append(params, jen.Id(pName).Id("TODO"))
-
 						o.Commentf("%v skipped due to %v", fn.Name, pName)
 						o.Line()
 						continue outer
@@ -1372,15 +1348,11 @@ outer:
 				}
 
 			case *Array:
-				params = append(params, jen.Id(pName).Id("TODO"))
-
 				o.Commentf("%v skipped due to %v", fn.Name, pName)
 				o.Line()
 				continue outer
 
 			case *ConstArray:
-				params = append(params, jen.Id(pName).Id("TODO"))
-
 				o.Commentf("%v skipped due to const array param %v", fn.Name, pName)
 				o.Line()
 				continue outer
@@ -1585,8 +1557,8 @@ func (g *Generator) convPart(val string) string {
 		val = strings.ToUpper(a) + b
 	}
 
-	for i := len(prefixes) - 1; i >= 0; i-- {
-		val = strings.ToUpper(prefixes[i]) + val
+	for _, prefix := range slices.Backward(prefixes) {
+		val = strings.ToUpper(prefix) + val
 	}
 
 	return val
