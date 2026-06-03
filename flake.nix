@@ -40,6 +40,12 @@
               meson
               nasm
               ninja
+              # Linters and formatters
+              actionlint
+              gocyclo
+              gofumpt
+              golangci-lint
+              ineffassign
               # LLVM/Clang for code generator (go-clang requires libclang)
               # llvmPackages.libclang provides: clang compiler + libclang library
               # llvmPackages.llvm provides: llvm-config command

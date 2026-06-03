@@ -76,3 +76,23 @@ go-release VERSION:
 # Check Go module release workflow status
 go-release-status:
     gh run list --workflow=go-release.yml --limit 5
+
+# Check the static FFmpeg library is present (lint/vet need CGO to compile)
+_check-lib:
+    #!/usr/bin/env bash
+    if [ ! -f "lib/$(go env GOOS)_$(go env GOARCH)/libffmpeg.a" ]; then
+        echo "Error: static library missing. Run 'just download-lib' first."
+        exit 1
+    fi
+
+# Run linters
+lint: _check-lib
+    @go vet ./...
+    @gocyclo -top 20 -avg -ignore '_test\.go$|\.gen\.go$|/\.build/' .
+    @ineffassign ./...
+    @golangci-lint run
+    @actionlint
+
+# Apply formatting
+fmt:
+    @golangci-lint fmt
