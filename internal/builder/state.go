@@ -52,7 +52,7 @@ func (s *BuildState) Save() error {
 	s.BuildTime = time.Now()
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(s.statePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.statePath), 0o755); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (s *BuildState) Save() error {
 		return err
 	}
 
-	return os.WriteFile(s.statePath, data, 0644)
+	return os.WriteFile(s.statePath, data, 0o644)
 }
 
 // CanSkip checks if we can skip building this library

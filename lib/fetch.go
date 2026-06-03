@@ -292,12 +292,12 @@ func streamDownloadAndExtract(url, destDir string) (string, error) {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				fmt.Println() // Clear progress line
 				return "", fmt.Errorf("creating directory %s: %w", target, err)
 			}
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				fmt.Println() // Clear progress line
 				return "", fmt.Errorf("creating parent directory for %s: %w", target, err)
 			}
@@ -459,11 +459,11 @@ func extractTarball(tarball, destDir string) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
 			}
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
 			if err := extractFile(tr, target); err != nil {

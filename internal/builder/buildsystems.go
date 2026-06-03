@@ -22,7 +22,7 @@ func openBuildLog(buildDir string, append bool) (io.Writer, func(), error) {
 	var logger *os.File
 	var err error
 	if append {
-		logger, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		logger, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	} else {
 		logger, err = os.Create(logFile)
 	}
@@ -114,7 +114,7 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 	}
 
 	// Make configure executable
-	if err := os.Chmod(absConfigurePath, 0755); err != nil {
+	if err := os.Chmod(absConfigurePath, 0o755); err != nil {
 		return fmt.Errorf("failed to make configure executable: %w", err)
 	}
 
@@ -290,7 +290,7 @@ func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir str
 	}
 
 	// Make Configure executable
-	if err := os.Chmod(absConfigurePath, 0755); err != nil {
+	if err := os.Chmod(absConfigurePath, 0o755); err != nil {
 		return fmt.Errorf("failed to make Configure executable: %w", err)
 	}
 

@@ -15,9 +15,7 @@ import (
 	"github.com/Newbluecake/bootstrap/clang"
 )
 
-var (
-	AVLibPath, _ = filepath.Abs("include")
-)
+var AVLibPath, _ = filepath.Abs("include")
 
 var files = []string{
 	"libavcodec/avcodec.h",
@@ -463,7 +461,6 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 	default:
 		log.Panicln("Unknown typedef", "kind", dec.Kind())
 	}
-
 }
 
 func processComment(in string) string {

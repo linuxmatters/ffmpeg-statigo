@@ -1183,8 +1183,8 @@ func analyzeCodecDependencies(codecName string, disable bool) {
 // findMatchingCodecs uses improved matching logic and reverse lookups
 func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
 	parserMap map[ffmpeg.AVCodecID][]string, formatMap map[ffmpeg.AVCodecID]*formatDeps,
-	bsfMap map[ffmpeg.AVCodecID][]string) []*codecInfo {
-
+	bsfMap map[ffmpeg.AVCodecID][]string,
+) []*codecInfo {
 	searchLower := strings.ToLower(search)
 	matchedCodecs := make(map[string]*codecInfo)
 
@@ -1312,8 +1312,8 @@ func isHardwareCodec(name string) bool {
 // consolidateCodecDependencies merges all codec dependencies into one set
 func consolidateCodecDependencies(codecs []*codecInfo,
 	parserMap map[ffmpeg.AVCodecID][]string, formatMap map[ffmpeg.AVCodecID]*formatDeps,
-	bsfMap map[ffmpeg.AVCodecID][]string) *codecDependencies {
-
+	bsfMap map[ffmpeg.AVCodecID][]string,
+) *codecDependencies {
 	deps := &codecDependencies{}
 	deps.descriptions = make([]string, 0)
 

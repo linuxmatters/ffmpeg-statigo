@@ -608,7 +608,6 @@ func (g *Generator) generateStructs() {
 							})),
 						)
 					}
-
 				} else if _, ok := g.input.callbacks[v.Name]; ok {
 					o.Commentf("%v skipped due to ident callback", field.Name)
 					o.Line()
@@ -945,7 +944,6 @@ func (g *Generator) generateStructs() {
 						jen.Code(jen.Id("value").Op(":=").Op("&").Id("s").Dot("ptr").Dot(cName)),
 					)
 				}
-
 			} else if st.ByValue {
 				getBody = slices.Insert(
 					getBody, 0,
@@ -1210,7 +1208,6 @@ outer:
 								o.Line()
 								continue outer
 							}
-
 						} else if s, ok := g.input.structs[iv.Name]; ok {
 							if s.ByValue {
 								o.Commentf("%v skipped due to %v", fn.Name, pName)
@@ -1304,7 +1301,6 @@ outer:
 							o.Line()
 							continue outer
 						} else {
-
 							if m, ok := primTypes[iiv.Name]; ok {
 								params = append(params, jen.Id(pName).Op("**").Id(m))
 
@@ -1358,7 +1354,7 @@ outer:
 							}
 						}
 
-						//params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
+						// params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
 
 					default:
 						params = append(params, jen.Id(pName).Id("TODO"))
@@ -1533,7 +1529,7 @@ outer:
 		}
 
 		o.Func().
-			//Params(jen.Id("s").Op("*").Id(goName)).
+			// Params(jen.Id("s").Op("*").Id(goName)).
 			Id(goName).
 			Params(params...).
 			Add(retType...).

@@ -573,8 +573,8 @@ func TestUUID_ParseErrorPaths(t *testing.T) {
 	t.Run("error_code_is_negative", func(t *testing.T) {
 		// All UUID parse errors should return negative codes
 		testCases := []string{
-			"",                                      // empty
-			"invalid",                               // too short
+			"",                                     // empty
+			"invalid",                              // too short
 			"550e8400-e29b-41d4-a716-44665544XXXX", // invalid chars
 		}
 
@@ -611,7 +611,6 @@ func TestGeneratorCharVsUint8(t *testing.T) {
 	// If this compiles, the char→C.char mapping is working correctly
 	// (Previously this would fail: cannot use _Ctype_uint8_t as _Ctype_char)
 	result, err := AVMatchList(name, list, ',')
-
 	if err != nil {
 		t.Fatalf("AVMatchList failed: %v", err)
 	}

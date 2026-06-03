@@ -340,7 +340,6 @@ func TestAVError_KnownCodes(t *testing.T) {
 func TestWrapErr_BoundaryConditions(t *testing.T) {
 	t.Run("zero_returns_nil", func(t *testing.T) {
 		err := ffmpeg.WrapErr(0)
-
 		if err != nil {
 			t.Errorf("WrapErr(0) should return nil, got: %v", err)
 		}

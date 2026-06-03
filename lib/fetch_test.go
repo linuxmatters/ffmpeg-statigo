@@ -592,7 +592,7 @@ func createMaliciousTarball(t *testing.T, filePath string, content []byte) strin
 
 	header := &tar.Header{
 		Name: filePath,
-		Mode: 0644,
+		Mode: 0o644,
 		Size: int64(len(content)),
 	}
 
@@ -635,7 +635,7 @@ func createValidTarball(t *testing.T, files map[string][]byte) string {
 		if dir != "." {
 			dirHeader := &tar.Header{
 				Name:     dir + "/",
-				Mode:     0755,
+				Mode:     0o755,
 				Typeflag: tar.TypeDir,
 			}
 			if err := tw.WriteHeader(dirHeader); err != nil {
@@ -645,7 +645,7 @@ func createValidTarball(t *testing.T, files map[string][]byte) string {
 
 		header := &tar.Header{
 			Name: name,
-			Mode: 0644,
+			Mode: 0o644,
 			Size: int64(len(content)),
 		}
 
@@ -685,7 +685,7 @@ func createSymlinkTarball(t *testing.T, linkName, target string) string {
 
 	header := &tar.Header{
 		Name:     linkName,
-		Mode:     0777,
+		Mode:     0o777,
 		Typeflag: tar.TypeSymlink,
 		Linkname: target,
 	}
