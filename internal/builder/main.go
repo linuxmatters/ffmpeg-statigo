@@ -400,14 +400,7 @@ func printLibraryList(libs []*Library) {
 		buildSys := getBuildSystemString(lib)
 
 		// Get link libs display string (without embedded colors for now)
-		var linkLibsDisplay string
-		if lib.LinkLibs == nil {
-			linkLibsDisplay = "(headers only)"
-		} else if len(lib.LinkLibs) == 0 {
-			linkLibsDisplay = "-"
-		} else {
-			linkLibsDisplay = strings.Join(lib.LinkLibs, ", ")
-		}
+		linkLibsDisplay := getLinkLibsString(lib)
 
 		// Color code based on library type
 		nameColor := colorGreen
