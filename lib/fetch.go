@@ -14,6 +14,8 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+
+	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
 )
 
 // Version is the FFmpeg library version (major.minor.patch)
@@ -284,7 +286,7 @@ func streamDownloadAndExtract(url, destDir string) (string, error) {
 		}
 
 		// Security: Validate path to prevent path traversal attacks
-		target, err := sanitizeTarPath(absDestDir, header.Name)
+		target, err := pathsafe.SanitizePath(absDestDir, header.Name)
 		if err != nil {
 			fmt.Println() // Clear progress line
 			return "", err
@@ -390,32 +392,6 @@ func fetchChecksumFromFile(assets []GitHubAsset, tarballName string) (string, er
 	return "", nil // Checksum not found in file
 }
 
-// sanitizeTarPath validates that a tar entry path is safe to extract.
-// It prevents path traversal attacks by ensuring the resolved path
-// stays within the destination directory.
-func sanitizeTarPath(destDir, entryName string) (string, error) {
-	// Reject absolute paths (distinct branch so the error names the cause)
-	if filepath.IsAbs(entryName) {
-		return "", fmt.Errorf("path traversal detected: absolute path %q not allowed", entryName)
-	}
-
-	// Reject names that are not local: empty, absolute, or escaping via ..
-	if !filepath.IsLocal(entryName) {
-		return "", fmt.Errorf("path traversal detected: %q escapes destination directory", entryName)
-	}
-
-	// Construct the full target path
-	target := filepath.Join(destDir, entryName)
-
-	// Defence in depth: confirm the resolved path is within destDir
-	// This catches edge cases where filepath.Join might not prevent traversal
-	if !strings.HasPrefix(target, destDir+string(filepath.Separator)) && target != destDir {
-		return "", fmt.Errorf("path traversal detected: %q resolves outside destination directory", entryName)
-	}
-
-	return target, nil
-}
-
 // extractTarball extracts a gzipped tarball to a destination directory.
 // This function is used for testing path traversal protection.
 // Production code uses streamDownloadAndExtract which combines download and extraction.
@@ -448,7 +424,7 @@ func extractTarball(tarball, destDir string) error {
 			return err
 		}
 
-		target, err := sanitizeTarPath(absDestDir, header.Name)
+		target, err := pathsafe.SanitizePath(absDestDir, header.Name)
 		if err != nil {
 			return err
 		}
