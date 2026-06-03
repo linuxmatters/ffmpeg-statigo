@@ -1,6 +1,7 @@
 package ffmpeg_test
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -33,7 +34,7 @@ func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 
 		results := make([]*ffmpeg.CStr, numGoroutines)
 
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
@@ -56,7 +57,7 @@ func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 		const numGoroutines = 100
 
 		// Each goroutine writes a unique key
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
@@ -80,7 +81,7 @@ func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 		const numKeys = 10
 
 		// Multiple goroutines read and write overlapping keys
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
@@ -308,12 +309,8 @@ func TestAVError_KnownCodes(t *testing.T) {
 	})
 
 	t.Run("error_implements_error_interface", func(t *testing.T) {
+		// AVError must satisfy the error interface (compile-time check).
 		var err error = ffmpeg.AVError{Code: -1}
-
-		// Should be usable as error interface
-		if err == nil {
-			t.Error("AVError should not be nil when wrapped as error")
-		}
 
 		// Error() should return a string
 		if err.Error() == "" {
@@ -363,8 +360,8 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 			t.Error("WrapErr(-1) should return error, got nil")
 		}
 
-		avErr, ok := err.(ffmpeg.AVError)
-		if !ok {
+		var avErr ffmpeg.AVError
+		if !errors.As(err, &avErr) {
 			t.Errorf("WrapErr(-1) should return AVError, got %T", err)
 		}
 
@@ -382,8 +379,8 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 				t.Errorf("WrapErr(%d) should return error, got nil", code)
 			}
 
-			avErr, ok := err.(ffmpeg.AVError)
-			if !ok {
+			var avErr ffmpeg.AVError
+			if !errors.As(err, &avErr) {
 				t.Errorf("WrapErr(%d) should return AVError, got %T", code, err)
 				continue
 			}
@@ -402,8 +399,8 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 			t.Error("WrapErr(AVErrorEofConst) should return error, got nil")
 		}
 
-		avErr, ok := err.(ffmpeg.AVError)
-		if !ok {
+		var avErr ffmpeg.AVError
+		if !errors.As(err, &avErr) {
 			t.Errorf("WrapErr(AVErrorEofConst) should return AVError, got %T", err)
 		}
 
@@ -417,8 +414,13 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 		err1 := ffmpeg.WrapErr(-1)
 		err2 := ffmpeg.WrapErr(-1)
 
-		avErr1 := err1.(ffmpeg.AVError)
-		avErr2 := err2.(ffmpeg.AVError)
+		var avErr1, avErr2 ffmpeg.AVError
+		if !errors.As(err1, &avErr1) {
+			t.Fatalf("WrapErr(-1) should return AVError, got %T", err1)
+		}
+		if !errors.As(err2, &avErr2) {
+			t.Fatalf("WrapErr(-1) should return AVError, got %T", err2)
+		}
 
 		if avErr1.Code != avErr2.Code {
 			t.Error("Two AVErrors with same code should have equal Code fields")

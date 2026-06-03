@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"slices"
 	"testing"
 	"unsafe"
 )
@@ -306,7 +307,9 @@ func TestUUID(t *testing.T) {
 		cStr := ToCStr(uuidStr)
 		defer cStr.Free()
 
-		AVUuidParse(cStr, &uuid1)
+		if _, err := AVUuidParse(cStr, &uuid1); err != nil {
+			t.Fatalf("AVUuidParse failed: %v", err)
+		}
 		AVUuidCopy(&uuid2, &uuid1)
 
 		// Test equality
@@ -316,10 +319,10 @@ func TestUUID(t *testing.T) {
 		}
 
 		// Test nil UUID
-		var nilUuid AVUUID
-		AVUuidNil(&nilUuid)
+		var nilUUID AVUUID
+		AVUuidNil(&nilUUID)
 
-		equal, _ = AVUuidEqual(&uuid1, &nilUuid)
+		equal, _ = AVUuidEqual(&uuid1, &nilUUID)
 		if equal != 0 {
 			t.Fatal("UUID should not equal nil UUID")
 		}
@@ -649,9 +652,6 @@ func TestGeneratorPixFmtDescriptorTypes(t *testing.T) {
 	// Test uint64_t field (flags)
 	// This should use C.uint64_t cast, not C.int
 	flags := desc.Flags()
-	if flags < 0 {
-		t.Errorf("flags should be readable, got %d", flags)
-	}
 	// RGB24 should have RGB flag set
 	if (flags & AVPixFmtFlagRgb) == 0 {
 		t.Error("RGB24 should have RGB flag set")
@@ -775,12 +775,9 @@ func TestGeneratorConstArrayFields(t *testing.T) {
 
 		// Create a detection bbox (would normally come from av_detection_bbox_alloc)
 		// We can't easily allocate one, but we can verify the accessor compiles
-		var bbox *AVDetectionBBox
-		if bbox != nil {
-			// This should compile and return *Array[*AVRational]
-			confidences := bbox.ClassifyConfidences()
-			_ = confidences
-		}
+		// by taking the method value; it should return *Array[*AVRational].
+		accessor := (*AVDetectionBBox).ClassifyConfidences
+		_ = accessor
 		t.Log("Struct const array field (AVRational[N]) accessor compiled successfully")
 	})
 
@@ -789,12 +786,10 @@ func TestGeneratorConstArrayFields(t *testing.T) {
 		// Previously skipped as "unknown const array"
 		// Example: AVDOVIReshapingCurve.mapping_idc (AVDOVIMappingMethod[8])
 
-		var curve *AVDOVIReshapingCurve
-		if curve != nil {
-			// This should compile and return *Array[AVDOVIMappingMethod]
-			mappingIdc := curve.MappingIdc()
-			_ = mappingIdc
-		}
+		// Verify the accessor compiles by taking the method value;
+		// it should return *Array[AVDOVIMappingMethod].
+		accessor := (*AVDOVIReshapingCurve).MappingIdc
+		_ = accessor
 		t.Log("Enum const array field (AVEnum[N]) accessor compiled successfully")
 	})
 
@@ -1098,12 +1093,12 @@ func TestArray_SafeUsagePatterns(t *testing.T) {
 
 		// Safe iteration using tracked length
 		values := []AVCodecID{AVCodecIdH264, AVCodecIdHevc, AVCodecIdAV1}
-		for i := 0; i < length; i++ {
+		for i := range length {
 			arr.Set(uintptr(i), values[i])
 		}
 
 		// Safe read using tracked length
-		for i := 0; i < length; i++ {
+		for i := range length {
 			if arr.Get(uintptr(i)) != values[i] {
 				t.Errorf("Get(%d) mismatch", i)
 			}
@@ -1505,13 +1500,7 @@ func TestAVCodecIterate_FindsExpectedCodecs(t *testing.T) {
 			AVMediaTypeAttachment,
 		}
 
-		found := false
-		for _, vt := range validTypes {
-			if codecType == vt {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(validTypes, codecType)
 
 		if !found && codecType != AVMediaTypeUnknown {
 			t.Logf("Codec %s has type %d", name.String(), codecType)
