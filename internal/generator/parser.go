@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -169,7 +170,7 @@ type Parser struct {
 // getSystemIncludes gets system include paths from the compiler
 func getSystemIncludes() []string {
 	// Try to get include paths from gcc -v output
-	cmd := exec.Command("gcc", "-E", "-x", "c", "-v", "/dev/null")
+	cmd := exec.CommandContext(context.Background(), "gcc", "-E", "-x", "c", "-v", "/dev/null")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil
@@ -400,8 +401,8 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 			ptr = false
 		}
 
-		if pt.NumArgTypes() != int32(len(params)) {
-			log.Panicln("arg mismatch", pt.NumArgTypes(), int32(len(params)))
+		if int(pt.NumArgTypes()) != len(params) {
+			log.Panicln("arg mismatch", pt.NumArgTypes(), len(params))
 		}
 
 		result := p.parseType(fmt.Sprintf("%v[%v]", indent, name), pt.ResultType())
