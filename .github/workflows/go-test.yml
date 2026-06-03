@@ -42,9 +42,11 @@ jobs:
             sudo apt-get update
             # Use libclang-18 which works with Newbluecake/bootstrap v0.17.1 (supports clang 17+)
             sudo apt-get install -y libclang-18-dev llvm-18-dev
-            echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib" >> $GITHUB_ENV
-            echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include" >> $GITHUB_ENV
-            echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+            {
+              echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib"
+              echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include"
+              echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH"
+            } >> "$GITHUB_ENV"
           elif [ "${{ matrix.os }}" = "darwin" ]; then
             # On macOS, use LLVM 18 to match Linux environment
             brew install llvm@18 || brew install llvm
@@ -54,10 +56,12 @@ jobs:
               LLVM_PREFIX=$(brew --prefix llvm)
               echo "::warning::Using latest LLVM on macOS instead of version 18"
             fi
-            echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib" >> $GITHUB_ENV
-            echo "CGO_CFLAGS=-I${LLVM_PREFIX}/include" >> $GITHUB_ENV
-            echo "PATH=${LLVM_PREFIX}/bin:$PATH" >> $GITHUB_ENV
-            echo "DYLD_LIBRARY_PATH=${LLVM_PREFIX}/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+            {
+              echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib"
+              echo "CGO_CFLAGS=-I${LLVM_PREFIX}/include"
+              echo "PATH=${LLVM_PREFIX}/bin:$PATH"
+              echo "DYLD_LIBRARY_PATH=${LLVM_PREFIX}/lib:$DYLD_LIBRARY_PATH"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Download FFmpeg libraries
@@ -87,9 +91,9 @@ jobs:
 
       - name: Check for generated code differences
         run: |
-          if ! git diff --quiet *.gen.go; then
+          if ! git diff --quiet -- ./*.gen.go; then
             echo "::notice title=Generated Code Diff on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ from committed version. This may be platform-specific behavior."
-            git diff *.gen.go > /tmp/generator-diff.txt
+            git diff -- ./*.gen.go > /tmp/generator-diff.txt
             echo "::group::Generator Diff"
             cat /tmp/generator-diff.txt
             echo "::endgroup::"
