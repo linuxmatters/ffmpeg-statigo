@@ -224,6 +224,9 @@ const AVGetBufferFlagRef = C.AV_GET_BUFFER_FLAG_REF
 // AVGetEncodeBufferFlagRef wraps AV_GET_ENCODE_BUFFER_FLAG_REF.
 const AVGetEncodeBufferFlagRef = C.AV_GET_ENCODE_BUFFER_FLAG_REF
 
+// AVCodecReceiveFrameFlagSynchronous wraps AV_CODEC_RECEIVE_FRAME_FLAG_SYNCHRONOUS.
+const AVCodecReceiveFrameFlagSynchronous = C.AV_CODEC_RECEIVE_FRAME_FLAG_SYNCHRONOUS
+
 // SliceFlagCodedOrder wraps SLICE_FLAG_CODED_ORDER.
 const SliceFlagCodedOrder = C.SLICE_FLAG_CODED_ORDER
 
@@ -592,6 +595,9 @@ const AVCodecPropReorder = C.AV_CODEC_PROP_REORDER
 
 // AVCodecPropFields wraps AV_CODEC_PROP_FIELDS.
 const AVCodecPropFields = C.AV_CODEC_PROP_FIELDS
+
+// AVCodecPropEnhancement wraps AV_CODEC_PROP_ENHANCEMENT.
+const AVCodecPropEnhancement = C.AV_CODEC_PROP_ENHANCEMENT
 
 // AVCodecPropBitmapSub wraps AV_CODEC_PROP_BITMAP_SUB.
 const AVCodecPropBitmapSub = C.AV_CODEC_PROP_BITMAP_SUB
@@ -1052,8 +1058,17 @@ const FFAPICodecProps = C.FF_API_CODEC_PROPS
 // FFAPIExrGamma wraps FF_API_EXR_GAMMA.
 const FFAPIExrGamma = C.FF_API_EXR_GAMMA
 
+// FFAPIIntraDcPrecision wraps FF_API_INTRA_DC_PRECISION.
+const FFAPIIntraDcPrecision = C.FF_API_INTRA_DC_PRECISION
+
 // FFAPINvdecOldPixFmts wraps FF_API_NVDEC_OLD_PIX_FMTS.
 const FFAPINvdecOldPixFmts = C.FF_API_NVDEC_OLD_PIX_FMTS
+
+// FFAPIParserPrivate wraps FF_API_PARSER_PRIVATE.
+const FFAPIParserPrivate = C.FF_API_PARSER_PRIVATE
+
+// FFAPIParserCodecid wraps FF_API_PARSER_CODECID.
+const FFAPIParserCodecid = C.FF_API_PARSER_CODECID
 
 // FFCodecOmx wraps FF_CODEC_OMX.
 const FFCodecOmx = C.FF_CODEC_OMX
@@ -1156,6 +1171,9 @@ const FFAPIBuffersinkOpts = C.FF_API_BUFFERSINK_OPTS
 
 // FFAPIContextPublic wraps FF_API_CONTEXT_PUBLIC.
 const FFAPIContextPublic = C.FF_API_CONTEXT_PUBLIC
+
+// FFAPILIBNppSupport wraps FF_API_LIBNPP_SUPPORT.
+const FFAPILIBNppSupport = C.FF_API_LIBNPP_SUPPORT
 
 // AVProbeScoreRetry wraps AVPROBE_SCORE_RETRY.
 const AVProbeScoreRetry = C.AVPROBE_SCORE_RETRY
@@ -1393,6 +1411,9 @@ const AVStreamInitInInitOutput = C.AVSTREAM_INIT_IN_INIT_OUTPUT
 
 // AVFrameFilenameFlagsMultiple wraps AV_FRAME_FILENAME_FLAGS_MULTIPLE.
 const AVFrameFilenameFlagsMultiple = C.AV_FRAME_FILENAME_FLAGS_MULTIPLE
+
+// AVFrameFilenameFlagsIgnoreTruncation wraps AV_FRAME_FILENAME_FLAGS_IGNORE_TRUNCATION.
+const AVFrameFilenameFlagsIgnoreTruncation = C.AV_FRAME_FILENAME_FLAGS_IGNORE_TRUNCATION
 
 // AVIOSeekableNormal wraps AVIO_SEEKABLE_NORMAL.
 const AVIOSeekableNormal = C.AVIO_SEEKABLE_NORMAL
@@ -1808,6 +1829,9 @@ const AVCpuFlagSse42 = C.AV_CPU_FLAG_SSE42
 // AVCpuFlagAesni wraps AV_CPU_FLAG_AESNI.
 const AVCpuFlagAesni = C.AV_CPU_FLAG_AESNI
 
+// AVCpuFlagClmul wraps AV_CPU_FLAG_CLMUL.
+const AVCpuFlagClmul = C.AV_CPU_FLAG_CLMUL
+
 // AVCpuFlagAVX wraps AV_CPU_FLAG_AVX.
 const AVCpuFlagAVX = C.AV_CPU_FLAG_AVX
 
@@ -1888,6 +1912,18 @@ const AVCpuFlagSve = C.AV_CPU_FLAG_SVE
 
 // AVCpuFlagSve2 wraps AV_CPU_FLAG_SVE2.
 const AVCpuFlagSve2 = C.AV_CPU_FLAG_SVE2
+
+// AVCpuFlagSme wraps AV_CPU_FLAG_SME.
+const AVCpuFlagSme = C.AV_CPU_FLAG_SME
+
+// AVCpuFlagArmCrc wraps AV_CPU_FLAG_ARM_CRC.
+const AVCpuFlagArmCrc = C.AV_CPU_FLAG_ARM_CRC
+
+// AVCpuFlagSme2 wraps AV_CPU_FLAG_SME2.
+const AVCpuFlagSme2 = C.AV_CPU_FLAG_SME2
+
+// AVCpuFlagSmeI16I64 wraps AV_CPU_FLAG_SME_I16I64.
+const AVCpuFlagSmeI16I64 = C.AV_CPU_FLAG_SME_I16I64
 
 // AVCpuFlagSetend wraps AV_CPU_FLAG_SETEND.
 const AVCpuFlagSetend = C.AV_CPU_FLAG_SETEND
@@ -2695,6 +2731,18 @@ const FFAPIOptIntList = C.FF_API_OPT_INT_LIST
 
 // FFAPIOptPtr wraps FF_API_OPT_PTR.
 const FFAPIOptPtr = C.FF_API_OPT_PTR
+
+// FFAPICpuFlagForce wraps FF_API_CPU_FLAG_FORCE.
+const FFAPICpuFlagForce = C.FF_API_CPU_FLAG_FORCE
+
+// FFAPIDoviL11InvalidProps wraps FF_API_DOVI_L11_INVALID_PROPS.
+const FFAPIDoviL11InvalidProps = C.FF_API_DOVI_L11_INVALID_PROPS
+
+// FFAPIAssertFpu wraps FF_API_ASSERT_FPU.
+const FFAPIAssertFpu = C.FF_API_ASSERT_FPU
+
+// FFAPIVulkanSyncQueues wraps FF_API_VULKAN_SYNC_QUEUES.
+const FFAPIVulkanSyncQueues = C.FF_API_VULKAN_SYNC_QUEUES
 
 // LIBSwresampleVersionMinor wraps LIBSWRESAMPLE_VERSION_MINOR.
 const LIBSwresampleVersionMinor = C.LIBSWRESAMPLE_VERSION_MINOR

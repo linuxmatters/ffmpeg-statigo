@@ -21,7 +21,7 @@ func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
 	t.Run("valid_version_format", func(t *testing.T) {
 		// Valid versions should produce a release string (even if API fails, fallback works)
 		validVersions := []string{
-			"8.0.1",
+			"8.1.1",
 			"1.2.3",
 			"10.20.30",
 		}
@@ -46,7 +46,7 @@ func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
 	})
 
 	t.Run("invalid_version_format_four_parts", func(t *testing.T) {
-		version := "8.0.1.0"
+		version := "8.1.1.0"
 		parts := strings.Split(version, ".")
 		if len(parts) == 3 {
 			t.Errorf("Version %s should NOT have 3 parts", version)
@@ -63,8 +63,8 @@ func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
 
 	t.Run("release_prefix_construction", func(t *testing.T) {
 		// Verify that release prefix is constructed correctly
-		moduleVersion := "8.0.1"
-		expectedPrefix := "lib-8.0.1"
+		moduleVersion := "8.1.1"
+		expectedPrefix := "lib-8.1.1"
 		actualPrefix := "lib-" + moduleVersion
 
 		if actualPrefix != expectedPrefix {
@@ -74,8 +74,8 @@ func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
 
 	t.Run("fallback_release_pattern", func(t *testing.T) {
 		// When API fails, fallback should produce lib-X.Y.Z.0
-		moduleVersion := "8.0.1"
-		expectedFallback := "lib-8.0.1.0"
+		moduleVersion := "8.1.1"
+		expectedFallback := "lib-8.1.1.0"
 		actualFallback := "lib-" + moduleVersion + ".0"
 
 		if actualFallback != expectedFallback {
@@ -90,10 +90,10 @@ func TestFindViaAPI_ReleaseSorting(t *testing.T) {
 	t.Run("sorts_release_versions_correctly", func(t *testing.T) {
 		// Simulate release list sorting logic
 		releases := []string{
-			"lib-8.0.1.0",
-			"lib-8.0.1.2",
-			"lib-8.0.1.1",
-			"lib-8.0.1.10", // 10 > 2 lexicographically
+			"lib-8.1.1.0",
+			"lib-8.1.1.2",
+			"lib-8.1.1.1",
+			"lib-8.1.1.10", // 10 > 2 lexicographically
 		}
 
 		// Current implementation uses sort.Strings - test this behavior
@@ -111,14 +111,14 @@ func TestFindViaAPI_ReleaseSorting(t *testing.T) {
 		// Last element should be the "highest"
 		highest := sortedReleases[len(sortedReleases)-1]
 
-		// Note: lexicographic sorting means "lib-8.0.1.2" > "lib-8.0.1.10"
+		// Note: lexicographic sorting means "lib-8.1.1.2" > "lib-8.1.1.10"
 		// This is a known limitation of the current implementation
 		// For now, we document the behavior
 		t.Logf("Sorted releases: %v", sortedReleases)
 		t.Logf("Selected highest: %s", highest)
 
 		// Document that this is lexicographic, not semantic versioning
-		if highest != "lib-8.0.1.2" {
+		if highest != "lib-8.1.1.2" {
 			t.Logf("Note: Current sorting is lexicographic, not semver-aware")
 		}
 	})
@@ -130,14 +130,14 @@ func TestFindViaAPI_ReleaseSorting(t *testing.T) {
 
 // TestReleaseVersionSemanticSortBug demonstrates the bug where lexicographic
 // sorting picks the wrong version when patch numbers have different digit counts.
-// Example: lib-8.0.1.10 should be > lib-8.0.1.2 semantically, but
-// lexicographically lib-8.0.1.10 < lib-8.0.1.2 (string "10" < "2")
+// Example: lib-8.1.1.10 should be > lib-8.1.1.2 semantically, but
+// lexicographically lib-8.1.1.10 < lib-8.1.1.2 (string "10" < "2")
 func TestReleaseVersionSemanticSortBug(t *testing.T) {
 	t.Run("lexicographic_sort_picks_wrong_version", func(t *testing.T) {
 		// Releases with double-digit patch number
 		releases := []string{
-			"lib-8.0.1.2",
-			"lib-8.0.1.10",
+			"lib-8.1.1.2",
+			"lib-8.1.1.10",
 		}
 
 		// Use sort.Strings (current implementation in fetch.go line 169)
@@ -145,34 +145,34 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 		copy(sorted, releases)
 		sort.Strings(sorted)
 
-		// With lexicographic sort, "lib-8.0.1.10" comes before "lib-8.0.1.2"
+		// With lexicographic sort, "lib-8.1.1.10" comes before "lib-8.1.1.2"
 		// because '1' < '2' when comparing character by character
-		if sorted[0] != "lib-8.0.1.10" {
-			t.Errorf("Expected lib-8.0.1.10 to be first (lexicographically), got %s", sorted[0])
+		if sorted[0] != "lib-8.1.1.10" {
+			t.Errorf("Expected lib-8.1.1.10 to be first (lexicographically), got %s", sorted[0])
 		}
-		if sorted[1] != "lib-8.0.1.2" {
-			t.Errorf("Expected lib-8.0.1.2 to be last (lexicographically), got %s", sorted[1])
+		if sorted[1] != "lib-8.1.1.2" {
+			t.Errorf("Expected lib-8.1.1.2 to be last (lexicographically), got %s", sorted[1])
 		}
 
 		// The bug: last element is selected as "highest" version
 		selectedVersion := sorted[len(sorted)-1]
 
-		// BUG: This selects lib-8.0.1.2 instead of lib-8.0.1.10
-		if selectedVersion != "lib-8.0.1.2" {
-			t.Errorf("Expected bug to select lib-8.0.1.2 (lexicographically last), got %s", selectedVersion)
+		// BUG: This selects lib-8.1.1.2 instead of lib-8.1.1.10
+		if selectedVersion != "lib-8.1.1.2" {
+			t.Errorf("Expected bug to select lib-8.1.1.2 (lexicographically last), got %s", selectedVersion)
 		}
 
-		t.Logf("BUG: Lexicographic sort selected %s instead of semantically correct lib-8.0.1.10", selectedVersion)
+		t.Logf("BUG: Lexicographic sort selected %s instead of semantically correct lib-8.1.1.10", selectedVersion)
 	})
 
 	t.Run("demonstrates_bug_with_realistic_release_sequence", func(t *testing.T) {
 		// Realistic scenario: multiple patch releases
 		releases := []string{
-			"lib-8.0.1.0",
-			"lib-8.0.1.1",
-			"lib-8.0.1.2",
-			"lib-8.0.1.3",
-			"lib-8.0.1.10", // Latest release (semantic version 8.0.1.10)
+			"lib-8.1.1.0",
+			"lib-8.1.1.1",
+			"lib-8.1.1.2",
+			"lib-8.1.1.3",
+			"lib-8.1.1.10", // Latest release (semantic version 8.1.1.10)
 		}
 
 		sorted := make([]string, len(releases))
@@ -181,11 +181,11 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 
 		// Lexicographic sort order: 0, 1, 10, 2, 3
 		expectedLexOrder := []string{
-			"lib-8.0.1.0",
-			"lib-8.0.1.1",
-			"lib-8.0.1.10", // BUG: 10 comes before 2 lexicographically
-			"lib-8.0.1.2",
-			"lib-8.0.1.3",
+			"lib-8.1.1.0",
+			"lib-8.1.1.1",
+			"lib-8.1.1.10", // BUG: 10 comes before 2 lexicographically
+			"lib-8.1.1.2",
+			"lib-8.1.1.3",
 		}
 
 		for i, expected := range expectedLexOrder {
@@ -194,13 +194,13 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 			}
 		}
 
-		// The bug: selects lib-8.0.1.3 instead of lib-8.0.1.10
+		// The bug: selects lib-8.1.1.3 instead of lib-8.1.1.10
 		selectedVersion := sorted[len(sorted)-1]
-		if selectedVersion != "lib-8.0.1.3" {
-			t.Errorf("Expected bug to select lib-8.0.1.3, got %s", selectedVersion)
+		if selectedVersion != "lib-8.1.1.3" {
+			t.Errorf("Expected bug to select lib-8.1.1.3, got %s", selectedVersion)
 		}
 
-		t.Logf("BUG: Selected %s instead of latest release lib-8.0.1.10", selectedVersion)
+		t.Logf("BUG: Selected %s instead of latest release lib-8.1.1.10", selectedVersion)
 		t.Logf("Lexicographic order: %v", sorted)
 	})
 
@@ -214,21 +214,21 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 		}{
 			{
 				name:             "patch_version_10_vs_9",
-				releases:         []string{"lib-8.0.1.9", "lib-8.0.1.10"},
-				wrongSelection:   "lib-8.0.1.9",
-				correctSelection: "lib-8.0.1.10",
+				releases:         []string{"lib-8.1.1.9", "lib-8.1.1.10"},
+				wrongSelection:   "lib-8.1.1.9",
+				correctSelection: "lib-8.1.1.10",
 			},
 			{
 				name:             "patch_version_19_vs_100",
-				releases:         []string{"lib-8.0.1.19", "lib-8.0.1.100"},
-				wrongSelection:   "lib-8.0.1.19",
-				correctSelection: "lib-8.0.1.100",
+				releases:         []string{"lib-8.1.1.19", "lib-8.1.1.100"},
+				wrongSelection:   "lib-8.1.1.19",
+				correctSelection: "lib-8.1.1.100",
 			},
 			{
 				name:             "patch_version_2_vs_12",
-				releases:         []string{"lib-8.0.1.2", "lib-8.0.1.12"},
-				wrongSelection:   "lib-8.0.1.2",
-				correctSelection: "lib-8.0.1.12",
+				releases:         []string{"lib-8.1.1.2", "lib-8.1.1.12"},
+				wrongSelection:   "lib-8.1.1.2",
+				correctSelection: "lib-8.1.1.12",
 			},
 		}
 
@@ -268,9 +268,9 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 		}
 
 		releases := []semver{
-			{prefix: "lib", major: 8, minor: 0, patch: 1, build: 0},
-			{prefix: "lib", major: 8, minor: 0, patch: 1, build: 2},
-			{prefix: "lib", major: 8, minor: 0, patch: 1, build: 10},
+			{prefix: "lib", major: 8, minor: 1, patch: 1, build: 0},
+			{prefix: "lib", major: 8, minor: 1, patch: 1, build: 2},
+			{prefix: "lib", major: 8, minor: 1, patch: 1, build: 10},
 		}
 
 		// Find semantically highest version
@@ -284,7 +284,7 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 			}
 		}
 
-		// Semantically, lib-8.0.1.10 should be selected
+		// Semantically, lib-8.1.1.10 should be selected
 		if highest.build != 10 {
 			t.Errorf("Semantic version comparison failed: expected build 10, got %d", highest.build)
 		}
@@ -765,8 +765,8 @@ func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 func TestFindCompatibleRelease_APIFailureRecovery(t *testing.T) {
 	t.Run("fallback_when_api_unavailable", func(t *testing.T) {
 		// Test the fallback pattern construction
-		moduleVersion := "8.0.1"
-		expectedFallback := "lib-8.0.1.0"
+		moduleVersion := "8.1.1"
+		expectedFallback := "lib-8.1.1.0"
 
 		// Simulate what happens when API fails: fallback to predictable pattern
 		fallbackRelease := "lib-" + moduleVersion + ".0"
@@ -784,7 +784,7 @@ func TestFindCompatibleRelease_APIFailureRecovery(t *testing.T) {
 			expected string
 		}{
 			{"8.0.0", "lib-8.0.0.0"},
-			{"8.0.1", "lib-8.0.1.0"},
+			{"8.1.1", "lib-8.1.1.0"},
 			{"9.1.0", "lib-9.1.0.0"},
 			{"10.0.0", "lib-10.0.0.0"},
 		}

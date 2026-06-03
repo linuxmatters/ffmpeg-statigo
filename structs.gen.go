@@ -1600,6 +1600,7 @@ func (s *AVCodecContext) SetMbDecision(value int) {
   precision of the intra DC coefficient - 8
   - encoding: Set by user.
   - decoding: Set by libavcodec
+  @deprecated Use the MPEG-2 encoder's private option "intra_dc_precision" instead.
 */
 func (s *AVCodecContext) IntraDcPrecision() int {
 	value := s.ptr.intra_dc_precision
@@ -1611,6 +1612,7 @@ func (s *AVCodecContext) IntraDcPrecision() int {
   precision of the intra DC coefficient - 8
   - encoding: Set by user.
   - decoding: Set by libavcodec
+  @deprecated Use the MPEG-2 encoder's private option "intra_dc_precision" instead.
 */
 func (s *AVCodecContext) SetIntraDcPrecision(value int) {
 	s.ptr.intra_dc_precision = (C.int)(value)
@@ -3655,6 +3657,27 @@ func (s *AVCodecContext) SetNbDecodedSideData(value int) {
 	s.ptr.nb_decoded_side_data = (C.int)(value)
 }
 
+// AlphaMode gets the alpha_mode field.
+/*
+  Indicates how the alpha channel of the video is represented.
+  - encoding: Set by user
+  - decoding: Set by libavcodec
+*/
+func (s *AVCodecContext) AlphaMode() AVAlphaMode {
+	value := s.ptr.alpha_mode
+	return AVAlphaMode(value)
+}
+
+// SetAlphaMode sets the alpha_mode field.
+/*
+  Indicates how the alpha channel of the video is represented.
+  - encoding: Set by user
+  - decoding: Set by libavcodec
+*/
+func (s *AVCodecContext) SetAlphaMode(value AVAlphaMode) {
+	s.ptr.alpha_mode = (C.enum_AVAlphaMode)(value)
+}
+
 // --- Struct AVHWAccel ---
 
 // AVHWAccel wraps AVHWAccel.
@@ -4760,12 +4783,28 @@ func (s *AVCodecParser) CodecIds() *Array[int] {
 }
 
 // PrivDataSize gets the priv_data_size field.
+/*
+  ***************************************************************
+  All fields below this line are not part of the public API. They
+  may not be used outside of libavcodec and can be changed and
+  removed at will.
+  New public fields should be added right above.
+  *****************************************************************
+*/
 func (s *AVCodecParser) PrivDataSize() int {
 	value := s.ptr.priv_data_size
 	return int(value)
 }
 
 // SetPrivDataSize sets the priv_data_size field.
+/*
+  ***************************************************************
+  All fields below this line are not part of the public API. They
+  may not be used outside of libavcodec and can be changed and
+  removed at will.
+  New public fields should be added right above.
+  *****************************************************************
+*/
 func (s *AVCodecParser) SetPrivDataSize(value int) {
 	s.ptr.priv_data_size = (C.int)(value)
 }
@@ -6341,6 +6380,21 @@ func (s *AVCodecParameters) SetSeekPreroll(value int) {
 	s.ptr.seek_preroll = (C.int)(value)
 }
 
+// AlphaMode gets the alpha_mode field.
+//
+//	Video with alpha channel only. Alpha channel handling
+func (s *AVCodecParameters) AlphaMode() AVAlphaMode {
+	value := s.ptr.alpha_mode
+	return AVAlphaMode(value)
+}
+
+// SetAlphaMode sets the alpha_mode field.
+//
+//	Video with alpha channel only. Alpha channel handling
+func (s *AVCodecParameters) SetAlphaMode(value AVAlphaMode) {
+	s.ptr.alpha_mode = (C.enum_AVAlphaMode)(value)
+}
+
 // --- Struct AVPanScan ---
 
 // AVPanScan wraps AVPanScan.
@@ -7897,6 +7951,21 @@ func (s *AVFilterLink) SetNbSideData(value int) {
 	s.ptr.nb_side_data = (C.int)(value)
 }
 
+// AlphaMode gets the alpha_mode field.
+//
+//	alpha mode (for videos with an alpha channel)
+func (s *AVFilterLink) AlphaMode() AVAlphaMode {
+	value := s.ptr.alpha_mode
+	return AVAlphaMode(value)
+}
+
+// SetAlphaMode sets the alpha_mode field.
+//
+//	alpha mode (for videos with an alpha channel)
+func (s *AVFilterLink) SetAlphaMode(value AVAlphaMode) {
+	s.ptr.alpha_mode = (C.enum_AVAlphaMode)(value)
+}
+
 // Incfg gets the incfg field.
 //
 //	Lists of supported formats / etc. supported by the input filter.
@@ -8191,6 +8260,29 @@ func (s *AVFilterFormatsConfig) SetColorRanges(value *AVFilterFormats) {
 		s.ptr.color_ranges = value.ptr
 	} else {
 		s.ptr.color_ranges = nil
+	}
+}
+
+// AlphaModes gets the alpha_modes field.
+//
+//	AVAlphaMode
+func (s *AVFilterFormatsConfig) AlphaModes() *AVFilterFormats {
+	value := s.ptr.alpha_modes
+	var valueMapped *AVFilterFormats
+	if value != nil {
+		valueMapped = &AVFilterFormats{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAlphaModes sets the alpha_modes field.
+//
+//	AVAlphaMode
+func (s *AVFilterFormatsConfig) SetAlphaModes(value *AVFilterFormats) {
+	if value != nil {
+		s.ptr.alpha_modes = value.ptr
+	} else {
+		s.ptr.alpha_modes = nil
 	}
 }
 
@@ -9973,6 +10065,21 @@ func (s *AVBufferSrcParameters) SetNbSideData(value int) {
 	s.ptr.nb_side_data = (C.int)(value)
 }
 
+// AlphaMode gets the alpha_mode field.
+//
+//	Video only, the alpha mode.
+func (s *AVBufferSrcParameters) AlphaMode() AVAlphaMode {
+	value := s.ptr.alpha_mode
+	return AVAlphaMode(value)
+}
+
+// SetAlphaMode sets the alpha_mode field.
+//
+//	Video only, the alpha mode.
+func (s *AVBufferSrcParameters) SetAlphaMode(value AVAlphaMode) {
+	s.ptr.alpha_mode = (C.enum_AVAlphaMode)(value)
+}
+
 // --- Struct AVCodecTag ---
 
 // AVCodecTag wraps AVCodecTag.
@@ -11393,9 +11500,8 @@ func (s *AVStreamGroupTileGrid) SetNbCodedSideData(value int) {
   AVStreamGroupLCEVC is meant to define the relation between video streams
   and a data stream containing LCEVC enhancement layer NALUs.
 
-  No more than one stream of @ref AVCodecParameters.codec_type "codec_type"
-  AVMEDIA_TYPE_DATA shall be present, and it must be of
-  @ref AVCodecParameters.codec_id "codec_id" AV_CODEC_ID_LCEVC.
+  No more than one stream of
+  @ref AVCodecParameters.codec_id "codec_id" AV_CODEC_ID_LCEVC shall be present.
 */
 type AVStreamGroupLCEVC struct {
 	ptr *C.AVStreamGroupLCEVC
@@ -13836,6 +13942,203 @@ func (s *AVFormatContext) DurationProbesize() int64 {
 func (s *AVFormatContext) SetDurationProbesize(value int64) {
 	s.ptr.duration_probesize = (C.int64_t)(value)
 }
+
+// Name gets the name field.
+//
+//	Name of this format context, only used for logging purposes.
+func (s *AVFormatContext) Name() *CStr {
+	value := s.ptr.name
+	return wrapCStr(value)
+}
+
+// SetName sets the name field.
+//
+//	Name of this format context, only used for logging purposes.
+func (s *AVFormatContext) SetName(value *CStr) {
+	s.ptr.name = value.ptr
+}
+
+// --- Struct AVRTSPCommandRequest ---
+
+// AVRTSPCommandRequest wraps AVRTSPCommandRequest.
+type AVRTSPCommandRequest struct {
+	ptr *C.AVRTSPCommandRequest
+}
+
+func (s *AVRTSPCommandRequest) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVRTSPCommandRequestArray(ptr unsafe.Pointer) *Array[*AVRTSPCommandRequest] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVRTSPCommandRequest]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVRTSPCommandRequest {
+			ptr := (**C.AVRTSPCommandRequest)(pointer)
+			value := *ptr
+			var valueMapped *AVRTSPCommandRequest
+			if value != nil {
+				valueMapped = &AVRTSPCommandRequest{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVRTSPCommandRequest) {
+			ptr := (**C.AVRTSPCommandRequest)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Headers gets the headers field.
+//
+//	Headers sent in the request to the server
+func (s *AVRTSPCommandRequest) Headers() *AVDictionary {
+	value := s.ptr.headers
+	var valueMapped *AVDictionary
+	if value != nil {
+		valueMapped = &AVDictionary{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetHeaders sets the headers field.
+//
+//	Headers sent in the request to the server
+func (s *AVRTSPCommandRequest) SetHeaders(value *AVDictionary) {
+	if value != nil {
+		s.ptr.headers = value.ptr
+	} else {
+		s.ptr.headers = nil
+	}
+}
+
+// BodyLen gets the body_len field.
+//
+//	Body payload size
+func (s *AVRTSPCommandRequest) BodyLen() uint64 {
+	value := s.ptr.body_len
+	return uint64(value)
+}
+
+// SetBodyLen sets the body_len field.
+//
+//	Body payload size
+func (s *AVRTSPCommandRequest) SetBodyLen(value uint64) {
+	s.ptr.body_len = (C.size_t)(value)
+}
+
+// Body gets the body field.
+//
+//	Body payload
+func (s *AVRTSPCommandRequest) Body() *CStr {
+	value := s.ptr.body
+	return wrapCStr(value)
+}
+
+// SetBody sets the body field.
+//
+//	Body payload
+func (s *AVRTSPCommandRequest) SetBody(value *CStr) {
+	s.ptr.body = value.ptr
+}
+
+// --- Struct AVRTSPResponse ---
+
+// AVRTSPResponse wraps AVRTSPResponse.
+type AVRTSPResponse struct {
+	ptr *C.AVRTSPResponse
+}
+
+func (s *AVRTSPResponse) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVRTSPResponseArray(ptr unsafe.Pointer) *Array[*AVRTSPResponse] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVRTSPResponse]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVRTSPResponse {
+			ptr := (**C.AVRTSPResponse)(pointer)
+			value := *ptr
+			var valueMapped *AVRTSPResponse
+			if value != nil {
+				valueMapped = &AVRTSPResponse{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVRTSPResponse) {
+			ptr := (**C.AVRTSPResponse)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// StatusCode gets the status_code field.
+//
+//	Response status code from server
+func (s *AVRTSPResponse) StatusCode() int {
+	value := s.ptr.status_code
+	return int(value)
+}
+
+// SetStatusCode sets the status_code field.
+//
+//	Response status code from server
+func (s *AVRTSPResponse) SetStatusCode(value int) {
+	s.ptr.status_code = (C.int)(value)
+}
+
+// Reason gets the reason field.
+/*
+  Reason phrase from the server, describing the
+  status in a human-readable way.
+*/
+func (s *AVRTSPResponse) Reason() *CStr {
+	value := s.ptr.reason
+	return wrapCStr(value)
+}
+
+// SetReason sets the reason field.
+/*
+  Reason phrase from the server, describing the
+  status in a human-readable way.
+*/
+func (s *AVRTSPResponse) SetReason(value *CStr) {
+	s.ptr.reason = value.ptr
+}
+
+// BodyLen gets the body_len field.
+//
+//	Body payload size
+func (s *AVRTSPResponse) BodyLen() uint64 {
+	value := s.ptr.body_len
+	return uint64(value)
+}
+
+// SetBodyLen sets the body_len field.
+//
+//	Body payload size
+func (s *AVRTSPResponse) SetBodyLen(value uint64) {
+	s.ptr.body_len = (C.size_t)(value)
+}
+
+// body skipped due to prim ptr
 
 // --- Struct AVIOInterruptCB ---
 
@@ -21094,6 +21397,27 @@ func (s *AVFrame) SetDuration(value int64) {
 	s.ptr.duration = (C.int64_t)(value)
 }
 
+// AlphaMode gets the alpha_mode field.
+/*
+  Indicates how the alpha channel of the video is to be handled.
+  - encoding: Set by user
+  - decoding: Set by libavcodec
+*/
+func (s *AVFrame) AlphaMode() AVAlphaMode {
+	value := s.ptr.alpha_mode
+	return AVAlphaMode(value)
+}
+
+// SetAlphaMode sets the alpha_mode field.
+/*
+  Indicates how the alpha channel of the video is to be handled.
+  - encoding: Set by user
+  - decoding: Set by libavcodec
+*/
+func (s *AVFrame) SetAlphaMode(value AVAlphaMode) {
+	s.ptr.alpha_mode = (C.enum_AVAlphaMode)(value)
+}
+
 // --- Struct AVHashContext ---
 
 // AVHashContext wraps AVHashContext.
@@ -24234,6 +24558,27 @@ func (s *AVIAMFLayer) SetAmbisonicsMode(value AVIAMFAmbisonicsMode) {
 }
 
 // demixing_matrix skipped due to struct value ptr
+
+// NbDemixingMatrix gets the nb_demixing_matrix field.
+/*
+  The length of the Demixing matrix array. Must be ch_layout.nb_channels multiplied
+  by the sum of the amount of streams in the group plus the amount of streams in
+  the group that are stereo.
+*/
+func (s *AVIAMFLayer) NbDemixingMatrix() uint {
+	value := s.ptr.nb_demixing_matrix
+	return uint(value)
+}
+
+// SetNbDemixingMatrix sets the nb_demixing_matrix field.
+/*
+  The length of the Demixing matrix array. Must be ch_layout.nb_channels multiplied
+  by the sum of the amount of streams in the group plus the amount of streams in
+  the group that are stereo.
+*/
+func (s *AVIAMFLayer) SetNbDemixingMatrix(value uint) {
+	s.ptr.nb_demixing_matrix = (C.uint)(value)
+}
 
 // --- Struct AVIAMFAudioElement ---
 
