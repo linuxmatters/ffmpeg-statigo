@@ -48,12 +48,6 @@ func (h *mockHandler) getRecords() []slog.Record {
 	return result
 }
 
-func (h *mockHandler) clear() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.records = nil
-}
-
 // TestSLogAdapter_MultilineMessages verifies that multi-line log messages
 // from FFmpeg are correctly assembled and logged as complete lines.
 func TestSLogAdapter_MultilineMessages(t *testing.T) {
@@ -235,7 +229,7 @@ func TestSLogAdapter_NilContext(t *testing.T) {
 		callback := ffmpeg.SLogAdapter(logger)
 
 		// Multiple calls with nil context should all work
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			callback(nil, ffmpeg.AVLogInfo, "Message\n")
 		}
 
@@ -332,15 +326,13 @@ func TestSLogAdapter_ThreadSafety(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for j := 0; j < messagesPerGoroutine; j++ {
+	for range numGoroutines {
+		wg.Go(func() {
+			for range messagesPerGoroutine {
 				// Each goroutine sends complete messages
 				callback(nil, ffmpeg.AVLogInfo, "Message\n")
 			}
-		}(i)
+		})
 	}
 
 	wg.Wait()
