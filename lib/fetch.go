@@ -394,23 +394,20 @@ func fetchChecksumFromFile(assets []GitHubAsset, tarballName string) (string, er
 // It prevents path traversal attacks by ensuring the resolved path
 // stays within the destination directory.
 func sanitizeTarPath(destDir, entryName string) (string, error) {
-	// Reject absolute paths
+	// Reject absolute paths (distinct branch so the error names the cause)
 	if filepath.IsAbs(entryName) {
 		return "", fmt.Errorf("path traversal detected: absolute path %q not allowed", entryName)
 	}
 
-	// Clean the path to resolve . and .. components
-	cleanName := filepath.Clean(entryName)
-
-	// Reject paths that start with .. after cleaning
-	if strings.HasPrefix(cleanName, "..") {
+	// Reject names that are not local: empty, absolute, or escaping via ..
+	if !filepath.IsLocal(entryName) {
 		return "", fmt.Errorf("path traversal detected: %q escapes destination directory", entryName)
 	}
 
 	// Construct the full target path
-	target := filepath.Join(destDir, cleanName)
+	target := filepath.Join(destDir, entryName)
 
-	// Final check: ensure the resolved path is within destDir
+	// Defence in depth: confirm the resolved path is within destDir
 	// This catches edge cases where filepath.Join might not prevent traversal
 	if !strings.HasPrefix(target, destDir+string(filepath.Separator)) && target != destDir {
 		return "", fmt.Errorf("path traversal detected: %q resolves outside destination directory", entryName)
