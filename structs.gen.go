@@ -14684,13 +14684,13 @@ func (s *AVIOContext) SetMinPacketSize(value int) {
 }
 
 // Checksum gets the checksum field.
-func (s *AVIOContext) Checksum() uint32 {
+func (s *AVIOContext) Checksum() uint64 {
 	value := s.ptr.checksum
-	return uint32(value)
+	return uint64(value)
 }
 
 // SetChecksum sets the checksum field.
-func (s *AVIOContext) SetChecksum(value uint32) {
+func (s *AVIOContext) SetChecksum(value uint64) {
 	s.ptr.checksum = (C.ulong)(value)
 }
 
