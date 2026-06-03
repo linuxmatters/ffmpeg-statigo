@@ -185,37 +185,35 @@ func pkgConfigPath(installDir string) string {
 	return filepath.Join(installDir, "lib", "pkgconfig")
 }
 
+// upsertEnv sets key in env. If an existing "key=..." entry is present, value is
+// combined with the existing value using sep — prepended when prepend is true,
+// appended otherwise. If key is absent, "key=value" is appended.
+func upsertEnv(env []string, key, value, sep string, prepend bool) []string {
+	prefix := key + "="
+	for i, e := range env {
+		if existing, ok := strings.CutPrefix(e, prefix); ok {
+			if prepend {
+				env[i] = prefix + value + sep + existing
+			} else {
+				env[i] = prefix + existing + sep + value
+			}
+			return env
+		}
+	}
+	return append(env, prefix+value)
+}
+
 // buildEnv returns environment variables for building
 func buildEnv(installDir string) []string {
 	env := os.Environ()
 	pkgConfigPath := pkgConfigPath(installDir)
 
 	// Update or add PKG_CONFIG_PATH
-	updatedPkg := false
-	for i, e := range env {
-		if existing, ok := strings.CutPrefix(e, "PKG_CONFIG_PATH="); ok {
-			env[i] = "PKG_CONFIG_PATH=" + pkgConfigPath + ":" + existing
-			updatedPkg = true
-			break
-		}
-	}
-	if !updatedPkg {
-		env = append(env, "PKG_CONFIG_PATH="+pkgConfigPath)
-	}
+	env = upsertEnv(env, "PKG_CONFIG_PATH", pkgConfigPath, ":", true)
 
 	// Update or add PATH to include staging/bin for tools like glslang, spirv-*
 	binPath := filepath.Join(installDir, "bin")
-	updatedPath := false
-	for i, e := range env {
-		if existing, ok := strings.CutPrefix(e, "PATH="); ok {
-			env[i] = "PATH=" + binPath + ":" + existing
-			updatedPath = true
-			break
-		}
-	}
-	if !updatedPath {
-		env = append(env, "PATH="+binPath)
-	}
+	env = upsertEnv(env, "PATH", binPath, ":", true)
 
 	// On macOS, remove NIX_CFLAGS_COMPILE which interferes with C++ header search order
 	// The Nix clang wrapper injects -isystem paths that cause libc++ headers to be
@@ -242,17 +240,7 @@ func buildEnv(installDir string) []string {
 		cgoCflags := os.Getenv("CGO_CFLAGS")
 		if cgoCflags != "" {
 			// Set CFLAGS with full CGO_CFLAGS (includes -isysroot and -I.../clang/18/include)
-			updatedCflags := false
-			for i, e := range env {
-				if existing, ok := strings.CutPrefix(e, "CFLAGS="); ok {
-					env[i] = "CFLAGS=" + existing + " " + cgoCflags
-					updatedCflags = true
-					break
-				}
-			}
-			if !updatedCflags {
-				env = append(env, "CFLAGS="+cgoCflags)
-			}
+			env = upsertEnv(env, "CFLAGS", cgoCflags, " ", false)
 
 			// Build CXXFLAGS with -nostdinc++ and explicit libcxx include path
 			// Use -nostdinc++ to disable built-in C++ paths, preventing NIX_CFLAGS_COMPILE
@@ -267,48 +255,18 @@ func buildEnv(installDir string) []string {
 			}
 
 			// Set CXXFLAGS with same flags for C++ builds
-			updatedCxxflags := false
-			for i, e := range env {
-				if existing, ok := strings.CutPrefix(e, "CXXFLAGS="); ok {
-					env[i] = "CXXFLAGS=" + existing + " " + cxxExtra
-					updatedCxxflags = true
-					break
-				}
-			}
-			if !updatedCxxflags {
-				env = append(env, "CXXFLAGS="+cxxExtra)
-			}
+			env = upsertEnv(env, "CXXFLAGS", cxxExtra, " ", false)
 
 			// Extract SDK path from CGO_CFLAGS (-isysroot <path>) for LDFLAGS
 			// This ensures cargo/rustc can find SDK libraries like libiconv
 			sdkPath := extractSDKPath(cgoCflags)
 			if sdkPath != "" {
 				ldExtra := "-L" + filepath.Join(sdkPath, "usr", "lib")
-				updatedLdflags := false
-				for i, e := range env {
-					if existing, ok := strings.CutPrefix(e, "LDFLAGS="); ok {
-						env[i] = "LDFLAGS=" + existing + " " + ldExtra
-						updatedLdflags = true
-						break
-					}
-				}
-				if !updatedLdflags {
-					env = append(env, "LDFLAGS="+ldExtra)
-				}
+				env = upsertEnv(env, "LDFLAGS", ldExtra, " ", false)
 
 				// Also set LIBRARY_PATH for cargo/rustc which may not use LDFLAGS
 				libraryPath := filepath.Join(sdkPath, "usr", "lib")
-				updatedLibraryPath := false
-				for i, e := range env {
-					if existing, ok := strings.CutPrefix(e, "LIBRARY_PATH="); ok {
-						env[i] = "LIBRARY_PATH=" + libraryPath + ":" + existing
-						updatedLibraryPath = true
-						break
-					}
-				}
-				if !updatedLibraryPath {
-					env = append(env, "LIBRARY_PATH="+libraryPath)
-				}
+				env = upsertEnv(env, "LIBRARY_PATH", libraryPath, ":", true)
 			}
 		}
 	}
