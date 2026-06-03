@@ -24,10 +24,11 @@ type codecInfo struct {
 func main() {
 	// Check for --enable or --disable flags
 	if len(os.Args) >= 3 {
-		if os.Args[1] == "--enable" {
+		switch os.Args[1] {
+		case "--enable":
 			analyzeCodecDependencies(os.Args[2], false)
 			return
-		} else if os.Args[1] == "--disable" {
+		case "--disable":
 			analyzeCodecDependencies(os.Args[2], true)
 			return
 		}
@@ -500,7 +501,7 @@ func listParsers() {
 				break
 			}
 			// Get codec name from ID
-			codecName := getCodecName(ffmpeg.AVCodecID(codecID))
+			codecName := getCodecName(ffmpeg.AVCodecID(codecID)) //nolint:gosec // G115: codec IDs are small enum values
 			codecIDs = append(codecIDs, codecName)
 		}
 
@@ -1142,8 +1143,6 @@ func listFilters() {
 
 // codecDependencies holds all the components needed for a codec
 type codecDependencies struct {
-	codecName    string
-	longName     string
 	descriptions []string // Multiple codec descriptions when consolidating
 	decoders     []string
 	encoders     []string
@@ -1281,11 +1280,12 @@ func sortCodecsByPriority(codecs []*codecInfo, searchTerm string) []*codecInfo {
 		nameLower := strings.ToLower(codec.name)
 
 		// Exact match
-		if nameLower == searchLower {
+		switch {
+		case nameLower == searchLower:
 			exact = append(exact, codec)
-		} else if isHardwareCodec(codec.name) {
+		case isHardwareCodec(codec.name):
 			hardware = append(hardware, codec)
-		} else {
+		default:
 			software = append(software, codec)
 		}
 	}
@@ -1486,8 +1486,9 @@ func buildParserMap() map[ffmpeg.AVCodecID][]string {
 				break
 			}
 
-			codecName := getCodecName(ffmpeg.AVCodecID(codecID))
-			parserMap[ffmpeg.AVCodecID(codecID)] = append(parserMap[ffmpeg.AVCodecID(codecID)], codecName)
+			cid := ffmpeg.AVCodecID(codecID) //nolint:gosec // G115: codec IDs are small enum values
+			codecName := getCodecName(cid)
+			parserMap[cid] = append(parserMap[cid], codecName)
 		}
 	}
 

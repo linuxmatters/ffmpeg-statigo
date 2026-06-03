@@ -49,7 +49,7 @@ func (e AVError) Error() string {
 	buf := AllocCStr(uint(AVErrorMaxStringSize))
 	defer buf.Free()
 
-	AVStrerror(e.Code, buf, uint64(AVErrorMaxStringSize))
+	_, _ = AVStrerror(e.Code, buf, uint64(AVErrorMaxStringSize))
 
 	return fmt.Sprintf("averror %v: %v", e.Code, buf.String())
 }

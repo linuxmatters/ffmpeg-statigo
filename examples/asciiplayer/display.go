@@ -32,10 +32,7 @@ func NewDisplay() *Display {
 	s.SetStyle(defStyle)
 	s.Clear()
 
-	nColors := s.Colors()
-	if nColors > 256 {
-		nColors = 256
-	}
+	nColors := min(s.Colors(), 256)
 
 	palette := make([]tcell.Color, nColors)
 	for i := range nColors {
@@ -83,10 +80,9 @@ func (d *Display) ShouldExit() bool {
 func (d *Display) DrawText(x1 int, y1 int, style tcell.Style, text string) {
 	row := y1
 	col := x1
-	for _, r := range []rune(text) {
+	for _, r := range text {
 		d.s.SetContent(col, row, r, nil, style)
 		col++
-
 	}
 }
 

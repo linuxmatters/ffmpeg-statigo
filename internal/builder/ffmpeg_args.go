@@ -23,16 +23,16 @@ func FFmpegArgsCommon(os string) []string {
 
 		// Enable all filters, hwaccels and protocols
 		"--enable-filters",
-		//"--enable-hwaccels",
+		// "--enable-hwaccels",
 		"--enable-protocols",
 
 		// TEMPORARILY Enable all muxers, demuxers, parsers, bsfs, encoders, decoders, hwaccels
-		//"--enable-muxers",
-		//"--enable-demuxers",
-		//"--enable-parsers",
-		//"--enable-bsfs",
-		//"--enable-encoders",
-		//"--enable-decoders",
+		// "--enable-muxers",
+		// "--enable-demuxers",
+		// "--enable-parsers",
+		// "--enable-bsfs",
+		// "--enable-encoders",
+		// "--enable-decoders",
 
 		// Common bitstream filters
 		"--enable-bsf=chomp,dump_extra,mov2textsub,noise,null,remove_extra,setts,showinfo,text2movsub",
@@ -322,7 +322,7 @@ func FFmpegArgsCommon(os string) []string {
 		// Google VP9
 		// Nvidia CUVID VP9 decoder
 		// libvpx VP9
-		// VP9 video (Intel Quick Sync Video acceleration)
+		// Intel Quick Sync Video acceleration for VP9
 		"--enable-encoder=libvpx-vp9",
 		"--enable-decoder=libvpx-vp9,vp9",
 		"--enable-parser=vp9",
@@ -331,8 +331,8 @@ func FFmpegArgsCommon(os string) []string {
 
 		// VVC (Versatile Video Coding)
 		// libvvenc H.266 / VVC
-		// VVC video (Intel Quick Sync Video acceleration)
-		//"--enable-encoder=libvvenc",
+		// Intel Quick Sync Video acceleration for VVC
+		// "--enable-encoder=libvvenc",
 		"--enable-decoder=vvc",
 		"--enable-parser=vvc",
 		"--enable-demuxer=vvc",

@@ -81,8 +81,8 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 			// For CPPFLAGS: only add -isysroot, NOT the clang builtin include path
 			// This prevents C++ from finding clang's stddef.h before libc++'s wrapper
 			if cgoCflags != "" {
-				// Extract just the -isysroot part from CGO_CFLAGS
-				// CGO_CFLAGS = "-isysroot /path/to/sdk -I/path/to/clang/include"
+				// Extract just the -isysroot part from the C flags,
+				// e.g. "-isysroot /path/to/sdk -I/path/to/clang/include".
 				// We only want the -isysroot portion for CPPFLAGS
 				if sdkPath := extractSDKPath(cgoCflags); sdkPath != "" {
 					cppflags = fmt.Sprintf("%s -isysroot %s", cppflags, sdkPath)
@@ -124,8 +124,8 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 }
 
 func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
-	// Touch automake files to prevent regeneration
-	touchAutomakeFiles(srcPath)
+	// Touch automake files to prevent regeneration (best effort)
+	_ = touchAutomakeFiles(srcPath)
 
 	installDir := stagingDir(buildDir)
 
