@@ -7,7 +7,7 @@ Hardware acceleration included. Zero runtime dependencies. Ship it and forget it
 
 ## Why This Exists
 
-Every other Go ffmpeg projects wrap the `ffmpeg` command, ffmpeg-statigo gives you the actual FFmpeg C libraries with proper Go bindings.
+Every other Go FFmpeg projects wrap the `ffmpeg` command, ffmpeg-statigo gives you the actual FFmpeg C libraries with proper Go bindings.
 Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches. Predictable codec support.
 
 ## Features
@@ -83,10 +83,10 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 
 | Library          | Version     | Description                                                                        |
 |------------------|-------------|------------------------------------------------------------------------------------|
-| FFmpeg           | 8.1.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
-| dav1d            | 1.5.3       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
-| glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
-| libdrm           | 2.4.131     | Direct Rendering Manager library and headers (*Linux only*)                        |
+| FFmpeg           | 8.1.1       | A complete, cross-platform solution to record, convert, and stream audio and video  |
+| dav1d            | 1.5.3       | AV1 cross-platform decoder, open-source, and focused on speed, size, and correctness|
+| glslang          | 16.3.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
+| libdrm           | 2.4.134     | Direct Rendering Manager library and headers (*Linux only*)                        |
 | libiconv         | 1.19        | A character set conversion library (*macOS only*)                                  |
 | libsrt           | 1.5.5       | A transport protocol for ultra low latency live video and audio streaming          |
 | libva            | 2.23.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)               |
@@ -96,20 +96,20 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | libxml2          | 2.15.2      | An XML parser and toolkit implemented in C                                         |
 | mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                  |
 | nv-codec-headers | 13.0.19.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
-| openssl          | 3.6.1       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
+| openssl          | 3.6.2       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
 | opus             | 1.6.1       | A totally open, royalty-free, highly versatile audio codec                         |
 | rav1e            | 0.8.1       | The fastest and safest AV1 encoder.                                                |
-| Vulkan-Headers   | 1.4.345     | Vulkan header files and API registry                                               |
+| Vulkan-Headers   | 1.4.352     | Vulkan header files and API registry                                               |
 | x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams             |
-| x265             | head        | H.265/MPEG-H HEVC compression format library for encoding video streams            |
+| x265             | 4.2         | H.265/MPEG-H HEVC compression format library for encoding video streams            |
 | zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                              |
 | zlib             | 1.3.2       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
 
-VVenC 1.13.1 (Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder) is in the build configuration, **but currently disabled**, as it adds ~25MB to the static ffmpeg library and is too slow for practical use.
+VVenC 1.13.1 (Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder) is in the build configuration, **but currently disabled**, as it adds ~25MB to the static FFmpeg library and is too slow for practical use.
 
 ### Enabled Codecs
 
-Details of codecs, muxers and parsers available in enable in the static ffmpeg library that ffmpeg-statigo ships are documented in [`docs/CODECS.md`](docs/CODECS.md).
+Details of codecs, muxers and parsers available to enable in the static FFmpeg library that ffmpeg-statigo ships are documented in [`docs/CODECS.md`](docs/CODECS.md).
 
 ### Hardware Acceleration Support Matrix
 

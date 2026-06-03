@@ -154,8 +154,8 @@ go run ./internal/builder --force lib/linux_amd64/libffmpeg.a
 
 2. **Binary hash** (secondary):
    - SHA256 hash comparison
-   - **WARNING ONLY** (due to HEAD snapshots for x264/x265)
-   - Documents that hashes may differ for HEAD builds
+   - **WARNING ONLY** (due to HEAD snapshot for x264)
+   - Documents that hashes may differ for x264 HEAD builds (x265 is pinned to a tagged release and is reproducible)
 
 3. **Build success** (required):
    - All libraries build without errors
@@ -185,7 +185,7 @@ diff old-symbols.txt new-symbols.txt
 
 # Compare hashes (warning only)
 sha256sum lib/test-old.a lib/test-new.a
-echo "Note: Hash differences expected for x264/x265 HEAD snapshots"
+echo "Note: Hash differences expected for x264 HEAD snapshot (x265 is a tagged release)"
 ```
 
 ## Migration Plan
@@ -240,7 +240,7 @@ git commit -m "refactor: remove old builder after validation"
 
 ## Known Differences from Old Builder
 
-1. **Binary hashes may differ** for x264/x265 (using HEAD snapshots) - WARNING ONLY
+1. **Binary hashes may differ** for x264 (using HEAD snapshot) - WARNING ONLY; x265 is a tagged release (4.2) and is reproducible
 2. **Build order optimized** based on dependencies
 3. **Better error messages** with per-library context
 4. **Progress reporting** shows current library being built
