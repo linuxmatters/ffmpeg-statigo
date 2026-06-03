@@ -20,7 +20,7 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 - **Auto-generated** - Thin, predictable bindings directly from FFmpeg headers
 - **Preserved documentation** - Original FFmpeg comments in your IDE
 
-*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.24, hardware acceleration, ~85% FFmpeg API coverage, and a 99.5% smaller git history.*
+*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.26, hardware acceleration, ~85% FFmpeg API coverage, and a 99.5% smaller git history.*
 
 ## Installation
 
