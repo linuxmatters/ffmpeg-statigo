@@ -3,9 +3,11 @@ package lib
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -39,6 +41,14 @@ func ensureLibrary() error {
 		arch = runtime.GOARCH
 	}
 
+	// Restrict platform/arch to known values; these feed filesystem paths below.
+	if !slices.Contains([]string{"linux", "darwin"}, platform) {
+		return fmt.Errorf("unsupported platform: %s", platform)
+	}
+	if !slices.Contains([]string{"amd64", "arm64"}, arch) {
+		return fmt.Errorf("unsupported arch: %s", arch)
+	}
+
 	// Use working directory for libraries (writable)
 	// Libraries will be downloaded to lib/<platform>_<arch>/
 	libDir := "lib"
@@ -46,7 +56,7 @@ func ensureLibrary() error {
 	libPath := filepath.Join(libDir, platArch, "libffmpeg.a")
 
 	// Library already exists
-	if _, err := os.Stat(libPath); err == nil {
+	if _, err := os.Stat(libPath); err == nil { //nolint:gosec // G703: platform and arch validated against allowlist above
 		return nil
 	}
 
@@ -82,7 +92,7 @@ func ensureLibrary() error {
 	if expectedChecksum != "" {
 		if actualChecksum != expectedChecksum {
 			// Clean up partially extracted files on checksum failure
-			os.RemoveAll(filepath.Join(libDir, platArch))
+			_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
 			return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, actualChecksum)
 		}
 		fmt.Printf("Checksum verified: %s\n", actualChecksum[:8])
@@ -121,7 +131,7 @@ func findViaAPI(prefix string) (string, error) {
 	// Query GitHub API for releases
 	apiURL := "https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases?per_page=100"
 
-	req, err := http.NewRequest("GET", apiURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -136,11 +146,11 @@ func findViaAPI(prefix string) (string, error) {
 	defer resp.Body.Close()
 
 	// Check for rate limiting
-	if resp.StatusCode == 403 {
+	if resp.StatusCode == http.StatusForbidden {
 		return "", fmt.Errorf("GitHub API rate limit exceeded")
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
 	}
 
@@ -183,7 +193,7 @@ type GitHubReleaseDetail struct {
 func fetchReleaseDetails(release string) (*GitHubReleaseDetail, error) {
 	apiURL := fmt.Sprintf("https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s", release)
 
-	req, err := http.NewRequest("GET", apiURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +205,7 @@ func fetchReleaseDetails(release string) (*GitHubReleaseDetail, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
 	}
 
@@ -237,7 +247,12 @@ func (pr *progressReader) Read(p []byte) (int, error) {
 // It returns the SHA256 checksum of the downloaded data for verification.
 // This eliminates the need for temporary files and reduces total time by ~40%.
 func streamDownloadAndExtract(url, destDir string) (string, error) {
-	resp, err := http.Get(url)
+	// URL is built from a fixed GitHub host and a validated release tag, not user input.
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil) //nolint:gosec // G107: trusted, project-controlled release URL
+	if err != nil {
+		return "", fmt.Errorf("building request: %w", err)
+	}
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec // G704: trusted, project-controlled release URL
 	if err != nil {
 		return "", fmt.Errorf("HTTP request failed: %w", err)
 	}
@@ -277,7 +292,7 @@ func streamDownloadAndExtract(url, destDir string) (string, error) {
 
 	for {
 		header, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -369,7 +384,12 @@ func fetchChecksumFromFile(assets []GitHubAsset, tarballName string) (string, er
 		return "", nil // No checksum available
 	}
 
-	resp, err := http.Get(sha256sumsURL)
+	// URL comes from the GitHub release asset list, not user input.
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, sha256sumsURL, nil) //nolint:gosec // G107: trusted GitHub release asset URL
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -417,7 +437,7 @@ func extractTarball(tarball, destDir string) error {
 
 	for {
 		header, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

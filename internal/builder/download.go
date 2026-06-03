@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"compress/bzip2"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +17,22 @@ import (
 	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
 	"github.com/ulikunitz/xz"
 )
+
+// maxExtractFileSize caps a single extracted file to guard against decompression
+// bombs. FFmpeg sources and prebuilt static libraries stay well below this.
+const maxExtractFileSize = 2 << 30 // 2 GiB
+
+// copyCapped copies from src to dst, refusing more than maxExtractFileSize bytes.
+func copyCapped(dst io.Writer, src io.Reader) error {
+	n, err := io.Copy(dst, io.LimitReader(src, maxExtractFileSize+1))
+	if err != nil {
+		return err
+	}
+	if n > maxExtractFileSize {
+		return fmt.Errorf("extracted file exceeds %d bytes", maxExtractFileSize)
+	}
+	return nil
+}
 
 // DownloadFile downloads a file using the grab library with resume support and retries
 func DownloadFile(url, dest string, logger io.Writer) error {
@@ -239,7 +256,7 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -276,12 +293,12 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 				return err
 			}
 
-			outFile, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode))
+			outFile, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode&0o777))
 			if err != nil {
 				return err
 			}
 
-			if _, err := io.Copy(outFile, tarReader); err != nil {
+			if err := copyCapped(outFile, tarReader); err != nil {
 				outFile.Close()
 				return err
 			}
@@ -357,7 +374,7 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 			return err
 		}
 
-		_, err = io.Copy(outFile, rc)
+		err = copyCapped(outFile, rc)
 		rc.Close()
 		outFile.Close()
 
