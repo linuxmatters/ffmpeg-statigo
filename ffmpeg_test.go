@@ -158,6 +158,11 @@ func TestCStr_DoubleFreeProtection(t *testing.T) {
 
 		// Should not panic
 		cstr.Free()
+
+		// Free() nils the pointer, so a repeat call is a safe no-op
+		// (C.free(NULL) is defined as a no-op in C).
+		cstr.Free()
+		cstr.Free()
 	})
 
 	t.Run("tocstr_can_be_freed", func(t *testing.T) {

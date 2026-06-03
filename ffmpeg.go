@@ -150,6 +150,7 @@ func (s *CStr) Free() {
 	}
 
 	C.free(unsafe.Pointer(s.ptr))
+	s.ptr = nil
 }
 
 // RawPtr returns a raw reference to the underlying allocation.
