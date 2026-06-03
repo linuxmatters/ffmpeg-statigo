@@ -233,7 +233,7 @@ var nvcodecheaders = &Library{
 // vulkanheaders - Vulkan API headers (cross-platform)
 var vulkanheaders = &Library{
 	Name:          "Vulkan-Headers",
-	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.345.tar.gz",
+	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.352.tar.gz",
 	FFmpegEnables: []string{"vulkan"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -245,11 +245,11 @@ var vulkanheaders = &Library{
 }
 
 // glslang - Khronos GLSL/SPIR-V shader compiler (required for Vulkan encoders/decoders/filters)
-// NOTE: Pinned to 15.4.0 because FFmpeg 8.x requires libSPVRemapper which was removed in glslang 16.0.0
-// (functionality moved to SPIRV-Tools). Upgrade to 16.x requires FFmpeg to update their spirv_compiler detection.
+// NOTE: glslang 16.0.0 removed libSPVRemapper (functionality moved to SPIRV-Tools). FFmpeg's
+// configure gates -lSPVRemapper behind GLSLANG_VERSION_MAJOR >= 16, so 16.x links cleanly.
 var glslang = &Library{
 	Name:          "glslang",
-	URL:           "https://github.com/KhronosGroup/glslang/archive/refs/tags/15.4.0.tar.gz",
+	URL:           "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.3.0.tar.gz",
 	FFmpegEnables: []string{"libglslang"},
 	BuildSystem:   &CMakeBuild{},
 	PostExtract: func(srcPath string) error {
@@ -283,7 +283,6 @@ var glslang = &Library{
 		"libMachineIndependent",
 		"libOSDependent",
 		"libSPIRV",
-		"libSPVRemapper",
 		"libSPIRV-Tools",
 		"libSPIRV-Tools-opt",
 	},
@@ -293,7 +292,7 @@ var glslang = &Library{
 // libdrm - Direct Rendering Manager library (Linux only, required by libva)
 var libdrm = &Library{
 	Name:        "libdrm",
-	URL:         "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.131/drm-libdrm-2.4.131.tar.gz",
+	URL:         "https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.134/drm-libdrm-2.4.134.tar.gz",
 	Platform:    []string{"linux"},
 	BuildSystem: &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -569,7 +568,7 @@ var x264 = &Library{
 // x265 - H.265/HEVC video encoder 7.9M
 var x265 = &Library{
 	Name:          "x265",
-	URL:           "https://bitbucket.org/multicoreware/x265_git/get/ffba52bab55dce9b1b3a97dd08d12e70297e2180.tar.bz2",
+	URL:           "https://bitbucket.org/multicoreware/x265_git/get/4.2.tar.bz2",
 	FFmpegEnables: []string{"libx265"},
 	BuildSystem: &CMakeBuild{
 		SourceSubdir: "source", // x265 source is in source/ subdirectory
@@ -673,7 +672,7 @@ var vvenc = &Library{
 // - BIO, EVP APIs
 var openssl = &Library{
 	Name:          "openssl",
-	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.1/openssl-3.6.1.tar.gz",
+	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.2/openssl-3.6.2.tar.gz",
 	FFmpegEnables: []string{"openssl"},
 	BuildSystem:   &OpenSSLBuild{},
 	ConfigureArgs: func(os string) []string {
