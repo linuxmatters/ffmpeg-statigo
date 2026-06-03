@@ -88,7 +88,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 | glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
 | libdrm           | 2.4.131     | Direct Rendering Manager library and headers (*Linux only*)                        |
 | libiconv         | 1.19        | A character set conversion library (*macOS only*)                                  |
-| libsrt           | 1.5.5-rc.1  | A transport protocol for ultra low latency live video and audio streaming          |
+| libsrt           | 1.5.5       | A transport protocol for ultra low latency live video and audio streaming          |
 | libva            | 2.23.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)               |
 | libvpl           | 2.16.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
 | libvpx           | 1.16.0      | High-quality, open video format for the web that's freely available to everyone    |
