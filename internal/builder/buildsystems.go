@@ -119,7 +119,7 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommand(srcPath, output, installDir, configurePath, args...)
+		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), configurePath, args...)
 	})
 }
 
@@ -131,11 +131,11 @@ func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// make
-		if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		if err := runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 			return err
 		}
 		// make install
-		return runCommand(srcPath, output, installDir, "make", "install")
+		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "install")
 	})
 }
 
@@ -163,7 +163,7 @@ func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommand(buildDir, output, installDir, "cmake", args...)
+		return runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "cmake", args...)
 	})
 }
 
@@ -172,10 +172,10 @@ func (c *CMakeBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// cmake --build . --target install
-		if err := runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		if err := runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 			return err
 		}
-		return runCommand(buildDir, output, installDir, "cmake", "--build", ".", "--target", "install")
+		return runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "cmake", "--build", ".", "--target", "install")
 	})
 }
 
@@ -198,7 +198,7 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommand(".", output, installDir, "meson", args...)
+		return runCommandEnv(".", output, installDir, lib.extraEnv(), "meson", args...)
 	})
 }
 
@@ -207,11 +207,11 @@ func (m *MesonBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// meson compile
-		if err := runCommand(buildDir, output, installDir, "meson", "compile"); err != nil {
+		if err := runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "meson", "compile"); err != nil {
 			return err
 		}
 		// meson install
-		return runCommand(buildDir, output, installDir, "meson", "install")
+		return runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "meson", "install")
 	})
 }
 
@@ -295,7 +295,7 @@ func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir str
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommand(srcPath, output, installDir, configurePath, args...)
+		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), configurePath, args...)
 	})
 }
 
@@ -304,10 +304,10 @@ func (o *OpenSSLBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// make
-		if err := runCommand(srcPath, output, installDir, "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		if err := runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 			return err
 		}
 		// make install_sw (install software only, skip docs)
-		return runCommand(srcPath, output, installDir, "make", "install_sw")
+		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "install_sw")
 	})
 }

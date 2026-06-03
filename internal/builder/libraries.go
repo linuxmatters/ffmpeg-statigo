@@ -548,17 +548,15 @@ var x264 = &Library{
 			"--enable-strip",
 		}
 	},
-	PostExtract: func(srcPath string) error {
+	BuildEnv: func() []string {
 		// x264 needs explicit assembler configuration per architecture
 		switch runtime.GOARCH {
 		case "amd64", "386":
-			// x86/x86_64 uses nasm for assembly
-			os.Setenv("AS", "nasm")
+			return []string{"AS=nasm"} // x86/x86_64 uses nasm for assembly
 		case "arm64":
-			// aarch64 .S files contain macros (T(), const, endconst) that require
-			// C preprocessor expansion before assembly. Using clang as AS ensures
-			// the preprocessor runs, unlike bare 'as' which skips preprocessing.
-			os.Setenv("AS", "clang")
+			// aarch64 .S files contain macros (T(), const, endconst) needing C preprocessor
+			// expansion; clang as AS runs the preprocessor, unlike bare 'as'.
+			return []string{"AS=clang"}
 		}
 		return nil
 	},
@@ -623,13 +621,15 @@ var rav1e = &Library{
 				}
 			}
 
-			os.Setenv("RUSTFLAGS", rustflags)
-			os.Setenv("CARGO_PROFILE_RELEASE_DEBUG", "false")
+			env := []string{
+				"RUSTFLAGS=" + rustflags,
+				"CARGO_PROFILE_RELEASE_DEBUG=false",
+			}
 
 			// cargo cinstall for C library installation
 			// Use --no-default-features to avoid git_version which pulls in libgit2
 			// Re-enable asm and threading for performance
-			return runCommand(srcPath, os.Stdout, installDir, "cargo", "cinstall",
+			return runCommandEnv(srcPath, os.Stdout, installDir, env, "cargo", "cinstall",
 				fmt.Sprintf("--prefix=%s", installDir),
 				"--libdir=lib",
 				"--library-type=staticlib",
