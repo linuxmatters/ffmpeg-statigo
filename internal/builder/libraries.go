@@ -736,7 +736,7 @@ var openssl = &Library{
 // libsrt - Secure Reliable Transport (SRT) protocol library
 var libsrt = &Library{
 	Name:          "libsrt",
-	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5-rc.1.tar.gz",
+	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5.tar.gz",
 	FFmpegEnables: []string{"libsrt"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
