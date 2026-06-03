@@ -1166,7 +1166,8 @@ outer:
 					args = append(args, jen.Id(pName))
 
 				case *IdentType:
-					if iv.Name == "char" {
+					switch iv.Name {
+					case "char":
 						params = append(params, jen.Id(pName).Op("*").Id("CStr"))
 						convName := fmt.Sprintf("tmp%v", pName)
 
@@ -1179,10 +1180,10 @@ outer:
 						)
 
 						args = append(args, jen.Id(convName))
-					} else if iv.Name == "uint8_t" || iv.Name == "uchar" {
+					case "uint8_t", "uchar":
 						params = append(params, jen.Id(pName).Qual("unsafe", "Pointer"))
 						args = append(args, jen.Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Id(pName)))
-					} else {
+					default:
 
 						// Check if we have a corrected type name from the workaround
 						typeNameForParam := iv.Name
@@ -1571,8 +1572,8 @@ func (g *Generator) convPart(val string) string {
 		removed = false
 
 		for _, acronym := range acronyms {
-			if strings.HasPrefix(val, acronym) {
-				val = strings.TrimPrefix(val, acronym)
+			if after, ok := strings.CutPrefix(val, acronym); ok {
+				val = after
 				prefixes = append(prefixes, acronym)
 
 				removed = true

@@ -221,9 +221,10 @@ func getPlatformArgs() []string {
 		case "linux":
 			// For standard Linux distributions, add common include paths
 			// These will be ignored if they don't exist, so it's safe to add them
-			if runtime.GOARCH == "amd64" {
+			switch runtime.GOARCH {
+			case "amd64":
 				args = append(args, "-I/usr/include/x86_64-linux-gnu")
-			} else if runtime.GOARCH == "arm64" {
+			case "arm64":
 				args = append(args, "-I/usr/include/aarch64-linux-gnu")
 			}
 			args = append(args, "-I/usr/include")
@@ -476,7 +477,7 @@ func processComment(in string) string {
 
 	var rebuilt []string
 
-	for _, s := range strings.Split(txt, "\n") {
+	for s := range strings.SplitSeq(txt, "\n") {
 		s = strings.TrimSpace(s)
 		s = strings.TrimPrefix(s, "* ")
 		s = strings.TrimPrefix(s, "/// ")
