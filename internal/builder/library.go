@@ -34,6 +34,7 @@ type Library struct {
 	BuildSystem   BuildSystem
 	ConfigureArgs func(os string) []string
 	PostExtract   func(srcPath string) error // optional patches
+	BuildEnv      func() []string            // optional extra KEY=value env applied to all build commands
 	SkipAutoFlags bool                       // Skip automatic CFLAGS/LDFLAGS (for non-standard configure scripts like zlib)
 	LinkLibs      []string                   // Libraries to link in final static lib (nil for header-only)
 	Dependencies  []*Library                 // Build-time dependencies; platform-specific deps are auto-filtered via ShouldBuild()
@@ -57,6 +58,14 @@ func (lib *Library) ShouldBuild() bool {
 		return true // no platform restriction = build everywhere
 	}
 	return slices.Contains(lib.Platform, runtime.GOOS)
+}
+
+// extraEnv returns the library's extra build env, or nil if none is set.
+func (lib *Library) extraEnv() []string {
+	if lib.BuildEnv == nil {
+		return nil
+	}
+	return lib.BuildEnv()
 }
 
 // archiveExtensions maps file suffixes to canonical archive type names.
@@ -158,20 +167,22 @@ func (lib *Library) ConfigHash() string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// runCommand executes a command and streams output to logger
-func runCommand(dir string, logger io.Writer, installDir string, name string, args ...string) error {
+// runCommandEnv runs a command with extra KEY=value entries appended to the build env.
+func runCommandEnv(dir string, logger io.Writer, installDir string, extraEnv []string, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	cmd.Stdout = logger
 	cmd.Stderr = logger
-
-	// Set environment with PKG_CONFIG_PATH
-	cmd.Env = buildEnv(installDir)
-
+	cmd.Env = append(buildEnv(installDir), extraEnv...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s failed: %w", name, err)
 	}
 	return nil
+}
+
+// runCommand executes a command and streams output to logger
+func runCommand(dir string, logger io.Writer, installDir string, name string, args ...string) error {
+	return runCommandEnv(dir, logger, installDir, nil, name, args...)
 }
 
 // fileExists checks if a file exists
