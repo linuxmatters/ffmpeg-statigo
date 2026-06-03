@@ -43,6 +43,7 @@
 - **Cross-compilation:** Set `GOOS` and `GOARCH` before downloading: `GOOS=darwin GOARCH=arm64 go run ./cmd/download-lib`
 - **Platform-specific builds:** Justfile auto-detects current platform, outputs to `lib/<os>_<arch>/`
 - **Binding regeneration:** Required after FFmpeg header changes — run `just generate`
+- **Nix-only regeneration:** Run `just generate` / `go run ./internal/generator` only inside `nix develop` (libclang 18.1.8, gcc 15.2.0), where system include discovery via `gcc -E -v` is guaranteed. Pass `-v` for toolchain and include-path trace output.
 
 ## Key architecture
 

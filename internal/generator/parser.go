@@ -16,6 +16,8 @@ import (
 	"github.com/Newbluecake/bootstrap/clang"
 )
 
+var failLog = log.New(os.Stderr, "", 0)
+
 var AVLibPath, _ = filepath.Abs("include")
 
 var files = []string{
@@ -139,6 +141,55 @@ var files = []string{
 	"libswscale/swscale.h",
 }
 
+// maxDiagnosticSeverity returns the highest severity across the diagnostics,
+// printing each diagnostic's spelling as it goes.
+func maxDiagnosticSeverity(diags []clang.Diagnostic) clang.DiagnosticSeverity {
+	var maxSeverity clang.DiagnosticSeverity
+
+	for _, d := range diags {
+		fmt.Println("PROBLEM:", d.Spelling())
+
+		if s := d.Severity(); s > maxSeverity {
+			maxSeverity = s
+		}
+	}
+
+	return maxSeverity
+}
+
+// sentinelParse parses an in-memory translation unit that includes <stdint.h>
+// using the same platform args as the real run. It aborts loudly if include
+// discovery is broken before any real header is parsed.
+func sentinelParse() {
+	tmp, err := os.CreateTemp("", "sentinel-*.h")
+	if err != nil {
+		failLog.Fatalf("failed to create sentinel translation unit: %v", err)
+	}
+	defer os.Remove(tmp.Name())
+
+	if _, err := tmp.WriteString("#include <stdint.h>\n"); err != nil {
+		failLog.Fatalf("failed to write sentinel translation unit: %v", err)
+	}
+	if err := tmp.Close(); err != nil {
+		failLog.Fatalf("failed to close sentinel translation unit: %v", err)
+	}
+
+	idx := clang.NewIndex(0, 1)
+	defer idx.Dispose()
+
+	tu := idx.ParseTranslationUnit(
+		tmp.Name(),
+		getPlatformArgs(),
+		nil,
+		clang.TranslationUnit_IncludeBriefCommentsInCodeCompletion|clang.TranslationUnit_DetailedPreprocessingRecord,
+	)
+	defer tu.Dispose()
+
+	if maxDiagnosticSeverity(tu.Diagnostics()) >= clang.Diagnostic_Error {
+		failLog.Fatalf("include discovery failed: cannot parse <stdint.h> with discovered system includes")
+	}
+}
+
 func Parse() *Module {
 	p := &Parser{
 		mod: &Module{
@@ -149,6 +200,8 @@ func Parse() *Module {
 			constants: make(map[string]*Constant),
 		},
 	}
+
+	sentinelParse()
 
 	for _, file := range files {
 		filePath := path.Join(AVLibPath, file)
@@ -173,7 +226,7 @@ func getSystemIncludes() []string {
 	cmd := exec.CommandContext(context.Background(), "gcc", "-E", "-x", "c", "-v", "/dev/null")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil
+		failLog.Fatalf("gcc unavailable for system include discovery: %v", err)
 	}
 
 	inIncludes := false
@@ -194,6 +247,10 @@ func getSystemIncludes() []string {
 		}
 	}
 
+	if len(includes) == 0 && os.Getenv("NIX_CC") != "" {
+		failLog.Fatal("gcc returned no system include paths under NIX_CC; dev-shell contract requires successful include discovery")
+	}
+
 	return includes
 }
 
@@ -206,26 +263,19 @@ func getPlatformArgs() []string {
 		"-D__STDC_CONSTANT_MACROS",
 	}
 
-	// Check if we're on NixOS by looking for NIX_CC environment variable
-	if os.Getenv("NIX_CC") != "" {
-		// On NixOS, get system includes from gcc
-		systemIncludes := getSystemIncludes()
-		args = append(args, systemIncludes...)
-	} else {
-		// Add platform-specific includes
-		switch runtime.GOOS {
-		case "darwin":
-			args = append(args, "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Headers/")
-		case "linux":
-			// For standard Linux distributions, add common include paths
-			// These will be ignored if they don't exist, so it's safe to add them
-			switch runtime.GOARCH {
-			case "amd64":
-				args = append(args, "-I/usr/include/x86_64-linux-gnu")
-			case "arm64":
-				args = append(args, "-I/usr/include/aarch64-linux-gnu")
+	// gcc -E -v emits the gcc builtin include dir (stddef.h/stdint.h/stdarg.h)
+	// plus the system include roots on any host, so scrape it unconditionally.
+	args = append(args, getSystemIncludes()...)
+
+	// On macOS, resolve the SDK include root via xcrun rather than hard-coding
+	// the Command Line Tools path. Bare macOS without Xcode CLT is outside the
+	// Nix contract, so skip gracefully if xcrun is unavailable.
+	if runtime.GOOS == "darwin" {
+		out, err := exec.CommandContext(context.Background(), "xcrun", "--show-sdk-path").CombinedOutput()
+		if err == nil {
+			if sdkPath := strings.TrimSpace(string(out)); sdkPath != "" {
+				args = append(args, "-I"+sdkPath+"/usr/include")
 			}
-			args = append(args, "-I/usr/include")
 		}
 	}
 
@@ -246,9 +296,16 @@ func (p *Parser) parseFile(indent string, path string) {
 	)
 	defer tu.Dispose()
 
-	diagnostics := tu.Diagnostics()
-	for _, d := range diagnostics {
-		fmt.Println("PROBLEM:", d.Spelling())
+	// A missing or unreadable top-level header surfaces as a clang driver error
+	// rather than a translation-unit diagnostic, leaving a null translation unit
+	// that the diagnostic check below does not catch. Guard against that here so
+	// the generator aborts loudly instead of dereferencing the invalid unit.
+	if !tu.IsValid() {
+		failLog.Fatalf("failed to parse header %v: clang produced an invalid translation unit (header missing or unreadable)", path)
+	}
+
+	if maxDiagnosticSeverity(tu.Diagnostics()) >= clang.Diagnostic_Error {
+		failLog.Fatalf("failed to parse header %v with clang errors", path)
 	}
 
 	p.tu = tu
@@ -687,7 +744,7 @@ func (p *Parser) parseStruct(indent string, c clang.Cursor, typedef bool) {
 		if cursor.Kind() == clang.Cursor_FieldDecl {
 			name := cursor.Spelling()
 			if name == "" {
-				log.Fatal("no field name")
+				failLog.Fatal("no field name")
 			}
 
 			cmt := processComment(cursor.RawCommentText())
