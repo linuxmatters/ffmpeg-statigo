@@ -133,6 +133,17 @@ func wrapCStr(ptr *C.char) *CStr {
 	}
 }
 
+// wrapStaticCStr wraps a C string the caller does not own — e.g. a const char*
+// returned by FFmpeg that points at static or struct-owned memory. The returned
+// CStr is marked non-freeable so calling Free on it is a safe no-op.
+func wrapStaticCStr(ptr *C.char) *CStr {
+	cs := wrapCStr(ptr)
+	if cs != nil {
+		cs.dontFree = true
+	}
+	return cs
+}
+
 // Dup is a wrapper for AVStrdup.
 func (s *CStr) Dup() *CStr {
 	return AVStrdup(s)
