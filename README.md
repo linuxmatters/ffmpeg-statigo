@@ -12,7 +12,7 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 
 ## Features
 
-- **FFmpeg 8.0.1** - Latest release with AV1, H.265, H.264, VP8/9
+- **FFmpeg 8.1.1** - Latest release with AV1, H.265, H.264, VP8/9
 - **Truly static** - Builds into your binary (just needs system `m` and `stdc++` libraries)
 - **Cross-platform** - Linux and macOS (arm64, amd64)
 - **Hardware acceleration** - NVENC/NVDEC, QuickSync, VA-API, VideoToolbox, and Vulkan support
@@ -20,7 +20,7 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 - **Auto-generated** - Thin, predictable bindings directly from FFmpeg headers
 - **Preserved documentation** - Original FFmpeg comments in your IDE
 
-*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.0.x, Go 1.24, hardware acceleration, ~85% FFmpeg API coverage, and a 99.5% smaller git history.*
+*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.24, hardware acceleration, ~85% FFmpeg API coverage, and a 99.5% smaller git history.*
 
 ## Installation
 
@@ -83,7 +83,7 @@ If you need complete FFmpeg with all filters, use the official FFmpeg distributi
 
 | Library          | Version     | Description                                                                        |
 |------------------|-------------|------------------------------------------------------------------------------------|
-| FFmpeg           | 8.0.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
+| FFmpeg           | 8.1.1       | A complete, cross-platform solution to record, convert and stream audio and video  |
 | dav1d            | 1.5.3       | AV1 cross-platform decoder, open-source, and focused on speed, size and correctness|
 | glslang          | 15.4.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
 | libdrm           | 2.4.131     | Direct Rendering Manager library and headers (*Linux only*)                        |

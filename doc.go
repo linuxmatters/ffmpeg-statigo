@@ -1,4 +1,4 @@
-// Package ffmpeg provides Go bindings to FFmpeg 8.0 libraries.
+// Package ffmpeg provides Go bindings to FFmpeg 8.1 libraries.
 //
 // This package includes static FFmpeg libraries with hardware acceleration
 // support (NVENC, VideoToolbox, Vulkan, QuickSync) and contemporary codecs

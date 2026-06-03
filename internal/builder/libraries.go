@@ -87,8 +87,8 @@ func buildLibraryOrder() []*Library {
 
 	// Topological sort using Kahn's algorithm
 	var queue []*Library
-	for lib, degree := range inDegree {
-		if degree == 0 {
+	for _, lib := range allLibraryDefinitions {
+		if inDegree[lib] == 0 {
 			queue = append(queue, lib)
 		}
 	}
@@ -245,7 +245,7 @@ var vulkanheaders = &Library{
 }
 
 // glslang - Khronos GLSL/SPIR-V shader compiler (required for Vulkan encoders/decoders/filters)
-// NOTE: Pinned to 15.4.0 because FFmpeg 8.0 requires libSPVRemapper which was removed in glslang 16.0.0
+// NOTE: Pinned to 15.4.0 because FFmpeg 8.x requires libSPVRemapper which was removed in glslang 16.0.0
 // (functionality moved to SPIRV-Tools). Upgrade to 16.x requires FFmpeg to update their spirv_compiler detection.
 var glslang = &Library{
 	Name:          "glslang",
@@ -761,10 +761,20 @@ var libsrt = &Library{
 // ffmpeg - FFmpeg multimedia framework
 var ffmpeg = &Library{
 	Name:          "ffmpeg",
-	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.0.1.tar.gz",
+	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.1.tar.gz",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // FFmpeg uses --extra-cflags and --extra-ldflags instead
 	PostExtract: func(srcPath string) error {
+		releaseFile := filepath.Join(srcPath, "RELEASE")
+		if release, err := os.ReadFile(releaseFile); err == nil {
+			version := strings.TrimSpace(string(release))
+			if version != "" {
+				if err := os.WriteFile(filepath.Join(srcPath, "VERSION"), []byte("n"+version+"\n"), 0644); err != nil {
+					return fmt.Errorf("failed to write VERSION: %w", err)
+				}
+			}
+		}
+
 		// Apply OpenSSL 3.6 compatibility patch
 		patchFile := filepath.Join(srcPath, "libavformat", "tls_openssl.c")
 

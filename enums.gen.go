@@ -225,6 +225,10 @@ const (
 	//
 	//	AVColorSpace, terminated by AVCOL_SPC_UNSPECIFIED
 	AVCodecConfigColorSpace AVCodecConfig = C.AV_CODEC_CONFIG_COLOR_SPACE
+	// AVCodecConfigAlphaMode wraps AV_CODEC_CONFIG_ALPHA_MODE.
+	//
+	//	AVAlphaMode, terminated by AVALPHA_MODE_UNSPECIFIED
+	AVCodecConfigAlphaMode AVCodecConfig = C.AV_CODEC_CONFIG_ALPHA_MODE
 )
 
 // --- Enum AVPictureStructure ---
@@ -876,6 +880,8 @@ const (
 	AVCodecIdApv AVCodecID = C.AV_CODEC_ID_APV
 	// AVCodecIdProresRaw wraps AV_CODEC_ID_PRORES_RAW.
 	AVCodecIdProresRaw AVCodecID = C.AV_CODEC_ID_PRORES_RAW
+	// AVCodecIdJpegxs wraps AV_CODEC_ID_JPEGXS.
+	AVCodecIdJpegxs AVCodecID = C.AV_CODEC_ID_JPEGXS
 	// AVCodecIdFirstAudio wraps AV_CODEC_ID_FIRST_AUDIO.
 	//
 	//	A dummy id pointing at the start of audio codecs
@@ -1170,6 +1176,38 @@ const (
 	//
 	//	various ADPCM codecs
 	AVCodecIdAdpcmSanyo AVCodecID = C.AV_CODEC_ID_ADPCM_SANYO
+	// AVCodecIdAdpcmImaHvqm4 wraps AV_CODEC_ID_ADPCM_IMA_HVQM4.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmImaHvqm4 AVCodecID = C.AV_CODEC_ID_ADPCM_IMA_HVQM4
+	// AVCodecIdAdpcmImaPda wraps AV_CODEC_ID_ADPCM_IMA_PDA.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmImaPda AVCodecID = C.AV_CODEC_ID_ADPCM_IMA_PDA
+	// AVCodecIdAdpcmN64 wraps AV_CODEC_ID_ADPCM_N64.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmN64 AVCodecID = C.AV_CODEC_ID_ADPCM_N64
+	// AVCodecIdAdpcmImaHvqm2 wraps AV_CODEC_ID_ADPCM_IMA_HVQM2.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmImaHvqm2 AVCodecID = C.AV_CODEC_ID_ADPCM_IMA_HVQM2
+	// AVCodecIdAdpcmImaMagix wraps AV_CODEC_ID_ADPCM_IMA_MAGIX.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmImaMagix AVCodecID = C.AV_CODEC_ID_ADPCM_IMA_MAGIX
+	// AVCodecIdAdpcmPsxc wraps AV_CODEC_ID_ADPCM_PSXC.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmPsxc AVCodecID = C.AV_CODEC_ID_ADPCM_PSXC
+	// AVCodecIdAdpcmCircus wraps AV_CODEC_ID_ADPCM_CIRCUS.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmCircus AVCodecID = C.AV_CODEC_ID_ADPCM_CIRCUS
+	// AVCodecIdAdpcmImaEscape wraps AV_CODEC_ID_ADPCM_IMA_ESCAPE.
+	//
+	//	various ADPCM codecs
+	AVCodecIdAdpcmImaEscape AVCodecID = C.AV_CODEC_ID_ADPCM_IMA_ESCAPE
 	// AVCodecIdAmrNb wraps AV_CODEC_ID_AMR_NB.
 	//
 	//	AMR
@@ -1446,6 +1484,8 @@ const (
 	AVCodecIdLc3 AVCodecID = C.AV_CODEC_ID_LC3
 	// AVCodecIdG728 wraps AV_CODEC_ID_G728.
 	AVCodecIdG728 AVCodecID = C.AV_CODEC_ID_G728
+	// AVCodecIdAhx wraps AV_CODEC_ID_AHX.
+	AVCodecIdAhx AVCodecID = C.AV_CODEC_ID_AHX
 	// AVCodecIdFirstSubtitle wraps AV_CODEC_ID_FIRST_SUBTITLE.
 	//
 	//	A dummy ID pointing at the start of subtitle codecs.
@@ -2099,6 +2139,12 @@ const (
 	   in the form of the AVRTCPSenderReport struct.
 	*/
 	AVPktDataRtcpSr AVPacketSideDataType = C.AV_PKT_DATA_RTCP_SR
+	// AVPktDataExif wraps AV_PKT_DATA_EXIF.
+	/*
+	   Extensible image file format metadata. The payload is a buffer containing
+	   EXIF metadata, starting with either 49 49 2a 00, or 4d 4d 00 2a.
+	*/
+	AVPktDataExif AVPacketSideDataType = C.AV_PKT_DATA_EXIF
 	// AVPktDataNb wraps AV_PKT_DATA_NB.
 	/*
 	   The number of side data types.
@@ -2603,6 +2649,57 @@ const (
 	//
 	//	Duration estimated from bitrate (less accurate)
 	AVFmtDurationFromBitrate AVDurationEstimationMethod = C.AVFMT_DURATION_FROM_BITRATE
+)
+
+// --- Enum AVFormatCommandID ---
+
+// AVFormatCommandID wraps AVFormatCommandID.
+/*
+  Command IDs that can be sent to the demuxer
+
+  The following commands can be sent to a demuxer
+  using ::avformat_send_command.
+*/
+type AVFormatCommandID C.enum_AVFormatCommandID
+
+const SizeOfAVFormatCommandID = C.sizeof_enum_AVFormatCommandID
+
+func ToAVFormatCommandIDArray(ptr unsafe.Pointer) *Array[AVFormatCommandID] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVFormatCommandID]{
+		elemSize: SizeOfAVFormatCommandID,
+		loadPtr: func(pointer unsafe.Pointer) AVFormatCommandID {
+			ptr := (*AVFormatCommandID)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVFormatCommandID) {
+			ptr := (*AVFormatCommandID)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVFormatCommandIDArray(size uint64) *Array[AVFormatCommandID] {
+	return ToAVFormatCommandIDArray(AVCalloc(size, SizeOfAVFormatCommandID))
+}
+
+const (
+	// AVFormatCommandRtspSetParameter wraps AVFORMAT_COMMAND_RTSP_SET_PARAMETER.
+	/*
+	   Send a RTSP `SET_PARAMETER` request to the server
+
+	   Sends an SET_PARAMETER RTSP command to the server,
+	   with a data payload of type ::AVRTSPCommandRequest,
+	   ownership of it and its data remains with the caller.
+
+	   A reply retrieved is of type ::AVRTSPResponse and it
+	   and its contents must be freed by the caller.
+	*/
+	AVFormatCommandRtspSetParameter AVFormatCommandID = C.AVFORMAT_COMMAND_RTSP_SET_PARAMETER
 )
 
 // --- Enum AVTimebaseSource ---
@@ -3852,6 +3949,12 @@ const (
 	   libavutil/tdrdi.h.
 	*/
 	AVFrameData3DReferenceDisplays AVFrameSideDataType = C.AV_FRAME_DATA_3D_REFERENCE_DISPLAYS
+	// AVFrameDataExif wraps AV_FRAME_DATA_EXIF.
+	/*
+	   Extensible image file format metadata. The payload is a buffer containing
+	   EXIF metadata, starting with either 49 49 2a 00, or 4d 4d 00 2a.
+	*/
+	AVFrameDataExif AVFrameSideDataType = C.AV_FRAME_DATA_EXIF
 )
 
 // --- Enum AVActiveFormatDescription ---
@@ -6024,6 +6127,18 @@ const (
 	//
 	//	Not part of ABI
 	AVColPriNb AVColorPrimaries = C.AVCOL_PRI_NB
+	// AVColPriExtBase wraps AVCOL_PRI_EXT_BASE.
+	//
+	//	The following entries are not part of H.273, but custom extensions
+	AVColPriExtBase AVColorPrimaries = C.AVCOL_PRI_EXT_BASE
+	// AVColPriVGamut wraps AVCOL_PRI_V_GAMUT.
+	//
+	//	The following entries are not part of H.273, but custom extensions
+	AVColPriVGamut AVColorPrimaries = C.AVCOL_PRI_V_GAMUT
+	// AVColPriExtNb wraps AVCOL_PRI_EXT_NB.
+	//
+	//	Not part of ABI
+	AVColPriExtNb AVColorPrimaries = C.AVCOL_PRI_EXT_NB
 )
 
 // --- Enum AVColorTransferCharacteristic ---
@@ -6137,6 +6252,18 @@ const (
 	//
 	//	Not part of ABI
 	AVColTrcNb AVColorTransferCharacteristic = C.AVCOL_TRC_NB
+	// AVColTrcExtBase wraps AVCOL_TRC_EXT_BASE.
+	//
+	//	The following entries are not part of H.273, but custom extensions
+	AVColTrcExtBase AVColorTransferCharacteristic = C.AVCOL_TRC_EXT_BASE
+	// AVColTrcVLog wraps AVCOL_TRC_V_LOG.
+	//
+	//	The following entries are not part of H.273, but custom extensions
+	AVColTrcVLog AVColorTransferCharacteristic = C.AVCOL_TRC_V_LOG
+	// AVColTrcExtNb wraps AVCOL_TRC_EXT_NB.
+	//
+	//	Not part of ABI
+	AVColTrcExtNb AVColorTransferCharacteristic = C.AVCOL_TRC_EXT_NB
 )
 
 // --- Enum AVColorSpace ---
@@ -6414,6 +6541,57 @@ const (
 	//
 	//	Not part of ABI
 	AVChromaLocNb AVChromaLocation = C.AVCHROMA_LOC_NB
+)
+
+// --- Enum AVAlphaMode ---
+
+// AVAlphaMode wraps AVAlphaMode.
+//
+//	Correlation between the alpha channel and color values.
+type AVAlphaMode C.enum_AVAlphaMode
+
+const SizeOfAVAlphaMode = C.sizeof_enum_AVAlphaMode
+
+func ToAVAlphaModeArray(ptr unsafe.Pointer) *Array[AVAlphaMode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVAlphaMode]{
+		elemSize: SizeOfAVAlphaMode,
+		loadPtr: func(pointer unsafe.Pointer) AVAlphaMode {
+			ptr := (*AVAlphaMode)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVAlphaMode) {
+			ptr := (*AVAlphaMode)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVAlphaModeArray(size uint64) *Array[AVAlphaMode] {
+	return ToAVAlphaModeArray(AVCalloc(size, SizeOfAVAlphaMode))
+}
+
+const (
+	// AVAlphaModeUnspecified wraps AVALPHA_MODE_UNSPECIFIED.
+	//
+	//	Unknown alpha handling, or no alpha channel
+	AVAlphaModeUnspecified AVAlphaMode = C.AVALPHA_MODE_UNSPECIFIED
+	// AVAlphaModePremultiplied wraps AVALPHA_MODE_PREMULTIPLIED.
+	//
+	//	Alpha channel is multiplied into color values
+	AVAlphaModePremultiplied AVAlphaMode = C.AVALPHA_MODE_PREMULTIPLIED
+	// AVAlphaModeStraight wraps AVALPHA_MODE_STRAIGHT.
+	//
+	//	Alpha channel is independent of color values
+	AVAlphaModeStraight AVAlphaMode = C.AVALPHA_MODE_STRAIGHT
+	// AVAlphaModeNb wraps AVALPHA_MODE_NB.
+	//
+	//	Not part of ABI
+	AVAlphaModeNb AVAlphaMode = C.AVALPHA_MODE_NB
 )
 
 // --- Enum AVSampleFormat ---
@@ -7598,6 +7776,10 @@ const (
 	//
 	//	not part of the ABI
 	SwsDitherNb SwsDither = C.SWS_DITHER_NB
+	// SwsDitherMaxEnum wraps SWS_DITHER_MAX_ENUM.
+	//
+	//	force size to 32 bits, not a valid dither type
+	SwsDitherMaxEnum SwsDither = C.SWS_DITHER_MAX_ENUM
 )
 
 // --- Enum SwsAlphaBlend ---
@@ -7641,6 +7823,10 @@ const (
 	//
 	//	not part of the ABI
 	SwsAlphaBlendNb SwsAlphaBlend = C.SWS_ALPHA_BLEND_NB
+	// SwsAlphaBlendMaxEnum wraps SWS_ALPHA_BLEND_MAX_ENUM.
+	//
+	//	force size to 32 bits, not a valid blend mode
+	SwsAlphaBlendMaxEnum SwsAlphaBlend = C.SWS_ALPHA_BLEND_MAX_ENUM
 )
 
 // --- Enum SwsFlags ---
@@ -7774,6 +7960,13 @@ const (
 	   Note: It is recommended to set both of these flags simultaneously.
 	*/
 	SwsBitexact SwsFlags = C.SWS_BITEXACT
+	// SwsUnstable wraps SWS_UNSTABLE.
+	/*
+	   Allow using experimental new code paths. This may be faster, slower,
+	   or produce different output, with semantics subject to change at any
+	   point in time. For testing and debugging purposes only.
+	*/
+	SwsUnstable SwsFlags = C.SWS_UNSTABLE
 	// SwsDirectBgr wraps SWS_DIRECT_BGR.
 	//
 	//	This flag has no effect

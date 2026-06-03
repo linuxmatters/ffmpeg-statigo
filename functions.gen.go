@@ -570,9 +570,9 @@ func AVCodecSendPacket(avctx *AVCodecContext, avpkt *AVPacket) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
-// --- Function avcodec_receive_frame ---
+// --- Function avcodec_receive_frame_flags ---
 
-// AVCodecReceiveFrame wraps avcodec_receive_frame.
+// AVCodecReceiveFrameFlags wraps avcodec_receive_frame_flags.
 /*
   Return decoded output data from a decoder or encoder (when the
   @ref AV_CODEC_FLAG_RECON_FRAME flag is used).
@@ -582,6 +582,7 @@ func AVCodecSendPacket(avctx *AVCodecContext, avpkt *AVPacket) (int, error) {
                frame (depending on the decoder type) allocated by the
                codec. Note that the function will always call
                av_frame_unref(frame) before doing anything else.
+  @param flags Combination of AV_CODEC_RECEIVE_FRAME_FLAG_* flags.
 
   @retval 0                success, a frame was returned
   @retval AVERROR(EAGAIN)  output is not available in this state - user must
@@ -592,6 +593,24 @@ func AVCodecSendPacket(avctx *AVCodecContext, avpkt *AVPacket) (int, error) {
                            @ref AV_CODEC_FLAG_RECON_FRAME flag enabled
   @retval "other negative error code" legitimate decoding errors
 */
+func AVCodecReceiveFrameFlags(avctx *AVCodecContext, frame *AVFrame, flags uint) (int, error) {
+	var tmpavctx *C.AVCodecContext
+	if avctx != nil {
+		tmpavctx = avctx.ptr
+	}
+	var tmpframe *C.AVFrame
+	if frame != nil {
+		tmpframe = frame.ptr
+	}
+	ret := C.avcodec_receive_frame_flags(tmpavctx, tmpframe, C.uint(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avcodec_receive_frame ---
+
+// AVCodecReceiveFrame wraps avcodec_receive_frame.
+//
+//	Alias for `avcodec_receive_frame_flags(avctx, frame, 0)`.
 func AVCodecReceiveFrame(avctx *AVCodecContext, frame *AVFrame) (int, error) {
 	var tmpavctx *C.AVCodecContext
 	if avctx != nil {
@@ -2134,6 +2153,51 @@ func AVPacketSideDataFree(sd **AVPacketSideData, nbSd *int) {
 		}
 	}
 }
+
+// --- Function av_packet_side_data_from_frame ---
+
+// AVPacketSideDataFromFrame wraps av_packet_side_data_from_frame.
+/*
+  Add a new packet side data entry to an array based on existing frame
+  side data, if a matching type exists for packet side data.
+
+  @param flags              Currently unused. Must be 0.
+  @retval >= 0              Success
+  @retval AVERROR(EINVAL)   The frame side data type does not have a matching
+                            packet side data type.
+  @retval AVERROR(ENOMEM)   Failed to add a side data entry to the array, or
+                            similar.
+*/
+func AVPacketSideDataFromFrame(sd **AVPacketSideData, nbSd *int, src *AVFrameSideData, flags uint) (int, error) {
+	var ptrsd **C.AVPacketSideData
+	var tmpsd *C.AVPacketSideData
+	var oldTmpsd *C.AVPacketSideData
+	if sd != nil {
+		innersd := *sd
+		if innersd != nil {
+			tmpsd = innersd.ptr
+			oldTmpsd = tmpsd
+		}
+		ptrsd = &tmpsd
+	}
+	var tmpsrc *C.AVFrameSideData
+	if src != nil {
+		tmpsrc = src.ptr
+	}
+	ret := C.av_packet_side_data_from_frame(ptrsd, (*C.int)(unsafe.Pointer(nbSd)), tmpsrc, C.uint(flags))
+	if tmpsd != oldTmpsd && sd != nil {
+		if tmpsd != nil {
+			*sd = &AVPacketSideData{ptr: tmpsd}
+		} else {
+			*sd = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_packet_side_data_to_frame ---
+
+// av_packet_side_data_to_frame skipped due to sd
 
 // --- Function av_packet_side_data_name ---
 
@@ -4425,6 +4489,18 @@ func AVBuffersinkGetColorRange(ctx *AVFilterContext) AVColorRange {
 	return AVColorRange(ret)
 }
 
+// --- Function av_buffersink_get_alpha_mode ---
+
+// AVBuffersinkGetAlphaMode wraps av_buffersink_get_alpha_mode.
+func AVBuffersinkGetAlphaMode(ctx *AVFilterContext) AVAlphaMode {
+	var tmpctx *C.AVFilterContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_buffersink_get_alpha_mode(tmpctx)
+	return AVAlphaMode(ret)
+}
+
 // --- Function av_buffersink_get_channels ---
 
 // AVBuffersinkGetChannels wraps av_buffersink_get_channels.
@@ -4722,6 +4798,24 @@ func AVBuffersrcClose(ctx *AVFilterContext, pts int64, flags uint) (int, error) 
 		tmpctx = ctx.ptr
 	}
 	ret := C.av_buffersrc_close(tmpctx, C.int64_t(pts), C.uint(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_buffersrc_get_status ---
+
+// AVBuffersrcGetStatus wraps av_buffersrc_get_status.
+/*
+  Returns 0 or a negative AVERROR code. Currently, this will only ever
+  return AVERROR(EOF), to indicate that the buffer source has been closed,
+  either as a result of av_buffersrc_close(), or because the downstream
+  filter is no longer accepting new data.
+*/
+func AVBuffersrcGetStatus(ctx *AVFilterContext) (int, error) {
+	var tmpctx *C.AVFilterContext
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	ret := C.av_buffersrc_get_status(tmpctx)
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -5741,6 +5835,37 @@ func AVReadPause(s *AVFormatContext) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function avformat_send_command ---
+
+// AVFormatSendCommand wraps avformat_send_command.
+/*
+  Send a command to the demuxer
+
+  Sends the specified command and (depending on the command)
+  optionally a command-specific payload to the demuxer to handle.
+
+  @param s     Format context, must be allocated with
+               ::avformat_alloc_context.
+  @param id    Identifier of type ::AVFormatCommandID,
+               indicating the command to send.
+  @param data  Command-specific data, allocated by the caller
+               and ownership remains with the caller.
+               For details what is expected here, consult the
+               documentation of the respective ::AVFormatCommandID.
+*/
+func AVFormatSendCommand(s *AVFormatContext, id AVFormatCommandID, data unsafe.Pointer) (int, error) {
+	var tmps *C.AVFormatContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.avformat_send_command(tmps, C.enum_AVFormatCommandID(id), data)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avformat_receive_command_reply ---
+
+// avformat_receive_command_reply skipped due to dataOut
+
 // --- Function avformat_close_input ---
 
 // AVFormatCloseInput wraps avformat_close_input.
@@ -6584,6 +6709,32 @@ func AVFormatQueryCodec(ofmt *AVOutputFormat, codecId AVCodecID, stdCompliance i
 		tmpofmt = ofmt.ptr
 	}
 	ret := C.avformat_query_codec(tmpofmt, C.enum_AVCodecID(codecId), C.int(stdCompliance))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_mime_codec_str ---
+
+// AVMimeCodecStr wraps av_mime_codec_str.
+/*
+  Make a RFC 4281/6381 like string describing a codec for MIME types.
+
+  @param par pointer to an AVCodecParameters struct describing the codec
+  @param frame_rate an AVRational for the frame rate, for deciding the
+                    right profile for video codecs. Pass an invalid
+                    AVRational (1/0) to indicate that it is unknown.
+  @param out the AVBPrint to write the output to
+  @return <0 on error
+*/
+func AVMimeCodecStr(par *AVCodecParameters, frameRate *AVRational, out *AVBPrint) (int, error) {
+	var tmppar *C.AVCodecParameters
+	if par != nil {
+		tmppar = par.ptr
+	}
+	var tmpout *C.AVBPrint
+	if out != nil {
+		tmpout = out.ptr
+	}
+	ret := C.av_mime_codec_str(tmppar, frameRate.value, tmpout)
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -8334,6 +8485,7 @@ func AVAudioFifoSpace(af *AVAudioFifo) (int, error) {
   Assert that floating point operations can be executed.
 
   This will av_assert0() that the cpu is not in MMX state on X86
+  @deprecated without replacement
 */
 func AVAssert0Fpu() {
 	C.av_assert0_fpu()
@@ -10843,6 +10995,28 @@ func AVCspApproximateTrcGamma(trc AVColorTransferCharacteristic) float64 {
 	return float64(ret)
 }
 
+// --- Function av_csp_approximate_eotf_gamma ---
+
+// AVCspApproximateEotfGamma wraps av_csp_approximate_eotf_gamma.
+/*
+  Determine a suitable EOTF 'gamma' value to match the supplied
+  AVColorTransferCharacteristic.
+
+  This function returns the gamma value (exponent) for a simple pure power
+  function approximation of the supplied AVColorTransferCharacteristic, or 0.
+  if no reasonable approximation exists.
+
+  EOTF(v) = (L_w - L_b) * v^gamma + L_b
+
+  @return Will return an approximation to the simple gamma function matching
+          the supplied Transfer Characteristic EOTF, Will return 0.0 for any
+          we cannot reasonably match against.
+*/
+func AVCspApproximateEotfGamma(trc AVColorTransferCharacteristic) float64 {
+	ret := C.av_csp_approximate_eotf_gamma(C.enum_AVColorTransferCharacteristic(trc))
+	return float64(ret)
+}
+
 // --- Function av_csp_trc_func_from_id ---
 
 // AVCspTrcFuncFromId wraps av_csp_trc_func_from_id.
@@ -11443,6 +11617,10 @@ func AVDoviGetColor(data *AVDOVIMetadata) *AVDOVIColorMetadata {
 // --- Function av_dovi_get_ext ---
 
 // AVDoviGetExt wraps av_dovi_get_ext.
+/*
+  Gets the specified Dolby Vision Display Management (DM) metadata
+  @param index must be non negative and below data->num_ext_blocks
+*/
 func AVDoviGetExt(data *AVDOVIMetadata, index int) *AVDOVIDmData {
 	var tmpdata *C.AVDOVIMetadata
 	if data != nil {
@@ -12323,7 +12501,7 @@ func AVFrameRef(dst *AVFrame, src *AVFrame) (int, error) {
   Ensure the destination frame refers to the same data described by the source
   frame, either by creating a new reference for each AVBufferRef from src if
   they differ from those in dst, by allocating new buffers and copying data if
-  src is not reference counted, or by unrefencing it if src is empty.
+  src is not reference counted, or by unreferencing it if src is empty.
 
   Frame properties on dst will be replaced by those from src.
 
@@ -16750,6 +16928,30 @@ func AVChromaLocationPosToEnum(xpos int, ypos int) AVChromaLocation {
 	return AVChromaLocation(ret)
 }
 
+// --- Function av_alpha_mode_name ---
+
+// AVAlphaModeName wraps av_alpha_mode_name.
+//
+//	@return the name for provided alpha mode or NULL if unknown.
+func AVAlphaModeName(mode AVAlphaMode) *CStr {
+	ret := C.av_alpha_mode_name(C.enum_AVAlphaMode(mode))
+	return wrapCStr(ret)
+}
+
+// --- Function av_alpha_mode_from_name ---
+
+// AVAlphaModeFromName wraps av_alpha_mode_from_name.
+//
+//	@return the AVAlphaMode value for name or an AVError if not found.
+func AVAlphaModeFromName(name *CStr) AVAlphaMode {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_alpha_mode_from_name(tmpname)
+	return AVAlphaMode(ret)
+}
+
 // --- Function av_get_pix_fmt ---
 
 // AVGetPixFmt wraps av_get_pix_fmt.
@@ -17378,8 +17580,7 @@ func AVGetPlanarSampleFmt(sampleFmt AVSampleFormat) AVSampleFormat {
   @param sample_fmt the number of the sample format to print the
   corresponding info string, or a negative value to print the
   corresponding header.
-  @return the pointer to the filled buffer or NULL if sample_fmt is
-  unknown or in case of other errors
+  @return the pointer to the filled buffer or NULL in case of other errors
 */
 func AVGetSampleFmtString(buf *CStr, bufSize int, sampleFmt AVSampleFormat) *CStr {
 	var tmpbuf *C.char
@@ -19427,7 +19628,7 @@ func SwsFreeContext(ctx **SwsContext) {
 
 // SwsTestFormat wraps sws_test_format.
 /*
-  Test if a given pixel format is supported.
+  Test if a given (software) pixel format is supported.
 
   @param output  If 0, test if compatible with the source/input frame;
                  otherwise, with the destination/output frame.
@@ -19437,6 +19638,21 @@ func SwsFreeContext(ctx **SwsContext) {
 */
 func SwsTestFormat(format AVPixelFormat, output int) (int, error) {
 	ret := C.sws_test_format(C.enum_AVPixelFormat(format), C.int(output))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function sws_test_hw_format ---
+
+// SwsTestHWFormat wraps sws_test_hw_format.
+/*
+  Test if a given hardware pixel format is supported.
+
+  @param format  The hardware format to check, or AV_PIX_FMT_NONE.
+
+  @return A positive integer if supported or AV_PIX_FMT_NONE, 0 otherwise.
+*/
+func SwsTestHWFormat(format AVPixelFormat) (int, error) {
+	ret := C.sws_test_hw_format(C.enum_AVPixelFormat(format))
 	return int(ret), WrapErr(int(ret))
 }
 
@@ -19660,7 +19876,7 @@ func SwsIssupportedendiannessconversion(pixFmt AVPixelFormat) (int, error) {
   Initialize the swscaler context sws_context.
 
   This function is considered deprecated, and provided only for backwards
-  compatibility with sws_scale() and sws_start_frame(). The preferred way to
+  compatibility with sws_scale() and sws_frame_start(). The preferred way to
   use libswscale is to set all frame properties correctly and call
   sws_scale_frame() directly, without explicitly initializing the context.
 
@@ -19713,8 +19929,7 @@ func SwsFreecontext(swsContext *SwsContext) {
 /*
   Initialize the scaling process for a given pair of source/destination frames.
   Must be called before any calls to sws_send_slice() and sws_receive_slice().
-  Requires a context that has been previously been initialized with
-  sws_init_context().
+  Requires a context that has previously been initialized with sws_init_context().
 
   This function will retain references to src and dst, so they must both use
   refcounted buffers (if allocated by the caller, in case of dst).
@@ -19830,7 +20045,7 @@ func SwsReceiveSlice(c *SwsContext, sliceStart uint, sliceHeight uint) (int, err
 
 // SwsReceiveSliceAlignment wraps sws_receive_slice_alignment.
 /*
-  Get the alignment required for slices. Requires a context that has been
+  Get the alignment required for slices. Requires a context that has
   previously been initialized with sws_init_context().
 
   @param c   The scaling context
