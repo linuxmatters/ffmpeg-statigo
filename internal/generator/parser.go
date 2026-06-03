@@ -175,11 +175,10 @@ func getSystemIncludes() []string {
 		return nil
 	}
 
-	lines := strings.Split(string(output), "\n")
 	inIncludes := false
 	var includes []string
 
-	for _, line := range lines {
+	for line := range strings.SplitSeq(string(output), "\n") {
 		if strings.Contains(line, "#include <...> search starts here:") {
 			inIncludes = true
 			continue

@@ -378,8 +378,7 @@ func fetchChecksumFromFile(assets []GitHubAsset, tarballName string) (string, er
 		return "", err
 	}
 
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(string(content), "\n") {
 		if strings.Contains(line, tarballName) {
 			parts := strings.Fields(line)
 			if len(parts) >= 2 {
