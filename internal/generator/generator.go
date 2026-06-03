@@ -1606,9 +1606,14 @@ func (g *Generator) convCamel(val string) string {
 
 	res := strings.Join(newParts, "")
 
-	// Temporary hack
+	// Go has a single package-level identifier namespace, so a generated name
+	// (typically a function) that camel-cases onto an already-registered struct
+	// name must be disambiguated. Appending "_" keeps it exported and stable.
+	// structs is fully populated by Parse() before any conversion runs, so this
+	// lookup is complete and deterministic. Real collisions today:
+	// avfilter_link -> AVFilterLink_, av_buffer_ref -> AVBufferRef_.
 	if _, ok := g.input.structs[res]; ok {
-		res = fmt.Sprintf("%v_", res)
+		res += "_"
 	}
 
 	return res
