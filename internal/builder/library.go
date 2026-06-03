@@ -121,7 +121,7 @@ func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error 
 
 	// Build
 	buildDir := filepath.Join(buildRoot, "build", lib.Name)
-	if err := os.MkdirAll(buildDir, 0755); err != nil {
+	if err := os.MkdirAll(buildDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create build dir: %w", err)
 	}
 

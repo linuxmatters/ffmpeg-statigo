@@ -64,7 +64,6 @@ func (s *AVClass) ItemName() func(pointer unsafe.Pointer) *CStr {
 	fp := s.ptr.item_name
 
 	return func(pointer unsafe.Pointer) *CStr {
-
 		value := C.invokeItemNameFunc(fp, pointer)
 		return wrapCStr(value)
 	}

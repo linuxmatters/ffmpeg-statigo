@@ -351,7 +351,7 @@ var libva = &Library{
 		// Replace shared_library with library (respects default_library option)
 		patched := strings.ReplaceAll(string(content), "shared_library(", "library(")
 
-		if err := os.WriteFile(mesonBuild, []byte(patched), 0644); err != nil {
+		if err := os.WriteFile(mesonBuild, []byte(patched), 0o644); err != nil {
 			return fmt.Errorf("failed to write patched va/meson.build: %w", err)
 		}
 
@@ -385,7 +385,7 @@ var libvpl = &Library{
 		// Add -lstdc++ after -l@OUTPUT_NAME@ since libvpl is C++ code
 		patched := strings.ReplaceAll(string(content), "-l@OUTPUT_NAME@ @VPL_PKGCONFIG_DEPENDENT_LIBS@", "-l@OUTPUT_NAME@ -lstdc++ @VPL_PKGCONFIG_DEPENDENT_LIBS@")
 
-		if err := os.WriteFile(vplPcIn, []byte(patched), 0644); err != nil {
+		if err := os.WriteFile(vplPcIn, []byte(patched), 0o644); err != nil {
 			return fmt.Errorf("failed to write patched vpl.pc.in: %w", err)
 		}
 
@@ -424,7 +424,7 @@ var zimg = &Library{
 		// Add -lm after @STL_LIBS@ in Libs.private
 		patched := strings.ReplaceAll(string(content), "Libs.private: @STL_LIBS@", "Libs.private: @STL_LIBS@ -lm")
 
-		if err := os.WriteFile(zimgPcIn, []byte(patched), 0644); err != nil {
+		if err := os.WriteFile(zimgPcIn, []byte(patched), 0o644); err != nil {
 			return fmt.Errorf("failed to write patched zimg.pc.in: %w", err)
 		}
 
@@ -768,7 +768,7 @@ var ffmpeg = &Library{
 		if release, err := os.ReadFile(releaseFile); err == nil {
 			version := strings.TrimSpace(string(release))
 			if version != "" {
-				if err := os.WriteFile(filepath.Join(srcPath, "VERSION"), []byte("n"+version+"\n"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcPath, "VERSION"), []byte("n"+version+"\n"), 0o644); err != nil {
 					return fmt.Errorf("failed to write VERSION: %w", err)
 				}
 			}
@@ -792,7 +792,7 @@ var ffmpeg = &Library{
 			"X509_gmtime_adj(X509_get0_notAfter(*cert)")
 
 		// Write back
-		if err := os.WriteFile(patchFile, []byte(patched), 0644); err != nil {
+		if err := os.WriteFile(patchFile, []byte(patched), 0o644); err != nil {
 			return fmt.Errorf("failed to write patched tls_openssl.c: %w", err)
 		}
 

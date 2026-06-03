@@ -19,7 +19,7 @@ import (
 // DownloadFile downloads a file using the grab library with resume support and retries
 func DownloadFile(url, dest string, logger io.Writer) error {
 	// Create downloads directory
-	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
 
@@ -178,7 +178,7 @@ func ExtractArchive(archivePath, destPath, archiveType string, logger io.Writer)
 	fmt.Fprintf(logger, "Extracting %s...\n", filepath.Base(archivePath))
 
 	// Create destination directory
-	if err := os.MkdirAll(destPath, 0755); err != nil {
+	if err := os.MkdirAll(destPath, 0o755); err != nil {
 		return err
 	}
 
@@ -266,12 +266,12 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
 			}
 
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
 
@@ -288,7 +288,7 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 
 		case tar.TypeSymlink:
 			// Handle symlinks
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
 			if err := os.Symlink(header.Linkname, target); err != nil && !os.IsExist(err) {
@@ -335,13 +335,13 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 		}
 
 		if file.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
 			}
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
 		}
 

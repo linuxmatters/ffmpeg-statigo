@@ -61,7 +61,7 @@ func main() {
 	}
 
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			log.Fatalf("Failed to create directory %s: %v\n", dir, err)
 		}
 	}
@@ -116,7 +116,7 @@ func main() {
 
 		// Create per-library logger
 		logDir := filepath.Join(buildRoot, "build", lib.Name)
-		os.MkdirAll(logDir, 0755)
+		os.MkdirAll(logDir, 0o755)
 
 		logFile := filepath.Join(logDir, "build.log")
 		logFileWriter, err := os.Create(logFile)
@@ -217,7 +217,7 @@ func combineMac(libFiles []string, output string) error {
 
 	// Ensure output directory exists
 	outputDir := filepath.Dir(output)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -258,7 +258,7 @@ func combineLinux(libFiles []string, output string) error {
 
 	// Ensure output directory exists
 	outputDir := filepath.Dir(output)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"log"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 type Display struct {

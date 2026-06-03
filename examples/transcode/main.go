@@ -127,7 +127,6 @@ type StreamContext struct {
 }
 
 func (c *StreamContext) Write(frame *ffmpeg.AVFrame, outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) {
-
 	if _, err := ffmpeg.AVBuffersrcAddFrameFlags(c.bufferSrcCtx, frame, 0); err != nil {
 		log.Panicln(err)
 	}
@@ -148,7 +147,6 @@ func (c *StreamContext) Write(frame *ffmpeg.AVFrame, outTb *ffmpeg.AVRational, o
 
 		ffmpeg.AVFrameUnref(c.filteredFrame)
 	}
-
 }
 
 func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) {
@@ -187,7 +185,6 @@ func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCt
 			log.Panicln(err)
 		}
 	}
-
 }
 
 func (c *StreamContext) Flush(outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) {
@@ -221,7 +218,6 @@ func (c *StreamContext) Flush(outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormat
 }
 
 func (c *StreamContext) Free() {
-
 	ffmpeg.AVCodecFreeContext(&c.decCtx)
 	ffmpeg.AVCodecFreeContext(&c.encCtx)
 
@@ -232,7 +228,6 @@ func (c *StreamContext) Free() {
 	}
 
 	ffmpeg.AVFrameFree(&c.decFrame)
-
 }
 
 func (t *Transcoder) openIn() {
@@ -409,7 +404,6 @@ func (t *Transcoder) openOut() {
 }
 
 func (t *Transcoder) initFilters() {
-
 	for i, stream := range t.streams {
 		slog.Info("Stream", "i", i)
 
