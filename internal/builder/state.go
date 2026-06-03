@@ -29,8 +29,8 @@ func NewBuildState(lib *Library, buildRoot string) *BuildState {
 		statePath: statePath,
 	}
 
-	// Try to load existing state
-	state.Load()
+	// Try to load existing state (absent or invalid state is fine)
+	_ = state.Load()
 
 	return state
 }

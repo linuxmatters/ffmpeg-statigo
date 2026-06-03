@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -30,11 +31,12 @@ func main() {
 	listMode := false
 
 	for _, arg := range os.Args[1:] {
-		if arg == "--clean" {
+		switch arg {
+		case "--clean":
 			cleanBuild = true
-		} else if arg == "--list" {
+		case "--list":
 			listMode = true
-		} else {
+		default:
 			selectedLibs[arg] = true
 		}
 	}
@@ -116,7 +118,9 @@ func main() {
 
 		// Create per-library logger
 		logDir := filepath.Join(buildRoot, "build", lib.Name)
-		os.MkdirAll(logDir, 0o755)
+		if err := os.MkdirAll(logDir, 0o755); err != nil {
+			log.Fatalf("Failed to create log directory for %s: %v\n", lib.Name, err)
+		}
 
 		logFile := filepath.Join(logDir, "build.log")
 		logFileWriter, err := os.Create(logFile)
@@ -227,7 +231,7 @@ func combineMac(libFiles []string, output string) error {
 	// Use Apple's libtool (not GNU libtool from Nix) to combine libraries directly
 	// Apple's libtool -static is specifically designed for this purpose
 	args := append([]string{"-static", "-o", output}, libFiles...)
-	libtoolCmd := exec.Command("/usr/bin/libtool", args...)
+	libtoolCmd := exec.CommandContext(context.Background(), "/usr/bin/libtool", args...)
 
 	// Capture output for debugging
 	var stdout, stderr bytes.Buffer
@@ -239,7 +243,7 @@ func combineMac(libFiles []string, output string) error {
 	}
 
 	// Strip the library to reduce size
-	if err := exec.Command("strip", "-S", output).Run(); err != nil {
+	if err := exec.CommandContext(context.Background(), "strip", "-S", output).Run(); err != nil {
 		return fmt.Errorf("strip failed: %w", err)
 	}
 
@@ -268,7 +272,7 @@ func combineLinux(libFiles []string, output string) error {
 	// Step 1: Create thin archive with -T flag (pointers only, minimal memory)
 	log.Println("  Creating thin archive...")
 	args := append([]string{"cqT", output}, libFiles...)
-	thinCmd := exec.Command("ar", args...)
+	thinCmd := exec.CommandContext(context.Background(), "ar", args...)
 	thinCmd.Stderr = &stderr
 	stderr.Reset()
 
@@ -281,7 +285,7 @@ func combineLinux(libFiles []string, output string) error {
 	log.Println("  Converting to normal archive...")
 	mriScript := fmt.Sprintf("create %s.tmp\naddlib %s\nsave\nend", output, output)
 
-	convertCmd := exec.Command("ar", "-M")
+	convertCmd := exec.CommandContext(context.Background(), "ar", "-M")
 	convertCmd.Stdin = bytes.NewBufferString(mriScript)
 	convertCmd.Stderr = &stderr
 	stderr.Reset()
@@ -296,7 +300,7 @@ func combineLinux(libFiles []string, output string) error {
 	}
 
 	// Strip the library
-	stripCmd := exec.Command("strip", "--strip-unneeded", output)
+	stripCmd := exec.CommandContext(context.Background(), "strip", "--strip-unneeded", output)
 	stripCmd.Stderr = &stderr
 	stderr.Reset()
 	if err := stripCmd.Run(); err != nil {
@@ -321,11 +325,6 @@ const (
 // colorize wraps text with an ANSI colour code and reset.
 func colorize(text, color string) string {
 	return color + text + colorReset
-}
-
-// bold wraps text with ANSI bold formatting.
-func bold(text string) string {
-	return colorBold + text + colorReset
 }
 
 // tableCell formats a left-aligned cell with the given width and colour.

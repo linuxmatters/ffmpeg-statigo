@@ -901,7 +901,7 @@ func touchAutomakeFiles(srcPath string) error {
 			return err
 		}
 		if !d.IsDir() && d.Name() == "Makefile.in" {
-			os.Chtimes(path, now, now)
+			_ = os.Chtimes(path, now, now) //nolint:gosec // G122: touching files in a locally-extracted, trusted source tree
 		}
 		return nil
 	})

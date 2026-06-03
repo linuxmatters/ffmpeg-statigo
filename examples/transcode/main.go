@@ -324,7 +324,8 @@ func (t *Transcoder) openOut() {
 		stream := t.streams[i]
 		decCtx := stream.decCtx
 
-		if decCtx.CodecType() == ffmpeg.AVMediaTypeVideo || decCtx.CodecType() == ffmpeg.AVMediaTypeAudio {
+		switch {
+		case decCtx.CodecType() == ffmpeg.AVMediaTypeVideo || decCtx.CodecType() == ffmpeg.AVMediaTypeAudio:
 			// in this example, we choose transcoding to same codec
 			encoder := ffmpeg.AVCodecFindEncoder(decCtx.CodecId())
 			if encoder == nil {
@@ -374,9 +375,9 @@ func (t *Transcoder) openOut() {
 			}
 
 			outStream.SetTimeBase(encCtx.TimeBase())
-		} else if decCtx.CodecType() == ffmpeg.AVMediaTypeUnknown {
+		case decCtx.CodecType() == ffmpeg.AVMediaTypeUnknown:
 			log.Panicln("unknown media type")
-		} else {
+		default:
 			// if this stream must be remuxed
 			if _, err := ffmpeg.AVCodecParametersCopy(outStream.Codecpar(), inStream.Codecpar()); err != nil {
 				log.Panicln(err)

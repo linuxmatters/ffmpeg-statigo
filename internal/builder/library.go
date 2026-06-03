@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -169,7 +170,8 @@ func (lib *Library) ConfigHash() string {
 
 // runCommandEnv runs a command with extra KEY=value entries appended to the build env.
 func runCommandEnv(dir string, logger io.Writer, installDir string, extraEnv []string, name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	// name and args come from internal build definitions, not user input.
+	cmd := exec.CommandContext(context.Background(), name, args...) //nolint:gosec // G702: build commands are project-defined, not external
 	cmd.Dir = dir
 	cmd.Stdout = logger
 	cmd.Stderr = logger
