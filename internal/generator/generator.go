@@ -18,7 +18,7 @@ var primTypes = map[string]string{
 	"uint":      "uint",
 	"char":      "uint8",
 	"uchar":     "uint8",
-	"ulong":     "uint32",
+	"ulong":     "uint64",
 	"int8_t":    "int8",
 	"int16_t":   "int16",
 	"int32_t":   "int32",
@@ -114,6 +114,16 @@ func getCType(typeName string, goType string) string {
 		return "ptrdiff_t"
 	}
 
+	// Special case: ulong and long must be preserved as their named C types.
+	// CGO treats C.ulong/C.long as distinct from C.uint64_t/C.int64_t even at
+	// the same width, so map them before the goType switch to avoid mismatches.
+	if typeName == "ulong" {
+		return "ulong"
+	}
+	if typeName == "long" {
+		return "long"
+	}
+
 	// Map Go types to their correct C types
 	// Returns the type name to use after "C." in generated code
 	switch goType {
@@ -151,10 +161,6 @@ func getCType(typeName string, goType string) string {
 	switch typeName {
 	case "uchar":
 		return "uchar" // C.uchar is valid
-	case "ulong":
-		return "ulong" // C.ulong is valid
-	case "long":
-		return "long" // C.long is valid
 	}
 
 	// Default: use the reported type name
