@@ -65,8 +65,8 @@ jobs:
       - name: Calculate file hashes
         id: file-hashes
         run: |
-          echo "libraries-hash=$(sha256sum internal/builder/libraries.go | cut -d' ' -f1 | head -c 8)" >> $GITHUB_OUTPUT
-          echo "buildsystems-hash=$(sha256sum internal/builder/buildsystems.go | cut -d' ' -f1 | head -c 8)" >> $GITHUB_OUTPUT
+          echo "libraries-hash=$(sha256sum internal/builder/libraries.go | cut -d' ' -f1 | head -c 8)" >> "$GITHUB_OUTPUT"
+          echo "buildsystems-hash=$(sha256sum internal/builder/buildsystems.go | cut -d' ' -f1 | head -c 8)" >> "$GITHUB_OUTPUT"
 
       - name: Cache FFmpeg source downloads
         uses: actions/cache@v5

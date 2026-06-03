@@ -40,9 +40,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libclang-18-dev llvm-18-dev
-          echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib" >> $GITHUB_ENV
-          echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          {
+            echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib"
+            echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include"
+            echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH"
+          } >> "$GITHUB_ENV"
 
       - name: Download FFmpeg libraries
         run: go run ./cmd/download-lib/
@@ -66,18 +68,17 @@ jobs:
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=v${{ inputs.version }}" >> $GITHUB_OUTPUT
-            echo "display_version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "version=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "display_version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-            echo "display_version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "display_version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Generate changelog
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          DISPLAY_VERSION="${{ steps.version.outputs.display_version }}"
 
           # Get previous tag (look for v8.* tags)
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
