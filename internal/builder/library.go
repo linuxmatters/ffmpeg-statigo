@@ -193,8 +193,7 @@ func buildEnv(installDir string) []string {
 	// Update or add PKG_CONFIG_PATH
 	updatedPkg := false
 	for i, e := range env {
-		if strings.HasPrefix(e, "PKG_CONFIG_PATH=") {
-			existing := strings.TrimPrefix(e, "PKG_CONFIG_PATH=")
+		if existing, ok := strings.CutPrefix(e, "PKG_CONFIG_PATH="); ok {
 			env[i] = "PKG_CONFIG_PATH=" + pkgConfigPath + ":" + existing
 			updatedPkg = true
 			break
@@ -208,8 +207,7 @@ func buildEnv(installDir string) []string {
 	binPath := filepath.Join(installDir, "bin")
 	updatedPath := false
 	for i, e := range env {
-		if strings.HasPrefix(e, "PATH=") {
-			existing := strings.TrimPrefix(e, "PATH=")
+		if existing, ok := strings.CutPrefix(e, "PATH="); ok {
 			env[i] = "PATH=" + binPath + ":" + existing
 			updatedPath = true
 			break
@@ -246,8 +244,7 @@ func buildEnv(installDir string) []string {
 			// Set CFLAGS with full CGO_CFLAGS (includes -isysroot and -I.../clang/18/include)
 			updatedCflags := false
 			for i, e := range env {
-				if strings.HasPrefix(e, "CFLAGS=") {
-					existing := strings.TrimPrefix(e, "CFLAGS=")
+				if existing, ok := strings.CutPrefix(e, "CFLAGS="); ok {
 					env[i] = "CFLAGS=" + existing + " " + cgoCflags
 					updatedCflags = true
 					break
@@ -272,8 +269,7 @@ func buildEnv(installDir string) []string {
 			// Set CXXFLAGS with same flags for C++ builds
 			updatedCxxflags := false
 			for i, e := range env {
-				if strings.HasPrefix(e, "CXXFLAGS=") {
-					existing := strings.TrimPrefix(e, "CXXFLAGS=")
+				if existing, ok := strings.CutPrefix(e, "CXXFLAGS="); ok {
 					env[i] = "CXXFLAGS=" + existing + " " + cxxExtra
 					updatedCxxflags = true
 					break
@@ -290,8 +286,7 @@ func buildEnv(installDir string) []string {
 				ldExtra := "-L" + filepath.Join(sdkPath, "usr", "lib")
 				updatedLdflags := false
 				for i, e := range env {
-					if strings.HasPrefix(e, "LDFLAGS=") {
-						existing := strings.TrimPrefix(e, "LDFLAGS=")
+					if existing, ok := strings.CutPrefix(e, "LDFLAGS="); ok {
 						env[i] = "LDFLAGS=" + existing + " " + ldExtra
 						updatedLdflags = true
 						break
@@ -305,8 +300,7 @@ func buildEnv(installDir string) []string {
 				libraryPath := filepath.Join(sdkPath, "usr", "lib")
 				updatedLibraryPath := false
 				for i, e := range env {
-					if strings.HasPrefix(e, "LIBRARY_PATH=") {
-						existing := strings.TrimPrefix(e, "LIBRARY_PATH=")
+					if existing, ok := strings.CutPrefix(e, "LIBRARY_PATH="); ok {
 						env[i] = "LIBRARY_PATH=" + libraryPath + ":" + existing
 						updatedLibraryPath = true
 						break

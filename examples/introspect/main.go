@@ -1,9 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 	"unsafe"
 
@@ -98,7 +100,7 @@ func listCodecs() {
 	for name := range codecMap {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 
 	// Count encoders and decoders by type
 	videoEncoders, videoDecoders := 0, 0
@@ -346,8 +348,8 @@ func listFormats() {
 		formats = append(formats, *f)
 	}
 
-	sort.Slice(formats, func(i, j int) bool {
-		return formats[i].name < formats[j].name
+	slices.SortFunc(formats, func(a, b formatInfo) int {
+		return cmp.Compare(a.name, b.name)
 	})
 
 	// Count totals
@@ -511,8 +513,8 @@ func listParsers() {
 	}
 
 	// Sort parsers by name
-	sort.Slice(parsers, func(i, j int) bool {
-		return parsers[i].name < parsers[j].name
+	slices.SortFunc(parsers, func(a, b parserInfo) int {
+		return cmp.Compare(a.name, b.name)
 	})
 
 	// Display parsers
@@ -594,8 +596,8 @@ func listProtocols() {
 		protocols = append(protocols, *p)
 	}
 
-	sort.Slice(protocols, func(i, j int) bool {
-		return protocols[i].name < protocols[j].name
+	slices.SortFunc(protocols, func(a, b protocolInfo) int {
+		return cmp.Compare(a.name, b.name)
 	})
 
 	// Count totals
@@ -724,7 +726,7 @@ func listHWAccels() {
 	}
 
 	// Sort hwaccels by name
-	sort.Strings(hwaccels)
+	slices.Sort(hwaccels)
 
 	// Display hwaccels
 	for _, name := range hwaccels {
@@ -914,8 +916,8 @@ func listHWAccels() {
 	}
 
 	// Sort by name
-	sort.Slice(unifiedList, func(i, j int) bool {
-		return unifiedList[i].name < unifiedList[j].name
+	slices.SortFunc(unifiedList, func(a, b unifiedHWEntry) int {
+		return cmp.Compare(a.name, b.name)
 	})
 
 	// Count encoders, decoders, and hwaccels
@@ -1055,8 +1057,8 @@ func listFilters() {
 	}
 
 	// Sort filters by name
-	sort.Slice(filters, func(i, j int) bool {
-		return filters[i].name < filters[j].name
+	slices.SortFunc(filters, func(a, b filterInfo) int {
+		return cmp.Compare(a.name, b.name)
 	})
 
 	// Count filters by type
@@ -1583,10 +1585,5 @@ func buildBSFMap() map[ffmpeg.AVCodecID][]string {
 }
 
 func sortedKeys(m map[string]bool) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
+	return slices.Sorted(maps.Keys(m))
 }

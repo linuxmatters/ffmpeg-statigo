@@ -38,11 +38,11 @@ func NewDisplay() *Display {
 	}
 
 	palette := make([]tcell.Color, nColors)
-	for i := 0; i < nColors; i++ {
+	for i := range nColors {
 		palette[i] = tcell.Color(i) | tcell.ColorValid
 	}
 
-	for i := 0; i < len(pixelStyles); i++ {
+	for i := range pixelStyles {
 		col := tcell.FindColor(tcell.NewRGBColor(int32(i), int32(i), int32(i)), palette)
 		pixelStyles[i] = tcell.StyleDefault.Background(col).Foreground(col)
 	}
