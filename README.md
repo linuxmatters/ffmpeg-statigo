@@ -36,6 +36,12 @@ Step 4 prevents `git pull --rebase` from breaking submodule references. Fast-for
 
 Static libraries are gitignored—only the submodule reference is committed.
 
+### Checksum verification
+
+`download-lib` verifies each downloaded tarball against the SHA256 checksum published with the GitHub release. Verification is on by default: if no checksum is available (the digest and `SHA256SUMS` are both missing, or the metadata fetch fails), the download is rejected and the extracted files are removed.
+
+Set `FFMPEG_STATIGO_ALLOW_UNVERIFIED=1` to install without a checksum. This prints a warning and proceeds. A checksum *mismatch* always fails and cannot be overridden.
+
 **See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for CI/CD integration, cross-compilation, and troubleshooting.**
 
 ## Memory and lifetimes

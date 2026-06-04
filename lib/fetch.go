@@ -76,10 +76,14 @@ func ensureLibrary() error {
 	fmt.Printf("Downloading FFmpeg library %s for %s/%s...\n", release, platform, arch)
 
 	// Fetch expected checksum before streaming download
+	allowUnverified := os.Getenv("FFMPEG_STATIGO_ALLOW_UNVERIFIED") != ""
 	expectedChecksum, err := fetchExpectedChecksum(release, tarballName)
 	if err != nil {
-		// Non-fatal: warn and continue without verification
-		fmt.Fprintf(os.Stderr, "WARNING: Could not fetch checksum: %v\n", err)
+		// Treat a fetch failure as no checksum available; handled after extraction.
+		if allowUnverified {
+			fmt.Fprintf(os.Stderr, "WARNING: Could not fetch checksum: %v\n", err)
+		}
+		expectedChecksum = ""
 	}
 
 	// Stream download directly to extraction with concurrent checksum verification
@@ -88,13 +92,20 @@ func ensureLibrary() error {
 		return fmt.Errorf("download/extract: %w", err)
 	}
 
-	// Verify checksum if we have an expected value
-	if expectedChecksum != "" {
-		if actualChecksum != expectedChecksum {
-			// Clean up partially extracted files on checksum failure
+	// Verify checksum, refusing to install unverified libraries by default.
+	switch {
+	case expectedChecksum == "":
+		if !allowUnverified {
+			// Clean up extracted files: the library is unverified and rejected.
 			_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
-			return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, actualChecksum)
+			return fmt.Errorf("no checksum available to verify %s; set FFMPEG_STATIGO_ALLOW_UNVERIFIED=1 to install without verification", tarballName)
 		}
+		fmt.Fprintf(os.Stderr, "WARNING: No checksum available for %s, installing unverified (FFMPEG_STATIGO_ALLOW_UNVERIFIED set)\n", tarballName)
+	case actualChecksum != expectedChecksum:
+		// Clean up partially extracted files on checksum failure
+		_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, actualChecksum)
+	default:
 		fmt.Printf("Checksum verified: %s\n", actualChecksum[:8])
 	}
 
@@ -341,7 +352,7 @@ func extractFile(tr *tar.Reader, target string) error {
 	}
 	defer outFile.Close()
 
-	if _, err := io.Copy(outFile, tr); err != nil {
+	if err := pathsafe.CopyCapped(outFile, tr); err != nil {
 		return fmt.Errorf("writing file %s: %w", target, err)
 	}
 

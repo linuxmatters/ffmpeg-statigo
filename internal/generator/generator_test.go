@@ -194,9 +194,9 @@ func render(c jen.Code) string {
 }
 
 // TestMarshalArgSizeTOutputParams pins the size_t rewrite to the explicit
-// sizeTOutputParams lookup introduced in Task 1.1. marshalArg rewrites a
+// outputParams lookup. marshalArg rewrites a
 // pointer-to-int output parameter to size_t only when the (function, parameter)
-// pair is present in sizeTOutputParams; the former strings.Contains(fn.Name,
+// pair is present in outputParams with sizeT: true; the former strings.Contains(fn.Name,
 // "_alloc") substring heuristic is gone. The positive case proves the lookup
 // drives the rewrite (param becomes *uint64, C cast uses C.size_t). The
 // regression case proves an _alloc function name alone no longer triggers the
@@ -205,8 +205,8 @@ func render(c jen.Code) string {
 func TestMarshalArgSizeTOutputParams(t *testing.T) {
 	g := skipGen()
 
-	// Positive: av_dovi_alloc.size is in both outputPointerAllowlist and
-	// sizeTOutputParams, so the int* output pointer is rewritten to size_t.
+	// Positive: av_dovi_alloc.size is in outputParams with sizeT: true, so the
+	// int* output pointer is rewritten to size_t.
 	t.Run("allowlisted size_t pair rewritten", func(t *testing.T) {
 		o := newFile()
 		fn := &Function{Name: "av_dovi_alloc"}
@@ -224,24 +224,24 @@ func TestMarshalArgSizeTOutputParams(t *testing.T) {
 	})
 
 	// Regression: an _alloc-named function that is allowlisted (so its output
-	// pointer is emitted, not skipped) but absent from sizeTOutputParams must
-	// stay *int. outputPointerAllowlist is a package var, so inject and restore
-	// the fake entry with a defer to keep other tests unaffected. The pair is
-	// deliberately never added to sizeTOutputParams.
+	// pointer is emitted, not skipped) but whose entry has sizeT: false must
+	// stay *int. outputParams is a package var, so inject and restore the fake
+	// entry with a defer to keep other tests unaffected. The pair is
+	// deliberately given sizeT: false.
 	t.Run("allocnamed pair absent from size_t table stays int", func(t *testing.T) {
 		const fnName = "av_fake_alloc"
-		saved := outputPointerAllowlist[fnName]
-		outputPointerAllowlist[fnName] = map[string]bool{"size": true}
+		saved := outputParams[fnName]
+		outputParams[fnName] = map[string]outputParam{"size": {}}
 		defer func() {
 			if saved == nil {
-				delete(outputPointerAllowlist, fnName)
+				delete(outputParams, fnName)
 			} else {
-				outputPointerAllowlist[fnName] = saved
+				outputParams[fnName] = saved
 			}
 		}()
 
-		if sizeTOutputParams[fnName] != nil {
-			t.Fatalf("test invariant broken: %s present in sizeTOutputParams", fnName)
+		if p, ok := outputParams[fnName]["size"]; !ok || p.sizeT {
+			t.Fatalf("test invariant broken: %s.size must be present with sizeT: false", fnName)
 		}
 
 		o := newFile()

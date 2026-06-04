@@ -18,22 +18,6 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-// maxExtractFileSize caps a single extracted file to guard against decompression
-// bombs. FFmpeg sources and prebuilt static libraries stay well below this.
-const maxExtractFileSize = 2 << 30 // 2 GiB
-
-// copyCapped copies from src to dst, refusing more than maxExtractFileSize bytes.
-func copyCapped(dst io.Writer, src io.Reader) error {
-	n, err := io.Copy(dst, io.LimitReader(src, maxExtractFileSize+1))
-	if err != nil {
-		return err
-	}
-	if n > maxExtractFileSize {
-		return fmt.Errorf("extracted file exceeds %d bytes", maxExtractFileSize)
-	}
-	return nil
-}
-
 // DownloadFile downloads a file using the grab library with resume support and retries
 func DownloadFile(url, dest string, logger io.Writer) error {
 	// Create downloads directory
@@ -298,7 +282,7 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 				return err
 			}
 
-			if err := copyCapped(outFile, tarReader); err != nil {
+			if err := pathsafe.CopyCapped(outFile, tarReader); err != nil {
 				outFile.Close()
 				return err
 			}
@@ -374,7 +358,7 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 			return err
 		}
 
-		err = copyCapped(outFile, rc)
+		err = pathsafe.CopyCapped(outFile, rc)
 		rc.Close()
 		outFile.Close()
 
