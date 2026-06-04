@@ -92,3 +92,65 @@ func TestSkipCollectorThroughCeiling(t *testing.T) {
 		t.Errorf("error message %q missing 'exceeds ceiling'", err.Error())
 	}
 }
+
+// TestApplyManualFixupsMissingTarget pins the fail-loud contract: when a fixup
+// target is absent from the parsed module, applyManualFixups returns a non-nil
+// error naming the missing symbol instead of nil-panicking on the assignment.
+// Each case omits exactly one target so the per-symbol diagnostic is exercised
+// independently. Builds the Module by hand so the test needs no libclang parse.
+func TestApplyManualFixupsMissingTarget(t *testing.T) {
+	tests := []struct {
+		name   string
+		mod    *Module
+		symbol string
+	}{
+		{
+			name: "AVRational absent from structs",
+			mod: &Module{
+				structs: map[string]*Struct{},
+				enums:   map[string]*Enum{"AVOptionType": {}},
+			},
+			symbol: "AVRational",
+		},
+		{
+			name: "AVOptionType absent from enums",
+			mod: &Module{
+				structs: map[string]*Struct{"AVRational": {}},
+				enums:   map[string]*Enum{},
+			},
+			symbol: "AVOptionType",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := applyManualFixups(tt.mod)
+			if err == nil {
+				t.Fatalf("applyManualFixups() = nil, want error naming %q", tt.symbol)
+			}
+			if !strings.Contains(err.Error(), tt.symbol) {
+				t.Errorf("error message %q does not name missing symbol %q", err.Error(), tt.symbol)
+			}
+		})
+	}
+}
+
+// TestApplyManualFixupsAppliesMutations pins the success path: with both
+// targets present, applyManualFixups returns nil and applies the corrections
+// (AVRational by value, AVOptionType comment cleared).
+func TestApplyManualFixupsAppliesMutations(t *testing.T) {
+	m := &Module{
+		structs: map[string]*Struct{"AVRational": {ByValue: false}},
+		enums:   map[string]*Enum{"AVOptionType": {Comment: "stray libclang comment"}},
+	}
+
+	if err := applyManualFixups(m); err != nil {
+		t.Fatalf("applyManualFixups() = %v, want nil", err)
+	}
+	if !m.structs["AVRational"].ByValue {
+		t.Errorf("AVRational.ByValue = false, want true")
+	}
+	if m.enums["AVOptionType"].Comment != "" {
+		t.Errorf("AVOptionType.Comment = %q, want empty", m.enums["AVOptionType"].Comment)
+	}
+}

@@ -216,7 +216,7 @@ func Parse(skips *SkipCollector) *Module {
 	for _, file := range files {
 		filePath := path.Join(AVLibPath, file)
 
-		fmt.Println(filePath)
+		log.Println(filePath)
 
 		p.parseFile(fmt.Sprintf("[%v]", file), filePath)
 	}
