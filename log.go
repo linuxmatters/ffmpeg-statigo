@@ -34,9 +34,9 @@ func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr unsafe.Pointer) {
 		}
 	}
 
-	msgWrapper := wrapCStr((*C.char)(msgPtr))
-	msg := msgWrapper.String()
-	msgWrapper.Free()
+	// msgPtr is owned by the C caller (ffg_log_callback), which frees it with
+	// av_freep after this returns. Copy the string out without taking ownership.
+	msg := C.GoString((*C.char)(msgPtr))
 
 	if cb := activeLogCallback.Load(); cb != nil && *cb != nil {
 		(*cb)(ctx, level, msg)

@@ -4,6 +4,7 @@
 
 #include <libavutil/bprint.h>
 #include <libavutil/avutil.h>
+#include <libavutil/mem.h>
 
 void ffgLogCallback(void* ctx, int level, void* msg);
 
@@ -24,6 +25,11 @@ void ffg_log_callback(void* avcl, int level, const char* fmt, va_list vl) {
     av_bprint_finalize(&msg, &msg_buf);
 
     ffgLogCallback(avcl, level, msg_buf);
+
+    // msg_buf is allocated by av_bprint_finalize via FFmpeg's allocator, so it
+    // must be freed with av_freep, not libc free. The Go callback copies the
+    // string out before returning, so freeing here is safe.
+    av_freep(&msg_buf);
 }
 
 void ffg_set_log() {

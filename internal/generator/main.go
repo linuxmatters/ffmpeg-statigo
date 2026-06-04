@@ -51,7 +51,7 @@ func main() {
 // values so a tripped ceiling surfaces the actionable numbers in the run log.
 func enforceSkipCeiling(total, ceiling int) error {
 	if total > ceiling {
-		return fmt.Errorf("skip-count regression: %d skipped symbols exceeds ceiling of %d (see IMPROVE-PLAN.md Task 3.4)", total, ceiling)
+		return fmt.Errorf("skip-count regression: %d skipped symbols exceeds ceiling of %d", total, ceiling)
 	}
 	return nil
 }

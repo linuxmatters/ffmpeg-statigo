@@ -88,10 +88,9 @@ type outputParam struct {
 
 // outputParams enumerates the (function, parameter) pairs whose
 // primitive-pointer parameter is an output pointer. Mirrors the shape of
-// skippedFields. Seeded against the pinned FFmpeg headers; see
-// IMPROVE-PLAN.md Tasks 2.1, 2.2. Entries with sizeT: true are the size_t-width
-// subset that libclang misreports as int (replacing the former substring
-// heuristic).
+// skippedFields. Seeded against the pinned FFmpeg headers. Entries with
+// sizeT: true are the size_t-width subset that libclang misreports as int
+// (replacing the former substring heuristic).
 // Sorted by function name then parameter name for reviewability.
 var outputParams = map[string]map[string]outputParam{
 	"av_ambient_viewing_environment_alloc": {
@@ -367,8 +366,8 @@ type SkipEntry struct {
 
 // SkipCollector aggregates every `skipped due to ...` decision the generator
 // makes during a single run. It observes the existing emit sites; it does not
-// change emitted code. Task 3.4 will consume the total to enforce a regression
-// ceiling on FFmpeg upgrades. See IMPROVE-PLAN.md Task 3.1.
+// change emitted code. enforceSkipCeiling consumes the total to enforce a
+// regression ceiling on FFmpeg upgrades.
 type SkipCollector struct {
 	Entries []SkipEntry
 }
