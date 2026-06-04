@@ -213,6 +213,23 @@ All builds go through `just`. Never use `go build` directly—the justfile handl
 | `cmd/download-lib/` | Downloads pre-built libraries from GitHub Releases |
 | `examples/` | Working examples (transcode, metadata, etc.) |
 
+## Generator
+
+`internal/generator/` parses the FFmpeg headers with libclang via the cgo binding
+`github.com/Newbluecake/bootstrap` and emits the `*.gen.go` files. Because it links
+libclang, regeneration needs a pinned clang (currently 20) and a working C toolchain,
+which is why it is supported only inside `nix develop`. The correctness gate is
+byte-identical output: after any generator change, `just generate` then
+`git diff --stat -- '*.gen.go'` must be empty.
+
+**TODO (future consideration):** evaluate porting the generator to
+[`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C99 frontend.
+This would drop the libclang/cgo dependency and the clang-version pinning churn,
+making regeneration toolchain-independent (no Nix shell or distro clang in CI). The
+risk is that `cc/v4`'s parse model differs from libclang, so the generated output and
+the existing libclang workarounds (unnamed-struct naming, `size_t`-reported-as-`int`)
+would need re-validating against the byte-identical gate before switching.
+
 ## Versioning
 
 Two distinct version schemes:
