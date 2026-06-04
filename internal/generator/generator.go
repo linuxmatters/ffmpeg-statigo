@@ -255,6 +255,75 @@ var outputPointerAllowlist = map[string]map[string]bool{
 	},
 }
 
+// sizeTOutputParams enumerates the output-pointer (function, parameter) pairs
+// that libclang misreports as int but whose FFmpeg headers declare size_t.
+// marshalArg rewrites these to size_t via this explicit lookup, replacing the
+// former substring heuristic. This is the size_t-width companion to
+// outputPointerAllowlist.
+// Sorted by function name then parameter name for reviewability.
+var sizeTOutputParams = map[string]map[string]bool{
+	"av_ambient_viewing_environment_alloc": {
+		"size": true,
+	},
+	"av_content_light_metadata_alloc": {
+		"size": true,
+	},
+	"av_cpb_properties_alloc": {
+		"size": true,
+	},
+	"av_detection_bbox_alloc": {
+		"out_size": true,
+	},
+	"av_dovi_alloc": {
+		"size": true,
+	},
+	"av_dovi_metadata_alloc": {
+		"size": true,
+	},
+	"av_dynamic_hdr_plus_alloc": {
+		"size": true,
+	},
+	"av_dynamic_hdr_vivid_alloc": {
+		"size": true,
+	},
+	"av_film_grain_params_alloc": {
+		"size": true,
+	},
+	"av_iamf_param_definition_alloc": {
+		"size": true,
+	},
+	"av_mastering_display_metadata_alloc_size": {
+		"size": true,
+	},
+	"av_spherical_alloc": {
+		"size": true,
+	},
+	"av_stereo3d_alloc_size": {
+		"size": true,
+	},
+	"av_tdrdi_alloc": {
+		"size": true,
+	},
+	"av_video_enc_params_alloc": {
+		"out_size": true,
+	},
+	"av_video_hint_alloc": {
+		"out_size": true,
+	},
+}
+
+// getCType returns the C type name to emit after "C." in a generated cast.
+//
+// The special cases below exist because libclang and CGO disagree about type
+// identity. When libclang cannot fully resolve a system-header typedef it
+// canonicalises or misreports the underlying type, collapsing distinct named
+// types onto a same-width primitive. CGO then rejects the result: it treats
+// same-width named C types as distinct (C.char vs C.uint8_t, C.ptrdiff_t vs
+// C.int64_t, C.ulong/C.long vs C.uint64_t/C.int64_t), so a cast spelled with
+// the wrong-but-same-width name fails to compile. Each branch preserves the
+// exact C spelling the cast needs. This is essential complexity compensating
+// for libclang/CGO type-distinctness, not accidental cruft; the per-branch
+// notes record the specific type pair each guards.
 func getCType(typeName string, goType string) string {
 	// Special case: char should stay as char, not become uint8_t
 	// This is important for function parameters where char != uint8_t
@@ -313,8 +382,10 @@ func getCType(typeName string, goType string) string {
 	}
 
 	// For other types, map Go pseudo-types to CGO types
+	// Special case: uchar kept as its named C type; CGO treats C.uchar as
+	// distinct from C.uint8_t, so preserve the spelling libclang reported.
 	if typeName == "uchar" {
-		return "uchar" // C.uchar is valid
+		return "uchar"
 	}
 
 	// Default: use the reported type name
@@ -1451,7 +1522,8 @@ func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen
 		}
 
 	case *PointerType:
-		body = append(body,
+		body = append(
+			body,
 			jen.Id("ret").Op(":=").Add(cc),
 		)
 		body = append(body, postCall...)
@@ -1554,17 +1626,13 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 	if ptrType, ok := arg.Type.(*PointerType); ok {
 		if identType, ok := ptrType.Inner.(*IdentType); ok {
 			actualTypeName = identType.Name
-			// Fix known size_t misreports.
-			// Pinned by TestGeneratorOutputParameters in bindings_test.go (size_t pointer branch:
-			// av_cpb_properties_alloc / *uint64 size). The _alloc catch-all below is pinned
-			// incidentally by the byte-identical regen gate, not the test.
-			if actualTypeName == "int" && (arg.Name == "size" || strings.Contains(arg.Name, "size")) {
-				// These functions use size_t* per FFmpeg headers
-				if fn.Name == "av_cpb_properties_alloc" || fn.Name == "av_stereo3d_alloc_size" ||
-					fn.Name == "av_detection_bbox_alloc" || fn.Name == "av_dovi_alloc" ||
-					strings.Contains(fn.Name, "_alloc") {
-					actualTypeName = "size_t"
-				}
+			// libclang misreports some size_t* output parameters as int*. The
+			// affected (function, parameter) pairs are enumerated in
+			// sizeTOutputParams rather than matched by substring, so the rewrite
+			// is exact. Pinned by TestGeneratorOutputParameters in bindings_test.go
+			// and by the byte-identical regen gate.
+			if actualTypeName == "int" && sizeTOutputParams[fn.Name][arg.Name] {
+				actualTypeName = "size_t"
 			}
 		}
 	}

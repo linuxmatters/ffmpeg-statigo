@@ -38,6 +38,15 @@ Static libraries are gitignored—only the submodule reference is committed.
 
 **See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for CI/CD integration, cross-compilation, and troubleshooting.**
 
+## Memory and lifetimes
+
+These are thin bindings, exactly as memory-unsafe as the underlying C API. That is a deliberate design choice, not an oversight.
+
+- **`AV*` types are raw pointers.** Each `AV*` Go type wraps a raw C pointer; it is not a garbage-collected safe handle. There is no finaliser.
+- **Lifetime is yours to manage.** Call the matching `Free`/`Unref`/`Close` function per FFmpeg's own ownership contract, exactly as you would in C. Nothing is freed for you.
+- **`CStr` memory is caller-managed.** Call `.Free()` when you own the allocation (see the `CStr` doc comment in `ffmpeg.go`). Values from `GlobalCStr` are interned and shared; never free them.
+- **`Array[T]` indexing is unchecked.** Arrays carry no length, matching C. An out-of-bounds `Get` or `Set` is undefined behaviour.
+
 ## Codec Inclusion Policy
 
 ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core strengths of FFmpeg: **decoding, processing, and encoding** audio and video streams. ffmpeg-statigo is designed for **Go developers building modern streaming applications**. The pattern is:

@@ -187,6 +187,79 @@ func TestMarshalArgOutputPointerAllowlist(t *testing.T) {
 	}
 }
 
+// render returns the Go source for a single jen.Code fragment so tests can
+// string-match the emitted parameter type and C cast.
+func render(c jen.Code) string {
+	return (&jen.Statement{}).Add(c).GoString()
+}
+
+// TestMarshalArgSizeTOutputParams pins the size_t rewrite to the explicit
+// sizeTOutputParams lookup introduced in Task 1.1. marshalArg rewrites a
+// pointer-to-int output parameter to size_t only when the (function, parameter)
+// pair is present in sizeTOutputParams; the former strings.Contains(fn.Name,
+// "_alloc") substring heuristic is gone. The positive case proves the lookup
+// drives the rewrite (param becomes *uint64, C cast uses C.size_t). The
+// regression case proves an _alloc function name alone no longer triggers the
+// rewrite when the pair is absent from the table (param stays *int, cast uses
+// C.int), so a reintroduced substring heuristic fails here.
+func TestMarshalArgSizeTOutputParams(t *testing.T) {
+	g := skipGen()
+
+	// Positive: av_dovi_alloc.size is in both outputPointerAllowlist and
+	// sizeTOutputParams, so the int* output pointer is rewritten to size_t.
+	t.Run("allowlisted size_t pair rewritten", func(t *testing.T) {
+		o := newFile()
+		fn := &Function{Name: "av_dovi_alloc"}
+		arg := &Param{Name: "size", Type: ptr(ident("int"))}
+		params, args, _, _, skip := g.marshalArg(o, fn, arg)
+		if skip {
+			t.Fatalf("av_dovi_alloc.size unexpectedly skipped")
+		}
+		if got := render(params[0]); got != "size * uint64" {
+			t.Errorf("param = %q, want %q", got, "size * uint64")
+		}
+		if got := render(args[0]); got != "(*C.size_t)(unsafe.Pointer(size))" {
+			t.Errorf("arg = %q, want %q", got, "(*C.size_t)(unsafe.Pointer(size))")
+		}
+	})
+
+	// Regression: an _alloc-named function that is allowlisted (so its output
+	// pointer is emitted, not skipped) but absent from sizeTOutputParams must
+	// stay *int. outputPointerAllowlist is a package var, so inject and restore
+	// the fake entry with a defer to keep other tests unaffected. The pair is
+	// deliberately never added to sizeTOutputParams.
+	t.Run("allocnamed pair absent from size_t table stays int", func(t *testing.T) {
+		const fnName = "av_fake_alloc"
+		saved := outputPointerAllowlist[fnName]
+		outputPointerAllowlist[fnName] = map[string]bool{"size": true}
+		defer func() {
+			if saved == nil {
+				delete(outputPointerAllowlist, fnName)
+			} else {
+				outputPointerAllowlist[fnName] = saved
+			}
+		}()
+
+		if sizeTOutputParams[fnName] != nil {
+			t.Fatalf("test invariant broken: %s present in sizeTOutputParams", fnName)
+		}
+
+		o := newFile()
+		fn := &Function{Name: fnName}
+		arg := &Param{Name: "size", Type: ptr(ident("int"))}
+		params, args, _, _, skip := g.marshalArg(o, fn, arg)
+		if skip {
+			t.Fatalf("%s.size unexpectedly skipped", fnName)
+		}
+		if got := render(params[0]); got != "size * int" {
+			t.Errorf("param = %q, want %q (substring heuristic must be gone)", got, "size * int")
+		}
+		if got := render(args[0]); got != "(*C.int)(unsafe.Pointer(size))" {
+			t.Errorf("arg = %q, want %q (substring heuristic must be gone)", got, "(*C.int)(unsafe.Pointer(size))")
+		}
+	})
+}
+
 // marshalField is intentionally left to the byte-identical regeneration gate.
 // It returns nothing (void) and signals its three early-exit decisions
 // (skippedFields, bitfield, ident-callback) only by suppressing emitted output.

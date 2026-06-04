@@ -89,8 +89,12 @@ func main() {
 			libBuildDir := filepath.Join(buildRoot, "build", lib.Name)
 			libSrcDir := filepath.Join(buildRoot, "src", lib.Name)
 
-			os.RemoveAll(libBuildDir)
-			os.RemoveAll(libSrcDir)
+			if err := os.RemoveAll(libBuildDir); err != nil {
+				log.Printf("warning: failed to remove %s: %v", libBuildDir, err)
+			}
+			if err := os.RemoveAll(libSrcDir); err != nil {
+				log.Printf("warning: failed to remove %s: %v", libSrcDir, err)
+			}
 
 			// Also remove installed libraries from staging
 			if lib.LinkLibs != nil {
@@ -98,7 +102,9 @@ func main() {
 					for _, dir := range []string{"lib"} {
 						libPath := filepath.Join(stagingDir, dir, libName+".a")
 						if fileExists(libPath) {
-							os.Remove(libPath)
+							if err := os.Remove(libPath); err != nil {
+								log.Printf("warning: failed to remove %s: %v", libPath, err)
+							}
 						}
 					}
 				}
@@ -337,13 +343,13 @@ func tableBorder(width int) string {
 	return strings.Repeat("═", width+2)
 }
 
-// printLibraryList displays a formatted table of all libraries
-func printLibraryList(libs []*Library) {
-	// Calculate column widths
-	maxName := len("Library")
-	maxPlatform := len("Platform")
-	maxBuildSys := len("Build System")
-	maxLinkLibs := len("Link Libraries")
+// libraryColumnWidths returns the four column widths (name, platform, build
+// system, link libraries) sized to the widest entry or header label.
+func libraryColumnWidths(libs []*Library) (maxName, maxPlatform, maxBuildSys, maxLinkLibs int) {
+	maxName = len("Library")
+	maxPlatform = len("Platform")
+	maxBuildSys = len("Build System")
+	maxLinkLibs = len("Link Libraries")
 
 	for _, lib := range libs {
 		if len(lib.Name) > maxName {
@@ -362,35 +368,60 @@ func printLibraryList(libs []*Library) {
 			maxLinkLibs = len(linkLibs)
 		}
 	}
+	return maxName, maxPlatform, maxBuildSys, maxLinkLibs
+}
 
-	// Print header
-	fmt.Printf("\n%s╔═%s╦%s╦%s╦%s╗%s\n",
-		colorize("", colorBold+colorCyan),
-		tableBorder(maxName+3),
-		tableBorder(maxPlatform),
-		tableBorder(maxBuildSys),
-		tableBorder(maxLinkLibs),
-		colorReset)
+// renderBorder builds a horizontal table border. prefix and suffix bracket the
+// line, and left/mid/right are the corner and junction glyphs. The first column
+// border is widened by 3 to fit the "#" and name cells.
+func renderBorder(prefix, left, mid, right, suffix string, maxName, maxPlatform, maxBuildSys, maxLinkLibs int) string {
+	return prefix + left +
+		tableBorder(maxName+3) + mid +
+		tableBorder(maxPlatform) + mid +
+		tableBorder(maxBuildSys) + mid +
+		tableBorder(maxLinkLibs) + right + suffix
+}
 
-	fmt.Printf("%s║%s %s %s %s ║%s %s %s║%s %s %s║%s %s %s║%s\n",
+// renderRow builds a table data row from four pre-coloured cells, separating
+// the "#" and name cells inside the first column with a space.
+func renderRow(numCell, nameCell, platformCell, buildSysCell, linkLibsCell string) string {
+	return fmt.Sprintf("%s║%s %s %s %s ║%s %s %s║%s %s %s║%s %s %s║%s\n",
 		colorCyan, colorReset,
+		numCell,
+		nameCell,
+		colorCyan, colorReset,
+		platformCell,
+		colorCyan, colorReset,
+		buildSysCell,
+		colorCyan, colorReset,
+		linkLibsCell,
+		colorCyan, colorReset)
+}
+
+// printLibraryList displays a formatted table of all libraries
+func printLibraryList(libs []*Library) {
+	maxName, maxPlatform, maxBuildSys, maxLinkLibs := libraryColumnWidths(libs)
+
+	// Top border
+	fmt.Print(renderBorder(
+		"\n"+colorize("", colorBold+colorCyan), "╔═", "╦", "╗", colorReset+"\n",
+		maxName, maxPlatform, maxBuildSys, maxLinkLibs,
+	))
+
+	// Header row
+	fmt.Print(renderRow(
 		tableCell("#", 2, colorBold+colorYellow),
 		tableCell("Library", maxName, colorBold+colorYellow),
-		colorCyan, colorReset,
 		tableCell("Platform", maxPlatform, colorReset),
-		colorCyan, colorReset,
 		tableCell("Build System", maxBuildSys, colorReset),
-		colorCyan, colorReset,
 		tableCell("Link Libraries", maxLinkLibs, colorReset),
-		colorCyan, colorReset)
+	))
 
-	fmt.Printf("%s╠═%s╬%s╬%s╬%s╣%s\n",
-		colorCyan,
-		tableBorder(maxName+3),
-		tableBorder(maxPlatform),
-		tableBorder(maxBuildSys),
-		tableBorder(maxLinkLibs),
-		colorReset)
+	// Separator
+	fmt.Print(renderBorder(
+		colorCyan, "╠═", "╬", "╣", colorReset+"\n",
+		maxName, maxPlatform, maxBuildSys, maxLinkLibs,
+	))
 
 	// Print rows
 	for i, lib := range libs {
@@ -409,27 +440,20 @@ func printLibraryList(libs []*Library) {
 			linkLibsColor = colorGray
 		}
 
-		fmt.Printf("%s║%s %s %s %s ║%s %s %s║%s %s %s║%s %s %s║%s\n",
-			colorCyan, colorReset,
+		fmt.Print(renderRow(
 			tableCell(num, 2, colorBlue+colorBold),
 			tableCell(lib.Name, maxName, nameColor),
-			colorCyan, colorReset,
 			tableCell(platform, maxPlatform, colorReset),
-			colorCyan, colorReset,
 			tableCell(buildSys, maxBuildSys, colorReset),
-			colorCyan, colorReset,
 			tableCell(linkLibsDisplay, maxLinkLibs, linkLibsColor),
-			colorCyan, colorReset)
+		))
 	}
 
-	// Print footer
-	fmt.Printf("%s╚═%s╩%s╩%s╩%s╝%s\n\n",
-		colorCyan,
-		tableBorder(maxName+3),
-		tableBorder(maxPlatform),
-		tableBorder(maxBuildSys),
-		tableBorder(maxLinkLibs),
-		colorReset)
+	// Footer
+	fmt.Print(renderBorder(
+		colorCyan, "╚═", "╩", "╝", colorReset+"\n\n",
+		maxName, maxPlatform, maxBuildSys, maxLinkLibs,
+	))
 
 	// Summary
 	totalLibs := len(libs)
