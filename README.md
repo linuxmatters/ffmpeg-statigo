@@ -3,7 +3,7 @@
 **Real FFmpeg bindings for Go. Not a wrapper. Not a CLI tool. The actual libraries.**
 
 Cross-platform, static FFmpeg libraries bundled directly into your Go binary.
-Hardware acceleration included. Zero runtime dependencies. Ship it and forget it.
+Hardware acceleration included. Zero runtime dependencies.
 
 ## Why This Exists
 
@@ -52,6 +52,8 @@ These are thin bindings, exactly as memory-unsafe as the underlying C API. That 
 - **Lifetime is yours to manage.** Call the matching `Free`/`Unref`/`Close` function per FFmpeg's own ownership contract, exactly as you would in C. Nothing is freed for you.
 - **`CStr` memory is caller-managed.** Call `.Free()` when you own the allocation (see the `CStr` doc comment in `ffmpeg.go`). Values from `GlobalCStr` are interned and shared; never free them.
 - **`Array[T]` indexing is unchecked.** Arrays carry no length, matching C. An out-of-bounds `Get` or `Set` is undefined behaviour.
+
+Want managed lifetimes? The optional [`av`](av) package (`github.com/linuxmatters/ffmpeg-statigo/av`) adds a high-level layer of owned `io.Closer` wrappers (`Input`, `Decoder`, `Encoder`, `FilterGraph`, `Output`) that free their handles in order on `Close`. It is opt-in. The root package remains the raw bridge and stays fully usable on its own. See [`docs/PIPELINE.md`](docs/PIPELINE.md) for the pipeline guide.
 
 ## Codec Inclusion Policy
 
@@ -169,6 +171,12 @@ Details of codecs, muxers and parsers available to enable in the static FFmpeg l
   - Decoding & Encoding HEVC 8/10-bit
   - Decoding & Encoding AV1 8/10-bit
   - **Works via MoltenVK on macOS when MoltenVK runtime is installed**
+
+## Examples
+
+The [`examples/`](examples/) directory contains working programs covering the common use cases: reading stream metadata, terminal ASCII video playback, and a full decode/filter/encode/mux transcode pipeline in both raw-binding and high-level `av`-package forms.
+
+See [examples/README.md](examples/README.md) for the full list, run signatures, and build instructions.
 
 ## Licensing
 

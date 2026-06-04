@@ -9,9 +9,15 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	d, err := NewDisplay()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer d.Close()
 
@@ -23,7 +29,7 @@ func main() {
 
 	e, err := Open(os.Args[1], w, h)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	ch := make(chan *Frame)
@@ -47,12 +53,12 @@ func main() {
 
 	for {
 		if d.ShouldExit() {
-			return
+			return nil
 		}
 
 		f := <-ch
 		if f == nil {
-			return
+			return nil
 		}
 
 		ptsDiff := f.pts - lastPts

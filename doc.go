@@ -24,4 +24,8 @@
 //	}
 //
 // For complete examples, see the examples/ directory.
+//
+// The optional subpackage github.com/linuxmatters/ffmpeg-statigo/av adds a
+// high-level layer of owned io.Closer wrappers for callers who prefer managed
+// lifetimes over this raw bridge.
 package ffmpeg

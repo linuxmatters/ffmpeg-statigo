@@ -54,6 +54,7 @@
 - **Builder:** `internal/builder/` compiles FFmpeg + 20 dependencies from source
 - **Generator:** `internal/generator/` parses headers using libclang, outputs Go bindings
 - **Downloader:** `cmd/download-lib/` fetches pre-built libraries from GitHub Releases
+- **Pipeline layer:** `av/` optional high-level layer over the root bindings — owned `io.Closer` resource wrappers (Input/Decoder/Encoder/FilterGraph/Output); not generated
 
 ## Hardware acceleration
 

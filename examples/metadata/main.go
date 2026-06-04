@@ -9,6 +9,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	slog.Info("Metadata")
 
 	var ctx *ffmpeg.AVFormatContext
@@ -18,13 +24,13 @@ func main() {
 
 	_, err := ffmpeg.AVFormatOpenInput(&ctx, url, nil, nil)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	defer ffmpeg.AVFormatFreeContext(ctx)
 
 	if _, err := ffmpeg.AVFormatFindStreamInfo(ctx, nil); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	ffmpeg.AVDumpFormat(ctx, 0, url, 0)
@@ -49,4 +55,6 @@ func main() {
 			slog.Info("    Meta", "key", entry.Key(), "value", entry.Value())
 		}
 	}
+
+	return nil
 }
