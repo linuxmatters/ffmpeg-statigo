@@ -237,8 +237,8 @@ var nvcodecheaders = &Library{
 	FFmpegEnables: []string{"cuvid", "ffnvcodec", "nvdec", "nvenc"},
 	BuildSystem: &MakefileBuild{
 		Targets: nil, // No build targets, just install
-		InstallFunc: func(srcPath, installDir string) error {
-			return runCommand(context.Background(), srcPath, os.Stdout, installDir, "make", fmt.Sprintf("PREFIX=%s", installDir), "install")
+		InstallFunc: func(ctx context.Context, srcPath, installDir string) error {
+			return runCommand(ctx, srcPath, os.Stdout, installDir, "make", fmt.Sprintf("PREFIX=%s", installDir), "install")
 		},
 	},
 	LinkLibs: nil, // Headers only
@@ -620,7 +620,7 @@ var rav1e = &Library{
 	URL:           "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
 	FFmpegEnables: []string{"librav1e"},
 	BuildSystem: &CargoBuild{
-		InstallFunc: func(srcPath, installDir string) error {
+		InstallFunc: func(ctx context.Context, srcPath, installDir string) error {
 			// Set RUSTFLAGS for native CPU optimization
 			rustflags := "-C target-cpu=native"
 
@@ -643,7 +643,7 @@ var rav1e = &Library{
 			// cargo cinstall for C library installation
 			// Use --no-default-features to avoid git_version which pulls in libgit2
 			// Re-enable asm and threading for performance
-			return runCommandEnv(context.Background(), srcPath, os.Stdout, installDir, env, "cargo", "cinstall",
+			return runCommandEnv(ctx, srcPath, os.Stdout, installDir, env, "cargo", "cinstall",
 				fmt.Sprintf("--prefix=%s", installDir),
 				"--libdir=lib",
 				"--library-type=staticlib",
