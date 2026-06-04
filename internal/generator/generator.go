@@ -4,6 +4,7 @@ import "C"
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"regexp"
 	"slices"
@@ -12,6 +13,19 @@ import (
 	"github.com/dave/jennifer/jen"
 	"github.com/iancoleman/strcase"
 )
+
+// saveFormatted writes a jennifer file atomically: it saves to a temporary
+// sibling path then renames over the destination, so a crash mid-write never
+// leaves a partial `*.gen.go` behind. Formatting is delegated to jennifer's
+// Save so the gofmt output is byte-identical to a direct o.Save(path).
+func saveFormatted(o *jen.File, path string) error {
+	tmp := path + ".tmp"
+	if err := o.Save(tmp); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	return os.Rename(tmp, path)
+}
 
 var primTypes = map[string]string{
 	"int":       "int",
@@ -449,7 +463,7 @@ func (g *Generator) generateConstants() {
 		o.Const().Id(goName).Op("=").Qual("C", constName)
 	}
 
-	err := o.Save("constants.gen.go")
+	err := saveFormatted(o, "constants.gen.go")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -547,7 +561,7 @@ func (g *Generator) generateEnums() {
 		}
 	}
 
-	err := o.Save("enums.gen.go")
+	err := saveFormatted(o, "enums.gen.go")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -574,7 +588,7 @@ func (g *Generator) generateCallbacks() {
 		o.Line()
 	}
 
-	err := o.Save("callbacks.gen.go")
+	err := saveFormatted(o, "callbacks.gen.go")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -728,7 +742,7 @@ func (g *Generator) generateStructs() {
 		}
 	}
 
-	err := o.Save("structs.gen.go")
+	err := saveFormatted(o, "structs.gen.go")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -1419,7 +1433,7 @@ outer:
 			Block(body...)
 	}
 
-	err := o.Save("functions.gen.go")
+	err := saveFormatted(o, "functions.gen.go")
 	if err != nil {
 		log.Println("ERROR saving functions.gen.go:", err)
 		log.Panicln(err)

@@ -34,7 +34,7 @@ type Library struct {
 	FFmpegEnables []string // Optional FFmpeg --enable-* flags (e.g. ["libx264"], ["nvenc", "nvdec"])
 	BuildSystem   BuildSystem
 	ConfigureArgs func(os string) []string
-	PostExtract   func(srcPath string) error // optional patches
+	PostExtract   func(ctx context.Context, srcPath string) error // optional patches
 	BuildEnv      func() []string            // optional extra KEY=value env applied to all build commands
 	SkipAutoFlags bool                       // Skip automatic CFLAGS/LDFLAGS (for non-standard configure scripts like zlib)
 	LinkLibs      []string                   // Libraries to link in final static lib (nil for header-only)
@@ -43,8 +43,8 @@ type Library struct {
 
 // BuildSystem defines the interface for different build systems
 type BuildSystem interface {
-	Configure(lib *Library, srcPath, buildDir, installDir string) error
-	Build(lib *Library, srcPath, buildDir string) error
+	Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error
+	Build(ctx context.Context, lib *Library, srcPath, buildDir string) error
 }
 
 // ShouldBuild checks if this library should be built on the current platform
@@ -92,7 +92,7 @@ func (lib *Library) ArchiveType() string {
 }
 
 // Build performs the complete build process for this library
-func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error {
+func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, logger io.Writer) error {
 	if !lib.ShouldBuild() {
 		fmt.Fprintf(logger, "Skipping %s (platform: %v, current: %s)\n", lib.Name, lib.Platform, runtime.GOOS)
 		return nil
@@ -124,7 +124,7 @@ func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error 
 
 	// Post-extract hook (for patches, etc.)
 	if lib.PostExtract != nil {
-		if err := lib.PostExtract(srcPath); err != nil {
+		if err := lib.PostExtract(ctx, srcPath); err != nil {
 			return fmt.Errorf("post-extract failed: %w", err)
 		}
 	}
@@ -135,11 +135,11 @@ func (lib *Library) Build(buildRoot, installDir string, logger io.Writer) error 
 		return fmt.Errorf("failed to create build dir: %w", err)
 	}
 
-	if err := lib.BuildSystem.Configure(lib, srcPath, buildDir, installDir); err != nil {
+	if err := lib.BuildSystem.Configure(ctx, lib, srcPath, buildDir, installDir); err != nil {
 		return fmt.Errorf("configure failed: %w", err)
 	}
 
-	if err := lib.BuildSystem.Build(lib, srcPath, buildDir); err != nil {
+	if err := lib.BuildSystem.Build(ctx, lib, srcPath, buildDir); err != nil {
 		return fmt.Errorf("build failed: %w", err)
 	}
 
@@ -169,9 +169,9 @@ func (lib *Library) ConfigHash() string {
 }
 
 // runCommandEnv runs a command with extra KEY=value entries appended to the build env.
-func runCommandEnv(dir string, logger io.Writer, installDir string, extraEnv []string, name string, args ...string) error {
+func runCommandEnv(ctx context.Context, dir string, logger io.Writer, installDir string, extraEnv []string, name string, args ...string) error {
 	// name and args come from internal build definitions, not user input.
-	cmd := exec.CommandContext(context.Background(), name, args...) //nolint:gosec // G702: build commands are project-defined, not external
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // G702: build commands are project-defined, not external
 	cmd.Dir = dir
 	cmd.Stdout = logger
 	cmd.Stderr = logger
@@ -183,8 +183,8 @@ func runCommandEnv(dir string, logger io.Writer, installDir string, extraEnv []s
 }
 
 // runCommand executes a command and streams output to logger
-func runCommand(dir string, logger io.Writer, installDir string, name string, args ...string) error {
-	return runCommandEnv(dir, logger, installDir, nil, name, args...)
+func runCommand(ctx context.Context, dir string, logger io.Writer, installDir string, name string, args ...string) error {
+	return runCommandEnv(ctx, dir, logger, installDir, nil, name, args...)
 }
 
 // fileExists checks if a file exists

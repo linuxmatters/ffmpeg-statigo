@@ -8,12 +8,18 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 )
 
 func main() {
+	// Root context cancelled on interrupt so in-flight build commands stop.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// Initialize FFmpeg library enables after AllLibraries is fully defined
 	CollectFFmpegEnables()
 
@@ -137,7 +143,7 @@ func main() {
 		// Use MultiWriter to send output to both stdout and log file
 		logger := io.MultiWriter(os.Stdout, logFileWriter)
 
-		if err := lib.Build(buildRoot, stagingDir, logger); err != nil {
+		if err := lib.Build(ctx, buildRoot, stagingDir, logger); err != nil {
 			logFileWriter.Close()
 			log.Fatalf("Build failed for %s: %v\nSee log: %s\n", lib.Name, err, logFile)
 		}
@@ -155,7 +161,7 @@ func main() {
 
 	// Only combine libraries on a full build (no library filters)
 	if len(selectedLibs) == 0 {
-		if err := combineLibraries(libs, stagingDir, targetOutput); err != nil {
+		if err := combineLibraries(ctx, libs, stagingDir, targetOutput); err != nil {
 			log.Fatalf("Failed to combine libraries: %v\n", err)
 		}
 		fmt.Printf("\n✓ Success! Output: %s\n", targetOutput)
@@ -165,7 +171,7 @@ func main() {
 }
 
 // combineLibraries combines all built libraries into a single static library
-func combineLibraries(libs []*Library, stagingDir, output string) error {
+func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output string) error {
 	// Collect library files from LinkLibs of all built libraries
 	var libFiles []string
 	linkLibsMap := make(map[string]bool) // Track which libs we need
@@ -215,14 +221,14 @@ func combineLibraries(libs []*Library, stagingDir, output string) error {
 
 	// Platform-specific merge
 	if runtime.GOOS == "darwin" {
-		return combineMac(libFiles, output)
+		return combineMac(ctx, libFiles, output)
 	}
-	return combineLinux(libFiles, output)
+	return combineLinux(ctx, libFiles, output)
 }
 
 // combineMac uses Apple's libtool to combine static libraries on macOS
 // This is more efficient than ar as it doesn't require extracting all object files
-func combineMac(libFiles []string, output string) error {
+func combineMac(ctx context.Context, libFiles []string, output string) error {
 	log.Println("Using Apple libtool -static approach (macOS)")
 
 	// Ensure output directory exists
@@ -237,7 +243,7 @@ func combineMac(libFiles []string, output string) error {
 	// Use Apple's libtool (not GNU libtool from Nix) to combine libraries directly
 	// Apple's libtool -static is specifically designed for this purpose
 	args := append([]string{"-static", "-o", output}, libFiles...)
-	libtoolCmd := exec.CommandContext(context.Background(), "/usr/bin/libtool", args...)
+	libtoolCmd := exec.CommandContext(ctx, "/usr/bin/libtool", args...)
 
 	// Capture output for debugging
 	var stdout, stderr bytes.Buffer
@@ -249,7 +255,7 @@ func combineMac(libFiles []string, output string) error {
 	}
 
 	// Strip the library to reduce size
-	if err := exec.CommandContext(context.Background(), "strip", "-S", output).Run(); err != nil {
+	if err := exec.CommandContext(ctx, "strip", "-S", output).Run(); err != nil {
 		return fmt.Errorf("strip failed: %w", err)
 	}
 
@@ -257,7 +263,7 @@ func combineMac(libFiles []string, output string) error {
 }
 
 // combineLinux uses ar to combine static libraries on Linux
-func combineLinux(libFiles []string, output string) error {
+func combineLinux(ctx context.Context, libFiles []string, output string) error {
 	log.Println("Using thin archive approach to merge libraries (Linux)")
 
 	// Stack Overflow solution: create thin archive (low memory), then convert to normal archive
@@ -278,7 +284,7 @@ func combineLinux(libFiles []string, output string) error {
 	// Step 1: Create thin archive with -T flag (pointers only, minimal memory)
 	log.Println("  Creating thin archive...")
 	args := append([]string{"cqT", output}, libFiles...)
-	thinCmd := exec.CommandContext(context.Background(), "ar", args...)
+	thinCmd := exec.CommandContext(ctx, "ar", args...)
 	thinCmd.Stderr = &stderr
 	stderr.Reset()
 
@@ -291,7 +297,7 @@ func combineLinux(libFiles []string, output string) error {
 	log.Println("  Converting to normal archive...")
 	mriScript := fmt.Sprintf("create %s.tmp\naddlib %s\nsave\nend", output, output)
 
-	convertCmd := exec.CommandContext(context.Background(), "ar", "-M")
+	convertCmd := exec.CommandContext(ctx, "ar", "-M")
 	convertCmd.Stdin = bytes.NewBufferString(mriScript)
 	convertCmd.Stderr = &stderr
 	stderr.Reset()
@@ -306,7 +312,7 @@ func combineLinux(libFiles []string, output string) error {
 	}
 
 	// Strip the library
-	stripCmd := exec.CommandContext(context.Background(), "strip", "--strip-unneeded", output)
+	stripCmd := exec.CommandContext(ctx, "strip", "--strip-unneeded", output)
 	stripCmd.Stderr = &stderr
 	stderr.Reset()
 	if err := stripCmd.Run(); err != nil {

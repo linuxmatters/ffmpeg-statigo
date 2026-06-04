@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,7 +13,18 @@ import (
 
 // AllLibraries returns all libraries in dependency order
 // Libraries are automatically sorted so dependencies are built before dependents
-var AllLibraries = buildLibraryOrder()
+var AllLibraries = mustBuildLibraryOrder()
+
+// mustBuildLibraryOrder calls buildLibraryOrder and panics if it returns an
+// error. A cycle in the static library definitions is a programmer error that
+// must be caught at init time, so the package-level var cannot start otherwise.
+func mustBuildLibraryOrder() []*Library {
+	order, err := buildLibraryOrder()
+	if err != nil {
+		panic(err)
+	}
+	return order
+}
 
 // allLibraryDefinitions contains all library definitions (order doesn't matter)
 var allLibraryDefinitions = []*Library{
@@ -62,7 +74,7 @@ var allLibraryDefinitions = []*Library{
 // buildLibraryOrder performs topological sort on libraries based on dependencies
 // Returns libraries in build order (dependencies before dependents)
 // FFmpeg is always placed last as it depends on all other libraries
-func buildLibraryOrder() []*Library {
+func buildLibraryOrder() ([]*Library, error) {
 	// Build dependency graph
 	graph := make(map[*Library][]*Library)
 	inDegree := make(map[*Library]int)
@@ -149,6 +161,8 @@ func buildLibraryOrder() []*Library {
 			}
 		}
 		fmt.Fprintf(os.Stderr, "=====================================\n\n")
+
+		return nil, fmt.Errorf("circular dependency detected: expected %d libraries, sorted %d (plus ffmpeg)", len(allLibraryDefinitions), len(result))
 	}
 
 	// Always add FFmpeg last as it depends on all other libraries
@@ -156,7 +170,7 @@ func buildLibraryOrder() []*Library {
 		result = append(result, ffmpeg)
 	}
 
-	return result
+	return result, nil
 }
 
 // zlib - compression library
@@ -224,7 +238,7 @@ var nvcodecheaders = &Library{
 	BuildSystem: &MakefileBuild{
 		Targets: nil, // No build targets, just install
 		InstallFunc: func(srcPath, installDir string) error {
-			return runCommand(srcPath, os.Stdout, installDir, "make", fmt.Sprintf("PREFIX=%s", installDir), "install")
+			return runCommand(context.Background(), srcPath, os.Stdout, installDir, "make", fmt.Sprintf("PREFIX=%s", installDir), "install")
 		},
 	},
 	LinkLibs: nil, // Headers only
@@ -252,12 +266,12 @@ var glslang = &Library{
 	URL:           "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.3.0.tar.gz",
 	FFmpegEnables: []string{"libglslang"},
 	BuildSystem:   &CMakeBuild{},
-	PostExtract: func(srcPath string) error {
+	PostExtract: func(ctx context.Context, srcPath string) error {
 		// Run update_glslang_sources.py to fetch external dependencies
 		pythonScript := filepath.Join(srcPath, "update_glslang_sources.py")
 		if _, err := os.Stat(pythonScript); err == nil {
 			fmt.Fprintf(os.Stderr, "Running update_glslang_sources.py to fetch glslang dependencies...\n")
-			cmd := exec.Command("python3", pythonScript)
+			cmd := exec.CommandContext(ctx, "python3", pythonScript)
 			cmd.Dir = srcPath
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -339,7 +353,7 @@ var libva = &Library{
 			"-Denable_docs=false",
 		}
 	},
-	PostExtract: func(srcPath string) error {
+	PostExtract: func(_ context.Context, srcPath string) error {
 		// Patch va/meson.build to use library() instead of shared_library()
 		// This allows respecting the default_library=static option
 		mesonBuild := filepath.Join(srcPath, "va", "meson.build")
@@ -374,7 +388,7 @@ var libvpl = &Library{
 			"-DBUILD_EXPERIMENTAL=OFF",
 		}
 	},
-	PostExtract: func(srcPath string) error {
+	PostExtract: func(_ context.Context, srcPath string) error {
 		// Patch vpl.pc.in to add -lstdc++ for C++ static library linking
 		vplPcIn := filepath.Join(srcPath, "libvpl", "pkgconfig", "vpl.pc.in")
 		content, err := os.ReadFile(vplPcIn)
@@ -400,12 +414,12 @@ var zimg = &Library{
 	URL:           "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.6.tar.gz",
 	FFmpegEnables: []string{"libzimg"},
 	BuildSystem:   &AutoconfBuild{},
-	PostExtract: func(srcPath string) error {
+	PostExtract: func(ctx context.Context, srcPath string) error {
 		// Run autogen.sh to generate configure script
 		autogenScript := filepath.Join(srcPath, "autogen.sh")
 		if _, err := os.Stat(autogenScript); err == nil {
 			fmt.Fprintf(os.Stderr, "Running autogen.sh to generate configure script...\n")
-			cmd := exec.Command("sh", autogenScript)
+			cmd := exec.CommandContext(ctx, "sh", autogenScript)
 			cmd.Dir = srcPath
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -629,7 +643,7 @@ var rav1e = &Library{
 			// cargo cinstall for C library installation
 			// Use --no-default-features to avoid git_version which pulls in libgit2
 			// Re-enable asm and threading for performance
-			return runCommandEnv(srcPath, os.Stdout, installDir, env, "cargo", "cinstall",
+			return runCommandEnv(context.Background(), srcPath, os.Stdout, installDir, env, "cargo", "cinstall",
 				fmt.Sprintf("--prefix=%s", installDir),
 				"--libdir=lib",
 				"--library-type=staticlib",
@@ -763,7 +777,7 @@ var ffmpeg = &Library{
 	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.1.tar.gz",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // FFmpeg uses --extra-cflags and --extra-ldflags instead
-	PostExtract: func(srcPath string) error {
+	PostExtract: func(_ context.Context, srcPath string) error {
 		releaseFile := filepath.Join(srcPath, "RELEASE")
 		if release, err := os.ReadFile(releaseFile); err == nil {
 			version := strings.TrimSpace(string(release))

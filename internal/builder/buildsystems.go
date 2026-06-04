@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -46,7 +47,7 @@ func withBuildLog(buildDir string, append bool, fn func(output io.Writer) error)
 // AutoconfBuild implements the BuildSystem interface for autoconf-based builds
 type AutoconfBuild struct{}
 
-func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	args := []string{
 		fmt.Sprintf("--prefix=%s", installDir),
 	}
@@ -119,11 +120,11 @@ func (a *AutoconfBuild) Configure(lib *Library, srcPath, buildDir, installDir st
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), configurePath, args...)
+		return runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), configurePath, args...)
 	})
 }
 
-func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
+func (a *AutoconfBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
 	// Touch automake files to prevent regeneration (best effort)
 	_ = touchAutomakeFiles(srcPath)
 
@@ -131,11 +132,11 @@ func (a *AutoconfBuild) Build(lib *Library, srcPath, buildDir string) error {
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// make
-		if err := runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		if err := runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 			return err
 		}
 		// make install
-		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "install")
+		return runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), "make", "install")
 	})
 }
 
@@ -144,7 +145,7 @@ type CMakeBuild struct {
 	SourceSubdir string // Optional subdirectory containing source (e.g. "source" for x265)
 }
 
-func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+func (c *CMakeBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	// Determine actual source path
 	actualSrcPath := srcPath
 	if c.SourceSubdir != "" {
@@ -163,26 +164,26 @@ func (c *CMakeBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "cmake", args...)
+		return runCommandEnv(ctx, buildDir, output, installDir, lib.extraEnv(), "cmake", args...)
 	})
 }
 
-func (c *CMakeBuild) Build(lib *Library, srcPath, buildDir string) error {
+func (c *CMakeBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
 	installDir := stagingDir(buildDir)
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// cmake --build . --target install
-		if err := runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		if err := runCommandEnv(ctx, buildDir, output, installDir, lib.extraEnv(), "cmake", "--build", ".", "--parallel", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 			return err
 		}
-		return runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "cmake", "--build", ".", "--target", "install")
+		return runCommandEnv(ctx, buildDir, output, installDir, lib.extraEnv(), "cmake", "--build", ".", "--target", "install")
 	})
 }
 
 // MesonBuild implements the BuildSystem interface for Meson-based builds
 type MesonBuild struct{}
 
-func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+func (m *MesonBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	args := []string{
 		"setup",
 		buildDir,
@@ -198,20 +199,20 @@ func (m *MesonBuild) Configure(lib *Library, srcPath, buildDir, installDir strin
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommandEnv(".", output, installDir, lib.extraEnv(), "meson", args...)
+		return runCommandEnv(ctx, ".", output, installDir, lib.extraEnv(), "meson", args...)
 	})
 }
 
-func (m *MesonBuild) Build(lib *Library, srcPath, buildDir string) error {
+func (m *MesonBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
 	installDir := stagingDir(buildDir)
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// meson compile
-		if err := runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "meson", "compile"); err != nil {
+		if err := runCommandEnv(ctx, buildDir, output, installDir, lib.extraEnv(), "meson", "compile"); err != nil {
 			return err
 		}
 		// meson install
-		return runCommandEnv(buildDir, output, installDir, lib.extraEnv(), "meson", "install")
+		return runCommandEnv(ctx, buildDir, output, installDir, lib.extraEnv(), "meson", "install")
 	})
 }
 
@@ -220,12 +221,12 @@ type CargoBuild struct {
 	InstallFunc func(srcPath, installDir string) error // Custom install function
 }
 
-func (c *CargoBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+func (c *CargoBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	// Cargo doesn't have a separate configure step
 	return nil
 }
 
-func (c *CargoBuild) Build(lib *Library, srcPath, buildDir string) error {
+func (c *CargoBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
 	installDir := stagingDir(buildDir)
 
 	// Custom install func handles the full cargo build process if provided
@@ -241,18 +242,18 @@ type MakefileBuild struct {
 	InstallFunc func(srcPath, installDir string) error
 }
 
-func (m *MakefileBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+func (m *MakefileBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	// Makefile builds don't have a configure step
 	return nil
 }
 
-func (m *MakefileBuild) Build(lib *Library, srcPath, buildDir string) error {
+func (m *MakefileBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
 	installDir := stagingDir(buildDir)
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
 		// Build the targets
 		args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
-		if err := runCommand(srcPath, output, installDir, "make", args...); err != nil {
+		if err := runCommand(ctx, srcPath, output, installDir, "make", args...); err != nil {
 			return err
 		}
 
@@ -267,7 +268,7 @@ func (m *MakefileBuild) Build(lib *Library, srcPath, buildDir string) error {
 // OpenSSLBuild implements the BuildSystem interface for OpenSSL's Configure/make
 type OpenSSLBuild struct{}
 
-func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir string) error {
+func (o *OpenSSLBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	// OpenSSL uses 'Configure' (capital C) Perl script, not autoconf
 	args := []string{
 		fmt.Sprintf("--prefix=%s", installDir),
@@ -295,19 +296,19 @@ func (o *OpenSSLBuild) Configure(lib *Library, srcPath, buildDir, installDir str
 	}
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), configurePath, args...)
+		return runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), configurePath, args...)
 	})
 }
 
-func (o *OpenSSLBuild) Build(lib *Library, srcPath, buildDir string) error {
+func (o *OpenSSLBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
 	installDir := stagingDir(buildDir)
 
 	return withBuildLog(buildDir, true, func(output io.Writer) error {
 		// make
-		if err := runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
+		if err := runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), "make", "-j", fmt.Sprintf("%d", runtime.NumCPU())); err != nil {
 			return err
 		}
 		// make install_sw (install software only, skip docs)
-		return runCommandEnv(srcPath, output, installDir, lib.extraEnv(), "make", "install_sw")
+		return runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), "make", "install_sw")
 	})
 }

@@ -87,10 +87,24 @@ func run(args []string, summaryOut io.Writer) (*SkipCollector, error) {
 
 	m := Parse(skips)
 
-	m.structs["AVRational"].ByValue = true
-	m.enums["AVOptionType"].Comment = ""
+	applyManualFixups(m)
 
 	return Gen(m, skips), nil
+}
+
+// applyManualFixups is the single home for per-type corrections that libclang
+// resolves incorrectly on the pinned FFmpeg headers. Each mutation patches a
+// parsed type whose shape the generator cannot infer from the headers alone:
+//   - AVRational must pass by value (libclang reports it as a pointer-style
+//     aggregate, but the C API takes and returns it as a value type).
+//   - AVOptionType carries a stray doc comment that libclang attaches; clearing
+//     it keeps the generated enum free of unwanted leading text.
+//
+// Apply after Parse and before Gen. Add new corrections here rather than
+// mutating m.structs/m.enums inline elsewhere.
+func applyManualFixups(m *Module) {
+	m.structs["AVRational"].ByValue = true
+	m.enums["AVOptionType"].Comment = ""
 }
 
 // printSkipSummary writes the end-of-run skip aggregation: a total count line
