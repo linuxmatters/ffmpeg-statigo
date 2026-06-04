@@ -1295,7 +1295,7 @@ outer:
 		}
 
 		// WORKAROUND: libclang on Linux reports FILE* as int* for av_fopen_utf8
-		// Pinned by TestGeneratorSkipPatterns in bindings_test.go (asserts AvFopenUtf8 absent).
+		// Pinned by TestGeneratorSkipPatterns in bindings_test.go (asserts AVFopenUtf8 absent).
 		if fn.Name == "av_fopen_utf8" {
 			o.Commentf("%v skipped due to return", fn.Name)
 			o.Line()

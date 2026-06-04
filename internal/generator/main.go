@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -31,6 +32,9 @@ const skipCeiling = 233
 func main() {
 	skips, err := run(os.Args[1:], os.Stderr)
 	if err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return // usage already written to stderr by the flag package
+		}
 		log.Panicln(err)
 	}
 
