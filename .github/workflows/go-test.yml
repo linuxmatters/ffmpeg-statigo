@@ -40,21 +40,21 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "linux" ]; then
             sudo apt-get update
-            # Use libclang-18 which works with Newbluecake/bootstrap v0.17.1 (supports clang 17+)
-            sudo apt-get install -y libclang-18-dev llvm-18-dev
+            # Use libclang-20 (Newbluecake/bootstrap v0.17.1 supports clang 17+)
+            sudo apt-get install -y libclang-20-dev llvm-20-dev
             {
-              echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib"
-              echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include"
-              echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH"
+              echo "CGO_LDFLAGS=-L/usr/lib/llvm-20/lib"
+              echo "CGO_CFLAGS=-I/usr/lib/llvm-20/include"
+              echo "LD_LIBRARY_PATH=/usr/lib/llvm-20/lib:$LD_LIBRARY_PATH"
             } >> "$GITHUB_ENV"
           elif [ "${{ matrix.os }}" = "darwin" ]; then
-            # On macOS, use LLVM 18 to match Linux environment
-            brew install llvm@18 || brew install llvm
-            if [ -d "$(brew --prefix llvm@18)" ]; then
-              LLVM_PREFIX=$(brew --prefix llvm@18)
+            # On macOS, use LLVM 20 to match Linux environment
+            brew install llvm@20 || brew install llvm
+            if [ -d "$(brew --prefix llvm@20)" ]; then
+              LLVM_PREFIX=$(brew --prefix llvm@20)
             else
               LLVM_PREFIX=$(brew --prefix llvm)
-              echo "::warning::Using latest LLVM on macOS instead of version 18"
+              echo "::warning::Using latest LLVM on macOS instead of version 20"
             fi
             {
               echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib"
@@ -82,7 +82,7 @@ jobs:
       - name: Run generator (optional - for development only)
         run: |
           echo "::notice::Generator uses Newbluecake/bootstrap v0.17.1 which supports LLVM 17+"
-          echo "::notice::Using LLVM 18 in CI, compatible with the fork's clang 17 support"
+          echo "::notice::Using LLVM 20 in CI, compatible with the fork's clang 17 support"
           echo "Running generator with environment:"
           echo "CGO_LDFLAGS=$CGO_LDFLAGS"
           echo "CGO_CFLAGS=$CGO_CFLAGS"
