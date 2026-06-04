@@ -64,7 +64,9 @@ func TestBuildLibraryOrder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("buildLibraryOrder() error = %v", err)
 			}
-			if len(order) == 0 || order[len(order)-1] != ffmpeg {
+			if len(order) == 0 {
+				t.Errorf("buildLibraryOrder() returned empty order, want ffmpeg last")
+			} else if order[len(order)-1] != ffmpeg {
 				t.Errorf("last element = %v, want ffmpeg", order[len(order)-1])
 			}
 		})

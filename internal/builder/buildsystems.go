@@ -218,7 +218,7 @@ func (m *MesonBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 
 // CargoBuild implements the BuildSystem interface for Cargo/Rust-based builds
 type CargoBuild struct {
-	InstallFunc func(srcPath, installDir string) error // Custom install function
+	InstallFunc func(ctx context.Context, srcPath, installDir string) error // Custom install function
 }
 
 func (c *CargoBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
@@ -231,7 +231,7 @@ func (c *CargoBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 
 	// Custom install func handles the full cargo build process if provided
 	if c.InstallFunc != nil {
-		return c.InstallFunc(srcPath, installDir)
+		return c.InstallFunc(ctx, srcPath, installDir)
 	}
 	return nil
 }
@@ -239,7 +239,7 @@ func (c *CargoBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 // MakefileBuild implements the BuildSystem interface for Makefile-based builds
 type MakefileBuild struct {
 	Targets     []string
-	InstallFunc func(srcPath, installDir string) error
+	InstallFunc func(ctx context.Context, srcPath, installDir string) error
 }
 
 func (m *MakefileBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
@@ -259,7 +259,7 @@ func (m *MakefileBuild) Build(ctx context.Context, lib *Library, srcPath, buildD
 
 		// If a custom install function is provided, use it
 		if m.InstallFunc != nil {
-			return m.InstallFunc(srcPath, installDir)
+			return m.InstallFunc(ctx, srcPath, installDir)
 		}
 		return nil
 	})
