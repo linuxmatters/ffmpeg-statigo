@@ -9,7 +9,10 @@ import (
 )
 
 func main() {
-	d := NewDisplay()
+	d, err := NewDisplay()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer d.Close()
 
 	d.Show()
@@ -20,7 +23,7 @@ func main() {
 
 	e, err := Open(os.Args[1], w, h)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 
 	ch := make(chan *Frame)

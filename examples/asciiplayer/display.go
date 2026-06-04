@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -13,14 +11,14 @@ type Display struct {
 	pixelStyles []tcell.Style
 }
 
-func NewDisplay() *Display {
+func NewDisplay() (*Display, error) {
 	s, err := tcell.NewScreen()
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	if err := s.Init(); err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
@@ -49,7 +47,7 @@ func NewDisplay() *Display {
 		defStyle:    defStyle,
 		boxStyle:    boxStyle,
 		pixelStyles: pixelStyles,
-	}
+	}, nil
 }
 
 func (d *Display) Close() {

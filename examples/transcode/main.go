@@ -16,9 +16,15 @@ func main() {
 
 	t := &Transcoder{}
 
-	t.openIn()
-	t.openOut()
-	t.initFilters()
+	if err := t.openIn(); err != nil {
+		log.Fatal(err)
+	}
+	if err := t.openOut(); err != nil {
+		log.Fatal(err)
+	}
+	if err := t.initFilters(); err != nil {
+		log.Fatal(err)
+	}
 
 	packet := ffmpeg.AVPacketAlloc()
 
@@ -32,7 +38,7 @@ func main() {
 				break
 			}
 
-			log.Panicln(err)
+			log.Fatal(err)
 		}
 
 		idx := packet.StreamIndex()
@@ -42,7 +48,7 @@ func main() {
 		if stream.filterGraph != nil {
 
 			if _, err := ffmpeg.AVCodecSendPacket(stream.decCtx, packet); err != nil {
-				log.Panicln(err)
+				log.Fatal(err)
 			}
 
 			for {
@@ -51,16 +57,18 @@ func main() {
 						break
 					}
 
-					log.Panicln(err)
+					log.Fatal(err)
 				}
 
 				stream.decFrame.SetPts(stream.decFrame.BestEffortTimestamp())
 
-				stream.Write(
+				if err := stream.Write(
 					stream.decFrame,
 					outStreams.Get(uintptr(idx)).TimeBase(),
 					t.ofmtCtx,
-				)
+				); err != nil {
+					log.Fatal(err)
+				}
 			}
 
 		} else {
@@ -72,7 +80,7 @@ func main() {
 			)
 
 			if _, err := ffmpeg.AVInterleavedWriteFrame(t.ofmtCtx, packet); err != nil {
-				log.Panicln(err)
+				log.Fatal(err)
 			}
 		}
 
@@ -80,11 +88,13 @@ func main() {
 	}
 
 	for idx, stream := range t.streams {
-		stream.Flush(outStreams.Get(uintptr(idx)).TimeBase(), t.ofmtCtx)
+		if err := stream.Flush(outStreams.Get(uintptr(idx)).TimeBase(), t.ofmtCtx); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if _, err := ffmpeg.AVWriteTrailer(t.ofmtCtx); err != nil {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 
 	ffmpeg.AVPacketFree(&packet)
@@ -95,7 +105,7 @@ func main() {
 
 	if t.ofmtCtx.Oformat().Flags()&ffmpeg.AVFmtNofile == 0 {
 		if _, err := ffmpeg.AVIOClose(t.ofmtCtx.Pb()); err != nil {
-			log.Panicln(err)
+			log.Fatal(err)
 		}
 
 		t.ofmtCtx.SetPb(nil)
@@ -126,9 +136,9 @@ type StreamContext struct {
 	filterGraph   *ffmpeg.AVFilterGraph
 }
 
-func (c *StreamContext) Write(frame *ffmpeg.AVFrame, outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) {
+func (c *StreamContext) Write(frame *ffmpeg.AVFrame, outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) error {
 	if _, err := ffmpeg.AVBuffersrcAddFrameFlags(c.bufferSrcCtx, frame, 0); err != nil {
-		log.Panicln(err)
+		return err
 	}
 
 	for {
@@ -137,19 +147,23 @@ func (c *StreamContext) Write(frame *ffmpeg.AVFrame, outTb *ffmpeg.AVRational, o
 				break
 			}
 
-			log.Panicln(err)
+			return err
 		}
 
 		c.filteredFrame.SetTimeBase(ffmpeg.AVBuffersinkGetTimeBase(c.bufferSinkCtx))
 		c.filteredFrame.SetPictType(ffmpeg.AVPictureTypeNone)
 
-		c.EncodeWrite(false, outTb, ofmtCtx)
+		if err := c.EncodeWrite(false, outTb, ofmtCtx); err != nil {
+			return err
+		}
 
 		ffmpeg.AVFrameUnref(c.filteredFrame)
 	}
+
+	return nil
 }
 
-func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) {
+func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) error {
 	filtFrame := c.filteredFrame
 	if flush {
 		filtFrame = nil
@@ -164,7 +178,7 @@ func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCt
 	}
 
 	if _, err := ffmpeg.AVCodecSendFrame(c.encCtx, filtFrame); err != nil {
-		log.Panicln(err)
+		return err
 	}
 
 	for {
@@ -173,7 +187,7 @@ func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCt
 				break
 			}
 
-			log.Panicln(err)
+			return err
 		}
 
 		// prepare packet for muxing
@@ -182,18 +196,20 @@ func (c *StreamContext) EncodeWrite(flush bool, outTb *ffmpeg.AVRational, ofmtCt
 
 		// mux encoded frame
 		if _, err := ffmpeg.AVInterleavedWriteFrame(ofmtCtx, c.encPkt); err != nil {
-			log.Panicln(err)
+			return err
 		}
 	}
+
+	return nil
 }
 
-func (c *StreamContext) Flush(outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) {
+func (c *StreamContext) Flush(outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormatContext) error {
 	if c.filterGraph == nil {
-		return
+		return nil
 	}
 
 	if _, err := ffmpeg.AVCodecSendPacket(c.decCtx, nil); err != nil {
-		log.Panicln(err)
+		return err
 	}
 
 	for {
@@ -202,19 +218,27 @@ func (c *StreamContext) Flush(outTb *ffmpeg.AVRational, ofmtCtx *ffmpeg.AVFormat
 				break
 			}
 
-			log.Panicln(err)
+			return err
 		}
 
 		c.decFrame.SetPts(c.decFrame.BestEffortTimestamp())
 
-		c.Write(c.decFrame, outTb, ofmtCtx)
+		if err := c.Write(c.decFrame, outTb, ofmtCtx); err != nil {
+			return err
+		}
 	}
 
-	c.Write(nil, outTb, ofmtCtx)
+	if err := c.Write(nil, outTb, ofmtCtx); err != nil {
+		return err
+	}
 
 	if c.encCtx.Codec().Capabilities()&ffmpeg.AVCodecCapDelay != 0 {
-		c.EncodeWrite(true, outTb, ofmtCtx)
+		if err := c.EncodeWrite(true, outTb, ofmtCtx); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func (c *StreamContext) Free() {
@@ -230,16 +254,16 @@ func (c *StreamContext) Free() {
 	ffmpeg.AVFrameFree(&c.decFrame)
 }
 
-func (t *Transcoder) openIn() {
+func (t *Transcoder) openIn() error {
 	urlPtr := ffmpeg.ToCStr(os.Args[1])
 	defer urlPtr.Free()
 
 	if _, err := ffmpeg.AVFormatOpenInput(&t.ifmtCtx, urlPtr, nil, nil); err != nil {
-		log.Panicln(err)
+		return err
 	}
 
 	if _, err := ffmpeg.AVFormatFindStreamInfo(t.ifmtCtx, nil); err != nil {
-		log.Panicln(err)
+		return err
 	}
 
 	slog.Info("streams", "nb", t.ifmtCtx.NbStreams())
@@ -256,17 +280,17 @@ func (t *Transcoder) openIn() {
 
 		dec := ffmpeg.AVCodecFindDecoder(cid)
 		if dec == nil {
-			log.Panicln("no decoder")
+			return fmt.Errorf("no decoder")
 		}
 
 		codecCtx := ffmpeg.AVCodecAllocContext3(dec)
-		// The log.Panicln paths below intentionally leak codecCtx: this is a short-lived example, so process exit reclaims it.
+		// The error returns below intentionally leak codecCtx: main exits on the returned error in this short-lived example, so process exit reclaims it.
 		if codecCtx == nil {
-			log.Panicln("failed to alloc context")
+			return fmt.Errorf("failed to alloc context")
 		}
 
 		if _, err := ffmpeg.AVCodecParametersToContext(codecCtx, stream.Codecpar()); err != nil {
-			log.Panicln(err)
+			return err
 		}
 
 		// Inform the decoder about the timebase for the packet timestamps. This is highly recommended, but not
@@ -288,7 +312,7 @@ func (t *Transcoder) openIn() {
 			}
 
 			if _, err := ffmpeg.AVCodecOpen2(codecCtx, dec, nil); err != nil {
-				log.Panicln(err)
+				return err
 			}
 		}
 
@@ -303,14 +327,16 @@ func (t *Transcoder) openIn() {
 	}
 
 	ffmpeg.AVDumpFormat(t.ifmtCtx, 0, urlPtr, 0)
+
+	return nil
 }
 
-func (t *Transcoder) openOut() {
+func (t *Transcoder) openOut() error {
 	namePtr := ffmpeg.ToCStr(os.Args[2])
 	defer namePtr.Free()
 
 	if _, err := ffmpeg.AVFormatAllocOutputContext2(&t.ofmtCtx, nil, nil, namePtr); err != nil {
-		log.Panicln(err)
+		return err
 	}
 
 	slog.Info("streams", "nb", t.ifmtCtx.NbStreams())
@@ -330,7 +356,7 @@ func (t *Transcoder) openOut() {
 			// in this example, we choose transcoding to same codec
 			encoder := ffmpeg.AVCodecFindEncoder(decCtx.CodecId())
 			if encoder == nil {
-				log.Panicln("failed to find encoder")
+				return fmt.Errorf("failed to find encoder")
 			}
 
 			stream.encCtx = ffmpeg.AVCodecAllocContext3(encoder)
@@ -355,7 +381,7 @@ func (t *Transcoder) openOut() {
 				encCtx.SetSampleRate(decCtx.SampleRate())
 
 				if _, err := ffmpeg.AVChannelLayoutCopy(encCtx.ChLayout(), decCtx.ChLayout()); err != nil {
-					log.Panicln(err)
+					return err
 				}
 
 				encCtx.SetSampleFmt(encoder.SampleFmts().Get(0))
@@ -368,20 +394,20 @@ func (t *Transcoder) openOut() {
 
 			// Third parameter can be used to pass settings to encoder
 			if _, err := ffmpeg.AVCodecOpen2(encCtx, encoder, nil); err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			if _, err := ffmpeg.AVCodecParametersFromContext(outStream.Codecpar(), encCtx); err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			outStream.SetTimeBase(encCtx.TimeBase())
 		case decCtx.CodecType() == ffmpeg.AVMediaTypeUnknown:
-			log.Panicln("unknown media type")
+			return fmt.Errorf("unknown media type")
 		default:
 			// if this stream must be remuxed
 			if _, err := ffmpeg.AVCodecParametersCopy(outStream.Codecpar(), inStream.Codecpar()); err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			outStream.SetTimeBase(inStream.TimeBase())
@@ -394,18 +420,20 @@ func (t *Transcoder) openOut() {
 		var pb *ffmpeg.AVIOContext
 
 		if _, err := ffmpeg.AVIOOpen(&pb, namePtr, ffmpeg.AVIOFlagWrite); err != nil {
-			log.Panicln(err)
+			return err
 		}
 
 		t.ofmtCtx.SetPb(pb)
 	}
 
 	if _, err := ffmpeg.AVFormatWriteHeader(t.ofmtCtx, nil); err != nil {
-		log.Panicln(err)
+		return err
 	}
+
+	return nil
 }
 
-func (t *Transcoder) initFilters() {
+func (t *Transcoder) initFilters() error {
 	for i, stream := range t.streams {
 		slog.Info("Stream", "i", i)
 
@@ -428,7 +456,7 @@ func (t *Transcoder) initFilters() {
 			bufferSink := ffmpeg.AVFilterGetByName(ffmpeg.GlobalCStr("buffersink"))
 
 			if bufferSrc == nil || bufferSink == nil {
-				log.Panicln("filtering src/sink not found")
+				return fmt.Errorf("filtering src/sink not found")
 			}
 
 			pktTimebase := decCtx.PktTimebase()
@@ -453,7 +481,7 @@ func (t *Transcoder) initFilters() {
 				filterGraph,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			_, err = ffmpeg.AVFilterGraphCreateFilter(
@@ -465,7 +493,7 @@ func (t *Transcoder) initFilters() {
 				filterGraph,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			pixFmts := []ffmpeg.AVPixelFormat{
@@ -479,7 +507,7 @@ func (t *Transcoder) initFilters() {
 				ffmpeg.AVOptSearchChildren,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 		} else {
@@ -489,7 +517,7 @@ func (t *Transcoder) initFilters() {
 			bufferSink := ffmpeg.AVFilterGetByName(ffmpeg.GlobalCStr("abuffersink"))
 
 			if bufferSrc == nil || bufferSink == nil {
-				log.Panicln("filtering src/sink not found")
+				return fmt.Errorf("filtering src/sink not found")
 			}
 
 			if decCtx.ChLayout().Order() == ffmpeg.AVChannelOrderUnspec {
@@ -501,7 +529,7 @@ func (t *Transcoder) initFilters() {
 			defer layoutPtr.Free()
 
 			if _, err := ffmpeg.AVChannelLayoutDescribe(decCtx.ChLayout(), layoutPtr, 64); err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			layout := layoutPtr.String()
@@ -531,7 +559,7 @@ func (t *Transcoder) initFilters() {
 				filterGraph,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			_, err = ffmpeg.AVFilterGraphCreateFilter(
@@ -543,7 +571,7 @@ func (t *Transcoder) initFilters() {
 				filterGraph,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			sampleFmts := []ffmpeg.AVSampleFormat{
@@ -557,14 +585,14 @@ func (t *Transcoder) initFilters() {
 				ffmpeg.AVOptSearchChildren,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			layoutPtr = ffmpeg.AllocCStr(64)
 			defer layoutPtr.Free()
 
 			if _, err := ffmpeg.AVChannelLayoutDescribe(stream.encCtx.ChLayout(), layoutPtr, 64); err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			layout = layoutPtr.String()
@@ -578,7 +606,7 @@ func (t *Transcoder) initFilters() {
 				ffmpeg.AVOptSearchChildren,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 
 			sampleRates := []int{
@@ -592,7 +620,7 @@ func (t *Transcoder) initFilters() {
 				ffmpeg.AVOptSearchChildren,
 			)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 		}
 
@@ -613,11 +641,11 @@ func (t *Transcoder) initFilters() {
 		defer filterSpecC.Free()
 
 		if _, err := ffmpeg.AVFilterGraphParsePtr(filterGraph, filterSpecC, &inputs, &outputs, nil); err != nil {
-			log.Panicln(err)
+			return err
 		}
 
 		if _, err := ffmpeg.AVFilterGraphConfig(filterGraph, nil); err != nil {
-			log.Panicln(err)
+			return err
 		}
 
 		stream.bufferSrcCtx = bufferSrcCtx
@@ -630,4 +658,6 @@ func (t *Transcoder) initFilters() {
 		stream.encPkt = ffmpeg.AVPacketAlloc()
 		stream.filteredFrame = ffmpeg.AVFrameAlloc()
 	}
+
+	return nil
 }
