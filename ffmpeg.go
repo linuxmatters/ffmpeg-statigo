@@ -29,6 +29,7 @@ const (
 	intSize     = uintptr(C.sizeof_int)
 	int8Size    = uintptr(C.sizeof_int8_t)
 	int16Size   = uintptr(C.sizeof_int16_t)
+	int32Size   = uintptr(C.sizeof_int32_t)
 	int64Size   = uintptr(C.sizeof_int64_t)
 	float64Size = uintptr(C.sizeof_double)
 )
@@ -260,14 +261,14 @@ func ToInt16Array(ptr unsafe.Pointer) *Array[int16] {
 }
 
 func ToUint32Array(ptr unsafe.Pointer) *Array[uint32] {
-	return newArray(ptr, intSize,
+	return newArray(ptr, int32Size,
 		func(p unsafe.Pointer) uint32 { return uint32(*(*C.uint32_t)(p)) },
 		func(p unsafe.Pointer, v uint32) { *(*C.uint32_t)(p) = C.uint32_t(v) },
 	)
 }
 
 func ToInt32Array(ptr unsafe.Pointer) *Array[int32] {
-	return newArray(ptr, intSize,
+	return newArray(ptr, int32Size,
 		func(p unsafe.Pointer) int32 { return int32(*(*C.int32_t)(p)) },
 		func(p unsafe.Pointer, v int32) { *(*C.int32_t)(p) = C.int32_t(v) },
 	)

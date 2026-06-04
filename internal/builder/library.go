@@ -35,10 +35,10 @@ type Library struct {
 	BuildSystem   BuildSystem
 	ConfigureArgs func(os string) []string
 	PostExtract   func(ctx context.Context, srcPath string) error // optional patches
-	BuildEnv      func() []string            // optional extra KEY=value env applied to all build commands
-	SkipAutoFlags bool                       // Skip automatic CFLAGS/LDFLAGS (for non-standard configure scripts like zlib)
-	LinkLibs      []string                   // Libraries to link in final static lib (nil for header-only)
-	Dependencies  []*Library                 // Build-time dependencies; platform-specific deps are auto-filtered via ShouldBuild()
+	BuildEnv      func() []string                                 // optional extra KEY=value env applied to all build commands
+	SkipAutoFlags bool                                            // Skip automatic CFLAGS/LDFLAGS (for non-standard configure scripts like zlib)
+	LinkLibs      []string                                        // Libraries to link in final static lib (nil for header-only)
+	Dependencies  []*Library                                      // Build-time dependencies; platform-specific deps are auto-filtered via ShouldBuild()
 }
 
 // BuildSystem defines the interface for different build systems
