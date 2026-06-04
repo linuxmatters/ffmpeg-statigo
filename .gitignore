@@ -9,12 +9,14 @@
 /introspect
 /metadata
 /transcode
+/transcode-hl
 
 # Example binaries
 examples/asciiplayer/asciiplayer
 examples/introspect/introspect
 examples/metadata/metadata
 examples/transcode/transcode
+examples/transcode-hl/transcode-hl
 internal/builder/builder
 
 # IDE and editor files

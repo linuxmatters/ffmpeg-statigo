@@ -9,6 +9,7 @@ clean:
     @rm examples/introspect/introspect 2>/dev/null || true
     @rm examples/metadata/metadata 2>/dev/null || true
     @rm examples/transcode/transcode 2>/dev/null || true
+    @rm examples/transcode-hl/transcode-hl 2>/dev/null || true
 
 # Build FFmpeg static library
 build-static +args='':
@@ -25,6 +26,7 @@ build-examples:
     go build -v ./examples/introspect/
     go build -v ./examples/metadata/
     go build -v ./examples/transcode/
+    go build -v ./examples/transcode-hl/
 
 # Build everything
 build:
