@@ -1,7 +1,9 @@
 package pathsafe
 
 import (
+	"io"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -56,4 +58,55 @@ func TestSanitizePath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCopyCapped(t *testing.T) {
+	tests := []struct {
+		name    string
+		size    int64
+		wantErr bool
+	}{
+		{
+			name: "under cap succeeds",
+			size: 1 << 20,
+		},
+		{
+			name: "at cap succeeds",
+			size: MaxExtractFileSize,
+		},
+		{
+			name:    "over cap rejected",
+			size:    MaxExtractFileSize + 1,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := io.LimitReader(zeroReader{}, tt.size)
+			err := CopyCapped(io.Discard, src)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), "exceeds") {
+					t.Fatalf("error %q does not contain %q", err.Error(), "exceeds")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+// zeroReader yields an endless stream of zero bytes without allocating a buffer.
+type zeroReader struct{}
+
+func (zeroReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 0
+	}
+	return len(p), nil
 }

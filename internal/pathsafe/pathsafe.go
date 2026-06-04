@@ -3,9 +3,26 @@ package pathsafe
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 )
+
+// MaxExtractFileSize caps a single extracted file to guard against decompression
+// bombs. FFmpeg sources and prebuilt static libraries stay well below this.
+const MaxExtractFileSize = 2 << 30 // 2 GiB
+
+// CopyCapped copies from src to dst, refusing more than MaxExtractFileSize bytes.
+func CopyCapped(dst io.Writer, src io.Reader) error {
+	n, err := io.Copy(dst, io.LimitReader(src, MaxExtractFileSize+1))
+	if err != nil {
+		return err
+	}
+	if n > MaxExtractFileSize {
+		return fmt.Errorf("extracted file exceeds %d bytes", MaxExtractFileSize)
+	}
+	return nil
+}
 
 // SanitizePath validates that an archive entry path is safe to extract.
 // It prevents path traversal attacks by ensuring the resolved path

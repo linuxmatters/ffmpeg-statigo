@@ -66,249 +66,203 @@ var skippedFields = map[string]map[string]bool{
 	},
 }
 
-// outputPointerAllowlist enumerates the (function, parameter) pairs whose
-// primitive-pointer parameter is an output pointer that marshalPointerArg
-// must emit as (*C.<type>)(unsafe.Pointer(p)). Mirrors the shape of
-// skippedFields. Seeded against the pinned FFmpeg headers; see
-// IMPROVE-PLAN.md Tasks 2.1, 2.2.
-// Sorted by function name then parameter name for reviewability.
-var outputPointerAllowlist = map[string]map[string]bool{
-	"av_ambient_viewing_environment_alloc": {
-		"size": true,
-	},
-	"av_buffersink_get_side_data": {
-		"nb_side_data": true,
-	},
-	"av_content_light_metadata_alloc": {
-		"size": true,
-	},
-	"av_cpb_properties_alloc": {
-		"size": true,
-	},
-	"av_detection_bbox_alloc": {
-		"out_size": true,
-	},
-	"av_dovi_alloc": {
-		"size": true,
-	},
-	"av_dovi_metadata_alloc": {
-		"size": true,
-	},
-	"av_dynamic_hdr_plus_alloc": {
-		"size": true,
-	},
-	"av_dynamic_hdr_vivid_alloc": {
-		"size": true,
-	},
-	"av_dynarray_add": {
-		"nb_ptr": true,
-	},
-	"av_dynarray_add_nofree": {
-		"nb_ptr": true,
-	},
-	"av_encryption_info_add_side_data": {
-		"side_data_size": true,
-	},
-	"av_encryption_init_info_add_side_data": {
-		"side_data_size": true,
-	},
-	"av_expr_count_func": {
-		"counter": true,
-	},
-	"av_expr_count_vars": {
-		"counter": true,
-	},
-	"av_fast_malloc": {
-		"size": true,
-	},
-	"av_fast_mallocz": {
-		"size": true,
-	},
-	"av_fast_padded_malloc": {
-		"size": true,
-	},
-	"av_fast_padded_mallocz": {
-		"size": true,
-	},
-	"av_fast_realloc": {
-		"size": true,
-	},
-	"av_film_grain_params_alloc": {
-		"size": true,
-	},
-	"av_find_best_pix_fmt_of_2": {
-		"loss_ptr": true,
-	},
-	"av_iamf_param_definition_alloc": {
-		"size": true,
-	},
-	"av_lzo1x_decode": {
-		"outlen": true,
-	},
-	"av_mastering_display_metadata_alloc_size": {
-		"size": true,
-	},
-	"av_opt_eval_double": {
-		"double_out": true,
-	},
-	"av_opt_eval_flags": {
-		"flags_out": true,
-	},
-	"av_opt_eval_float": {
-		"float_out": true,
-	},
-	"av_opt_eval_int": {
-		"int_out": true,
-	},
-	"av_opt_eval_int64": {
-		"int64_out": true,
-	},
-	"av_opt_eval_uint": {
-		"uint_out": true,
-	},
-	"av_opt_get_array_size": {
-		"out_val": true,
-	},
-	"av_opt_get_double": {
-		"out_val": true,
-	},
-	"av_opt_get_image_size": {
-		"h_out": true,
-		"w_out": true,
-	},
-	"av_opt_get_int": {
-		"out_val": true,
-	},
-	"av_packet_get_side_data": {
-		"size": true,
-	},
-	"av_packet_pack_dictionary": {
-		"size": true,
-	},
-	"av_packet_side_data_add": {
-		"nb_sd": true,
-	},
-	"av_packet_side_data_free": {
-		"nb_sd": true,
-	},
-	"av_packet_side_data_from_frame": {
-		"nb_sd": true,
-	},
-	"av_packet_side_data_new": {
-		"pnb_sd": true,
-	},
-	"av_packet_side_data_remove": {
-		"nb_sd": true,
-	},
-	"av_parse_video_size": {
-		"height_ptr": true,
-		"width_ptr":  true,
-	},
-	"av_pix_fmt_get_chroma_sub_sample": {
-		"h_shift": true,
-		"v_shift": true,
-	},
-	"av_probe_input_format3": {
-		"score_ret": true,
-	},
-	"av_reduce": {
-		"dst_den": true,
-		"dst_num": true,
-	},
-	"av_samples_get_buffer_size": {
-		"linesize": true,
-	},
-	"av_spherical_alloc": {
-		"size": true,
-	},
-	"av_stereo3d_alloc_size": {
-		"size": true,
-	},
-	"av_tdrdi_alloc": {
-		"size": true,
-	},
-	"av_url_split": {
-		"port_ptr": true,
-	},
-	"av_video_enc_params_alloc": {
-		"out_size": true,
-	},
-	"av_video_hint_alloc": {
-		"out_size": true,
-	},
-	"avcodec_align_dimensions": {
-		"height": true,
-		"width":  true,
-	},
-	"avcodec_align_dimensions2": {
-		"height": true,
-		"width":  true,
-	},
-	"avcodec_decode_subtitle2": {
-		"got_sub_ptr": true,
-	},
-	"avcodec_find_best_pix_fmt_of_list": {
-		"loss_ptr": true,
-	},
-	"swr_set_channel_mapping": {
-		"channel_map": true,
-	},
+// outputParam describes how marshalPointerArg and marshalArg treat an
+// output-pointer parameter. Membership in outputParams marks the parameter as
+// an output pointer that marshalPointerArg must emit as
+// (*C.<type>)(unsafe.Pointer(p)). sizeT marks the size_t-width subset that
+// libclang misreports as int but whose FFmpeg headers declare size_t;
+// marshalArg rewrites those to size_t.
+type outputParam struct {
+	sizeT bool
 }
 
-// sizeTOutputParams enumerates the output-pointer (function, parameter) pairs
-// that libclang misreports as int but whose FFmpeg headers declare size_t.
-// marshalArg rewrites these to size_t via this explicit lookup, replacing the
-// former substring heuristic. This is the size_t-width companion to
-// outputPointerAllowlist.
+// outputParams enumerates the (function, parameter) pairs whose
+// primitive-pointer parameter is an output pointer. Mirrors the shape of
+// skippedFields. Seeded against the pinned FFmpeg headers; see
+// IMPROVE-PLAN.md Tasks 2.1, 2.2. Entries with sizeT: true are the size_t-width
+// subset that libclang misreports as int (replacing the former substring
+// heuristic).
 // Sorted by function name then parameter name for reviewability.
-var sizeTOutputParams = map[string]map[string]bool{
+var outputParams = map[string]map[string]outputParam{
 	"av_ambient_viewing_environment_alloc": {
-		"size": true,
+		"size": {sizeT: true},
+	},
+	"av_buffersink_get_side_data": {
+		"nb_side_data": {},
 	},
 	"av_content_light_metadata_alloc": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_cpb_properties_alloc": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_detection_bbox_alloc": {
-		"out_size": true,
+		"out_size": {sizeT: true},
 	},
 	"av_dovi_alloc": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_dovi_metadata_alloc": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_dynamic_hdr_plus_alloc": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_dynamic_hdr_vivid_alloc": {
-		"size": true,
+		"size": {sizeT: true},
+	},
+	"av_dynarray_add": {
+		"nb_ptr": {},
+	},
+	"av_dynarray_add_nofree": {
+		"nb_ptr": {},
+	},
+	"av_encryption_info_add_side_data": {
+		"side_data_size": {},
+	},
+	"av_encryption_init_info_add_side_data": {
+		"side_data_size": {},
+	},
+	"av_expr_count_func": {
+		"counter": {},
+	},
+	"av_expr_count_vars": {
+		"counter": {},
+	},
+	"av_fast_malloc": {
+		"size": {},
+	},
+	"av_fast_mallocz": {
+		"size": {},
+	},
+	"av_fast_padded_malloc": {
+		"size": {},
+	},
+	"av_fast_padded_mallocz": {
+		"size": {},
+	},
+	"av_fast_realloc": {
+		"size": {},
 	},
 	"av_film_grain_params_alloc": {
-		"size": true,
+		"size": {sizeT: true},
+	},
+	"av_find_best_pix_fmt_of_2": {
+		"loss_ptr": {},
 	},
 	"av_iamf_param_definition_alloc": {
-		"size": true,
+		"size": {sizeT: true},
+	},
+	"av_lzo1x_decode": {
+		"outlen": {},
 	},
 	"av_mastering_display_metadata_alloc_size": {
-		"size": true,
+		"size": {sizeT: true},
+	},
+	"av_opt_eval_double": {
+		"double_out": {},
+	},
+	"av_opt_eval_flags": {
+		"flags_out": {},
+	},
+	"av_opt_eval_float": {
+		"float_out": {},
+	},
+	"av_opt_eval_int": {
+		"int_out": {},
+	},
+	"av_opt_eval_int64": {
+		"int64_out": {},
+	},
+	"av_opt_eval_uint": {
+		"uint_out": {},
+	},
+	"av_opt_get_array_size": {
+		"out_val": {},
+	},
+	"av_opt_get_double": {
+		"out_val": {},
+	},
+	"av_opt_get_image_size": {
+		"h_out": {},
+		"w_out": {},
+	},
+	"av_opt_get_int": {
+		"out_val": {},
+	},
+	"av_packet_get_side_data": {
+		"size": {},
+	},
+	"av_packet_pack_dictionary": {
+		"size": {},
+	},
+	"av_packet_side_data_add": {
+		"nb_sd": {},
+	},
+	"av_packet_side_data_free": {
+		"nb_sd": {},
+	},
+	"av_packet_side_data_from_frame": {
+		"nb_sd": {},
+	},
+	"av_packet_side_data_new": {
+		"pnb_sd": {},
+	},
+	"av_packet_side_data_remove": {
+		"nb_sd": {},
+	},
+	"av_parse_video_size": {
+		"height_ptr": {},
+		"width_ptr":  {},
+	},
+	"av_pix_fmt_get_chroma_sub_sample": {
+		"h_shift": {},
+		"v_shift": {},
+	},
+	"av_probe_input_format3": {
+		"score_ret": {},
+	},
+	"av_reduce": {
+		"dst_den": {},
+		"dst_num": {},
+	},
+	"av_samples_get_buffer_size": {
+		"linesize": {},
 	},
 	"av_spherical_alloc": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_stereo3d_alloc_size": {
-		"size": true,
+		"size": {sizeT: true},
 	},
 	"av_tdrdi_alloc": {
-		"size": true,
+		"size": {sizeT: true},
+	},
+	"av_url_split": {
+		"port_ptr": {},
 	},
 	"av_video_enc_params_alloc": {
-		"out_size": true,
+		"out_size": {sizeT: true},
 	},
 	"av_video_hint_alloc": {
-		"out_size": true,
+		"out_size": {sizeT: true},
+	},
+	"avcodec_align_dimensions": {
+		"height": {},
+		"width":  {},
+	},
+	"avcodec_align_dimensions2": {
+		"height": {},
+		"width":  {},
+	},
+	"avcodec_decode_subtitle2": {
+		"got_sub_ptr": {},
+	},
+	"avcodec_find_best_pix_fmt_of_list": {
+		"loss_ptr": {},
+	},
+	"swr_set_channel_mapping": {
+		"channel_map": {},
 	},
 }
 
@@ -1627,11 +1581,11 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 		if identType, ok := ptrType.Inner.(*IdentType); ok {
 			actualTypeName = identType.Name
 			// libclang misreports some size_t* output parameters as int*. The
-			// affected (function, parameter) pairs are enumerated in
-			// sizeTOutputParams rather than matched by substring, so the rewrite
-			// is exact. Pinned by TestGeneratorOutputParameters in bindings_test.go
+			// affected (function, parameter) pairs are the sizeT entries in
+			// outputParams rather than matched by substring, so the rewrite is
+			// exact. Pinned by TestGeneratorOutputParameters in bindings_test.go
 			// and by the byte-identical regen gate.
-			if actualTypeName == "int" && sizeTOutputParams[fn.Name][arg.Name] {
+			if p, ok := outputParams[fn.Name][arg.Name]; ok && p.sizeT && actualTypeName == "int" {
 				actualTypeName = "size_t"
 			}
 		}
@@ -1751,7 +1705,7 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 
 			if m, ok := primTypes[typeNameForParam]; ok {
 				// Pointer to primitive type - check if it's an output parameter
-				if outputPointerAllowlist[fn.Name][arg.Name] {
+				if _, ok := outputParams[fn.Name][arg.Name]; ok {
 					// This is likely an output parameter
 					// We'll generate a wrapper function that handles the output
 					params = append(params, jen.Id(pName).Op("*").Id(m))
