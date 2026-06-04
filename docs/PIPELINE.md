@@ -194,6 +194,10 @@ for {
     }
 }
 
+// Flush the decoder, filter graph and encoder before the trailer so delayed
+// tail frames are not dropped. See examples/transcode-hl/main.go for the full
+// flush sequence (decoder.Flush -> filter Push(nil)/Pull -> encoder.Flush).
+
 return output.WriteTrailer()
 ```
 
