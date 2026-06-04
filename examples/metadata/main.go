@@ -18,13 +18,13 @@ func main() {
 
 	_, err := ffmpeg.AVFormatOpenInput(&ctx, url, nil, nil)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 
 	defer ffmpeg.AVFormatFreeContext(ctx)
 
 	if _, err := ffmpeg.AVFormatFindStreamInfo(ctx, nil); err != nil {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 
 	ffmpeg.AVDumpFormat(ctx, 0, url, 0)
