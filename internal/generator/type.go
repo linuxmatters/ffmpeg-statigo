@@ -251,7 +251,11 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 			if strings.HasPrefix(name, "enum (unnamed") {
 				dec.Visit(func(cursor, parent clang.Cursor) (status clang.ChildVisitResult) {
 					if cursor.Kind() != clang.Cursor_EnumConstantDecl {
-						log.Panicln("Unknown enum type", "kind", cursor.Kind().String())
+						reason := fmt.Sprintf("unhandled unnamed-enum child cursor kind %v", cursor.Kind().String())
+						log.Printf("%v skipped due to %v", indent, reason)
+						p.skips.Record(indent, reason)
+
+						return clang.ChildVisit_Continue
 					}
 
 					name := cursor.Spelling()
@@ -324,7 +328,9 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 			return u
 
 		default:
-			log.Panicln("Unknown dec", "kind", dec.Kind())
+			reason := fmt.Sprintf("unhandled elaborated declaration kind %v", dec.Kind())
+			log.Printf("%v skipped due to %v", indent, reason)
+			p.skips.Record(indent, reason)
 
 			return nil
 		}
@@ -366,7 +372,9 @@ func (p *Parser) parseType(indent string, t clang.Type) Type {
 
 	default:
 		log.Println(indent, "Parsing type", t.Spelling(), "as ???")
-		log.Panicln(indent, "Unknown type", t.Kind().Spelling())
+		reason := fmt.Sprintf("unhandled type kind %v", t.Kind().Spelling())
+		log.Printf("%v skipped due to %v", indent, reason)
+		p.skips.Record(indent, reason)
 		return nil
 	}
 }

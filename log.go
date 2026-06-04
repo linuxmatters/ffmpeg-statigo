@@ -25,7 +25,7 @@ type LogCallback func(ctx *LogCtx, level int, msg string)
 var activeLogCallback atomic.Pointer[LogCallback] //nolint:gochecknoglobals
 
 //export ffgLogCallback
-func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr *C.char) {
+func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr unsafe.Pointer) {
 	var ctx *LogCtx
 
 	if ctxPtr != nil {
@@ -34,7 +34,7 @@ func ffgLogCallback(ctxPtr unsafe.Pointer, level int, msgPtr *C.char) {
 		}
 	}
 
-	msgWrapper := wrapCStr(msgPtr)
+	msgWrapper := wrapCStr((*C.char)(msgPtr))
 	msg := msgWrapper.String()
 	msgWrapper.Free()
 

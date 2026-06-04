@@ -66,38 +66,193 @@ var skippedFields = map[string]map[string]bool{
 	},
 }
 
-// isOutputParameter checks if a parameter name suggests it's an output parameter
-// isOutputParameter detects function parameters that are output parameters.
-// Priority 2 Enhancement: Recovers ~30 functions with output parameters.
-//
-// Examples of recovered functions:
-//   - av_opt_get_int(obj, name, flags, out_val *int64) -> returns value via out_val
-//   - av_packet_get_side_data(pkt, type, size *size_t) -> returns size via pointer
-//   - av_image_fill_linesizes(linesizes *int, pix_fmt, width) -> fills array via pointer
-//
-// Note: 3 functions with callback-by-value parameters are skipped due to CGO limitations:
-//   - av_fifo_write_from_cb, av_fifo_read_to_cb, av_fifo_peek_to_cb
-func isOutputParameter(name string) bool {
-	// Common patterns for output parameters in FFmpeg API
-	outputPatterns := []string{
-		"out_", "out", // out_val, outVal, out_size
-		"size", "psize", "buf_size", // size outputs
-		"width", "height", "w", "h", // dimension outputs
-		"ptr", "pptr", // pointer outputs
-		"nb_", "count", // count outputs
-		"ret", "returned", // return value outputs
-		"dst_", // destination that gets written
-		"p_",   // pointer outputs (p_stream, p_codec)
-	}
-
-	lowerName := strings.ToLower(name)
-	for _, pattern := range outputPatterns {
-		if strings.Contains(lowerName, pattern) {
-			return true
-		}
-	}
-
-	return false
+// outputPointerAllowlist enumerates the (function, parameter) pairs whose
+// primitive-pointer parameter is an output pointer that marshalPointerArg
+// must emit as (*C.<type>)(unsafe.Pointer(p)). Mirrors the shape of
+// skippedFields. Seeded against the pinned FFmpeg headers; see
+// IMPROVE-PLAN.md Tasks 2.1, 2.2.
+// Sorted by function name then parameter name for reviewability.
+var outputPointerAllowlist = map[string]map[string]bool{
+	"av_ambient_viewing_environment_alloc": {
+		"size": true,
+	},
+	"av_buffersink_get_side_data": {
+		"nb_side_data": true,
+	},
+	"av_content_light_metadata_alloc": {
+		"size": true,
+	},
+	"av_cpb_properties_alloc": {
+		"size": true,
+	},
+	"av_detection_bbox_alloc": {
+		"out_size": true,
+	},
+	"av_dovi_alloc": {
+		"size": true,
+	},
+	"av_dovi_metadata_alloc": {
+		"size": true,
+	},
+	"av_dynamic_hdr_plus_alloc": {
+		"size": true,
+	},
+	"av_dynamic_hdr_vivid_alloc": {
+		"size": true,
+	},
+	"av_dynarray_add": {
+		"nb_ptr": true,
+	},
+	"av_dynarray_add_nofree": {
+		"nb_ptr": true,
+	},
+	"av_encryption_info_add_side_data": {
+		"side_data_size": true,
+	},
+	"av_encryption_init_info_add_side_data": {
+		"side_data_size": true,
+	},
+	"av_expr_count_func": {
+		"counter": true,
+	},
+	"av_expr_count_vars": {
+		"counter": true,
+	},
+	"av_fast_malloc": {
+		"size": true,
+	},
+	"av_fast_mallocz": {
+		"size": true,
+	},
+	"av_fast_padded_malloc": {
+		"size": true,
+	},
+	"av_fast_padded_mallocz": {
+		"size": true,
+	},
+	"av_fast_realloc": {
+		"size": true,
+	},
+	"av_film_grain_params_alloc": {
+		"size": true,
+	},
+	"av_find_best_pix_fmt_of_2": {
+		"loss_ptr": true,
+	},
+	"av_iamf_param_definition_alloc": {
+		"size": true,
+	},
+	"av_lzo1x_decode": {
+		"outlen": true,
+	},
+	"av_mastering_display_metadata_alloc_size": {
+		"size": true,
+	},
+	"av_opt_eval_double": {
+		"double_out": true,
+	},
+	"av_opt_eval_flags": {
+		"flags_out": true,
+	},
+	"av_opt_eval_float": {
+		"float_out": true,
+	},
+	"av_opt_eval_int": {
+		"int_out": true,
+	},
+	"av_opt_eval_int64": {
+		"int64_out": true,
+	},
+	"av_opt_eval_uint": {
+		"uint_out": true,
+	},
+	"av_opt_get_array_size": {
+		"out_val": true,
+	},
+	"av_opt_get_double": {
+		"out_val": true,
+	},
+	"av_opt_get_image_size": {
+		"h_out": true,
+		"w_out": true,
+	},
+	"av_opt_get_int": {
+		"out_val": true,
+	},
+	"av_packet_get_side_data": {
+		"size": true,
+	},
+	"av_packet_pack_dictionary": {
+		"size": true,
+	},
+	"av_packet_side_data_add": {
+		"nb_sd": true,
+	},
+	"av_packet_side_data_free": {
+		"nb_sd": true,
+	},
+	"av_packet_side_data_from_frame": {
+		"nb_sd": true,
+	},
+	"av_packet_side_data_new": {
+		"pnb_sd": true,
+	},
+	"av_packet_side_data_remove": {
+		"nb_sd": true,
+	},
+	"av_parse_video_size": {
+		"height_ptr": true,
+		"width_ptr":  true,
+	},
+	"av_pix_fmt_get_chroma_sub_sample": {
+		"h_shift": true,
+		"v_shift": true,
+	},
+	"av_probe_input_format3": {
+		"score_ret": true,
+	},
+	"av_reduce": {
+		"dst_den": true,
+		"dst_num": true,
+	},
+	"av_samples_get_buffer_size": {
+		"linesize": true,
+	},
+	"av_spherical_alloc": {
+		"size": true,
+	},
+	"av_stereo3d_alloc_size": {
+		"size": true,
+	},
+	"av_tdrdi_alloc": {
+		"size": true,
+	},
+	"av_url_split": {
+		"port_ptr": true,
+	},
+	"av_video_enc_params_alloc": {
+		"out_size": true,
+	},
+	"av_video_hint_alloc": {
+		"out_size": true,
+	},
+	"avcodec_align_dimensions": {
+		"height": true,
+		"width":  true,
+	},
+	"avcodec_align_dimensions2": {
+		"height": true,
+		"width":  true,
+	},
+	"avcodec_decode_subtitle2": {
+		"got_sub_ptr": true,
+	},
+	"avcodec_find_best_pix_fmt_of_list": {
+		"loss_ptr": true,
+	},
+	"swr_set_channel_mapping": {
+		"channel_map": true,
+	},
 }
 
 func getCType(typeName string, goType string) string {
@@ -166,13 +321,59 @@ func getCType(typeName string, goType string) string {
 	return typeName
 }
 
-type Generator struct {
-	input *Module
+// SkipEntry pairs a skipped C symbol with the short reason that explains why
+// the generator could not emit a binding for it. The reason text mirrors the
+// `skipped due to ...` comment emitted into the generated file at the same
+// site, so a summary line and the generated comment always agree.
+type SkipEntry struct {
+	Symbol string
+	Reason string
 }
 
-func Gen(i *Module) {
+// SkipCollector aggregates every `skipped due to ...` decision the generator
+// makes during a single run. It observes the existing emit sites; it does not
+// change emitted code. Task 3.4 will consume the total to enforce a regression
+// ceiling on FFmpeg upgrades. See IMPROVE-PLAN.md Task 3.1.
+type SkipCollector struct {
+	Entries []SkipEntry
+}
+
+// Record appends a skip decision. A nil receiver is a no-op so call sites can
+// stay unconditional even when no collector is wired (e.g. focused tests).
+func (c *SkipCollector) Record(symbol, reason string) {
+	if c == nil {
+		return
+	}
+	c.Entries = append(c.Entries, SkipEntry{Symbol: symbol, Reason: reason})
+}
+
+// Total returns the number of recorded skip markers. Matches the count of
+// `skipped due to ...` comments in the generated `*.gen.go` output.
+func (c *SkipCollector) Total() int {
+	if c == nil {
+		return 0
+	}
+	return len(c.Entries)
+}
+
+type Generator struct {
+	input *Module
+	skips *SkipCollector
+}
+
+// Gen runs the codegen pass. The skips collector is shared with Parse so a
+// single SkipCollector accumulates both parse-layer (Task 3.2) and codegen-layer
+// skips. A nil skips is tolerated: a fresh collector is allocated. The returned
+// collector is the active one (the argument when non-nil, otherwise the freshly
+// allocated one) so callers can read aggregated state without tracking it
+// separately.
+func Gen(i *Module, skips *SkipCollector) *SkipCollector {
+	if skips == nil {
+		skips = &SkipCollector{}
+	}
 	g := &Generator{
 		input: i,
+		skips: skips,
 	}
 
 	g.generateConstants()
@@ -180,6 +381,8 @@ func Gen(i *Module) {
 	g.generateCallbacks()
 	g.generateStructs()
 	g.generateFuncs()
+
+	return g.skips
 }
 
 func newFile() *jen.File {
@@ -539,6 +742,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	if field.BitWidth != -1 {
 		o.Commentf("%v skipped due to bitfield", field.Name)
 		o.Line()
+		g.skips.Record(goName+"."+field.Name, "bitfield")
 
 		return
 	}
@@ -624,6 +828,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		} else if _, ok := g.input.callbacks[v.Name]; ok {
 			o.Commentf("%v skipped due to ident callback", field.Name)
 			o.Line()
+			g.skips.Record(goName+"."+field.Name, "ident callback")
 
 			return
 		} else if e, ok := g.input.enums[v.Name]; ok {
@@ -716,6 +921,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 					// Array of struct pointers - skip for now (complex)
 					o.Commentf("%v skipped due to const array of struct pointers", field.Name)
 					o.Line()
+					g.skips.Record(goName+"."+field.Name, "const array of struct pointers")
 
 					return
 				}
@@ -723,6 +929,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 				// Unknown type - might be typedef or forward declaration
 				o.Commentf("%v skipped due to unknown const array type %v", field.Name, iv.Name)
 				o.Line()
+				g.skips.Record(goName+"."+field.Name, fmt.Sprintf("unknown const array type %v", iv.Name))
 
 				return
 			}
@@ -746,6 +953,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 					if st.ByValue {
 						o.Commentf("%v skipped due to value ident ptr const array", field.Name)
 						o.Line()
+						g.skips.Record(goName+"."+field.Name, "value ident ptr const array")
 
 						return
 					}
@@ -763,38 +971,57 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 				} else {
 					o.Commentf("%v skipped due to ident pointer const array", field.Name)
 					o.Line()
+					g.skips.Record(goName+"."+field.Name, "ident pointer const array")
 
 					return
 				}
 
 			default:
-				log.Panicln("unexpected type", reflect.TypeOf(iv.Inner))
+				reason := fmt.Sprintf("unhandled const array pointer inner type %v", reflect.TypeOf(iv.Inner))
+				o.Commentf("%v skipped due to %v", field.Name, reason)
+				o.Line()
+				g.skips.Record(goName+"."+field.Name, reason)
+
+				return
 			}
 
 		case *ConstArray:
 			o.Commentf("%v skipped due to multi dim const array", field.Name)
 			o.Line()
+			g.skips.Record(goName+"."+field.Name, "multi dim const array")
 
 			return
 
 		default:
-			log.Panicln("unexpected type", reflect.TypeOf(v.Inner))
+			reason := fmt.Sprintf("unhandled const array inner type %v", reflect.TypeOf(v.Inner))
+			o.Commentf("%v skipped due to %v", field.Name, reason)
+			o.Line()
+			g.skips.Record(goName+"."+field.Name, reason)
+
+			return
 		}
 
 	case *UnionType:
 		o.Commentf("%v skipped due to union type", field.Name)
 		o.Line()
+		g.skips.Record(goName+"."+field.Name, "union type")
 
 		return
 
 	default:
-		log.Panicln("unexpected type", reflect.TypeOf(field.Type))
+		reason := fmt.Sprintf("unhandled field type %v", reflect.TypeOf(field.Type))
+		o.Commentf("%v skipped due to %v", field.Name, reason)
+		o.Line()
+		g.skips.Record(goName+"."+field.Name, reason)
+
+		return
 	}
 
 	switch {
 	case refField && st.ByValue:
 		o.Commentf("%v skipped due to ref field of value struct", field.Name)
 		o.Line()
+		g.skips.Record(goName+"."+field.Name, "ref field of value struct")
 
 		return
 	case refField:
@@ -847,6 +1074,11 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 }
 
 func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v *PointerType, tgt *jen.Statement) (getRetType, setParams, getBody, setBody []jen.Code, skip bool) {
+	// Capture before the `st, ok := g.input.structs[...]` branches below
+	// shadow the outer struct binding. The skip collector needs the
+	// containing struct name, not the array-element struct name.
+	parentName := st.Name
+
 	switch iv := v.Inner.(type) {
 	case nil:
 		getRetType = []jen.Code{
@@ -861,6 +1093,7 @@ func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v
 		if iv.Name == "URLContext" || iv.Name == "AVFilterCommand" || iv.Name == "AVCodecInternal" {
 			o.Commentf("%v skipped due to ptr to ignored type", field.Name)
 			o.Line()
+			g.skips.Record(parentName+"."+field.Name, "ptr to ignored type")
 
 			return getRetType, setParams, getBody, setBody, true
 		} else if iv.Name == "char" {
@@ -882,6 +1115,7 @@ func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v
 		} else if _, ok := primTypes[iv.Name]; ok {
 			o.Commentf("%v skipped due to prim ptr", field.Name)
 			o.Line()
+			g.skips.Record(parentName+"."+field.Name, "prim ptr")
 
 			return getRetType, setParams, getBody, setBody, true
 		} else if enum, ok := g.input.enums[iv.Name]; ok {
@@ -912,12 +1146,14 @@ func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v
 		} else if _, ok := g.input.callbacks[iv.Name]; ok {
 			o.Commentf("%v skipped due to callback ptr", field.Name)
 			o.Line()
+			g.skips.Record(parentName+"."+field.Name, "callback ptr")
 
 			return getRetType, setParams, getBody, setBody, true
 		} else if ist, ok := g.input.structs[iv.Name]; ok {
 			if ist.ByValue {
 				o.Commentf("%v skipped due to struct value ptr", field.Name)
 				o.Line()
+				g.skips.Record(parentName+"."+field.Name, "struct value ptr")
 
 				return getRetType, setParams, getBody, setBody, true
 			}
@@ -954,12 +1190,14 @@ func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v
 			log.Printf("unexpected IdentType in struct setter - struct: %v, field: %v, type: %v\n", structName, fieldName, typeName)
 			o.Commentf("%v skipped due to unexpected IdentType %v", fieldName, typeName)
 			o.Line()
+			g.skips.Record(parentName+"."+field.Name, fmt.Sprintf("unexpected IdentType %v", typeName))
 			return getRetType, setParams, getBody, setBody, true
 		}
 
 	case *FuncType:
 		o.Commentf("%v skipped due to func ptr", field.Name)
 		o.Line()
+		g.skips.Record(parentName+"."+field.Name, "func ptr")
 
 		return getRetType, setParams, getBody, setBody, true
 
@@ -996,16 +1234,28 @@ func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v
 				//nolint:dupword // "ptr ptr" describes a pointer-to-pointer field; changing it would alter generated output
 				o.Commentf("%v skipped due to unknown ptr ptr", field.Name)
 				o.Line()
+				//nolint:dupword // "ptr ptr" describes a pointer-to-pointer field; the skip reason must match the generated comment
+				g.skips.Record(parentName+"."+field.Name, "unknown ptr ptr")
 
 				return getRetType, setParams, getBody, setBody, true
 			}
 
 		default:
-			log.Panicln("unexpected type", reflect.TypeOf(iv.Inner))
+			reason := fmt.Sprintf("unhandled pointer-pointer inner type %v", reflect.TypeOf(iv.Inner))
+			o.Commentf("%v skipped due to %v", field.Name, reason)
+			o.Line()
+			g.skips.Record(parentName+"."+field.Name, reason)
+
+			return getRetType, setParams, getBody, setBody, true
 		}
 
 	default:
-		log.Panicln("unexpected type", reflect.TypeOf(v.Inner))
+		reason := fmt.Sprintf("unhandled pointer inner type %v", reflect.TypeOf(v.Inner))
+		o.Commentf("%v skipped due to %v", field.Name, reason)
+		o.Line()
+		g.skips.Record(parentName+"."+field.Name, reason)
+
+		return getRetType, setParams, getBody, setBody, true
 	}
 
 	return getRetType, setParams, getBody, setBody, false
@@ -1039,24 +1289,29 @@ outer:
 		if fn.Variadic {
 			o.Commentf("%v skipped due to variadic arg.", fn.Name)
 			o.Line()
+			g.skips.Record(fn.Name, "variadic arg")
 
 			continue
 		}
 
 		// WORKAROUND: libclang on Linux reports FILE* as int* for av_fopen_utf8
+		// Pinned by TestGeneratorSkipPatterns in bindings_test.go (asserts AvFopenUtf8 absent).
 		if fn.Name == "av_fopen_utf8" {
 			o.Commentf("%v skipped due to return", fn.Name)
 			o.Line()
+			g.skips.Record(fn.Name, "return")
 
 			continue outer
 		}
 
 		// WORKAROUND: UUID functions use AVUUID (array typedef) which requires pointer conversion in CGO
 		// These are manually wrapped in custom.go with proper pointer handling
+		// Pinned by TestUUIDBindingsNotDuplicated in bindings_test.go (asserts the seven manual wrappers are not also generated).
 		if fn.Name == "av_uuid_parse" || fn.Name == "av_uuid_urn_parse" || fn.Name == "av_uuid_parse_range" ||
 			fn.Name == "av_uuid_unparse" || fn.Name == "av_uuid_equal" || fn.Name == "av_uuid_copy" || fn.Name == "av_uuid_nil" {
 			o.Commentf("%v skipped due to array typedef (manually wrapped in custom.go)", fn.Name)
 			o.Line()
+			g.skips.Record(fn.Name, "array typedef (manually wrapped in custom.go)")
 
 			continue outer
 		}
@@ -1064,6 +1319,7 @@ outer:
 		if typeEquals(fn.Result, fileType) || typeEquals(fn.Result, fileType2) {
 			o.Commentf("%v skipped due to return", fn.Name)
 			o.Line()
+			g.skips.Record(fn.Name, "return")
 
 			continue outer
 		}
@@ -1090,6 +1346,7 @@ outer:
 			if skip {
 				o.Commentf("%v skipped due to %v.", fn.Name, arg.Name)
 				o.Line()
+				g.skips.Record(fn.Name, fmt.Sprintf("arg %v", arg.Name))
 
 				continue outer
 			}
@@ -1180,6 +1437,7 @@ func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen
 			} else {
 				o.Commentf("%v skipped due to return", fn.Name)
 				o.Line()
+				g.skips.Record(fn.Name, "return")
 				return nil, nil, true
 			}
 		} else if _, ok := g.input.callbacks[v.Name]; ok {
@@ -1265,14 +1523,23 @@ func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen
 			// Skip for now - these are complex array returns that need special handling
 			o.Commentf("%v skipped due to pointer-to-pointer return type", fn.Name)
 			o.Line()
+			g.skips.Record(fn.Name, "pointer-to-pointer return type")
 			return nil, nil, true
 
 		default:
-			log.Panicln("unexpected type", reflect.TypeOf(v.Inner))
+			reason := fmt.Sprintf("unhandled return pointer inner type %v", reflect.TypeOf(v.Inner))
+			o.Commentf("%v skipped due to %v", fn.Name, reason)
+			o.Line()
+			g.skips.Record(fn.Name, reason)
+			return nil, nil, true
 		}
 
 	default:
-		log.Panicln("unexpected type", reflect.TypeOf(fn.Result))
+		reason := fmt.Sprintf("unhandled return type %v", reflect.TypeOf(fn.Result))
+		o.Commentf("%v skipped due to %v", fn.Name, reason)
+		o.Line()
+		g.skips.Record(fn.Name, reason)
+		return nil, nil, true
 	}
 
 	return retType, body, false
@@ -1287,7 +1554,10 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 	if ptrType, ok := arg.Type.(*PointerType); ok {
 		if identType, ok := ptrType.Inner.(*IdentType); ok {
 			actualTypeName = identType.Name
-			// Fix known size_t misreports
+			// Fix known size_t misreports.
+			// Pinned by TestGeneratorOutputParameters in bindings_test.go (size_t pointer branch:
+			// av_cpb_properties_alloc / *uint64 size). The _alloc catch-all below is pinned
+			// incidentally by the byte-identical regen gate, not the test.
 			if actualTypeName == "int" && (arg.Name == "size" || strings.Contains(arg.Name, "size")) {
 				// These functions use size_t* per FFmpeg headers
 				if fn.Name == "av_cpb_properties_alloc" || fn.Name == "av_stereo3d_alloc_size" ||
@@ -1305,13 +1575,15 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 		// Only fix specific known cases where FFmpeg headers use size_t
 		typeName := v.Name
 		if typeName == "int" && arg.Name == "buf_size" {
-			// These functions use size_t buf_size per FFmpeg headers
+			// These functions use size_t buf_size per FFmpeg headers.
+			// Pinned by TestGeneratorOutputParameters in bindings_test.go (size_t buf_size branch).
 			if fn.Name == "av_channel_name" || fn.Name == "av_channel_description" ||
 				fn.Name == "av_channel_layout_describe" {
 				typeName = "size_t"
 			}
 		} else if typeName == "int" && arg.Name == "max_size" {
-			// avio_read_to_bprint uses size_t max_size per FFmpeg headers
+			// avio_read_to_bprint uses size_t max_size per FFmpeg headers.
+			// Pinned by TestGeneratorOutputParameters in bindings_test.go (size_t max_size branch).
 			if fn.Name == "avio_read_to_bprint" {
 				typeName = "size_t"
 			}
@@ -1331,6 +1603,7 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 			} else {
 				o.Commentf("%v skipped due to %v", fn.Name, pName)
 				o.Line()
+				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 
 				return params, args, body, postCall, true
 			}
@@ -1339,6 +1612,7 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 			// Skip these for now
 			o.Commentf("%v skipped due to %v (callback by value)", fn.Name, pName)
 			o.Line()
+			g.skips.Record(fn.Name, fmt.Sprintf("%v (callback by value)", pName))
 			return params, args, body, postCall, true
 		} else {
 			params = append(params, jen.Id(pName).Id(typeName))
@@ -1355,15 +1629,21 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 	case *Array:
 		o.Commentf("%v skipped due to %v", fn.Name, pName)
 		o.Line()
+		g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 		return params, args, body, postCall, true
 
 	case *ConstArray:
 		o.Commentf("%v skipped due to const array param %v", fn.Name, pName)
 		o.Line()
+		g.skips.Record(fn.Name, fmt.Sprintf("const array param %v", pName))
 		return params, args, body, postCall, true
 
 	default:
-		log.Panicln("unexpected type", reflect.TypeOf(arg.Type))
+		reason := fmt.Sprintf("unhandled arg type %v (%v)", reflect.TypeOf(arg.Type), pName)
+		o.Commentf("%v skipped due to %v", fn.Name, reason)
+		o.Line()
+		g.skips.Record(fn.Name, reason)
+		return params, args, body, postCall, true
 	}
 
 	return params, args, body, postCall, false
@@ -1403,7 +1683,7 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 
 			if m, ok := primTypes[typeNameForParam]; ok {
 				// Pointer to primitive type - check if it's an output parameter
-				if isOutputParameter(arg.Name) {
+				if outputPointerAllowlist[fn.Name][arg.Name] {
 					// This is likely an output parameter
 					// We'll generate a wrapper function that handles the output
 					params = append(params, jen.Id(pName).Op("*").Id(m))
@@ -1416,12 +1696,14 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 					// Not an output parameter - skip as it's ambiguous
 					o.Commentf("%v skipped due to %v (non-output primitive pointer)", fn.Name, pName)
 					o.Line()
+					g.skips.Record(fn.Name, fmt.Sprintf("%v (non-output primitive pointer)", pName))
 					return params, args, body, postCall, true
 				}
 			} else if s, ok := g.input.structs[iv.Name]; ok {
 				if s.ByValue {
 					o.Commentf("%v skipped due to %v", fn.Name, pName)
 					o.Line()
+					g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 					return params, args, body, postCall, true
 				}
 
@@ -1497,12 +1779,14 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 			if iiv.Name == "uint8_t" || iiv.Name == "char" {
 				o.Commentf("%v skipped due to %v", fn.Name, pName)
 				o.Line()
+				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 				return params, args, body, postCall, true
 			}
 
 			if _, ok := primTypes[iiv.Name]; ok {
 				o.Commentf("%v skipped due to %v", fn.Name, pName)
 				o.Line()
+				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 				return params, args, body, postCall, true
 			} else if s, ok := g.input.structs[iiv.Name]; ok {
 				params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
@@ -1545,18 +1829,24 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 			} else {
 				o.Commentf("%v skipped due to %v", fn.Name, pName)
 				o.Line()
+				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 				return params, args, body, postCall, true
 			}
 
 		default:
 			o.Commentf("%v skipped due to %v", fn.Name, pName)
 			o.Line()
+			g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
 			return params, args, body, postCall, true
 
 		}
 
 	default:
-		log.Panicln("unexpected type", reflect.TypeOf(v.Inner))
+		reason := fmt.Sprintf("unhandled pointer arg inner type %v (%v)", reflect.TypeOf(v.Inner), pName)
+		o.Commentf("%v skipped due to %v", fn.Name, reason)
+		o.Line()
+		g.skips.Record(fn.Name, reason)
+		return params, args, body, postCall, true
 	}
 
 	return params, args, body, postCall, false
