@@ -260,6 +260,7 @@ func (t *Transcoder) openIn() {
 		}
 
 		codecCtx := ffmpeg.AVCodecAllocContext3(dec)
+		// The log.Panicln paths below intentionally leak codecCtx: this is a short-lived example, so process exit reclaims it.
 		if codecCtx == nil {
 			log.Panicln("failed to alloc context")
 		}
