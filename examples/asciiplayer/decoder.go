@@ -183,6 +183,9 @@ func (d *Decoder) Start(ctx context.Context, c chan<- *Frame) error {
 	frame := ffmpeg.AVFrameAlloc()
 	filtFrame := ffmpeg.AVFrameAlloc()
 	packet := ffmpeg.AVPacketAlloc()
+	defer ffmpeg.AVFrameFree(&frame)
+	defer ffmpeg.AVFrameFree(&filtFrame)
+	defer ffmpeg.AVPacketFree(&packet)
 
 	for {
 		if err := ctx.Err(); err != nil {
