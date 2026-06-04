@@ -110,6 +110,27 @@ func TestCanSkip(t *testing.T) {
 	}
 }
 
+// TestConfigHashBuildEnv verifies that changing BuildEnv busts the config hash,
+// so a maintainer edit to build env values forces a rebuild.
+func TestConfigHashBuildEnv(t *testing.T) {
+	const url = "https://example.com/foo-1.0.tar.gz"
+
+	base := &Library{Name: "foo", URL: url}
+	withEnv := &Library{Name: "foo", URL: url, BuildEnv: func() []string { return []string{"AS=nasm"} }}
+	changedEnv := &Library{Name: "foo", URL: url, BuildEnv: func() []string { return []string{"AS=clang"} }}
+	sameEnv := &Library{Name: "foo", URL: url, BuildEnv: func() []string { return []string{"AS=nasm"} }}
+
+	if base.ConfigHash() == withEnv.ConfigHash() {
+		t.Error("adding BuildEnv did not change ConfigHash")
+	}
+	if withEnv.ConfigHash() == changedEnv.ConfigHash() {
+		t.Error("changing BuildEnv value did not change ConfigHash")
+	}
+	if withEnv.ConfigHash() != sameEnv.ConfigHash() {
+		t.Error("ConfigHash is not deterministic for identical BuildEnv")
+	}
+}
+
 // TestFileExists verifies the helper CanSkip relies on for output detection.
 func TestFileExists(t *testing.T) {
 	dir := t.TempDir()

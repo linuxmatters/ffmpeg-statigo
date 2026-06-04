@@ -165,6 +165,9 @@ func (lib *Library) ConfigHash() string {
 			h.Write([]byte(arg))
 		}
 	}
+	for _, e := range lib.extraEnv() {
+		h.Write([]byte(e))
+	}
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
