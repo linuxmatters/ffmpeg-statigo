@@ -87,7 +87,9 @@ func run(args []string, summaryOut io.Writer) (*SkipCollector, error) {
 
 	m := Parse(skips)
 
-	applyManualFixups(m)
+	if err := applyManualFixups(m); err != nil {
+		return nil, err
+	}
 
 	return Gen(m, skips), nil
 }
@@ -102,9 +104,24 @@ func run(args []string, summaryOut io.Writer) (*SkipCollector, error) {
 //
 // Apply after Parse and before Gen. Add new corrections here rather than
 // mutating m.structs/m.enums inline elsewhere.
-func applyManualFixups(m *Module) {
+//
+// It returns an error when a fixup target is missing from the parsed module:
+// the lookups are this layer's single load-bearing fragility, so a header
+// reshape that removes or renames AVRational or AVOptionType trips loudly here
+// with the offending symbol named, rather than nil-panicking on the assignment
+// or emitting a quietly wrong binding.
+func applyManualFixups(m *Module) error {
+	if _, ok := m.structs["AVRational"]; !ok {
+		return fmt.Errorf("manual fixup target %q absent from parsed structs: FFmpeg headers changed shape, update applyManualFixups", "AVRational")
+	}
 	m.structs["AVRational"].ByValue = true
+
+	if _, ok := m.enums["AVOptionType"]; !ok {
+		return fmt.Errorf("manual fixup target %q absent from parsed enums: FFmpeg headers changed shape, update applyManualFixups", "AVOptionType")
+	}
 	m.enums["AVOptionType"].Comment = ""
+
+	return nil
 }
 
 // printSkipSummary writes the end-of-run skip aggregation: a total count line
