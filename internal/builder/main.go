@@ -16,6 +16,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("%v\n", err)
+	}
+}
+
+func run() error {
 	// Root context cancelled on interrupt so in-flight build commands stop.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -28,7 +34,7 @@ func main() {
 	targetOutput := filepath.Join("lib", runtime.GOOS+"_"+arch, "libffmpeg.a")
 	targetOutput, err := filepath.Abs(targetOutput)
 	if err != nil {
-		log.Fatalf("Failed to get absolute path for output: %v\n", err)
+		return fmt.Errorf("get absolute path for output: %w", err)
 	}
 
 	// Parse arguments
@@ -50,13 +56,13 @@ func main() {
 	// Handle --list mode: display library information and exit
 	if listMode {
 		printLibraryList(AllLibraries)
-		return
+		return nil
 	}
 
 	// Setup directories
 	buildRoot, err := filepath.Abs(".build")
 	if err != nil {
-		log.Fatalf("Failed to get absolute path for build root: %v\n", err)
+		return fmt.Errorf("get absolute path for build root: %w", err)
 	}
 	stagingDir := filepath.Join(buildRoot, "staging")
 
@@ -70,7 +76,7 @@ func main() {
 
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			log.Fatalf("Failed to create directory %s: %v\n", dir, err)
+			return fmt.Errorf("create directory %s: %w", dir, err)
 		}
 	}
 
@@ -117,7 +123,7 @@ func main() {
 			}
 		}
 		fmt.Printf("\n✓ Cleaned %d libraries\n", total)
-		return
+		return nil
 	}
 
 	// Build all libraries
@@ -131,13 +137,13 @@ func main() {
 		// Create per-library logger
 		logDir := filepath.Join(buildRoot, "build", lib.Name)
 		if err := os.MkdirAll(logDir, 0o755); err != nil {
-			log.Fatalf("Failed to create log directory for %s: %v\n", lib.Name, err)
+			return fmt.Errorf("create log directory for %s: %w", lib.Name, err)
 		}
 
 		logFile := filepath.Join(logDir, "build.log")
 		logFileWriter, err := os.Create(logFile)
 		if err != nil {
-			log.Fatalf("Failed to create log file for %s: %v\n", lib.Name, err)
+			return fmt.Errorf("create log file for %s: %w", lib.Name, err)
 		}
 
 		// Use MultiWriter to send output to both stdout and log file
@@ -145,7 +151,7 @@ func main() {
 
 		if err := lib.Build(ctx, buildRoot, stagingDir, logger); err != nil {
 			logFileWriter.Close()
-			log.Fatalf("Build failed for %s: %v\nSee log: %s\n", lib.Name, err, logFile)
+			return fmt.Errorf("build failed for %s: %w\nSee log: %s", lib.Name, err, logFile)
 		}
 
 		logFileWriter.Close()
@@ -162,12 +168,14 @@ func main() {
 	// Only combine libraries on a full build (no library filters)
 	if len(selectedLibs) == 0 {
 		if err := combineLibraries(ctx, libs, stagingDir, targetOutput); err != nil {
-			log.Fatalf("Failed to combine libraries: %v\n", err)
+			return fmt.Errorf("combine libraries: %w", err)
 		}
 		fmt.Printf("\n✓ Success! Output: %s\n", targetOutput)
 	} else {
 		fmt.Printf("\n✓ Success! Built %d selected libraries\n", len(selectedLibs))
 	}
+
+	return nil
 }
 
 // combineLibraries combines all built libraries into a single static library

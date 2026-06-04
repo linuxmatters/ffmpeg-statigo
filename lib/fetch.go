@@ -125,8 +125,10 @@ func findCompatibleRelease(moduleVersion string) (string, error) {
 		return release, nil
 	}
 
-	// Fallback to predictable pattern if API fails (rate limit, network issue)
-	// Assumes consistent lib-X.Y.Z.0 pattern for initial releases
+	// Fallback to predictable pattern if API fails (rate limit, network issue).
+	// The synthesised lib-X.Y.Z.0 tag resolves to the FIRST build of that patch
+	// line, so it can be OLDER than the latest available build: without the API
+	// we cannot discover later builds (lib-X.Y.Z.1, .2, ...) of the same patch.
 	fmt.Fprintf(os.Stderr, "GitHub API unavailable, using fallback release pattern: %v\n", err)
 	return fmt.Sprintf("lib-%s.0", moduleVersion), nil
 }
