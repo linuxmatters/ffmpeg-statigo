@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -52,7 +53,7 @@ func TestEnforceSkipCeilingExceeds(t *testing.T) {
 				t.Errorf("error message %q missing 'skip-count regression'", msg)
 			}
 			// The diagnostic must name both values so the run log shows the actual count and ceiling.
-			if !strings.Contains(msg, "233") && tt.ceiling == skipCeiling {
+			if !strings.Contains(msg, strconv.Itoa(skipCeiling)) && tt.ceiling == skipCeiling {
 				t.Errorf("error message %q missing ceiling value %d", msg, tt.ceiling)
 			}
 		})

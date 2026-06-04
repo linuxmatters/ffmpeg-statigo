@@ -1509,8 +1509,8 @@ func TestGeneratorSkipPatterns(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read functions.gen.go: %v", err)
 		}
-		if strings.Contains(string(data), "AvFopenUtf8") {
-			t.Errorf("AvFopenUtf8 unexpectedly present in functions.gen.go; " +
+		if strings.Contains(string(data), "AVFopenUtf8") {
+			t.Errorf("AVFopenUtf8 unexpectedly present in functions.gen.go; " +
 				"the av_fopen_utf8 skip in internal/generator/generator.go is now spurious")
 		}
 	})
