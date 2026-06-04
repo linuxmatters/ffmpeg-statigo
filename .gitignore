@@ -2,9 +2,10 @@
 .build/
 *.log
 
-# Root-level binaries (compiled from cmd/)
+# Root-level binaries (compiled from cmd/ and internal/)
 /asciiplayer
 /builder
+/generator
 /introspect
 /metadata
 /transcode
