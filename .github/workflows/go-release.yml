@@ -39,11 +39,11 @@ jobs:
       - name: Install libclang for generator
         run: |
           sudo apt-get update
-          sudo apt-get install -y libclang-18-dev llvm-18-dev
+          sudo apt-get install -y libclang-20-dev llvm-20-dev
           {
-            echo "CGO_LDFLAGS=-L/usr/lib/llvm-18/lib"
-            echo "CGO_CFLAGS=-I/usr/lib/llvm-18/include"
-            echo "LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:$LD_LIBRARY_PATH"
+            echo "CGO_LDFLAGS=-L/usr/lib/llvm-20/lib"
+            echo "CGO_CFLAGS=-I/usr/lib/llvm-20/include"
+            echo "LD_LIBRARY_PATH=/usr/lib/llvm-20/lib:$LD_LIBRARY_PATH"
           } >> "$GITHUB_ENV"
 
       - name: Download FFmpeg libraries

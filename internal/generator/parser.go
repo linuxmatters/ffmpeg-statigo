@@ -142,12 +142,12 @@ var files = []string{
 }
 
 // maxDiagnosticSeverity returns the highest severity across the diagnostics,
-// printing each diagnostic's spelling as it goes.
+// tracing each diagnostic's spelling via the verbose-gated logger as it goes.
 func maxDiagnosticSeverity(diags []clang.Diagnostic) clang.DiagnosticSeverity {
 	var maxSeverity clang.DiagnosticSeverity
 
 	for _, d := range diags {
-		fmt.Println("PROBLEM:", d.Spelling())
+		log.Println("PROBLEM:", d.Spelling())
 
 		if s := d.Severity(); s > maxSeverity {
 			maxSeverity = s

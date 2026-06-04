@@ -49,8 +49,8 @@
               # LLVM/Clang for code generator (go-clang requires libclang)
               # llvmPackages.libclang provides: clang compiler + libclang library
               # llvmPackages.llvm provides: llvm-config command
-              llvmPackages_18.libclang
-              llvmPackages_18.llvm
+              llvmPackages_20.libclang
+              llvmPackages_20.llvm
               pkg-config
               python3
               yasm
@@ -62,7 +62,7 @@
             ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
               # C++ standard library headers for building C++ dependencies (zimg, etc.)
               # The .dev output contains include/c++/v1/ with <algorithm>, <iostream>, etc.
-              llvmPackages_18.libcxx
+              llvmPackages_20.libcxx
             ]
             ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
               # Hardware acceleration runtime (Linux only)
@@ -73,8 +73,8 @@
 
           # Environment for go-clang CGO compilation and hardware acceleration
           shellHook = ''
-            export CGO_LDFLAGS="-L${pkgs.llvmPackages_18.libclang.lib}/lib"
-            export CPATH="${pkgs.llvmPackages_18.libclang.dev}/include"
+            export CGO_LDFLAGS="-L${pkgs.llvmPackages_20.libclang.lib}/lib"
+            export CPATH="${pkgs.llvmPackages_20.libclang.dev}/include"
             # Ensure vpx build finds yasm
             export PATH="${pkgs.yasm}/bin:${pkgs.nasm}/bin:$PATH"
           ''
@@ -82,15 +82,15 @@
             # macOS: Export SDK paths for C/C++ compilation
             # The SDKROOT is set by Nix's stdenv wrapper, use it or fall back to xcrun
             # CGO needs both the SDK path and clang's builtin headers (stdarg.h, stddef.h, etc.)
-            export CGO_CFLAGS="-isysroot ''${SDKROOT:-$(xcrun --show-sdk-path)} -I${pkgs.llvmPackages_18.libclang.lib}/lib/clang/18/include"
-            export CPATH="${pkgs.llvmPackages_18.libclang.dev}/include:$CPATH"
+            export CGO_CFLAGS="-isysroot ''${SDKROOT:-$(xcrun --show-sdk-path)} -I${pkgs.llvmPackages_20.libclang.lib}/lib/clang/20/include"
+            export CPATH="${pkgs.llvmPackages_20.libclang.dev}/include:$CPATH"
             # C++ standard library headers path for building C++ dependencies (zimg, etc.)
             # The builder uses this to add -I flag for <algorithm>, <iostream>, etc.
-            export LIBCXX_INCLUDE="${pkgs.llvmPackages_18.libcxx.dev}/include/c++/v1"
+            export LIBCXX_INCLUDE="${pkgs.llvmPackages_20.libcxx.dev}/include/c++/v1"
             # Set deployment target to match ffmpeg-statigo build (macOS 13.0+)
             export MACOSX_DEPLOYMENT_TARGET="13.0"
             # macOS uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-            export DYLD_LIBRARY_PATH="${pkgs.llvmPackages_18.libclang.lib}/lib:''${DYLD_LIBRARY_PATH:-}"
+            export DYLD_LIBRARY_PATH="${pkgs.llvmPackages_20.libclang.lib}/lib:''${DYLD_LIBRARY_PATH:-}"
           ''
           + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
             # Hardware acceleration: Make GPU drivers visible
