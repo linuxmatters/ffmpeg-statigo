@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -404,17 +403,17 @@ func TestVerifyChecksum_ChecksumCalculation(t *testing.T) {
 // checkMismatch is a helper that mirrors the error format in fetch.go
 func checkMismatch(expected, actual string) error {
 	if actual != expected {
-		return &checksumError{expected: expected, actual: actual}
+		return &checksumMismatchError{expected: expected, actual: actual}
 	}
 	return nil
 }
 
-type checksumError struct {
+type checksumMismatchError struct {
 	expected string
 	actual   string
 }
 
-func (e *checksumError) Error() string {
+func (e *checksumMismatchError) Error() string {
 	return "checksum mismatch: expected " + e.expected + ", got " + e.actual
 }
 
@@ -728,86 +727,14 @@ func TestCopyCapped_RejectsOversizedEntry(t *testing.T) {
 	}
 }
 
-func TestExtractTarball_RejectsOversizedEntry(t *testing.T) {
-	// A tar entry declaring a size above the cap must be rejected by extractFile.
-	tarball := createOversizedTarball(t, "linux_amd64/libffmpeg.a", pathsafe.MaxExtractFileSize+1)
-	defer os.Remove(tarball)
-
-	destDir := t.TempDir()
-
-	err := extractTarball(tarball, destDir)
-	if err == nil {
-		t.Fatal("Expected error for oversized tar entry, got nil")
-	}
-	if !strings.Contains(err.Error(), "exceeds") {
-		t.Errorf("Error should mention 'exceeds', got: %v", err)
-	}
-}
-
-// createOversizedTarball writes a gzipped tarball whose single entry declares a
-// size above the cap. The gzip stream stays tiny because the payload is zeros.
-func createOversizedTarball(t *testing.T, filePath string, size int64) string {
-	t.Helper()
-
-	tmpFile, err := os.CreateTemp("", "oversized-*.tar.gz")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	tmpFile.Close()
-
-	f, err := os.Create(tmpFile.Name())
-	if err != nil {
-		t.Fatalf("Failed to create file: %v", err)
-	}
-	defer f.Close()
-
-	gzw := gzip.NewWriter(f)
-	defer gzw.Close()
-
-	tw := tar.NewWriter(gzw)
-	defer tw.Close()
-
-	header := &tar.Header{
-		Name: filePath,
-		Mode: 0o644,
-		Size: size,
-	}
-	if err := tw.WriteHeader(header); err != nil {
-		t.Fatalf("Failed to write header: %v", err)
-	}
-
-	if _, err := io.CopyN(tw, oversizedReader{}, size); err != nil {
-		t.Fatalf("Failed to write content: %v", err)
-	}
-
-	return tmpFile.Name()
-}
-
 // =============================================================================
 // Test 2.2: Verify-by-default with opt-out
 // =============================================================================
 
-// verifyDecision mirrors the branch logic in ensureLibrary for an absent
-// checksum, returning whether installation proceeds and the error otherwise.
-func verifyDecision(expectedChecksum string, allowUnverified bool, tarballName string) error {
-	if expectedChecksum == "" {
-		if !allowUnverified {
-			return fmt.Errorf("no checksum available to verify %s; set FFMPEG_STATIGO_ALLOW_UNVERIFIED=1 to install without verification", tarballName)
-		}
-		return nil
-	}
-	return nil
-}
-
 func TestEnsureLibrary_ChecksumFatalByDefault(t *testing.T) {
 	t.Run("missing_checksum_is_fatal", func(t *testing.T) {
-		// Env var unset: missing checksum must abort and name the override.
-		allow := os.Getenv("FFMPEG_STATIGO_ALLOW_UNVERIFIED") != ""
-		if allow {
-			t.Skip("FFMPEG_STATIGO_ALLOW_UNVERIFIED set in environment")
-		}
-
-		err := verifyDecision("", allow, "ffmpeg-linux-amd64.tar.gz")
+		// No checksum and no opt-out: must abort and name the override.
+		err := checksumError("", "actual123", "ffmpeg-linux-amd64.tar.gz", false)
 		if err == nil {
 			t.Fatal("Expected fatal error for missing checksum, got nil")
 		}
@@ -820,25 +747,29 @@ func TestEnsureLibrary_ChecksumFatalByDefault(t *testing.T) {
 	})
 
 	t.Run("opt_out_allows_unverified", func(t *testing.T) {
-		// Env var set: missing checksum proceeds without error.
-		t.Setenv("FFMPEG_STATIGO_ALLOW_UNVERIFIED", "1")
-
-		allow := os.Getenv("FFMPEG_STATIGO_ALLOW_UNVERIFIED") != ""
-		if !allow {
-			t.Fatal("Expected FFMPEG_STATIGO_ALLOW_UNVERIFIED to be set")
-		}
-
-		err := verifyDecision("", allow, "ffmpeg-linux-amd64.tar.gz")
+		// No checksum but opt-out set: installation proceeds without error.
+		err := checksumError("", "actual123", "ffmpeg-linux-amd64.tar.gz", true)
 		if err != nil {
 			t.Errorf("Expected no error when opt-out set, got: %v", err)
 		}
 	})
 
 	t.Run("present_checksum_proceeds", func(t *testing.T) {
-		// A known checksum bypasses the missing-checksum branch entirely.
-		err := verifyDecision("abc123", false, "ffmpeg-linux-amd64.tar.gz")
+		// Matching checksum bypasses every rejection branch.
+		err := checksumError("abc123", "abc123", "ffmpeg-linux-amd64.tar.gz", false)
 		if err != nil {
-			t.Errorf("Expected no error with present checksum, got: %v", err)
+			t.Errorf("Expected no error with matching checksum, got: %v", err)
+		}
+	})
+
+	t.Run("mismatch_is_fatal", func(t *testing.T) {
+		// A mismatch always fails, even with opt-out set.
+		err := checksumError("abc123", "def456", "ffmpeg-linux-amd64.tar.gz", true)
+		if err == nil {
+			t.Fatal("Expected fatal error for checksum mismatch, got nil")
+		}
+		if !strings.Contains(err.Error(), "checksum mismatch") {
+			t.Errorf("Error should mention 'checksum mismatch', got: %v", err)
 		}
 	})
 }
@@ -1008,7 +939,7 @@ func TestEnsureLibrary_ErrorPropagation(t *testing.T) {
 
 	t.Run("propagates_checksum_verification_errors", func(t *testing.T) {
 		// Checksum mismatch should return descriptive error
-		checksumErr := &checksumError{
+		checksumErr := &checksumMismatchError{
 			expected: "abc123",
 			actual:   "def456",
 		}

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
@@ -76,7 +77,7 @@ func ensureLibrary() error {
 	fmt.Printf("Downloading FFmpeg library %s for %s/%s...\n", release, platform, arch)
 
 	// Fetch expected checksum before streaming download
-	allowUnverified := os.Getenv("FFMPEG_STATIGO_ALLOW_UNVERIFIED") != ""
+	allowUnverified, _ := strconv.ParseBool(os.Getenv("FFMPEG_STATIGO_ALLOW_UNVERIFIED"))
 	expectedChecksum, err := fetchExpectedChecksum(release, tarballName)
 	if err != nil {
 		// Treat a fetch failure as no checksum available; handled after extraction.
@@ -89,23 +90,20 @@ func ensureLibrary() error {
 	// Stream download directly to extraction with concurrent checksum verification
 	actualChecksum, err := streamDownloadAndExtract(downloadURL, libDir)
 	if err != nil {
+		// Clean up any partially extracted files so the next run re-downloads.
+		_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
 		return fmt.Errorf("download/extract: %w", err)
 	}
 
 	// Verify checksum, refusing to install unverified libraries by default.
-	switch {
-	case expectedChecksum == "":
-		if !allowUnverified {
-			// Clean up extracted files: the library is unverified and rejected.
-			_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
-			return fmt.Errorf("no checksum available to verify %s; set FFMPEG_STATIGO_ALLOW_UNVERIFIED=1 to install without verification", tarballName)
-		}
-		fmt.Fprintf(os.Stderr, "WARNING: No checksum available for %s, installing unverified (FFMPEG_STATIGO_ALLOW_UNVERIFIED set)\n", tarballName)
-	case actualChecksum != expectedChecksum:
-		// Clean up partially extracted files on checksum failure
+	if err := checksumError(expectedChecksum, actualChecksum, tarballName, allowUnverified); err != nil {
+		// Clean up extracted files: the library is unverified or mismatched.
 		_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
-		return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, actualChecksum)
-	default:
+		return err
+	}
+	if expectedChecksum == "" {
+		fmt.Fprintf(os.Stderr, "WARNING: No checksum available for %s, installing unverified (FFMPEG_STATIGO_ALLOW_UNVERIFIED set)\n", tarballName)
+	} else {
 		fmt.Printf("Checksum verified: %s\n", actualChecksum[:8])
 	}
 
@@ -353,10 +351,28 @@ func extractFile(tr *tar.Reader, target string) error {
 	defer outFile.Close()
 
 	if err := pathsafe.CopyCapped(outFile, tr); err != nil {
+		_ = outFile.Close()
+		_ = os.Remove(target)
 		return fmt.Errorf("writing file %s: %w", target, err)
 	}
 
 	return nil
+}
+
+// checksumError reports whether an extracted library must be rejected for
+// lack of, or a mismatched, checksum. A nil result means installation proceeds.
+func checksumError(expected, actual, tarball string, allowUnverified bool) error {
+	switch {
+	case expected == "":
+		if allowUnverified {
+			return nil
+		}
+		return fmt.Errorf("no checksum available to verify %s; set FFMPEG_STATIGO_ALLOW_UNVERIFIED=1 to install without verification", tarball)
+	case actual != expected:
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", expected, actual)
+	default:
+		return nil
+	}
 }
 
 // fetchExpectedChecksum retrieves the expected SHA256 checksum for a tarball from GitHub.
