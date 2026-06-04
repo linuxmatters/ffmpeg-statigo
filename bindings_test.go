@@ -1,7 +1,9 @@
 package ffmpeg
 
 import (
+	"os"
 	"slices"
+	"strings"
 	"testing"
 	"unsafe"
 )
@@ -270,6 +272,36 @@ func TestGeneratorErrorHandling(t *testing.T) {
 		}
 		t.Logf("Error handling test passed: AVERROR_EOF = %d", AVErrorEofConst)
 	})
+}
+
+// TestUUIDBindingsNotDuplicated pins the av_uuid_* skip in
+// internal/generator/generator.go. The seven av_uuid_* symbols are manually
+// wrapped in custom.go because AVUUID is an array typedef that needs explicit
+// pointer conversion in CGO. If a future libclang fixes the array-typedef
+// handling, the generator might also emit these symbols, double-defining them.
+// This assertion fires when any of the seven Go wrapper names also appears as
+// a generated function, signalling that the skip site is now spurious.
+func TestUUIDBindingsNotDuplicated(t *testing.T) {
+	data, err := os.ReadFile("functions.gen.go")
+	if err != nil {
+		t.Fatalf("read functions.gen.go: %v", err)
+	}
+	src := string(data)
+	// Seven manual wrappers from custom.go:222-287.
+	names := []string{
+		"AVUuidParse",
+		"AVUuidUrnParse",
+		"AVUuidParseRange",
+		"AVUuidUnparse",
+		"AVUuidEqual",
+		"AVUuidCopy",
+		"AVUuidNil",
+	}
+	for _, n := range names {
+		if strings.Contains(src, "func "+n+"(") {
+			t.Errorf("%s is generated in functions.gen.go alongside the manual wrapper in custom.go; the av_uuid skip is now spurious", n)
+		}
+	}
 }
 
 // TestUUID tests the UUID functionality from libavutil/uuid.h
@@ -854,14 +886,86 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	})
 
 	t.Run("av_cpb_properties_alloc compiles", func(t *testing.T) {
+		// Pins the size_t pointer fixup in internal/generator/generator.go.
+		// AVCpbPropertiesAlloc must keep its *uint64 size out-parameter; a libclang
+		// version that stops misreporting size_t* as int* would change the signature.
 		var size uint64
+		sizePtr := &size
 
-		// Verify av_cpb_properties_alloc compiles with size output parameter
+		// Verify av_cpb_properties_alloc compiles with *uint64 size output parameter
 		_ = func() *AVCPBProperties {
-			return AVCpbPropertiesAlloc(&size)
+			return AVCpbPropertiesAlloc(sizePtr)
 		}
 
-		t.Log("av_cpb_properties_alloc compiles with size output parameter")
+		t.Log("av_cpb_properties_alloc compiles with *uint64 size output parameter")
+	})
+
+	t.Run("av_channel_name round-trips with uint64 buf_size", func(t *testing.T) {
+		// Pins the size_t buf_size fixup in internal/generator/generator.go.
+		// AVChannelName, AVChannelDescription and AVChannelLayoutDescribe must keep
+		// their bufSize uint64 parameter; passing a uint64 literal here fails to
+		// compile if libclang stops misreporting size_t as int.
+		const bufLen uint = 64
+		bufSize := uint64(bufLen)
+
+		buf := AllocCStr(bufLen)
+		defer buf.Free()
+		ret, err := AVChannelName(buf, bufSize, AVChanFrontLeft)
+		if err != nil {
+			t.Fatalf("AVChannelName returned error: %v (ret=%d)", err, ret)
+		}
+		if ret <= 0 {
+			t.Fatalf("AVChannelName returned non-positive byte count: %d", ret)
+		}
+		if got := buf.String(); got != "FL" {
+			t.Fatalf("AVChannelName(AVChanFrontLeft) = %q, want %q", got, "FL")
+		}
+	})
+
+	t.Run("av_channel_description round-trips with uint64 buf_size", func(t *testing.T) {
+		// Pins the size_t buf_size fixup in internal/generator/generator.go.
+		const bufLen uint = 128
+		bufSize := uint64(bufLen)
+
+		buf := AllocCStr(bufLen)
+		defer buf.Free()
+		ret, err := AVChannelDescription(buf, bufSize, AVChanFrontLeft)
+		if err != nil {
+			t.Fatalf("AVChannelDescription returned error: %v (ret=%d)", err, ret)
+		}
+		if ret <= 0 {
+			t.Fatalf("AVChannelDescription returned non-positive byte count: %d", ret)
+		}
+		if got := buf.String(); got != "front left" {
+			t.Fatalf("AVChannelDescription(AVChanFrontLeft) = %q, want %q", got, "front left")
+		}
+	})
+
+	t.Run("av_channel_layout_describe compiles with uint64 buf_size", func(t *testing.T) {
+		// Pins the size_t buf_size fixup in internal/generator/generator.go.
+		// AVChannelLayout has no exported zero-value constructor (the Go wrapper
+		// wraps a C-allocated pointer), so we settle for a compile-time shape check
+		// rather than a runtime round-trip. Passing a uint64 literal to bufSize
+		// fails to compile if the size_t fixup regresses to int.
+		var bufSize uint64 = 64
+		_ = func() (int, error) {
+			return AVChannelLayoutDescribe(nil, nil, bufSize)
+		}
+
+		t.Log("av_channel_layout_describe compiles with uint64 bufSize")
+	})
+
+	t.Run("avio_read_to_bprint compiles with uint64 max_size", func(t *testing.T) {
+		// Pins the size_t max_size fixup in internal/generator/generator.go.
+		// AVIOContext and AVBPrint have no exported zero-value constructors, so we
+		// settle for a compile-time shape check. A uint64 literal passed to maxSize
+		// fails to compile if the size_t fixup regresses to int.
+		var maxSize uint64 = 1024
+		_ = func() (int, error) {
+			return AVIOReadToBprint(nil, nil, maxSize)
+		}
+
+		t.Log("avio_read_to_bprint compiles with uint64 maxSize")
 	})
 
 	t.Run("dimension output parameters compile", func(t *testing.T) {
@@ -1393,6 +1497,22 @@ func TestGeneratorSkipPatterns(t *testing.T) {
 		// This test just documents that behavior
 		t.Log("All skipped items are logged with reasons during generation")
 		t.Log("Check generator output for: 'skipped due to' messages")
+	})
+
+	t.Run("av_fopen_utf8_absent_from_bindings", func(t *testing.T) {
+		// Pins the av_fopen_utf8 skip in internal/generator/generator.go.
+		// libclang misreports FILE* as int* on Linux, so the generator skips
+		// av_fopen_utf8. If a future libclang stops misreporting the symbol,
+		// the binding would re-emerge and this assertion would fire, signalling
+		// that the skip site is now spurious and can be removed.
+		data, err := os.ReadFile("functions.gen.go")
+		if err != nil {
+			t.Fatalf("read functions.gen.go: %v", err)
+		}
+		if strings.Contains(string(data), "AvFopenUtf8") {
+			t.Errorf("AvFopenUtf8 unexpectedly present in functions.gen.go; " +
+				"the av_fopen_utf8 skip in internal/generator/generator.go is now spurious")
+		}
 	})
 }
 

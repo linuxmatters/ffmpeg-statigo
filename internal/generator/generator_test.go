@@ -80,8 +80,8 @@ func TestMarshalArgSkip(t *testing.T) {
 		{"by-pointer struct pointer kept", "buf", ptr(ident("AVBuf")), false},
 		{"callback by value skipped", "cb", ident("av_log_cb"), true},
 		{"char pointer kept", "name", ptr(ident("char")), false},
-		{"output primitive pointer kept", "out_size", ptr(ident("int")), false},
-		{"non-output primitive pointer skipped", "level", ptr(ident("int")), true},
+		{"non-allowlisted output-shaped primitive pointer skipped", "out_size", ptr(ident("int")), true},
+		{"non-allowlisted primitive pointer skipped", "level", ptr(ident("int")), true},
 		{"double pointer to struct kept", "frame", ptr(ptr(ident("AVBuf"))), false},
 		{"double pointer to char skipped", "argv", ptr(ptr(ident("char"))), true},
 		{"double pointer to primitive skipped", "vals", ptr(ptr(ident("int"))), true},
@@ -133,6 +133,55 @@ func TestMarshalReturnSkip(t *testing.T) {
 			_, _, skip := g.marshalReturn(o, fn, tt.result, jen.Id("C").Dot("fn").Call(), nil, nil)
 			if skip != tt.wantSkip {
 				t.Errorf("marshalReturn(%v) skip = %v, want %v", tt.result, skip, tt.wantSkip)
+			}
+		})
+	}
+}
+
+// TestMarshalArgOutputPointerAllowlist pins the (function, parameter) allowlist
+// decision in marshalPointerArg. After Task 2.2 the allowlist is the only
+// output-pointer routing signal: a substring match like `width`, `size`, or
+// `_ptr` no longer keeps a parameter emittable on its own. This test asserts
+// that representative allowlisted pairs spanning the original heuristic
+// patterns still resolve to an emitted output pointer, and that near-miss
+// pairs whose name would have matched the old substring sweep now skip.
+//
+// The sample is deliberately small (the byte-identical regeneration gate
+// pins the full 64-pair table); the goal here is to name the exact branch
+// that breaks when the lookup is inverted, dropped, or rekeyed.
+func TestMarshalArgOutputPointerAllowlist(t *testing.T) {
+	g := skipGen()
+
+	tests := []struct {
+		name     string
+		fnName   string
+		argName  string
+		argType  Type
+		wantSkip bool
+	}{
+		// Allowlisted pairs spanning the original substring patterns.
+		{"out_-prefixed allowlisted", "av_detection_bbox_alloc", "out_size", ptr(ident("int")), false},
+		{"size allowlisted (size_t fixup site)", "av_cpb_properties_alloc", "size", ptr(ident("int")), false},
+		{"w-suffixed allowlisted", "av_opt_get_image_size", "w_out", ptr(ident("int")), false},
+		{"h+ptr allowlisted", "av_parse_video_size", "height_ptr", ptr(ident("int")), false},
+		{"ptr allowlisted", "av_url_split", "port_ptr", ptr(ident("int")), false},
+
+		// Near-miss pairs: name matches the retired substring sweep
+		// (size/w/h) but the (function, parameter) is not in the allowlist.
+		{"size param, function not in allowlist", "av_unknown_future_fn", "size", ptr(ident("int")), true},
+		{"width param, function in allowlist but param not", "av_cpb_properties_alloc", "width", ptr(ident("int")), true},
+		{"h param, function not in allowlist", "av_unknown_future_fn", "height", ptr(ident("int")), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := newFile()
+			fn := &Function{Name: tt.fnName}
+			arg := &Param{Name: tt.argName, Type: tt.argType}
+			_, _, _, _, skip := g.marshalArg(o, fn, arg)
+			if skip != tt.wantSkip {
+				t.Errorf("marshalArg(%s.%s %v) skip = %v, want %v",
+					tt.fnName, tt.argName, tt.argType, skip, tt.wantSkip)
 			}
 		})
 	}

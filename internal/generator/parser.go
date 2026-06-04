@@ -195,7 +195,11 @@ func sentinelParse() {
 	}
 }
 
-func Parse() *Module {
+// Parse drives the libclang parse over the pinned FFmpeg headers. The skips
+// collector is the same instance Gen receives, so parse-layer unhandled-shape
+// skips (Task 3.2) land in the run-summary alongside codegen-layer skips. A nil
+// skips is tolerated: SkipCollector.Record is nil-safe.
+func Parse(skips *SkipCollector) *Module {
 	p := &Parser{
 		mod: &Module{
 			functions: make(map[string]*Function),
@@ -204,6 +208,7 @@ func Parse() *Module {
 			callbacks: make(map[string]*Function),
 			constants: make(map[string]*Constant),
 		},
+		skips: skips,
 	}
 
 	sentinelParse()
@@ -220,9 +225,10 @@ func Parse() *Module {
 }
 
 type Parser struct {
-	path string
-	mod  *Module
-	tu   clang.TranslationUnit
+	path  string
+	mod   *Module
+	tu    clang.TranslationUnit
+	skips *SkipCollector
 }
 
 // getSystemIncludes gets system include paths from the compiler
@@ -414,7 +420,9 @@ func (p *Parser) parseTopLevel(indent string, c clang.Cursor) {
 		// ignore
 
 	default:
-		log.Panicln("Unexpected top level", "kind", c.Kind().String())
+		reason := fmt.Sprintf("unhandled top-level cursor kind %v", c.Kind().String())
+		log.Printf("%v skipped due to %v", indent, reason)
+		p.skips.Record(c.Spelling(), reason)
 	}
 }
 
@@ -525,7 +533,9 @@ func (p *Parser) parseTypedef(indent string, c clang.Cursor) {
 		return
 
 	default:
-		log.Panicln("Unknown typedef", "kind", dec.Kind())
+		reason := fmt.Sprintf("unhandled typedef declaration kind %v", dec.Kind())
+		log.Printf("%v skipped due to %v", indent, reason)
+		p.skips.Record(name, reason)
 	}
 }
 
@@ -663,7 +673,11 @@ func (p *Parser) parseEnum(indent string, c clang.Cursor, typedef bool) {
 
 		c.Visit(func(cursor, parent clang.Cursor) (status clang.ChildVisitResult) {
 			if cursor.Kind() != clang.Cursor_EnumConstantDecl {
-				log.Panicln("Unknown enum type", "kind", cursor.Kind().String())
+				reason := fmt.Sprintf("unhandled unnamed-enum child cursor kind %v", cursor.Kind().String())
+				log.Printf("%v skipped due to %v", indent, reason)
+				p.skips.Record(indent, reason)
+
+				return clang.ChildVisit_Continue
 			}
 
 			name := cursor.Spelling()
@@ -704,7 +718,11 @@ func (p *Parser) parseEnum(indent string, c clang.Cursor, typedef bool) {
 
 	c.Visit(func(cursor, parent clang.Cursor) (status clang.ChildVisitResult) {
 		if cursor.Kind() != clang.Cursor_EnumConstantDecl {
-			log.Panicln("Unknown enum type", "kind", cursor.Kind().String())
+			reason := fmt.Sprintf("unhandled enum child cursor kind %v", cursor.Kind().String())
+			log.Printf("%v skipped due to %v", indent, reason)
+			p.skips.Record(name, reason)
+
+			return clang.ChildVisit_Continue
 		}
 
 		comment := processComment(cursor.RawCommentText())
