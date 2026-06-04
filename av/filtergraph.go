@@ -164,6 +164,10 @@ func NewAudioFilterGraph(params AudioFilterParams, spec string) (*FilterGraph, e
 // NewVideoFilterGraphFromContext builds a video graph reading the source
 // parameters from a decoder context, mirroring the example transcoder.
 func NewVideoFilterGraphFromContext(decCtx *ffmpeg.AVCodecContext, spec string, outPixFmt ffmpeg.AVPixelFormat) (*FilterGraph, error) {
+	if decCtx == nil {
+		return nil, errors.New("nil decoder context")
+	}
+
 	return NewVideoFilterGraph(VideoFilterParams{
 		Width:             decCtx.Width(),
 		Height:            decCtx.Height(),
@@ -178,6 +182,10 @@ func NewVideoFilterGraphFromContext(decCtx *ffmpeg.AVCodecContext, spec string, 
 // parameters from a decoder context. outChLayout may be nil to leave the sink
 // layout unconstrained.
 func NewAudioFilterGraphFromContext(decCtx *ffmpeg.AVCodecContext, spec string, outSampleFmt ffmpeg.AVSampleFormat, outSampleRate int, outChLayout *ffmpeg.AVChannelLayout) (*FilterGraph, error) {
+	if decCtx == nil {
+		return nil, errors.New("nil decoder context")
+	}
+
 	chLayout := decCtx.ChLayout()
 	if chLayout.Order() == ffmpeg.AVChannelOrderUnspec {
 		ffmpeg.AVChannelLayoutDefault(chLayout, chLayout.NbChannels())

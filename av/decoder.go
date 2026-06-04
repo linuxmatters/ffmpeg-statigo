@@ -23,6 +23,10 @@ var _ io.Closer = (*Decoder)(nil)
 // the packet timebase, opens the codec and allocates a scratch frame. On any
 // error after the context is allocated it unwinds via Close so no handle leaks.
 func NewDecoder(stream *ffmpeg.AVStream) (*Decoder, error) {
+	if stream == nil {
+		return nil, errors.New("nil stream")
+	}
+
 	codec := ffmpeg.AVCodecFindDecoder(stream.Codecpar().CodecId())
 	if codec == nil {
 		return nil, fmt.Errorf("find decoder (codec %v): %w", stream.Codecpar().CodecId(), ffmpeg.WrapErr(ffmpeg.AVErrorDecoderNotFoundConst))

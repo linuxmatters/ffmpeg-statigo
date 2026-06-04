@@ -222,7 +222,8 @@ func TestRoundTrip(t *testing.T) {
 
 	outFrames, outW, outH := videoStats(t, out)
 	require.Positive(t, outFrames, "output must decode to valid video")
-	require.LessOrEqual(t, inFrames-outFrames, 1, "output may lose at most one boundary frame on re-decode")
+	require.GreaterOrEqual(t, outFrames, inFrames-1, "output may lose at most one boundary frame on re-decode")
+	require.LessOrEqual(t, outFrames, inFrames, "output must not gain frames over the fixture")
 	require.Equal(t, inW, outW, "transcode must preserve the frame width")
 	require.Equal(t, inH, outH, "transcode must preserve the frame height")
 }
