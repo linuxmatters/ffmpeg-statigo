@@ -22,11 +22,12 @@ func SanitizePath(destDir, entryName string) (string, error) {
 	}
 
 	// Construct the full target path
-	target := filepath.Join(destDir, entryName)
+	cleanDest := filepath.Clean(destDir)
+	target := filepath.Join(cleanDest, entryName)
 
 	// Defence in depth: confirm the resolved path is within destDir
 	// This catches edge cases where filepath.Join might not prevent traversal
-	if !strings.HasPrefix(target, destDir+string(filepath.Separator)) && target != destDir {
+	if target != cleanDest && !strings.HasPrefix(target, cleanDest+string(filepath.Separator)) {
 		return "", fmt.Errorf("path traversal detected: %q resolves outside destination directory", entryName)
 	}
 

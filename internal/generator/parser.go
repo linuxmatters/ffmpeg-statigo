@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/Newbluecake/bootstrap/clang"
@@ -185,6 +186,10 @@ func sentinelParse() {
 	)
 	defer tu.Dispose()
 
+	if !tu.IsValid() {
+		failLog.Fatalf("include discovery failed: clang produced an invalid translation unit for the sentinel <stdint.h>")
+	}
+
 	if maxDiagnosticSeverity(tu.Diagnostics()) >= clang.Diagnostic_Error {
 		failLog.Fatalf("include discovery failed: cannot parse <stdint.h> with discovered system includes")
 	}
@@ -221,7 +226,9 @@ type Parser struct {
 }
 
 // getSystemIncludes gets system include paths from the compiler
-func getSystemIncludes() []string {
+var getSystemIncludes = sync.OnceValue(computeSystemIncludes)
+
+func computeSystemIncludes() []string {
 	// Try to get include paths from gcc -v output
 	cmd := exec.CommandContext(context.Background(), "gcc", "-E", "-x", "c", "-v", "/dev/null")
 	output, err := cmd.CombinedOutput()
@@ -254,7 +261,9 @@ func getSystemIncludes() []string {
 	return includes
 }
 
-func getPlatformArgs() []string {
+var getPlatformArgs = sync.OnceValue(computePlatformArgs)
+
+func computePlatformArgs() []string {
 	args := []string{
 		"-fparse-all-comments",
 		fmt.Sprintf("-I%v", AVLibPath),
