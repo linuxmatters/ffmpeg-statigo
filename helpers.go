@@ -14,6 +14,8 @@ import (
 	"unsafe"
 )
 
+// String returns a human-readable representation of the rational as
+// "num/den (num/den)", or "num/den (undefined)" when the denominator is zero.
 func (s *AVRational) String() string {
 	num, den := s.Num(), s.Den()
 	if den == 0 {
