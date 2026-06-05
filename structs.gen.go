@@ -4,16 +4,22 @@ package ffmpeg
 
 import "unsafe"
 
+// #include <libavcodec/ac3_parser.h>
+// #include <libavcodec/adts_parser.h>
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/avdct.h>
 // #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
 // #include <libavcodec/codec_par.h>
 // #include <libavcodec/defs.h>
+// #include <libavcodec/dirac.h>
+// #include <libavcodec/dv_profile.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavcodec/vorbis_parser.h>
 // #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
@@ -77,6 +83,7 @@ import "unsafe"
 // #include <libavutil/macros.h>
 // #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
+// #include <libavutil/md5.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/motion_vector.h>
 // #include <libavutil/murmur3.h>
@@ -4819,6 +4826,146 @@ func (s *AVCodecParser) SetPrivDataSize(value int) {
 
 // split skipped due to func ptr
 
+// --- Struct AVDCT ---
+
+// AVDCT wraps AVDCT.
+/*
+  AVDCT context.
+  @note function pointers can be NULL if the specific features have been
+        disabled at build time.
+*/
+type AVDCT struct {
+	ptr *C.AVDCT
+}
+
+func (s *AVDCT) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDCTArray(ptr unsafe.Pointer) *Array[*AVDCT] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDCT]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDCT {
+			ptr := (**C.AVDCT)(pointer)
+			value := *ptr
+			var valueMapped *AVDCT
+			if value != nil {
+				valueMapped = &AVDCT{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDCT) {
+			ptr := (**C.AVDCT)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// AvClass gets the av_class field.
+func (s *AVDCT) AvClass() *AVClass {
+	value := s.ptr.av_class
+	var valueMapped *AVClass
+	if value != nil {
+		valueMapped = &AVClass{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetAvClass sets the av_class field.
+func (s *AVDCT) SetAvClass(value *AVClass) {
+	if value != nil {
+		s.ptr.av_class = value.ptr
+	} else {
+		s.ptr.av_class = nil
+	}
+}
+
+// idct skipped due to func ptr
+
+// IdctPermutation gets the idct_permutation field.
+/*
+  IDCT input permutation.
+  Several optimized IDCTs need a permutated input (relative to the
+  normal order of the reference IDCT).
+  This permutation must be performed before the idct_put/add.
+  Note, normally this can be merged with the zigzag/alternate scan<br>
+  An example to avoid confusion:
+  - (->decode coeffs -> zigzag reorder -> dequant -> reference IDCT -> ...)
+  - (x -> reference DCT -> reference IDCT -> x)
+  - (x -> reference DCT -> simple_mmx_perm = idct_permutation
+     -> simple_idct_mmx -> x)
+  - (-> decode coeffs -> zigzag reorder -> simple_mmx_perm -> dequant
+     -> simple_idct_mmx -> ...)
+*/
+func (s *AVDCT) IdctPermutation() *Array[uint8] {
+	value := &s.ptr.idct_permutation
+	return ToUint8Array(unsafe.Pointer(value))
+}
+
+// fdct skipped due to func ptr
+
+// DctAlgo gets the dct_algo field.
+/*
+  DCT algorithm.
+  must use AVOptions to set this field.
+*/
+func (s *AVDCT) DctAlgo() int {
+	value := s.ptr.dct_algo
+	return int(value)
+}
+
+// SetDctAlgo sets the dct_algo field.
+/*
+  DCT algorithm.
+  must use AVOptions to set this field.
+*/
+func (s *AVDCT) SetDctAlgo(value int) {
+	s.ptr.dct_algo = (C.int)(value)
+}
+
+// IdctAlgo gets the idct_algo field.
+/*
+  IDCT algorithm.
+  must use AVOptions to set this field.
+*/
+func (s *AVDCT) IdctAlgo() int {
+	value := s.ptr.idct_algo
+	return int(value)
+}
+
+// SetIdctAlgo sets the idct_algo field.
+/*
+  IDCT algorithm.
+  must use AVOptions to set this field.
+*/
+func (s *AVDCT) SetIdctAlgo(value int) {
+	s.ptr.idct_algo = (C.int)(value)
+}
+
+// get_pixels skipped due to func ptr
+
+// BitsPerSample gets the bits_per_sample field.
+func (s *AVDCT) BitsPerSample() int {
+	value := s.ptr.bits_per_sample
+	return int(value)
+}
+
+// SetBitsPerSample sets the bits_per_sample field.
+func (s *AVDCT) SetBitsPerSample(value int) {
+	s.ptr.bits_per_sample = (C.int)(value)
+}
+
+// get_pixels_unaligned skipped due to func ptr
+
 // --- Struct AVBSFContext ---
 
 // AVBSFContext wraps AVBSFContext.
@@ -6831,6 +6978,651 @@ func (s *AVRTCPSenderReport) SetSenderNbBytes(value uint32) {
 	s.ptr.sender_nb_bytes = (C.uint32_t)(value)
 }
 
+// --- Struct DiracVersionInfo ---
+
+// DiracVersionInfo wraps DiracVersionInfo.
+type DiracVersionInfo struct {
+	ptr *C.DiracVersionInfo
+}
+
+func (s *DiracVersionInfo) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToDiracVersionInfoArray(ptr unsafe.Pointer) *Array[*DiracVersionInfo] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*DiracVersionInfo]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *DiracVersionInfo {
+			ptr := (**C.DiracVersionInfo)(pointer)
+			value := *ptr
+			var valueMapped *DiracVersionInfo
+			if value != nil {
+				valueMapped = &DiracVersionInfo{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *DiracVersionInfo) {
+			ptr := (**C.DiracVersionInfo)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Major gets the major field.
+func (s *DiracVersionInfo) Major() int {
+	value := s.ptr.major
+	return int(value)
+}
+
+// SetMajor sets the major field.
+func (s *DiracVersionInfo) SetMajor(value int) {
+	s.ptr.major = (C.int)(value)
+}
+
+// Minor gets the minor field.
+func (s *DiracVersionInfo) Minor() int {
+	value := s.ptr.minor
+	return int(value)
+}
+
+// SetMinor sets the minor field.
+func (s *DiracVersionInfo) SetMinor(value int) {
+	s.ptr.minor = (C.int)(value)
+}
+
+// --- Struct AVDiracSeqHeader ---
+
+// AVDiracSeqHeader wraps AVDiracSeqHeader.
+type AVDiracSeqHeader struct {
+	ptr *C.AVDiracSeqHeader
+}
+
+func (s *AVDiracSeqHeader) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDiracSeqHeaderArray(ptr unsafe.Pointer) *Array[*AVDiracSeqHeader] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDiracSeqHeader]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDiracSeqHeader {
+			ptr := (**C.AVDiracSeqHeader)(pointer)
+			value := *ptr
+			var valueMapped *AVDiracSeqHeader
+			if value != nil {
+				valueMapped = &AVDiracSeqHeader{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDiracSeqHeader) {
+			ptr := (**C.AVDiracSeqHeader)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Width gets the width field.
+func (s *AVDiracSeqHeader) Width() uint {
+	value := s.ptr.width
+	return uint(value)
+}
+
+// SetWidth sets the width field.
+func (s *AVDiracSeqHeader) SetWidth(value uint) {
+	s.ptr.width = (C.uint)(value)
+}
+
+// Height gets the height field.
+func (s *AVDiracSeqHeader) Height() uint {
+	value := s.ptr.height
+	return uint(value)
+}
+
+// SetHeight sets the height field.
+func (s *AVDiracSeqHeader) SetHeight(value uint) {
+	s.ptr.height = (C.uint)(value)
+}
+
+// ChromaFormat gets the chroma_format field.
+//
+//	0: 444  1: 422  2: 420
+func (s *AVDiracSeqHeader) ChromaFormat() uint8 {
+	value := s.ptr.chroma_format
+	return uint8(value)
+}
+
+// SetChromaFormat sets the chroma_format field.
+//
+//	0: 444  1: 422  2: 420
+func (s *AVDiracSeqHeader) SetChromaFormat(value uint8) {
+	s.ptr.chroma_format = (C.uint8_t)(value)
+}
+
+// Interlaced gets the interlaced field.
+func (s *AVDiracSeqHeader) Interlaced() uint8 {
+	value := s.ptr.interlaced
+	return uint8(value)
+}
+
+// SetInterlaced sets the interlaced field.
+func (s *AVDiracSeqHeader) SetInterlaced(value uint8) {
+	s.ptr.interlaced = (C.uint8_t)(value)
+}
+
+// TopFieldFirst gets the top_field_first field.
+func (s *AVDiracSeqHeader) TopFieldFirst() uint8 {
+	value := s.ptr.top_field_first
+	return uint8(value)
+}
+
+// SetTopFieldFirst sets the top_field_first field.
+func (s *AVDiracSeqHeader) SetTopFieldFirst(value uint8) {
+	s.ptr.top_field_first = (C.uint8_t)(value)
+}
+
+// FrameRateIndex gets the frame_rate_index field.
+//
+//	index into dirac_frame_rate[]
+func (s *AVDiracSeqHeader) FrameRateIndex() uint8 {
+	value := s.ptr.frame_rate_index
+	return uint8(value)
+}
+
+// SetFrameRateIndex sets the frame_rate_index field.
+//
+//	index into dirac_frame_rate[]
+func (s *AVDiracSeqHeader) SetFrameRateIndex(value uint8) {
+	s.ptr.frame_rate_index = (C.uint8_t)(value)
+}
+
+// AspectRatioIndex gets the aspect_ratio_index field.
+//
+//	index into dirac_aspect_ratio[]
+func (s *AVDiracSeqHeader) AspectRatioIndex() uint8 {
+	value := s.ptr.aspect_ratio_index
+	return uint8(value)
+}
+
+// SetAspectRatioIndex sets the aspect_ratio_index field.
+//
+//	index into dirac_aspect_ratio[]
+func (s *AVDiracSeqHeader) SetAspectRatioIndex(value uint8) {
+	s.ptr.aspect_ratio_index = (C.uint8_t)(value)
+}
+
+// CleanWidth gets the clean_width field.
+func (s *AVDiracSeqHeader) CleanWidth() uint16 {
+	value := s.ptr.clean_width
+	return uint16(value)
+}
+
+// SetCleanWidth sets the clean_width field.
+func (s *AVDiracSeqHeader) SetCleanWidth(value uint16) {
+	s.ptr.clean_width = (C.uint16_t)(value)
+}
+
+// CleanHeight gets the clean_height field.
+func (s *AVDiracSeqHeader) CleanHeight() uint16 {
+	value := s.ptr.clean_height
+	return uint16(value)
+}
+
+// SetCleanHeight sets the clean_height field.
+func (s *AVDiracSeqHeader) SetCleanHeight(value uint16) {
+	s.ptr.clean_height = (C.uint16_t)(value)
+}
+
+// CleanLeftOffset gets the clean_left_offset field.
+func (s *AVDiracSeqHeader) CleanLeftOffset() uint16 {
+	value := s.ptr.clean_left_offset
+	return uint16(value)
+}
+
+// SetCleanLeftOffset sets the clean_left_offset field.
+func (s *AVDiracSeqHeader) SetCleanLeftOffset(value uint16) {
+	s.ptr.clean_left_offset = (C.uint16_t)(value)
+}
+
+// CleanRightOffset gets the clean_right_offset field.
+func (s *AVDiracSeqHeader) CleanRightOffset() uint16 {
+	value := s.ptr.clean_right_offset
+	return uint16(value)
+}
+
+// SetCleanRightOffset sets the clean_right_offset field.
+func (s *AVDiracSeqHeader) SetCleanRightOffset(value uint16) {
+	s.ptr.clean_right_offset = (C.uint16_t)(value)
+}
+
+// PixelRangeIndex gets the pixel_range_index field.
+//
+//	index into dirac_pixel_range_presets[]
+func (s *AVDiracSeqHeader) PixelRangeIndex() uint8 {
+	value := s.ptr.pixel_range_index
+	return uint8(value)
+}
+
+// SetPixelRangeIndex sets the pixel_range_index field.
+//
+//	index into dirac_pixel_range_presets[]
+func (s *AVDiracSeqHeader) SetPixelRangeIndex(value uint8) {
+	s.ptr.pixel_range_index = (C.uint8_t)(value)
+}
+
+// ColorSpecIndex gets the color_spec_index field.
+//
+//	index into dirac_color_spec_presets[]
+func (s *AVDiracSeqHeader) ColorSpecIndex() uint8 {
+	value := s.ptr.color_spec_index
+	return uint8(value)
+}
+
+// SetColorSpecIndex sets the color_spec_index field.
+//
+//	index into dirac_color_spec_presets[]
+func (s *AVDiracSeqHeader) SetColorSpecIndex(value uint8) {
+	s.ptr.color_spec_index = (C.uint8_t)(value)
+}
+
+// Profile gets the profile field.
+func (s *AVDiracSeqHeader) Profile() int {
+	value := s.ptr.profile
+	return int(value)
+}
+
+// SetProfile sets the profile field.
+func (s *AVDiracSeqHeader) SetProfile(value int) {
+	s.ptr.profile = (C.int)(value)
+}
+
+// Level gets the level field.
+func (s *AVDiracSeqHeader) Level() int {
+	value := s.ptr.level
+	return int(value)
+}
+
+// SetLevel sets the level field.
+func (s *AVDiracSeqHeader) SetLevel(value int) {
+	s.ptr.level = (C.int)(value)
+}
+
+// Framerate gets the framerate field.
+func (s *AVDiracSeqHeader) Framerate() *AVRational {
+	value := s.ptr.framerate
+	return &AVRational{value: value}
+}
+
+// SetFramerate sets the framerate field.
+func (s *AVDiracSeqHeader) SetFramerate(value *AVRational) {
+	s.ptr.framerate = value.value
+}
+
+// SampleAspectRatio gets the sample_aspect_ratio field.
+func (s *AVDiracSeqHeader) SampleAspectRatio() *AVRational {
+	value := s.ptr.sample_aspect_ratio
+	return &AVRational{value: value}
+}
+
+// SetSampleAspectRatio sets the sample_aspect_ratio field.
+func (s *AVDiracSeqHeader) SetSampleAspectRatio(value *AVRational) {
+	s.ptr.sample_aspect_ratio = value.value
+}
+
+// PixFmt gets the pix_fmt field.
+func (s *AVDiracSeqHeader) PixFmt() AVPixelFormat {
+	value := s.ptr.pix_fmt
+	return AVPixelFormat(value)
+}
+
+// SetPixFmt sets the pix_fmt field.
+func (s *AVDiracSeqHeader) SetPixFmt(value AVPixelFormat) {
+	s.ptr.pix_fmt = (C.enum_AVPixelFormat)(value)
+}
+
+// ColorRange gets the color_range field.
+func (s *AVDiracSeqHeader) ColorRange() AVColorRange {
+	value := s.ptr.color_range
+	return AVColorRange(value)
+}
+
+// SetColorRange sets the color_range field.
+func (s *AVDiracSeqHeader) SetColorRange(value AVColorRange) {
+	s.ptr.color_range = (C.enum_AVColorRange)(value)
+}
+
+// ColorPrimaries gets the color_primaries field.
+func (s *AVDiracSeqHeader) ColorPrimaries() AVColorPrimaries {
+	value := s.ptr.color_primaries
+	return AVColorPrimaries(value)
+}
+
+// SetColorPrimaries sets the color_primaries field.
+func (s *AVDiracSeqHeader) SetColorPrimaries(value AVColorPrimaries) {
+	s.ptr.color_primaries = (C.enum_AVColorPrimaries)(value)
+}
+
+// ColorTrc gets the color_trc field.
+func (s *AVDiracSeqHeader) ColorTrc() AVColorTransferCharacteristic {
+	value := s.ptr.color_trc
+	return AVColorTransferCharacteristic(value)
+}
+
+// SetColorTrc sets the color_trc field.
+func (s *AVDiracSeqHeader) SetColorTrc(value AVColorTransferCharacteristic) {
+	s.ptr.color_trc = (C.enum_AVColorTransferCharacteristic)(value)
+}
+
+// Colorspace gets the colorspace field.
+func (s *AVDiracSeqHeader) Colorspace() AVColorSpace {
+	value := s.ptr.colorspace
+	return AVColorSpace(value)
+}
+
+// SetColorspace sets the colorspace field.
+func (s *AVDiracSeqHeader) SetColorspace(value AVColorSpace) {
+	s.ptr.colorspace = (C.enum_AVColorSpace)(value)
+}
+
+// Version gets the version field.
+func (s *AVDiracSeqHeader) Version() *DiracVersionInfo {
+	value := &s.ptr.version
+	return &DiracVersionInfo{ptr: value}
+}
+
+// BitDepth gets the bit_depth field.
+func (s *AVDiracSeqHeader) BitDepth() int {
+	value := s.ptr.bit_depth
+	return int(value)
+}
+
+// SetBitDepth sets the bit_depth field.
+func (s *AVDiracSeqHeader) SetBitDepth(value int) {
+	s.ptr.bit_depth = (C.int)(value)
+}
+
+// --- Struct AVDVProfile ---
+
+// AVDVProfile wraps AVDVProfile.
+/*
+  AVDVProfile is used to express the differences between various
+  DV flavors. For now it's primarily used for differentiating
+  525/60 and 625/50, but the plans are to use it for various
+  DV specs as well (e.g. SMPTE314M vs. IEC 61834).
+*/
+type AVDVProfile struct {
+	ptr *C.AVDVProfile
+}
+
+func (s *AVDVProfile) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDVProfileArray(ptr unsafe.Pointer) *Array[*AVDVProfile] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDVProfile]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDVProfile {
+			ptr := (**C.AVDVProfile)(pointer)
+			value := *ptr
+			var valueMapped *AVDVProfile
+			if value != nil {
+				valueMapped = &AVDVProfile{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDVProfile) {
+			ptr := (**C.AVDVProfile)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Dsf gets the dsf field.
+//
+//	value of the dsf in the DV header
+func (s *AVDVProfile) Dsf() int {
+	value := s.ptr.dsf
+	return int(value)
+}
+
+// SetDsf sets the dsf field.
+//
+//	value of the dsf in the DV header
+func (s *AVDVProfile) SetDsf(value int) {
+	s.ptr.dsf = (C.int)(value)
+}
+
+// VideoStype gets the video_stype field.
+//
+//	stype for VAUX source pack
+func (s *AVDVProfile) VideoStype() int {
+	value := s.ptr.video_stype
+	return int(value)
+}
+
+// SetVideoStype sets the video_stype field.
+//
+//	stype for VAUX source pack
+func (s *AVDVProfile) SetVideoStype(value int) {
+	s.ptr.video_stype = (C.int)(value)
+}
+
+// FrameSize gets the frame_size field.
+//
+//	total size of one frame in bytes
+func (s *AVDVProfile) FrameSize() int {
+	value := s.ptr.frame_size
+	return int(value)
+}
+
+// SetFrameSize sets the frame_size field.
+//
+//	total size of one frame in bytes
+func (s *AVDVProfile) SetFrameSize(value int) {
+	s.ptr.frame_size = (C.int)(value)
+}
+
+// DifsegSize gets the difseg_size field.
+//
+//	number of DIF segments per DIF channel
+func (s *AVDVProfile) DifsegSize() int {
+	value := s.ptr.difseg_size
+	return int(value)
+}
+
+// SetDifsegSize sets the difseg_size field.
+//
+//	number of DIF segments per DIF channel
+func (s *AVDVProfile) SetDifsegSize(value int) {
+	s.ptr.difseg_size = (C.int)(value)
+}
+
+// NDifchan gets the n_difchan field.
+//
+//	number of DIF channels per frame
+func (s *AVDVProfile) NDifchan() int {
+	value := s.ptr.n_difchan
+	return int(value)
+}
+
+// SetNDifchan sets the n_difchan field.
+//
+//	number of DIF channels per frame
+func (s *AVDVProfile) SetNDifchan(value int) {
+	s.ptr.n_difchan = (C.int)(value)
+}
+
+// TimeBase gets the time_base field.
+//
+//	1/framerate
+func (s *AVDVProfile) TimeBase() *AVRational {
+	value := s.ptr.time_base
+	return &AVRational{value: value}
+}
+
+// SetTimeBase sets the time_base field.
+//
+//	1/framerate
+func (s *AVDVProfile) SetTimeBase(value *AVRational) {
+	s.ptr.time_base = value.value
+}
+
+// LtcDivisor gets the ltc_divisor field.
+//
+//	FPS from the LTS standpoint
+func (s *AVDVProfile) LtcDivisor() int {
+	value := s.ptr.ltc_divisor
+	return int(value)
+}
+
+// SetLtcDivisor sets the ltc_divisor field.
+//
+//	FPS from the LTS standpoint
+func (s *AVDVProfile) SetLtcDivisor(value int) {
+	s.ptr.ltc_divisor = (C.int)(value)
+}
+
+// Height gets the height field.
+//
+//	picture height in pixels
+func (s *AVDVProfile) Height() int {
+	value := s.ptr.height
+	return int(value)
+}
+
+// SetHeight sets the height field.
+//
+//	picture height in pixels
+func (s *AVDVProfile) SetHeight(value int) {
+	s.ptr.height = (C.int)(value)
+}
+
+// Width gets the width field.
+//
+//	picture width in pixels
+func (s *AVDVProfile) Width() int {
+	value := s.ptr.width
+	return int(value)
+}
+
+// SetWidth sets the width field.
+//
+//	picture width in pixels
+func (s *AVDVProfile) SetWidth(value int) {
+	s.ptr.width = (C.int)(value)
+}
+
+// Sar gets the sar field.
+//
+//	sample aspect ratios for 4:3 and 16:9
+func (s *AVDVProfile) Sar() *Array[*AVRational] {
+	value := &s.ptr.sar
+	return ToAVRationalArray(unsafe.Pointer(value))
+}
+
+// PixFmt gets the pix_fmt field.
+//
+//	picture pixel format
+func (s *AVDVProfile) PixFmt() AVPixelFormat {
+	value := s.ptr.pix_fmt
+	return AVPixelFormat(value)
+}
+
+// SetPixFmt sets the pix_fmt field.
+//
+//	picture pixel format
+func (s *AVDVProfile) SetPixFmt(value AVPixelFormat) {
+	s.ptr.pix_fmt = (C.enum_AVPixelFormat)(value)
+}
+
+// Bpm gets the bpm field.
+//
+//	blocks per macroblock
+func (s *AVDVProfile) Bpm() int {
+	value := s.ptr.bpm
+	return int(value)
+}
+
+// SetBpm sets the bpm field.
+//
+//	blocks per macroblock
+func (s *AVDVProfile) SetBpm(value int) {
+	s.ptr.bpm = (C.int)(value)
+}
+
+// BlockSizes gets the block_sizes field.
+//
+//	AC block sizes, in bits
+func (s *AVDVProfile) BlockSizes() unsafe.Pointer {
+	value := s.ptr.block_sizes
+	return unsafe.Pointer(value)
+}
+
+// SetBlockSizes sets the block_sizes field.
+//
+//	AC block sizes, in bits
+func (s *AVDVProfile) SetBlockSizes(value unsafe.Pointer) {
+	s.ptr.block_sizes = (*C.uint8_t)(value)
+}
+
+// AudioStride gets the audio_stride field.
+//
+//	size of audio_shuffle table
+func (s *AVDVProfile) AudioStride() int {
+	value := s.ptr.audio_stride
+	return int(value)
+}
+
+// SetAudioStride sets the audio_stride field.
+//
+//	size of audio_shuffle table
+func (s *AVDVProfile) SetAudioStride(value int) {
+	s.ptr.audio_stride = (C.int)(value)
+}
+
+// AudioMinSamples gets the audio_min_samples field.
+//
+//	for 48kHz, 44.1kHz and 32kHz
+func (s *AVDVProfile) AudioMinSamples() *Array[int] {
+	value := &s.ptr.audio_min_samples
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// AudioSamplesDist gets the audio_samples_dist field.
+//
+//	in each frame in a 5 frames window
+func (s *AVDVProfile) AudioSamplesDist() *Array[int] {
+	value := &s.ptr.audio_samples_dist
+	return ToIntArray(unsafe.Pointer(value))
+}
+
+// audio_shuffle skipped due to unhandled pointer inner type *main.ConstArray
+
 // --- Struct AVPacketSideData ---
 
 // AVPacketSideData wraps AVPacketSideData.
@@ -7334,6 +8126,45 @@ func (s *AVPacketList) SetNext(value *AVPacketList) {
 		s.ptr.next = value.ptr
 	} else {
 		s.ptr.next = nil
+	}
+}
+
+// --- Struct AVVorbisParseContext ---
+
+// AVVorbisParseContext wraps AVVorbisParseContext.
+type AVVorbisParseContext struct {
+	ptr *C.AVVorbisParseContext
+}
+
+func (s *AVVorbisParseContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVVorbisParseContextArray(ptr unsafe.Pointer) *Array[*AVVorbisParseContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVVorbisParseContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVVorbisParseContext {
+			ptr := (**C.AVVorbisParseContext)(pointer)
+			value := *ptr
+			var valueMapped *AVVorbisParseContext
+			if value != nil {
+				valueMapped = &AVVorbisParseContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVVorbisParseContext) {
+			ptr := (**C.AVVorbisParseContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
 	}
 }
 
@@ -26010,6 +26841,45 @@ func (s *AVContentLightMetadata) MaxFall() uint {
 //	Max average light level per frame (cd/m^2).
 func (s *AVContentLightMetadata) SetMaxFall(value uint) {
 	s.ptr.MaxFALL = (C.uint)(value)
+}
+
+// --- Struct AVMD5 ---
+
+// AVMD5 wraps AVMD5.
+type AVMD5 struct {
+	ptr *C.struct_AVMD5
+}
+
+func (s *AVMD5) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVMD5Array(ptr unsafe.Pointer) *Array[*AVMD5] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVMD5]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVMD5 {
+			ptr := (**C.struct_AVMD5)(pointer)
+			value := *ptr
+			var valueMapped *AVMD5
+			if value != nil {
+				valueMapped = &AVMD5{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVMD5) {
+			ptr := (**C.struct_AVMD5)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
 }
 
 // --- Struct AVMotionVector ---

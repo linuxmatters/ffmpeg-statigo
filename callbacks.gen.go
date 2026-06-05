@@ -4,16 +4,22 @@ package ffmpeg
 
 import "unsafe"
 
+// #include <libavcodec/ac3_parser.h>
+// #include <libavcodec/adts_parser.h>
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/avdct.h>
 // #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
 // #include <libavcodec/codec_par.h>
 // #include <libavcodec/defs.h>
+// #include <libavcodec/dirac.h>
+// #include <libavcodec/dv_profile.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavcodec/vorbis_parser.h>
 // #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
@@ -77,6 +83,7 @@ import "unsafe"
 // #include <libavutil/macros.h>
 // #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
+// #include <libavutil/md5.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/motion_vector.h>
 // #include <libavutil/murmur3.h>
