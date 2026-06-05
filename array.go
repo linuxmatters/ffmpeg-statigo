@@ -23,8 +23,11 @@ const (
 // Array is a helper utility for accessing arrays of FFmpeg types. You can not directly allocate this type, and you must
 // use one of the inbuilt constructors, such as AllocAVCodecIDArray.
 //
-// Arrays have no inbuilt length, matching the behaviour of C code. Getting or setting an out of bound index will lead
-// to undefined behaviour.
+// Arrays carry no length, matching the behaviour of C code: the constructors take only a pointer, so the bound is never
+// known to the Array itself. There is therefore no bounds checking on Get or Set. The caller is wholly responsible for
+// tracking the valid length and never indexing past it — an out-of-bounds index reads or writes arbitrary process
+// memory, exactly like an over-run C pointer, with no panic to stop you. This is a raw, unsafe accessor; treat every
+// index as if you were dereferencing the pointer by hand.
 type Array[T any] struct {
 	ptr      unsafe.Pointer
 	elemSize uintptr
@@ -32,13 +35,15 @@ type Array[T any] struct {
 	storePtr func(pointer unsafe.Pointer, value T)
 }
 
-// Get returns the element at the ith offset.
+// Get returns the element at the ith offset. There is no bounds check: passing an index outside the array reads
+// arbitrary process memory and is undefined behaviour. The caller must guarantee i is within the known length.
 func (a *Array[T]) Get(i uintptr) T {
 	ptr := unsafe.Add(a.ptr, i*a.elemSize)
 	return a.loadPtr(ptr)
 }
 
-// Set sets the element at the ith offset.
+// Set sets the element at the ith offset. There is no bounds check: passing an index outside the array writes
+// arbitrary process memory and is undefined behaviour. The caller must guarantee i is within the known length.
 func (a *Array[T]) Set(i uintptr, value T) {
 	ptr := unsafe.Add(a.ptr, i*a.elemSize)
 	a.storePtr(ptr, value)

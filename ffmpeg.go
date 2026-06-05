@@ -117,6 +117,12 @@ var (
 // GlobalCStr resolves the given string to a CStr. Multiple calls with the same input string will return the same CStr.
 // You should not attempt to free the CStr returned. When passing to FFmpeg, you may need to call Dup to create a copy
 // if the FFmpeg code expects to take ownership and will likely free the string.
+//
+// This is an intern cache for a bounded set of compile-time-known constant strings (option names, codec names and
+// similar). Every interned string is allocated in C memory and retained for the lifetime of the process — entries are
+// never freed, because callers rely on the intern guarantee that the same input always returns the same CStr (and so
+// the same pointer identity). Do NOT pass unbounded, caller-derived or attacker-influenced dynamic strings: each
+// distinct value leaks a C allocation forever. For dynamic strings use ToCStr and Free the result yourself.
 func GlobalCStr(val string) *CStr {
 	var (
 		ptr *CStr
