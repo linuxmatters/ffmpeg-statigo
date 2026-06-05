@@ -38,8 +38,10 @@ jobs:
     steps:
       - name: Validate version format
         if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          if [[ ! "${{ inputs.version }}" =~ ^lib- ]]; then
+          if [[ ! "$VERSION" =~ ^lib- ]]; then
             echo "Error: Version must start with 'lib-' prefix (e.g., 'lib-8.0.0.0')"
             exit 1
           fi

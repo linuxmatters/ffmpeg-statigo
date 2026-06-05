@@ -18,7 +18,11 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-// DownloadFile downloads a file using the grab library with resume support and retries
+// DownloadFile downloads a file using the grab library with resume support and
+// retries, then verifies its SHA-256 against the pin for url. Verification runs on
+// the final archive bytes whether they were freshly downloaded or already cached,
+// so a poisoned download cache cannot be silently trusted. On a missing or
+// mismatched pin it fails closed (see verifyDigest).
 func DownloadFile(url, dest string, logger io.Writer) error {
 	// Create downloads directory
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
@@ -28,7 +32,21 @@ func DownloadFile(url, dest string, logger io.Writer) error {
 	// Check if file already exists and is complete
 	if fileExists(dest) {
 		fmt.Fprintf(logger, "Using cached %s\n", filepath.Base(dest))
-		return nil
+		return verifyDigest(url, dest)
+	}
+
+	if err := downloadRaw(url, dest, logger); err != nil {
+		return err
+	}
+	return verifyDigest(url, dest)
+}
+
+// downloadRaw fetches url to dest with resume support and retries, without any
+// integrity check. Use DownloadFile for builds; this helper exists so the
+// --update-digests bootstrap can fetch archives that have no pin yet.
+func downloadRaw(url, dest string, logger io.Writer) error {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
 	}
 
 	fmt.Fprintf(logger, "Downloading %s...\n", filepath.Base(dest))
@@ -260,7 +278,13 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 		fmt.Fprintf(logger, "  Auto-detected prefix: %s\n", stripPrefix)
 	}
 
+	var budget pathsafe.Budget
+
 	for _, file := range reader.File {
+		if err := budget.AddEntry(); err != nil {
+			return err
+		}
+
 		// Strip auto-detected prefix
 		name := file.Name
 		if stripPrefix != "" {
@@ -302,11 +326,14 @@ func extractZip(archivePath, destPath string, logger io.Writer) error {
 			return err
 		}
 
-		err = pathsafe.CopyCapped(outFile, rc)
+		written, err := pathsafe.CopyCapped(outFile, rc)
 		rc.Close()
 		outFile.Close()
 
 		if err != nil {
+			return err
+		}
+		if err := budget.AddBytes(written); err != nil {
 			return err
 		}
 	}

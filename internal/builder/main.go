@@ -41,6 +41,7 @@ func run() error {
 	selectedLibs := make(map[string]bool)
 	cleanBuild := false
 	listMode := false
+	updateDigests := false
 
 	for _, arg := range os.Args[1:] {
 		switch arg {
@@ -48,6 +49,8 @@ func run() error {
 			cleanBuild = true
 		case "--list":
 			listMode = true
+		case "--update-digests":
+			updateDigests = true
 		default:
 			selectedLibs[arg] = true
 		}
@@ -57,6 +60,18 @@ func run() error {
 	if listMode {
 		printLibraryList(AllLibraries)
 		return nil
+	}
+
+	// Handle --update-digests mode: trust-on-first-use bootstrap. Downloads every
+	// enabled library's archive, computes its SHA-256, and prints the manifest
+	// entries for review. Run once in a trusted environment, then verify each
+	// digest against upstream-published checksums and commit digests.go.
+	if updateDigests {
+		buildRoot, err := filepath.Abs(".build")
+		if err != nil {
+			return fmt.Errorf("get absolute path for build root: %w", err)
+		}
+		return updateDigestsMode(ctx, buildRoot, AllLibraries)
 	}
 
 	// Setup directories
@@ -175,6 +190,52 @@ func run() error {
 		fmt.Printf("\n✓ Success! Built %d selected libraries\n", len(selectedLibs))
 	}
 
+	return nil
+}
+
+// updateDigestsMode downloads every enabled library's archive, computes its
+// SHA-256, and prints the manifest entries for archiveDigests. This is the
+// trust-on-first-use bootstrap; run it once in a trusted environment, verify the
+// printed digests against upstream-published checksums, then paste the entries
+// into internal/builder/digests.go and commit.
+func updateDigestsMode(ctx context.Context, buildRoot string, libs []*Library) error {
+	_ = ctx // grab download is not yet context-aware; retained for signature parity
+
+	downloadsDir := filepath.Join(buildRoot, "downloads")
+	if err := os.MkdirAll(downloadsDir, 0o755); err != nil {
+		return fmt.Errorf("create downloads dir: %w", err)
+	}
+
+	digests := make(map[string]string)
+	for _, lib := range libs {
+		if !lib.ShouldBuild() {
+			fmt.Fprintf(os.Stderr, "Skipping %s (not built on %s)\n", lib.Name, runtime.GOOS)
+			continue
+		}
+		if _, seen := digests[lib.URL]; seen {
+			continue // shared URL already hashed
+		}
+
+		archivePath := filepath.Join(downloadsDir, filepath.Base(lib.URL))
+		if !fileExists(archivePath) {
+			if err := downloadRaw(lib.URL, archivePath, os.Stderr); err != nil {
+				return fmt.Errorf("download %s: %w", lib.Name, err)
+			}
+		}
+
+		digest, err := hashFile(archivePath)
+		if err != nil {
+			return fmt.Errorf("hash %s: %w", lib.Name, err)
+		}
+		digests[lib.URL] = digest
+		fmt.Fprintf(os.Stderr, "✓ %s %s\n", lib.Name, digest)
+	}
+
+	fmt.Print("\n// Paste into archiveDigests in internal/builder/digests.go after\n")
+	fmt.Print("// verifying each digest against the upstream-published checksum.\n")
+	fmt.Print("var archiveDigests = map[string]string{\n")
+	fmt.Print(formatDigestEntries(digests))
+	fmt.Print("}\n")
 	return nil
 }
 

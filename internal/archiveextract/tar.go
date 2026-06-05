@@ -36,6 +36,7 @@ type TarOptions struct {
 // ExtractTar extracts entries from a tar stream into DestDir.
 func ExtractTar(reader io.Reader, opts TarOptions) error {
 	tarReader := tar.NewReader(reader)
+	var budget pathsafe.Budget
 
 	for {
 		header, err := tarReader.Next()
@@ -44,6 +45,10 @@ func ExtractTar(reader io.Reader, opts TarOptions) error {
 		}
 		if err != nil {
 			return extractionError(opts, fmt.Errorf("reading tar header: %w", err))
+		}
+
+		if err := budget.AddEntry(); err != nil {
+			return extractionError(opts, err)
 		}
 
 		name, ok := tarEntryName(header.Name, opts.StripPrefix)
@@ -62,7 +67,7 @@ func ExtractTar(reader io.Reader, opts TarOptions) error {
 				return extractionError(opts, fmt.Errorf("creating directory %s: %w", target, err))
 			}
 		case tar.TypeReg:
-			if err := extractRegularFile(tarReader, header, target, opts); err != nil {
+			if err := extractRegularFile(tarReader, header, target, opts, &budget); err != nil {
 				return extractionError(opts, err)
 			}
 		case tar.TypeSymlink:
@@ -92,7 +97,7 @@ func tarEntryName(name, stripPrefix string) (string, bool) {
 	return name, true
 }
 
-func extractRegularFile(tarReader *tar.Reader, header *tar.Header, target string, opts TarOptions) error {
+func extractRegularFile(tarReader *tar.Reader, header *tar.Header, target string, opts TarOptions, budget *pathsafe.Budget) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fmt.Errorf("creating parent directory for %s: %w", target, err)
 	}
@@ -107,7 +112,11 @@ func extractRegularFile(tarReader *tar.Reader, header *tar.Header, target string
 		return fmt.Errorf("creating file %s: %w", target, err)
 	}
 
-	if err := pathsafe.CopyCapped(outFile, tarReader); err != nil {
+	written, err := pathsafe.CopyCapped(outFile, tarReader)
+	if err == nil {
+		err = budget.AddBytes(written)
+	}
+	if err != nil {
 		_ = outFile.Close()
 		if opts.RemoveIncomplete {
 			_ = os.Remove(target)

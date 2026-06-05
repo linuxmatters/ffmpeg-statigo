@@ -21,8 +21,10 @@ jobs:
     steps:
       - name: Validate version format
         if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Error: Version must be in format X.Y.Z.N (e.g., 8.0.0.1)"
             exit 1
           fi
@@ -59,19 +61,23 @@ jobs:
 
       - name: Create tag (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Go modules require v prefix for version tags
-          git tag -a "v${{ inputs.version }}" -m "Release ${{ inputs.version }}"
-          git push origin "v${{ inputs.version }}"
+          git tag -a "v$VERSION" -m "Release $VERSION"
+          git push origin "v$VERSION"
 
       - name: Determine version
         id: version
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "display_version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
+            echo "display_version=$VERSION" >> "$GITHUB_OUTPUT"
           else
             echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
             echo "display_version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"

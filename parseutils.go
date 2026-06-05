@@ -68,7 +68,7 @@ func AVCodecGetTag2(tags **AVCodecTag, id AVCodecID) (tag uint, found bool) {
 	// supplies the address of a single table pointer, which is not terminated;
 	// wrap it in a two-entry, NULL-terminated list so a missed lookup stops at
 	// the terminator instead of reading past the table pointer.
-	list := [2]*C.struct_AVCodecTag{(*tags).ptr, nil}
+	list := []*C.struct_AVCodecTag{(*tags).ptr, nil}
 
 	var ctag C.uint
 	ret := C.av_codec_get_tag2(&list[0], C.enum_AVCodecID(id), &ctag)
