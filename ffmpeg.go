@@ -109,6 +109,12 @@ func ToCStr(val string) *CStr {
 	}
 }
 
+// globalCStrCap bounds the GlobalCStr intern map. The cache is for a fixed set
+// of compile-time-known constant strings; this ceiling makes the bounded-set
+// contract load-bearing so misuse with dynamic strings cannot leak C memory
+// without limit. Past the cap, GlobalCStr falls back to a freeable ToCStr.
+const globalCStrCap = 65536 // ~10x FFmpeg's full constant surface; bounds misuse leak to single-digit MB
+
 var (
 	strMap  = map[string]*CStr{}
 	strLock = sync.RWMutex{}
@@ -143,6 +149,12 @@ func GlobalCStr(val string) *CStr {
 	ptr, ok = strMap[val]
 	if ok {
 		return ptr
+	}
+
+	// Past the cap, return a freeable string without interning. This bounds the
+	// permanent C-memory cost if a dynamic string reaches GlobalCStr by mistake.
+	if len(strMap) >= globalCStrCap {
+		return ToCStr(val)
 	}
 
 	ptr = ToCStr(val)

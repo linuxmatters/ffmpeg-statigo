@@ -934,6 +934,49 @@ func TestGeneratorSkipPatterns(t *testing.T) {
 		}
 
 		t.Logf("Documented %d skip patterns", len(skips))
+
+		// Assert the documented patterns against the generator's actual output on
+		// disk, in the same style as av_fopen_utf8_absent_from_bindings. The
+		// generator's runtime skip records aren't reachable from this package, so
+		// we verify the observable consequence: the skipped C symbol has no
+		// generated Go binding. Each entry fails if a documented skip no longer
+		// matches reality (the binding re-emerged), signalling a stale skip site.
+		gen, err := os.ReadFile("functions.gen.go")
+		if err != nil {
+			t.Fatalf("read functions.gen.go: %v", err)
+		}
+		genSrc := string(gen)
+
+		// skippedBindings are example symbols the documented patterns above name.
+		// Each must be absent from the generated bindings; the matcher is the
+		// exact Go function declaration so AVLog does not match AVLog2/AVLogGetLevel.
+		skippedBindings := map[string]string{
+			"variadic_functions (av_log)":                          "func AVLog(",
+			"callback_by_value_parameters (av_fifo_write_from_cb)": "func AVFifoWriteFromCb(",
+			"callback_by_value_parameters (av_fifo_read_to_cb)":    "func AVFifoReadToCb(",
+			"callback_by_value_parameters (av_fifo_peek_to_cb)":    "func AVFifoPeekToCb(",
+			"va_list_types (av_log_format_line)":                   "func AVLogFormatLine(",
+			"FILE_star_types (av_fopen_utf8)":                      "func AVFopenUtf8(",
+		}
+
+		for pattern, decl := range skippedBindings {
+			if strings.Contains(genSrc, decl) {
+				t.Errorf("documented skip %q is stale: %q now present in functions.gen.go; "+
+					"the corresponding skip site in internal/generator is spurious", pattern, decl)
+			}
+		}
+
+		// The variadic av_log skip pairs with a hand-written binding. Confirm the
+		// manual replacement still exists, so the skip remains backed by a usable
+		// API rather than a silent gap.
+		manual, err := os.ReadFile("log_format.go")
+		if err != nil {
+			t.Fatalf("read log_format.go: %v", err)
+		}
+		if !strings.Contains(string(manual), "func AVLog(") {
+			t.Error("manual AVLog binding missing from log_format.go; " +
+				"the variadic av_log skip no longer has a hand-written replacement")
+		}
 	})
 
 	t.Run("skip_patterns_are_logged", func(t *testing.T) {

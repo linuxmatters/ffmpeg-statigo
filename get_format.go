@@ -29,7 +29,9 @@ type getFormatReg struct {
 
 // getFormatRegistry maps a C AVCodecContext pointer (as uintptr) to its
 // registration. Keying on the pointer leaves AVCodecContext.opaque free for
-// caller use, unlike the AVIO bridge which owns the opaque field.
+// caller use, unlike the AVIO bridge which owns the opaque field. The context
+// is C-allocated, so the Go garbage collector never moves it: the uintptr is a
+// stable map key valid until ClearGetFormat removes the entry.
 var (
 	getFormatMu       sync.RWMutex
 	getFormatRegistry = map[uintptr]getFormatReg{}
