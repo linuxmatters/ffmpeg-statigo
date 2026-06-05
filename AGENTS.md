@@ -58,6 +58,7 @@
   - `samples.go` — `av_samples_*` audio sample-plane wrappers
   - `swscale.go` — `sws_*` software scaling / pixel-format conversion
   - `swresample.go` — `swr_*` audio resampling
+  - `get_format.go` + `get_format.c` — `AVCodecContext.get_format` callback bridge (cgo `//export` trampoline) for selecting a decode pixel format, e.g. a hardware format
   - `avio.go` + `avio.c` — custom-I/O `AVIOContext` via `runtime/cgo.Handle` callback bridge
   - `log.go` + `log.c` — `av_log` callback bridge to Go/`slog` via cgo `//export`
   - `log_format.go` — variadic-format shims (`AVLog`, `AVAsprintf`, etc.); CGO can't call C varargs, so these format on the Go side and pass through a fixed `"%s"` C shim
