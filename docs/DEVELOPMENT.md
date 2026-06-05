@@ -8,7 +8,7 @@ Go modules don't handle 100MB+ binary files. `go get` won't fetch static librari
 
 ## Prerequisites
 
-- Go 1.24+
+- Go 1.26+
 - GCC (CGO compilation)
 - Git
 
@@ -167,7 +167,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
 
       - name: Download FFmpeg libraries
         run: cd third_party/ffmpeg-statigo && go run ./cmd/download-lib
@@ -286,10 +286,10 @@ The root package has three source tiers. The generator skips C symbols it cannot
 
 Two distinct version schemes:
 
-- **Library releases** (`lib-8.0.0.x`): Static library builds, distributed via GitHub Releases
-- **Module releases** (`v8.0.0.x`): Go module versions
+- **Library releases** (`lib-8.1.1.x`): Static library builds, distributed via GitHub Releases
+- **Module releases** (`v8.1.1.x`): Go module versions
 
-The download tool automatically fetches the latest `lib-8.0.0.x` release matching the FFmpeg version in `lib/fetch.go`.
+The download tool automatically fetches the latest `lib-8.1.1.x` release matching the FFmpeg version in `lib/fetch.go`.
 
 ## Troubleshooting
 
