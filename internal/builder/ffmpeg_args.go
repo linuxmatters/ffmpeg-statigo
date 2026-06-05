@@ -352,8 +352,8 @@ var darwinFFmpegFeatureSets = []ffmpegFeatureSet{
 	{HWAccels: []string{"mpeg1_videotoolbox"}},
 }
 
-// FFmpegArgsCommon returns common FFmpeg configure arguments for all platforms
-// os parameter enables platform-specific hardware acceleration (linux, darwin)
+// FFmpegArgsCommon returns common FFmpeg configure arguments for all platforms.
+// The os parameter selects platform-specific hardware acceleration; valid values are "linux" and "darwin".
 func FFmpegArgsCommon(os string) []string {
 	args := []string{
 		"--enable-pic",
