@@ -38,26 +38,21 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install libclang for generator
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libclang-20-dev llvm-20-dev
-          {
-            echo "CGO_LDFLAGS=-L/usr/lib/llvm-20/lib"
-            echo "CGO_CFLAGS=-I/usr/lib/llvm-20/include"
-            echo "LD_LIBRARY_PATH=/usr/lib/llvm-20/lib:$LD_LIBRARY_PATH"
-          } >> "$GITHUB_ENV"
-
       - name: Download FFmpeg libraries
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
+      # Scoped to exclude internal/generator: it depends on libclang via
+      # Newbluecake/bootstrap, which references CXCursor_OMPArraySectionExpr,
+      # a cursor-kind symbol removed in Clang 18+. The generator is a
+      # development-only tool that consumers never compile, so the module
+      # release skips it. go-test.yml scopes its build/test/lint the same way.
       - name: Verify module builds
-        run: go build -v ./...
+        run: go list ./... | grep -v '/internal/generator$' | xargs -r go build -v
 
       - name: Run tests
-        run: go test -v ./...
+        run: go list ./... | grep -v '/internal/generator$' | xargs -r go test -v
 
       - name: Create tag (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch'
