@@ -621,8 +621,12 @@ var rav1e = &Library{
 	FFmpegEnables: []string{"librav1e"},
 	BuildSystem: &CargoBuild{
 		InstallFunc: func(ctx context.Context, srcPath, installDir string) error {
-			// Set RUSTFLAGS for native CPU optimization
-			rustflags := "-C target-cpu=native"
+			// Set RUSTFLAGS CPU baseline; x86-64-v3 (Haswell, AVX2) keeps
+			// distributed static libs portable across older consumer CPUs.
+			var rustflags string
+			if runtime.GOARCH == "amd64" {
+				rustflags = "-C target-cpu=x86-64-v3"
+			}
 
 			// On macOS, add SDK library path for any native dependencies
 			if runtime.GOOS == "darwin" {
