@@ -99,14 +99,15 @@ func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
 	}
 
 	// 3. Reverse lookup from formats (demuxers/muxers)
-	for codecID := range formatMap {
-		codecName := getCodecName(codecID)
-		// Check if format name contains search term (e.g., "avif" for av1, "matroska" for various codecs)
-		if strings.Contains(strings.ToLower(codecName), searchLower) {
-			for _, info := range codecNameMap {
-				if info.codecID == codecID {
-					matchedCodecs[info.name] = info
-				}
+	for codecID, formats := range formatMap {
+		// Check if any muxer/demuxer name contains the search term
+		// (e.g., "avif" for av1, "matroska" for various codecs)
+		if !formatNameMatches(formats, searchLower) {
+			continue
+		}
+		for _, info := range codecNameMap {
+			if info.codecID == codecID {
+				matchedCodecs[info.name] = info
 			}
 		}
 	}
@@ -163,6 +164,21 @@ func sortCodecsByPriority(codecs []*codecInfo, searchTerm string) []*codecInfo {
 	result = append(result, hardware...)
 
 	return result
+}
+
+// formatNameMatches reports whether any muxer or demuxer name contains searchLower.
+func formatNameMatches(formats *formatDeps, searchLower string) bool {
+	for _, name := range formats.muxers {
+		if strings.Contains(strings.ToLower(name), searchLower) {
+			return true
+		}
+	}
+	for _, name := range formats.demuxers {
+		if strings.Contains(strings.ToLower(name), searchLower) {
+			return true
+		}
+	}
+	return false
 }
 
 // isHardwareCodec checks if codec uses hardware acceleration

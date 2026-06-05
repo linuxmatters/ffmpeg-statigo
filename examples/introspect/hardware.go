@@ -75,6 +75,22 @@ func getHWDeviceTypeFromCodec(codec *ffmpeg.AVCodec) ffmpeg.AVHWDeviceType {
 	}
 }
 
+// hardwareCodecSuffixes names the hardware-specific decoder/encoder suffixes.
+var hardwareCodecSuffixes = []string{
+	"_cuvid", "_qsv", "_nvenc", "_nvdec", "_vulkan", "_vaapi",
+	"_videotoolbox", "_amf", "_mediacodec", "_dxva2", "_d3d11va", "_vdpau",
+}
+
+// isHardwareCodecName reports whether a codec name carries a hardware-specific suffix.
+func isHardwareCodecName(name string) bool {
+	for _, suffix := range hardwareCodecSuffixes {
+		if strings.Contains(name, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 func listHWAccels() {
 	fmt.Println("\n==================================================")
 	fmt.Println("HARDWARE ACCELERATORS")
@@ -161,10 +177,10 @@ func listHWAccels() {
 			codecName = codec.Name().String()
 		}
 
-		// Skip hardware-specific decoders (we want software decoders with hwaccel support)
-		if strings.Contains(codecName, "_cuvid") || strings.Contains(codecName, "_qsv") ||
-			strings.Contains(codecName, "_nvdec") || strings.Contains(codecName, "_vulkan") ||
-			strings.Contains(codecName, "_vaapi") || strings.Contains(codecName, "_videotoolbox") {
+		// Skip hardware-specific decoders (we want software decoders with hwaccel support).
+		// This list must match the hardware-codec suffixes below so a hardware-named
+		// decoder is not emitted both as a hwaccel and as a hardware codec.
+		if isHardwareCodecName(codecName) {
 			continue
 		}
 
@@ -204,7 +220,10 @@ func listHWAccels() {
 				description = codecName
 			}
 			// Capitalize device type name for description
-			deviceTypeCapitalized := strings.ToUpper(deviceTypeName[:1]) + deviceTypeName[1:]
+			deviceTypeCapitalized := deviceTypeName
+			if deviceTypeName != "" {
+				deviceTypeCapitalized = strings.ToUpper(deviceTypeName[:1]) + deviceTypeName[1:]
+			}
 			description = description + " (" + deviceTypeCapitalized + " hardware acceleration)"
 
 			unifiedList = append(unifiedList, unifiedHWEntry{
@@ -238,12 +257,7 @@ func listHWAccels() {
 
 		// Skip software decoders that only have hwaccel support (we already added those as hwaccels)
 		// We only want dedicated hardware encoder/decoder implementations
-		if !strings.Contains(name, "_cuvid") && !strings.Contains(name, "_qsv") &&
-			!strings.Contains(name, "_nvenc") && !strings.Contains(name, "_nvdec") &&
-			!strings.Contains(name, "_vulkan") && !strings.Contains(name, "_vaapi") &&
-			!strings.Contains(name, "_videotoolbox") && !strings.Contains(name, "_amf") &&
-			!strings.Contains(name, "_mediacodec") && !strings.Contains(name, "_dxva2") &&
-			!strings.Contains(name, "_d3d11va") && !strings.Contains(name, "_vdpau") {
+		if !isHardwareCodecName(name) {
 			continue
 		}
 
