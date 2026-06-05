@@ -77,8 +77,7 @@ func TestUUID(t *testing.T) {
 		AVUuidCopy(&uuid2, &uuid1)
 
 		// Test equality
-		equal, _ := AVUuidEqual(&uuid1, &uuid2)
-		if equal == 0 {
+		if !AVUuidEqual(&uuid1, &uuid2) {
 			t.Fatal("UUIDs should be equal")
 		}
 
@@ -86,8 +85,7 @@ func TestUUID(t *testing.T) {
 		var nilUUID AVUUID
 		AVUuidNil(&nilUUID)
 
-		equal, _ = AVUuidEqual(&uuid1, &nilUUID)
-		if equal != 0 {
+		if AVUuidEqual(&uuid1, &nilUUID) {
 			t.Fatal("UUID should not equal nil UUID")
 		}
 
