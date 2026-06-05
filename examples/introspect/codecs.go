@@ -26,8 +26,14 @@ func listCodecs() {
 		}
 
 		codecID := desc.Id()
-		name := desc.Name().String()
-		longName := desc.LongName().String()
+		name := ""
+		if desc.Name() != nil {
+			name = desc.Name().String()
+		}
+		longName := ""
+		if desc.LongName() != nil {
+			longName = desc.LongName().String()
+		}
 		mediaType := getMediaTypeString(desc.Type())
 
 		// Check if encoder exists for this codec

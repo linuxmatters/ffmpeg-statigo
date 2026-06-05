@@ -96,10 +96,24 @@ func buildParserMap() map[ffmpeg.AVCodecID][]string {
 func buildFormatMap() map[ffmpeg.AVCodecID]*formatDeps {
 	formatMap := make(map[ffmpeg.AVCodecID]*formatDeps)
 
-	// Note: Demuxers don't expose codec info directly via the API
-	// We'll use muxer data and assume demuxers support the same codecs
+	// AVInputFormat exposes no codec mapping, so demuxer support is inferred from
+	// muxers that share a container name with a registered demuxer. A mux-only
+	// format (no matching demuxer) is therefore never listed as a demuxer.
+	demuxerNames := buildDemuxerNameSet()
 
-	// Iterate through muxers
+	addFormat := func(codecID ffmpeg.AVCodecID, name string) {
+		if codecID == ffmpeg.AVCodecIdNone {
+			return
+		}
+		if _, exists := formatMap[codecID]; !exists {
+			formatMap[codecID] = &formatDeps{}
+		}
+		formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
+		if demuxerNames[name] {
+			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
+		}
+	}
+
 	var muxerOpaque unsafe.Pointer
 	for {
 		muxer := ffmpeg.AVMuxerIterate(&muxerOpaque)
@@ -112,38 +126,29 @@ func buildFormatMap() map[ffmpeg.AVCodecID]*formatDeps {
 			name = muxer.Name().String()
 		}
 
-		// Add format for video codec
-		if muxer.VideoCodec() != ffmpeg.AVCodecIdNone {
-			codecID := muxer.VideoCodec()
-			if _, exists := formatMap[codecID]; !exists {
-				formatMap[codecID] = &formatDeps{}
-			}
-			formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
-			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
-		}
-
-		// Add format for audio codec
-		if muxer.AudioCodec() != ffmpeg.AVCodecIdNone {
-			codecID := muxer.AudioCodec()
-			if _, exists := formatMap[codecID]; !exists {
-				formatMap[codecID] = &formatDeps{}
-			}
-			formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
-			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
-		}
-
-		// Add format for subtitle codec
-		if muxer.SubtitleCodec() != ffmpeg.AVCodecIdNone {
-			codecID := muxer.SubtitleCodec()
-			if _, exists := formatMap[codecID]; !exists {
-				formatMap[codecID] = &formatDeps{}
-			}
-			formatMap[codecID].muxers = append(formatMap[codecID].muxers, name)
-			formatMap[codecID].demuxers = append(formatMap[codecID].demuxers, name)
-		}
+		addFormat(muxer.VideoCodec(), name)
+		addFormat(muxer.AudioCodec(), name)
+		addFormat(muxer.SubtitleCodec(), name)
 	}
 
 	return formatMap
+}
+
+func buildDemuxerNameSet() map[string]bool {
+	names := make(map[string]bool)
+
+	var demuxerOpaque unsafe.Pointer
+	for {
+		demuxer := ffmpeg.AVDemuxerIterate(&demuxerOpaque)
+		if demuxer == nil {
+			break
+		}
+		if demuxer.Name() != nil {
+			names[demuxer.Name().String()] = true
+		}
+	}
+
+	return names
 }
 
 func buildBSFMap() map[ffmpeg.AVCodecID][]string {
