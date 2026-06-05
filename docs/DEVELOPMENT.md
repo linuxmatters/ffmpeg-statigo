@@ -200,6 +200,24 @@ All builds go through `just`. Never use `go build` directly—the justfile handl
 | `just generate` | Regenerate Go bindings from headers |
 | `just download-lib` | Download pre-built libraries |
 
+### Pinned build dependencies
+
+The from-source builder downloads ~20 third-party archives (x264, x265, dav1d, openssl, zlib, libvpx, rav1e, and more), then compiles and links them into the shipped `libffmpeg.a`. Each archive is SHA-256 pinned in `internal/builder/digests.go`, keyed by download URL, to close the supply-chain hole of trusting unverified downloads (CWE-494).
+
+How verification fails closed:
+
+- The pin is checked against the final archive bytes for **both** a fresh download and a download-cache hit, so a poisoned cache cannot be silently trusted.
+- A digest mismatch deletes the archive (so a re-run re-downloads rather than reusing poison) and aborts the build.
+- A missing pin — which happens automatically when a library's version or URL is bumped — aborts with an actionable error instead of skipping verification.
+
+Bootstrap or refresh pins (trust-on-first-use), run in a trusted environment:
+
+```sh
+go run ./internal/builder --update-digests
+```
+
+This downloads every enabled library's archive, computes its SHA-256, and prints map entries for `archiveDigests`. Review each printed digest against the upstream-published checksum (openssl, opus, gnu.org and similar publish official values that supersede the seeded ones), then paste the entries into `internal/builder/digests.go` and commit. Platform-gated libraries (e.g. `libiconv`, `vvenc`) are only fetched on their target platform, so run the command on each platform whose archives you need to pin.
+
 ## Project Layout
 
 The root package has three source tiers. The generator skips C symbols it cannot safely express — variadics, fixed-size array parameters, anonymous structs, unions, and function-pointer fields. Every skip is recorded with a reason string and the total is regression-capped by `skipCeiling` in `internal/generator/main.go`. The skip summary also annotates each skipped symbol that has a hand-written binding with a `(manual binding: <Name>)` note, making the covered-but-skipped set directly observable. The hand-written tier covers exactly these gaps.

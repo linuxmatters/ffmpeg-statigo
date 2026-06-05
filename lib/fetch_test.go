@@ -777,7 +777,7 @@ func (oversizedReader) Read(p []byte) (int, error) {
 func TestCopyCapped_RejectsOversizedEntry(t *testing.T) {
 	// Cap enforcement at the boundary extractFile delegates to, without writing
 	// MaxExtractFileSize bytes to disk.
-	err := pathsafe.CopyCapped(io.Discard, oversizedReader{})
+	_, err := pathsafe.CopyCapped(io.Discard, oversizedReader{})
 	if err == nil {
 		t.Fatal("Expected error for oversized entry, got nil")
 	}
@@ -787,43 +787,35 @@ func TestCopyCapped_RejectsOversizedEntry(t *testing.T) {
 }
 
 // =============================================================================
-// Test 2.2: Verify-by-default with opt-out
+// Test 2.2: Unconditional checksum verification
 // =============================================================================
 
 func TestEnsureLibrary_ChecksumFatalByDefault(t *testing.T) {
 	t.Run("missing_checksum_is_fatal", func(t *testing.T) {
-		// No checksum and no opt-out: must abort and name the override.
-		err := checksumError("", "actual123", "ffmpeg-linux-amd64.tar.gz", false)
+		// No checksum: must abort with no override available.
+		err := checksumError("", "actual123", "ffmpeg-linux-amd64.tar.gz")
 		if err == nil {
 			t.Fatal("Expected fatal error for missing checksum, got nil")
-		}
-		if !strings.Contains(err.Error(), "FFMPEG_STATIGO_ALLOW_UNVERIFIED") {
-			t.Errorf("Error should name the override variable, got: %v", err)
 		}
 		if !strings.Contains(err.Error(), "no checksum") {
 			t.Errorf("Error should explain no checksum is available, got: %v", err)
 		}
-	})
-
-	t.Run("opt_out_allows_unverified", func(t *testing.T) {
-		// No checksum but opt-out set: installation proceeds without error.
-		err := checksumError("", "actual123", "ffmpeg-linux-amd64.tar.gz", true)
-		if err != nil {
-			t.Errorf("Expected no error when opt-out set, got: %v", err)
+		if !strings.Contains(err.Error(), "refusing") {
+			t.Errorf("Error should state it refuses to install unverified, got: %v", err)
 		}
 	})
 
 	t.Run("present_checksum_proceeds", func(t *testing.T) {
 		// Matching checksum bypasses every rejection branch.
-		err := checksumError("abc123", "abc123", "ffmpeg-linux-amd64.tar.gz", false)
+		err := checksumError("abc123", "abc123", "ffmpeg-linux-amd64.tar.gz")
 		if err != nil {
 			t.Errorf("Expected no error with matching checksum, got: %v", err)
 		}
 	})
 
 	t.Run("mismatch_is_fatal", func(t *testing.T) {
-		// A mismatch always fails, even with opt-out set.
-		err := checksumError("abc123", "def456", "ffmpeg-linux-amd64.tar.gz", true)
+		// A mismatch always fails.
+		err := checksumError("abc123", "def456", "ffmpeg-linux-amd64.tar.gz")
 		if err == nil {
 			t.Fatal("Expected fatal error for checksum mismatch, got nil")
 		}

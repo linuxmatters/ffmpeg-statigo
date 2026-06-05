@@ -3,11 +3,14 @@ package archiveextract
 import (
 	"archive/tar"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
 )
 
 func TestExtractTar(t *testing.T) {
@@ -125,6 +128,21 @@ func TestExtractTar(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "escapes destination directory") {
 			t.Fatalf("error = %v, want escapes destination directory", err)
+		}
+	})
+
+	t.Run("rejects_excess_entry_count", func(t *testing.T) {
+		destDir := t.TempDir()
+		entries := make([]tarEntry, pathsafe.MaxExtractEntries+1)
+		for i := range entries {
+			entries[i] = tarEntry{name: fmt.Sprintf("dir%d", i), typeflag: tar.TypeDir}
+		}
+		err := ExtractTar(tarStream(t, entries...), TarOptions{DestDir: destDir})
+		if err == nil {
+			t.Fatal("expected entry-count error, got nil")
+		}
+		if !strings.Contains(err.Error(), "entries") {
+			t.Fatalf("error = %v, want entries cap", err)
 		}
 	})
 

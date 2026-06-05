@@ -84,7 +84,7 @@ func TestCopyCapped(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			src := io.LimitReader(zeroReader{}, tt.size)
-			err := CopyCapped(io.Discard, src)
+			n, err := CopyCapped(io.Discard, src)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
@@ -97,7 +97,36 @@ func TestCopyCapped(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+			if n != tt.size {
+				t.Fatalf("bytes written = %d, want %d", n, tt.size)
+			}
 		})
+	}
+}
+
+func TestBudgetEntries(t *testing.T) {
+	var b Budget
+	for i := range MaxExtractEntries {
+		if err := b.AddEntry(); err != nil {
+			t.Fatalf("AddEntry at %d: unexpected error %v", i, err)
+		}
+	}
+	if err := b.AddEntry(); err == nil {
+		t.Fatal("expected entry-count error, got nil")
+	} else if !strings.Contains(err.Error(), "entries") {
+		t.Fatalf("error %q does not contain %q", err.Error(), "entries")
+	}
+}
+
+func TestBudgetBytes(t *testing.T) {
+	var b Budget
+	if err := b.AddBytes(MaxExtractTotalSize); err != nil {
+		t.Fatalf("AddBytes at cap: unexpected error %v", err)
+	}
+	if err := b.AddBytes(1); err == nil {
+		t.Fatal("expected aggregate-byte error, got nil")
+	} else if !strings.Contains(err.Error(), "total bytes") {
+		t.Fatalf("error %q does not contain %q", err.Error(), "total bytes")
 	}
 }
 
