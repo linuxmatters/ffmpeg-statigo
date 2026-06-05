@@ -66,6 +66,14 @@ func (e AVError) Error() string {
 	return fmt.Sprintf("averror %v: %v", e.Code, buf.String())
 }
 
+// Is reports whether target is an AVError with the same Code, so errors.Is
+// matches sentinels like EAgain and AVErrorEOF on the FFmpeg code alone,
+// independent of any other fields AVError may later carry.
+func (e AVError) Is(target error) bool {
+	t, ok := target.(AVError)
+	return ok && t.Code == e.Code
+}
+
 // WrapErr returns a AVError if the code is less than zero, otherwise nil.
 func WrapErr(code int) error {
 	if code >= 0 {
