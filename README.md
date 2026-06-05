@@ -20,7 +20,7 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 - **Generated + curated bindings** - Most of the API is generated directly from FFmpeg headers; a hand-written layer covers symbols the generator cannot express (variadics, fixed-size arrays, anonymous structs, function-pointer bridges)
 - **Preserved documentation** - Original FFmpeg comments in your IDE
 
-*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.26, hardware acceleration, ~85% FFmpeg API coverage, and a 99.5% smaller git history.*
+*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.26, hardware acceleration, ~89% FFmpeg API coverage (see [docs/API-COVERAGE.md](docs/API-COVERAGE.md)), and a 99.5% smaller git history.*
 
 ## Installation
 
