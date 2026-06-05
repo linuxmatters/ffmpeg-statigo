@@ -23,12 +23,13 @@
 // fixed-size array parameters, anonymous structs, and unions. Each skip is
 // recorded with a reason, and the total is regression-capped by skipCeiling in
 // internal/generator/main.go. The curated files cover: registry iterators
-// (iterate.go), UUID types (uuid.go), anonymous-struct accessors (streamgroup.go,
-// fields.go), generic option setter (opt.go), image planes (image.go), audio
-// sample planes (samples.go), software scaling (swscale.go), audio resampling
-// (swresample.go), custom I/O with a cgo.Handle callback bridge (avio.go +
-// avio.c), av_log bridge to slog (log.go + log.c), variadic format shims
-// (log_format.go), and cross-cutting helpers (helpers.go).
+// (iterate.go), UUID types (uuid.go), display-matrix and EXIF-orientation
+// wrappers (display.go), anonymous-struct accessors (streamgroup.go, fields.go),
+// generic option setter (opt.go), image planes (image.go), audio sample planes
+// (samples.go), software scaling (swscale.go), audio resampling (swresample.go),
+// custom I/O with a cgo.Handle callback bridge (avio.go + avio.c), av_log bridge
+// to slog (log.go + log.c), variadic format shims (log_format.go), parse and
+// tag-lookup helpers (parseutils.go), and cross-cutting helpers (helpers.go).
 //
 // # Optional high-level layer
 //

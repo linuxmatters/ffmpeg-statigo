@@ -49,9 +49,10 @@
 
 - **Core:** `ffmpeg.go` contains CGO directives, platform linker flags, and base types (`AVError`/`WrapErr`, `CStr`); `array.go` holds the generic `Array[T]` type and its typed constructors; `arch_guard.go` enforces 64-bit-only at compile time
 - **Generated bindings:** `*.gen.go` files in root directory — constants, enums, struct wrappers, function wrappers, callback typedefs; emitted by `internal/generator/` from FFmpeg headers; never hand-edit
-- **Hand-written bindings:** topic files in the root package for symbols the generator skips (variadics, fixed-size array params, anonymous structs, function-pointer bridges); each skip is recorded with a reason and the total is capped by `skipCeiling` in `internal/generator/main.go`
-  - `iterate.go` — registry iterators (codec/muxer/demuxer/parser/filter/bsf) + protocol enumeration
+- **Hand-written bindings:** topic files in the root package for symbols the generator skips (variadics, fixed-size array params, anonymous structs, function-pointer bridges); each skip is recorded with a reason, the skip summary notes when a skipped symbol has a hand-written binding, and the total is capped by `skipCeiling` in `internal/generator/main.go`
+  - `iterate.go` — registry iterators (codec/muxer/demuxer/parser/filter/bsf) + protocol enumeration + `AVChannelLayoutStandard` standard channel-layout iterator
   - `uuid.go` — `AVUUID` type; `[16]uint8` array params CGO can't pass directly
+  - `display.go` — `av_display_*` display-matrix + `av_exif_*` orientation wrappers; `int32[9]` matrix params CGO can't pass directly (`AVDisplayMatrix` type)
   - `streamgroup.go` — `AVStreamGroupTileGridOffset` accessors for anonymous C struct
   - `opt.go` — `AVOptSetSlice`; Go-slice → C binary option setter
   - `image.go` — `av_image_*` plane/linesize wrappers
@@ -63,8 +64,9 @@
   - `log.go` + `log.c` — `av_log` callback bridge to Go/`slog` via cgo `//export`
   - `log_format.go` — variadic-format shims (`AVLog`, `AVAsprintf`, etc.); CGO can't call C varargs, so these format on the Go side and pass through a fixed `"%s"` C shim
   - `fields.go` — struct-field accessors the generator can't express (quant matrices, `AVFrame.extended_data`, pixel-format descriptor components, etc.)
-  - `helpers.go` — small cross-cutting helpers (`AVRational.String`, `ToAVHWFramesContext`)
+  - `helpers.go` — small cross-cutting helpers (`AVRational.String`, `ToAVHWFramesContext`, `AVRescaleDelta`, `AVSizeMult`)
   - `parsers.go` — `av_ac3_parse_header` / `av_adts_header_parse` / `av_vorbis_parse_frame_flags`; primitive out-param parsers the generator can't classify as in/out
+  - `parseutils.go` — `av_parse_ratio` / `av_parse_video_rate` / `av_codec_get_tag2`; out-param parse and codec-tag-lookup helpers
 - **Headers:** `include/` contains FFmpeg C headers
 - **Libraries:** `lib/<os>_<arch>/` contains platform-specific static libraries (gitignored)
 - **Builder:** `internal/builder/` compiles FFmpeg + 20 dependencies from source

@@ -397,6 +397,11 @@ func getCType(typeName string, goType string) string {
 type SkipEntry struct {
 	Symbol string
 	Reason string
+	// Manual names the hand-written Go binding that already covers this skipped
+	// symbol, or is empty when none was found. It distinguishes a skip that is
+	// genuinely missing a binding from one a topic file in the repo root already
+	// wraps. Populated by enrichManualBindings after a run records every skip.
+	Manual string
 }
 
 // SkipCollector aggregates every `skipped due to ...` decision the generator
@@ -451,7 +456,48 @@ func Gen(i *Module, skips *SkipCollector) *SkipCollector {
 	g.generateStructs()
 	g.generateFuncs()
 
+	g.enrichManualBindings(".")
+
 	return g.skips
+}
+
+// enrichManualBindings annotates each recorded skip with the hand-written Go
+// binding that already covers it, when one exists. dir is the generator's
+// working directory, where the hand-written `package ffmpeg` files sit beside
+// the freshly written `*.gen.go` output.
+//
+// A skip symbol takes one of two shapes (see func.go and struct.go):
+//   - a function skip records the C name, e.g. "av_display_rotation_get"; the
+//     expected binding is convCamel(symbol), matched against top-level funcs.
+//   - a struct-field skip records "GoStructName.c_field_name", e.g.
+//     "AVCodecContext.intra_matrix"; the expected accessor is
+//     convCamel(fieldPart) on that receiver, matched against the type's methods.
+//
+// convCamel depends on g.input.structs, so enrichment runs as a Generator method
+// after Gen has populated the module. A scan failure leaves every Manual field
+// empty, degrading to the prior behaviour rather than aborting the run.
+func (g *Generator) enrichManualBindings(dir string) {
+	mb, err := scanManualBindings(dir)
+	if err != nil {
+		return
+	}
+
+	for i := range g.skips.Entries {
+		e := &g.skips.Entries[i]
+
+		if recv, field, ok := strings.Cut(e.Symbol, "."); ok {
+			method := g.convCamel(field)
+			if mb.hasMethod(recv, method) {
+				e.Manual = method
+			}
+			continue
+		}
+
+		fn := g.convCamel(e.Symbol)
+		if mb.hasFunc(fn) {
+			e.Manual = fn
+		}
+	}
 }
 
 func newFile() *jen.File {
