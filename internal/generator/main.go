@@ -46,7 +46,7 @@ import (
 const skipCeiling = 245
 
 func main() {
-	skips, err := run(os.Args[1:], os.Stderr)
+	skips, err := run(os.Args[1:])
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return // usage already written to stderr by the flag package
@@ -81,9 +81,9 @@ func enforceSkipCeiling(total, ceiling int) error {
 // is testable without invoking the package binary. summaryOut is reserved for
 // callers that want non-stderr toolchain logging; today only the verbose flag
 // touches it via log.SetOutput.
-func run(args []string, summaryOut io.Writer) (*SkipCollector, error) {
-	_ = summaryOut
-
+// It exists as a separate function so the whole run path is testable without
+// invoking the package binary.
+func run(args []string) (*SkipCollector, error) {
 	fs := flag.NewFlagSet("generator", flag.ContinueOnError)
 	verbose := fs.Bool("v", false, "verbose trace logging")
 	if err := fs.Parse(args); err != nil {
