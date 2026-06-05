@@ -63,6 +63,7 @@
   - `log_format.go` — variadic-format shims (`AVLog`, `AVAsprintf`, etc.); CGO can't call C varargs, so these format on the Go side and pass through a fixed `"%s"` C shim
   - `fields.go` — struct-field accessors the generator can't express (quant matrices, `AVFrame.extended_data`, pixel-format descriptor components, etc.)
   - `helpers.go` — small cross-cutting helpers (`AVRational.String`, `ToAVHWFramesContext`)
+  - `parsers.go` — `av_ac3_parse_header` / `av_adts_header_parse` / `av_vorbis_parse_frame_flags`; primitive out-param parsers the generator can't classify as in/out
 - **Headers:** `include/` contains FFmpeg C headers
 - **Libraries:** `lib/<os>_<arch>/` contains platform-specific static libraries (gitignored)
 - **Builder:** `internal/builder/` compiles FFmpeg + 20 dependencies from source
