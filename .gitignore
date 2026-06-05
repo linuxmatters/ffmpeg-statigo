@@ -13,6 +13,7 @@
 
 # Example binaries
 examples/asciiplayer/asciiplayer
+examples/hwdecode/hwdecode
 examples/introspect/introspect
 examples/metadata/metadata
 examples/transcode/transcode

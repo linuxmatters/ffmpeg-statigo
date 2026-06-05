@@ -117,6 +117,10 @@ func (d *Decoder) Close() error {
 	}
 
 	if d.ctx != nil {
+		// Unregister any get_format callback before freeing: the registry is
+		// keyed by context pointer, so a stale entry would mis-fire on a future
+		// context reusing this address. Idempotent no-op for software decoders.
+		d.ctx.ClearGetFormat()
 		ffmpeg.AVCodecFreeContext(&d.ctx)
 		d.ctx = nil
 	}
