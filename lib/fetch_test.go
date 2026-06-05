@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -123,6 +124,64 @@ func TestFindViaAPI_ReleaseSorting(t *testing.T) {
 		// Document that this is lexicographic, not semantic versioning
 		if highest != "lib-8.1.1.2" {
 			t.Logf("Note: Current sorting is lexicographic, not semver-aware")
+		}
+	})
+}
+
+func TestNewGitHubAPIRequest(t *testing.T) {
+	const apiURL = "https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases"
+
+	t.Run("sets_required_github_headers", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		req, err := newGitHubAPIRequest(apiURL)
+		if err != nil {
+			t.Fatalf("newGitHubAPIRequest returned error: %v", err)
+		}
+
+		if req.Method != http.MethodGet {
+			t.Errorf("Expected method %s, got %s", http.MethodGet, req.Method)
+		}
+		if req.Header.Get("Accept") != "application/vnd.github+json" {
+			t.Errorf("Unexpected Accept header: %q", req.Header.Get("Accept"))
+		}
+		if req.Header.Get("User-Agent") != "ffmpeg-statigo" {
+			t.Errorf("Unexpected User-Agent header: %q", req.Header.Get("User-Agent"))
+		}
+		if req.Header.Get("X-GitHub-Api-Version") != "2022-11-28" {
+			t.Errorf("Unexpected API version header: %q", req.Header.Get("X-GitHub-Api-Version"))
+		}
+		if req.Header.Get("Authorization") != "" {
+			t.Error("Authorization header should be empty when no token is configured")
+		}
+	})
+
+	t.Run("uses_github_token_for_authorization", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "  actions-token  ")
+		t.Setenv("GH_TOKEN", "gh-token")
+
+		req, err := newGitHubAPIRequest(apiURL)
+		if err != nil {
+			t.Fatalf("newGitHubAPIRequest returned error: %v", err)
+		}
+
+		if got := req.Header.Get("Authorization"); got != "Bearer actions-token" {
+			t.Errorf("Expected GITHUB_TOKEN authorization, got %q", got)
+		}
+	})
+
+	t.Run("falls_back_to_gh_token", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "gh-token")
+
+		req, err := newGitHubAPIRequest(apiURL)
+		if err != nil {
+			t.Fatalf("newGitHubAPIRequest returned error: %v", err)
+		}
+
+		if got := req.Header.Get("Authorization"); got != "Bearer gh-token" {
+			t.Errorf("Expected GH_TOKEN authorization, got %q", got)
 		}
 	})
 }
