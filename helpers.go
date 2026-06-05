@@ -11,7 +11,11 @@ import (
 )
 
 func (s *AVRational) String() string {
-	return fmt.Sprintf("%v/%v (%v)", s.Num(), s.Den(), s.Num()/s.Den())
+	num, den := s.Num(), s.Den()
+	if den == 0 {
+		return fmt.Sprintf("%v/%v (undefined)", num, den)
+	}
+	return fmt.Sprintf("%v/%v (%v)", num, den, num/den)
 }
 
 // ToAVHWFramesContext converts an unsafe.Pointer (typically from AVBufferRef.Data())

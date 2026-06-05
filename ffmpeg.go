@@ -80,6 +80,9 @@ func WrapErr(code int) error {
 type CStr struct {
 	ptr      *C.char
 	dontFree bool
+	// avFree routes Free through av_free instead of the C library free, for
+	// strings allocated by FFmpeg's allocator (e.g. av_asprintf).
+	avFree bool
 }
 
 // AllocCStr allocates an empty string with the given length. The buffer will be initialised to 0.
@@ -172,7 +175,11 @@ func (s *CStr) Free() {
 		return
 	}
 
-	C.free(unsafe.Pointer(s.ptr))
+	if s.avFree {
+		C.av_free(unsafe.Pointer(s.ptr))
+	} else {
+		C.free(unsafe.Pointer(s.ptr))
+	}
 	s.ptr = nil
 }
 

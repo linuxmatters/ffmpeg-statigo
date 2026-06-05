@@ -22,7 +22,9 @@ func TestAVLogPassesFormatDirectivesVerbatim(t *testing.T) {
 		gotCall bool
 	)
 
+	prevLevel, _ := AVLogGetLevel()
 	AVLogSetLevel(AVLogTrace)
+	defer AVLogSetLevel(prevLevel)
 
 	AVLogSetCallback(func(_ *LogCtx, _ int, msg string) {
 		mu.Lock()

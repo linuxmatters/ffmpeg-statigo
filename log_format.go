@@ -91,7 +91,12 @@ func AVAsprintf(msg string) *CStr {
 	cmsg := C.CString(msg)
 	defer C.free(unsafe.Pointer(cmsg))
 
-	return wrapCStr(C.ffg_av_asprintf_s(cmsg))
+	cs := wrapCStr(C.ffg_av_asprintf_s(cmsg))
+	if cs != nil {
+		// av_asprintf allocates with FFmpeg's allocator, so Free must use av_free.
+		cs.avFree = true
+	}
+	return cs
 }
 
 // AVStrlcatf wraps av_strlcatf. It appends msg to the C string in dst, never

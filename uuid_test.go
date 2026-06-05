@@ -351,8 +351,8 @@ func TestUUID_ParseErrorPaths(t *testing.T) {
 			ret, err := AVUuidParse(cStr, &uuid)
 			cStr.Free()
 
-			if ret >= 0 && ret != 0 {
-				t.Errorf("Error code should be negative or zero, got %d for %q", ret, testStr)
+			if ret >= 0 {
+				t.Errorf("AVUuidParse should fail with a negative error code, got %d for %q", ret, testStr)
 			}
 			if ret < 0 && err == nil {
 				t.Errorf("Negative return code should have non-nil error, got nil for %q", testStr)

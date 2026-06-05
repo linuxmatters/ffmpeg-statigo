@@ -113,7 +113,7 @@ func TestAVCodecIterate_FindsExpectedCodecs(t *testing.T) {
 		found := slices.Contains(validTypes, codecType)
 
 		if !found && codecType != AVMediaTypeUnknown {
-			t.Logf("Codec %s has type %d", name.String(), codecType)
+			t.Errorf("Codec %s has invalid media type %d", name.String(), codecType)
 		}
 	})
 }
