@@ -74,6 +74,12 @@ func (s samplePointerArray) free() {
 	}
 }
 
+// constPtr returns the plane-pointer array typed as const uint8_t *const * for
+// swr_convert's input parameter.
+func (s samplePointerArray) constPtr() **C.uint8_t {
+	return s.ptr
+}
+
 // AVSamplesAlloc allocates a samples buffer for nbSamples samples and fills the
 // plane pointers and linesize accordingly. align of 0 selects the default
 // alignment, 1 selects no alignment.
