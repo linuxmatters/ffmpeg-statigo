@@ -22,16 +22,29 @@ var failLog = log.New(os.Stderr, "", 0)
 var AVLibPath, _ = filepath.Abs("include")
 
 var files = []string{
+	"libavcodec/ac3_parser.h",
+	"libavcodec/adts_parser.h",
 	"libavcodec/avcodec.h",
+	"libavcodec/avdct.h",
 	"libavcodec/bsf.h",
 	"libavcodec/codec.h",
 	"libavcodec/codec_desc.h",
 	"libavcodec/codec_id.h",
 	"libavcodec/codec_par.h",
+	////"libavcodec/d3d11va.h", // needs <d3d11.h> (Windows SDK)
 	"libavcodec/defs.h",
+	"libavcodec/dirac.h",
+	"libavcodec/dv_profile.h",
+	////"libavcodec/dxva2.h", // needs <d3d9.h>/<dxva2api.h> (Windows SDK)
+	////"libavcodec/jni.h", // Android-only symbols, link risk on Linux/macOS static lib
+	////"libavcodec/mediacodec.h", // Android-only symbols, link risk
 	"libavcodec/packet.h",
+	////"libavcodec/qsv.h", // needs <mfxvideo.h> (Intel Media SDK)
+	////"libavcodec/vdpau.h", // needs <vdpau/vdpau.h>
 	"libavcodec/version.h",
 	"libavcodec/version_major.h",
+	////"libavcodec/videotoolbox.h", // needs <VideoToolbox/VideoToolbox.h> (Apple)
+	"libavcodec/vorbis_parser.h",
 	"libavdevice/avdevice.h",
 	"libavdevice/version.h",
 	"libavdevice/version_major.h",
@@ -87,8 +100,17 @@ var files = []string{
 	"libavutil/hdr_dynamic_vivid_metadata.h",
 	"libavutil/hmac.h",
 	"libavutil/hwcontext.h",
+	////"libavutil/hwcontext_amf.h", // needs <AMF/...> SDK
 	////"libavutil/hwcontext_cuda.h",
+	////"libavutil/hwcontext_d3d11va.h", // needs <d3d11.h> (Windows SDK)
+	////"libavutil/hwcontext_d3d12va.h", // needs <d3d12.h> (Windows SDK)
+	////"libavutil/hwcontext_dxva2.h", // needs <d3d9.h>/<dxva2api.h> (Windows SDK)
+	////"libavutil/hwcontext_mediacodec.h", // Android-only, link risk
+	////"libavutil/hwcontext_oh.h", // OpenHarmony-only, link risk
+	////"libavutil/hwcontext_opencl.h", // needs <CL/cl.h>
 	////"libavutil/hwcontext_qsv.h",
+	////"libavutil/hwcontext_vaapi.h", // needs <va/va.h>
+	////"libavutil/hwcontext_vdpau.h", // needs <vdpau/vdpau.h>
 	////"libavutil/hwcontext_videotoolbox.h",
 	////"libavutil/hwcontext_vulkan.h",
 	"libavutil/iamf.h",
@@ -101,6 +123,7 @@ var files = []string{
 	"libavutil/macros.h",
 	"libavutil/mastering_display_metadata.h",
 	"libavutil/mathematics.h",
+	"libavutil/md5.h",
 	"libavutil/mem.h",
 	"libavutil/motion_vector.h",
 	"libavutil/murmur3.h",

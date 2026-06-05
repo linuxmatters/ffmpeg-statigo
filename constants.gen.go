@@ -2,16 +2,22 @@
 
 package ffmpeg
 
+// #include <libavcodec/ac3_parser.h>
+// #include <libavcodec/adts_parser.h>
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/avdct.h>
 // #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
 // #include <libavcodec/codec_par.h>
 // #include <libavcodec/defs.h>
+// #include <libavcodec/dirac.h>
+// #include <libavcodec/dv_profile.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavcodec/vorbis_parser.h>
 // #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
@@ -75,6 +81,7 @@ package ffmpeg
 // #include <libavutil/macros.h>
 // #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
+// #include <libavutil/md5.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/motion_vector.h>
 // #include <libavutil/murmur3.h>
@@ -114,6 +121,9 @@ package ffmpeg
 // #include <libswscale/version_major.h>
 // #include <libswscale/swscale.h>
 import "C"
+
+// AVAacAdtsHeaderSize wraps AV_AAC_ADTS_HEADER_SIZE.
+const AVAacAdtsHeaderSize = C.AV_AAC_ADTS_HEADER_SIZE
 
 // AVCodecFlagUnaligned wraps AV_CODEC_FLAG_UNALIGNED.
 const AVCodecFlagUnaligned = C.AV_CODEC_FLAG_UNALIGNED
@@ -1018,6 +1028,12 @@ const AVProfileApv40010 = C.AV_PROFILE_APV_400_10
 // AVLevelUnknown wraps AV_LEVEL_UNKNOWN.
 const AVLevelUnknown = C.AV_LEVEL_UNKNOWN
 
+// MaxDwtLevels wraps MAX_DWT_LEVELS.
+const MaxDwtLevels = C.MAX_DWT_LEVELS
+
+// DvProfileBytes wraps DV_PROFILE_BYTES.
+const DvProfileBytes = C.DV_PROFILE_BYTES
+
 // AVPktFlagKey wraps AV_PKT_FLAG_KEY.
 const AVPktFlagKey = C.AV_PKT_FLAG_KEY
 
@@ -1080,6 +1096,15 @@ const FFCodecSonicEnc = C.FF_CODEC_SONIC_ENC
 
 // FFCodecSonicDec wraps FF_CODEC_SONIC_DEC.
 const FFCodecSonicDec = C.FF_CODEC_SONIC_DEC
+
+// VorbisFlagHeader wraps VORBIS_FLAG_HEADER.
+const VorbisFlagHeader = C.VORBIS_FLAG_HEADER
+
+// VorbisFlagComment wraps VORBIS_FLAG_COMMENT.
+const VorbisFlagComment = C.VORBIS_FLAG_COMMENT
+
+// VorbisFlagSetup wraps VORBIS_FLAG_SETUP.
+const VorbisFlagSetup = C.VORBIS_FLAG_SETUP
 
 // LIBAVDeviceVersionMinor wraps LIBAVDEVICE_VERSION_MINOR.
 const LIBAVDeviceVersionMinor = C.LIBAVDEVICE_VERSION_MINOR

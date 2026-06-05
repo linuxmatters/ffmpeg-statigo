@@ -4,16 +4,22 @@ package ffmpeg
 
 import "unsafe"
 
+// #include <libavcodec/ac3_parser.h>
+// #include <libavcodec/adts_parser.h>
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/avdct.h>
 // #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
 // #include <libavcodec/codec_par.h>
 // #include <libavcodec/defs.h>
+// #include <libavcodec/dirac.h>
+// #include <libavcodec/dv_profile.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavcodec/vorbis_parser.h>
 // #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
@@ -77,6 +83,7 @@ import "unsafe"
 // #include <libavutil/macros.h>
 // #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
+// #include <libavutil/md5.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/motion_vector.h>
 // #include <libavutil/murmur3.h>
@@ -116,6 +123,14 @@ import "unsafe"
 // #include <libswscale/version_major.h>
 // #include <libswscale/swscale.h>
 import "C"
+
+// --- Function av_ac3_parse_header ---
+
+// av_ac3_parse_header skipped due to frameSize (non-output primitive pointer)
+
+// --- Function av_adts_header_parse ---
+
+// av_adts_header_parse skipped due to samples (non-output primitive pointer)
 
 // --- Function avcodec_version ---
 
@@ -1091,6 +1106,49 @@ func AVCodecIsOpen(s *AVCodecContext) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
+// --- Function avcodec_dct_alloc ---
+
+// AVCodecDctAlloc wraps avcodec_dct_alloc.
+/*
+  Allocates a AVDCT context.
+  This needs to be initialized with avcodec_dct_init() after optionally
+  configuring it with AVOptions.
+
+  To free it use av_free()
+*/
+func AVCodecDctAlloc() *AVDCT {
+	ret := C.avcodec_dct_alloc()
+	var retMapped *AVDCT
+	if ret != nil {
+		retMapped = &AVDCT{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function avcodec_dct_init ---
+
+// AVCodecDctInit wraps avcodec_dct_init.
+func AVCodecDctInit(param0 *AVDCT) (int, error) {
+	var tmpparam0 *C.AVDCT
+	if param0 != nil {
+		tmpparam0 = param0.ptr
+	}
+	ret := C.avcodec_dct_init(tmpparam0)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function avcodec_dct_get_class ---
+
+// AVCodecDctGetClass wraps avcodec_dct_get_class.
+func AVCodecDctGetClass() *AVClass {
+	ret := C.avcodec_dct_get_class()
+	var retMapped *AVClass
+	if ret != nil {
+		retMapped = &AVClass{ptr: ret}
+	}
+	return retMapped
+}
+
 // --- Function av_bsf_get_by_name ---
 
 // AVBsfGetByName wraps av_bsf_get_by_name.
@@ -1984,6 +2042,97 @@ func AVXiphlacing(s unsafe.Pointer, v uint) uint {
 	return uint(ret)
 }
 
+// --- Function av_dirac_parse_sequence_header ---
+
+// AVDiracParseSequenceHeader wraps av_dirac_parse_sequence_header.
+/*
+  Parse a Dirac sequence header.
+
+  @param dsh this function will allocate and fill an AVDiracSeqHeader struct
+             and write it into this pointer. The caller must free it with
+             av_free().
+  @param buf the data buffer
+  @param buf_size the size of the data buffer in bytes
+  @param log_ctx if non-NULL, this function will log errors here
+  @return 0 on success, a negative AVERROR code on failure
+*/
+func AVDiracParseSequenceHeader(dsh **AVDiracSeqHeader, buf unsafe.Pointer, bufSize uint64, logCtx unsafe.Pointer) (int, error) {
+	var ptrdsh **C.AVDiracSeqHeader
+	var tmpdsh *C.AVDiracSeqHeader
+	var oldTmpdsh *C.AVDiracSeqHeader
+	if dsh != nil {
+		innerdsh := *dsh
+		if innerdsh != nil {
+			tmpdsh = innerdsh.ptr
+			oldTmpdsh = tmpdsh
+		}
+		ptrdsh = &tmpdsh
+	}
+	ret := C.av_dirac_parse_sequence_header(ptrdsh, (*C.uint8_t)(buf), C.size_t(bufSize), logCtx)
+	if tmpdsh != oldTmpdsh && dsh != nil {
+		if tmpdsh != nil {
+			*dsh = &AVDiracSeqHeader{ptr: tmpdsh}
+		} else {
+			*dsh = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_dv_frame_profile ---
+
+// AVDvFrameProfile wraps av_dv_frame_profile.
+/*
+  Get a DV profile for the provided compressed frame.
+
+  @param sys the profile used for the previous frame, may be NULL
+  @param frame the compressed data buffer
+  @param buf_size size of the buffer in bytes
+  @return the DV profile for the supplied data or NULL on failure
+*/
+func AVDvFrameProfile(sys *AVDVProfile, frame unsafe.Pointer, bufSize uint) *AVDVProfile {
+	var tmpsys *C.AVDVProfile
+	if sys != nil {
+		tmpsys = sys.ptr
+	}
+	ret := C.av_dv_frame_profile(tmpsys, (*C.uint8_t)(frame), C.uint(bufSize))
+	var retMapped *AVDVProfile
+	if ret != nil {
+		retMapped = &AVDVProfile{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dv_codec_profile ---
+
+// AVDvCodecProfile wraps av_dv_codec_profile.
+//
+//	Get a DV profile for the provided stream parameters.
+func AVDvCodecProfile(width int, height int, pixFmt AVPixelFormat) *AVDVProfile {
+	ret := C.av_dv_codec_profile(C.int(width), C.int(height), C.enum_AVPixelFormat(pixFmt))
+	var retMapped *AVDVProfile
+	if ret != nil {
+		retMapped = &AVDVProfile{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_dv_codec_profile2 ---
+
+// AVDvCodecProfile2 wraps av_dv_codec_profile2.
+/*
+  Get a DV profile for the provided stream parameters.
+  The frame rate is used as a best-effort parameter.
+*/
+func AVDvCodecProfile2(width int, height int, pixFmt AVPixelFormat, frameRate *AVRational) *AVDVProfile {
+	ret := C.av_dv_codec_profile2(C.int(width), C.int(height), C.enum_AVPixelFormat(pixFmt), frameRate.value)
+	var retMapped *AVDVProfile
+	if ret != nil {
+		retMapped = &AVDVProfile{ptr: ret}
+	}
+	return retMapped
+}
+
 // --- Function av_packet_side_data_new ---
 
 // AVPacketSideDataNew wraps av_packet_side_data_new.
@@ -2737,6 +2886,81 @@ func AVContainerFifoAllocAVPacket(flags uint) *AVContainerFifo {
 		retMapped = &AVContainerFifo{ptr: ret}
 	}
 	return retMapped
+}
+
+// --- Function av_vorbis_parse_init ---
+
+// AVVorbisParseInit wraps av_vorbis_parse_init.
+//
+//	Allocate and initialize the Vorbis parser using headers in the extradata.
+func AVVorbisParseInit(extradata unsafe.Pointer, extradataSize int) *AVVorbisParseContext {
+	ret := C.av_vorbis_parse_init((*C.uint8_t)(extradata), C.int(extradataSize))
+	var retMapped *AVVorbisParseContext
+	if ret != nil {
+		retMapped = &AVVorbisParseContext{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_vorbis_parse_free ---
+
+// AVVorbisParseFree wraps av_vorbis_parse_free.
+//
+//	Free the parser and everything associated with it.
+func AVVorbisParseFree(s **AVVorbisParseContext) {
+	var ptrs **C.AVVorbisParseContext
+	var tmps *C.AVVorbisParseContext
+	var oldTmps *C.AVVorbisParseContext
+	if s != nil {
+		inners := *s
+		if inners != nil {
+			tmps = inners.ptr
+			oldTmps = tmps
+		}
+		ptrs = &tmps
+	}
+	C.av_vorbis_parse_free(ptrs)
+	if tmps != oldTmps && s != nil {
+		if tmps != nil {
+			*s = &AVVorbisParseContext{ptr: tmps}
+		} else {
+			*s = nil
+		}
+	}
+}
+
+// --- Function av_vorbis_parse_frame_flags ---
+
+// av_vorbis_parse_frame_flags skipped due to flags (non-output primitive pointer)
+
+// --- Function av_vorbis_parse_frame ---
+
+// AVVorbisParseFrame wraps av_vorbis_parse_frame.
+/*
+  Get the duration for a Vorbis packet.
+
+  @param s        Vorbis parser context
+  @param buf      buffer containing a Vorbis frame
+  @param buf_size size of the buffer
+*/
+func AVVorbisParseFrame(s *AVVorbisParseContext, buf unsafe.Pointer, bufSize int) (int, error) {
+	var tmps *C.AVVorbisParseContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.av_vorbis_parse_frame(tmps, (*C.uint8_t)(buf), C.int(bufSize))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_vorbis_parse_reset ---
+
+// AVVorbisParseReset wraps av_vorbis_parse_reset.
+func AVVorbisParseReset(s *AVVorbisParseContext) {
+	var tmps *C.AVVorbisParseContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	C.av_vorbis_parse_reset(tmps)
 }
 
 // --- Function avdevice_version ---
@@ -14955,6 +15179,85 @@ func AVAddStable(tsTb *AVRational, ts int64, incTb *AVRational, inc int64) int64
 func AVBesselI0(x float64) float64 {
 	ret := C.av_bessel_i0(C.double(x))
 	return float64(ret)
+}
+
+// --- Function av_md5_alloc ---
+
+// AVMd5Alloc wraps av_md5_alloc.
+//
+//	Allocate an AVMD5 context.
+func AVMd5Alloc() *AVMD5 {
+	ret := C.av_md5_alloc()
+	var retMapped *AVMD5
+	if ret != nil {
+		retMapped = &AVMD5{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_md5_init ---
+
+// AVMd5Init wraps av_md5_init.
+/*
+  Initialize MD5 hashing.
+
+  @param ctx pointer to the function context (of size av_md5_size)
+*/
+func AVMd5Init(ctx *AVMD5) {
+	var tmpctx *C.struct_AVMD5
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_md5_init(tmpctx)
+}
+
+// --- Function av_md5_update ---
+
+// AVMd5Update wraps av_md5_update.
+/*
+  Update hash value.
+
+  @param ctx hash function context
+  @param src input data to update hash with
+  @param len input data length
+*/
+func AVMd5Update(ctx *AVMD5, src unsafe.Pointer, len uint64) {
+	var tmpctx *C.struct_AVMD5
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_md5_update(tmpctx, (*C.uint8_t)(src), C.size_t(len))
+}
+
+// --- Function av_md5_final ---
+
+// AVMd5Final wraps av_md5_final.
+/*
+  Finish hashing and output digest value.
+
+  @param ctx hash function context
+  @param dst buffer where output digest value is stored
+*/
+func AVMd5Final(ctx *AVMD5, dst unsafe.Pointer) {
+	var tmpctx *C.struct_AVMD5
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	C.av_md5_final(tmpctx, (*C.uint8_t)(dst))
+}
+
+// --- Function av_md5_sum ---
+
+// AVMd5Sum wraps av_md5_sum.
+/*
+  Hash an array of data.
+
+  @param dst The output buffer to write the digest into
+  @param src The data to hash
+  @param len The length of the data, in bytes
+*/
+func AVMd5Sum(dst unsafe.Pointer, src unsafe.Pointer, len uint64) {
+	C.av_md5_sum((*C.uint8_t)(dst), (*C.uint8_t)(src), C.size_t(len))
 }
 
 // --- Function av_malloc ---

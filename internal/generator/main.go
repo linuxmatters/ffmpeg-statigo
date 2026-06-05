@@ -27,7 +27,12 @@ import (
 // Bumping this constant is a curation decision. A legitimate FFmpeg upgrade
 // that introduces new unemittable symbols requires an intentional bump
 // alongside the header update; do not raise it to silence a regression.
-const skipCeiling = 231
+//
+// Bumped 231 -> 239 for the Tier 1 header promotion (ac3_parser, adts_parser,
+// avdct, dirac, dv_profile, vorbis_parser, md5): the newly bound headers carry
+// a handful of per-symbol unemittable shapes. This is an intentional curation
+// decision accompanying the allowlist expansion, not silencing a regression.
+const skipCeiling = 239
 
 func main() {
 	skips, err := run(os.Args[1:], os.Stderr)

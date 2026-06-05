@@ -4,16 +4,22 @@ package ffmpeg
 
 import "unsafe"
 
+// #include <libavcodec/ac3_parser.h>
+// #include <libavcodec/adts_parser.h>
 // #include <libavcodec/avcodec.h>
+// #include <libavcodec/avdct.h>
 // #include <libavcodec/bsf.h>
 // #include <libavcodec/codec.h>
 // #include <libavcodec/codec_desc.h>
 // #include <libavcodec/codec_id.h>
 // #include <libavcodec/codec_par.h>
 // #include <libavcodec/defs.h>
+// #include <libavcodec/dirac.h>
+// #include <libavcodec/dv_profile.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
+// #include <libavcodec/vorbis_parser.h>
 // #include <libavdevice/avdevice.h>
 // #include <libavdevice/version.h>
 // #include <libavdevice/version_major.h>
@@ -77,6 +83,7 @@ import "unsafe"
 // #include <libavutil/macros.h>
 // #include <libavutil/mastering_display_metadata.h>
 // #include <libavutil/mathematics.h>
+// #include <libavutil/md5.h>
 // #include <libavutil/mem.h>
 // #include <libavutil/motion_vector.h>
 // #include <libavutil/murmur3.h>
@@ -1787,6 +1794,80 @@ const (
 	//
 	//	Not part of ABI
 	AVAudioServiceTypeNb AVAudioServiceType = C.AV_AUDIO_SERVICE_TYPE_NB
+)
+
+// --- Enum DiracParseCodes ---
+
+// DiracParseCodes wraps DiracParseCodes.
+/*
+  Parse code values:
+
+  Dirac Specification ->
+  9.6.1  Table 9.1
+
+  VC-2 Specification  ->
+  10.4.1 Table 10.1
+*/
+type DiracParseCodes C.enum_DiracParseCodes
+
+const SizeOfDiracParseCodes = C.sizeof_enum_DiracParseCodes
+
+func ToDiracParseCodesArray(ptr unsafe.Pointer) *Array[DiracParseCodes] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[DiracParseCodes]{
+		elemSize: SizeOfDiracParseCodes,
+		loadPtr: func(pointer unsafe.Pointer) DiracParseCodes {
+			ptr := (*DiracParseCodes)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value DiracParseCodes) {
+			ptr := (*DiracParseCodes)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocDiracParseCodesArray(size uint64) *Array[DiracParseCodes] {
+	return ToDiracParseCodesArray(AVCalloc(size, SizeOfDiracParseCodes))
+}
+
+const (
+	// DiracPcodeSeqHeader wraps DIRAC_PCODE_SEQ_HEADER.
+	DiracPcodeSeqHeader DiracParseCodes = C.DIRAC_PCODE_SEQ_HEADER
+	// DiracPcodeEndSeq wraps DIRAC_PCODE_END_SEQ.
+	DiracPcodeEndSeq DiracParseCodes = C.DIRAC_PCODE_END_SEQ
+	// DiracPcodeAux wraps DIRAC_PCODE_AUX.
+	DiracPcodeAux DiracParseCodes = C.DIRAC_PCODE_AUX
+	// DiracPcodePad wraps DIRAC_PCODE_PAD.
+	DiracPcodePad DiracParseCodes = C.DIRAC_PCODE_PAD
+	// DiracPcodePictureCoded wraps DIRAC_PCODE_PICTURE_CODED.
+	DiracPcodePictureCoded DiracParseCodes = C.DIRAC_PCODE_PICTURE_CODED
+	// DiracPcodePictureRaw wraps DIRAC_PCODE_PICTURE_RAW.
+	DiracPcodePictureRaw DiracParseCodes = C.DIRAC_PCODE_PICTURE_RAW
+	// DiracPcodePictureLowDel wraps DIRAC_PCODE_PICTURE_LOW_DEL.
+	DiracPcodePictureLowDel DiracParseCodes = C.DIRAC_PCODE_PICTURE_LOW_DEL
+	// DiracPcodePictureHq wraps DIRAC_PCODE_PICTURE_HQ.
+	DiracPcodePictureHq DiracParseCodes = C.DIRAC_PCODE_PICTURE_HQ
+	// DiracPcodeInterNorefCo1 wraps DIRAC_PCODE_INTER_NOREF_CO1.
+	DiracPcodeInterNorefCo1 DiracParseCodes = C.DIRAC_PCODE_INTER_NOREF_CO1
+	// DiracPcodeInterNorefCo2 wraps DIRAC_PCODE_INTER_NOREF_CO2.
+	DiracPcodeInterNorefCo2 DiracParseCodes = C.DIRAC_PCODE_INTER_NOREF_CO2
+	// DiracPcodeInterRefCo1 wraps DIRAC_PCODE_INTER_REF_CO1.
+	DiracPcodeInterRefCo1 DiracParseCodes = C.DIRAC_PCODE_INTER_REF_CO1
+	// DiracPcodeInterRefCo2 wraps DIRAC_PCODE_INTER_REF_CO2.
+	DiracPcodeInterRefCo2 DiracParseCodes = C.DIRAC_PCODE_INTER_REF_CO2
+	// DiracPcodeIntraRefCo wraps DIRAC_PCODE_INTRA_REF_CO.
+	DiracPcodeIntraRefCo DiracParseCodes = C.DIRAC_PCODE_INTRA_REF_CO
+	// DiracPcodeIntraRefRaw wraps DIRAC_PCODE_INTRA_REF_RAW.
+	DiracPcodeIntraRefRaw DiracParseCodes = C.DIRAC_PCODE_INTRA_REF_RAW
+	// DiracPcodeIntraRefPict wraps DIRAC_PCODE_INTRA_REF_PICT.
+	DiracPcodeIntraRefPict DiracParseCodes = C.DIRAC_PCODE_INTRA_REF_PICT
+	// DiracPcodeMagic wraps DIRAC_PCODE_MAGIC.
+	DiracPcodeMagic DiracParseCodes = C.DIRAC_PCODE_MAGIC
 )
 
 // --- Enum AVPacketSideDataType ---
