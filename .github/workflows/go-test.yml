@@ -104,27 +104,41 @@ jobs:
           version: v2.12.2
           args: . ./av/...
 
-      # The generator creates Go bindings from FFmpeg headers using libclang.
-      # It's only needed during development when FFmpeg is updated.
-      # bootstrap compiles against its vendored clang-c headers and links
-      # libclang-20; see the include-path note in the install step above.
-      - name: Run generator (optional - for development only)
+      # Regenerate the Go bindings from FFmpeg headers via libclang. bootstrap
+      # compiles against its vendored clang-c headers and links libclang-20
+      # (see the include-path note in the install step above).
+      #
+      # Gated on linux/amd64 only — the canonical platform the committed
+      # *.gen.go are generated on. Other legs run it for visibility but are not
+      # gated: libclang output varies across platforms (e.g. linux/arm64), so
+      # drift or a toolchain hiccup there must not fail the build.
+      - name: Run generator (regeneration gate on linux/amd64)
+        env:
+          IS_GATE: ${{ matrix.os == 'linux' && matrix.arch == 'amd64' }}
         run: |
           echo "::notice::Generator compiles against bootstrap's vendored clang-c headers, linked against libclang-20"
-          echo "Running generator with environment:"
-          echo "CGO_LDFLAGS=$CGO_LDFLAGS"
-          go run ./internal/generator 2>&1 | grep -v "cgo-gcc-prolog\|deprecated" || true
-        continue-on-error: true
+          if go run ./internal/generator > generator.log 2>&1; then
+            grep -v "cgo-gcc-prolog\|deprecated" generator.log || true
+          else
+            grep -v "cgo-gcc-prolog\|deprecated" generator.log || true
+            if [ "$IS_GATE" = "true" ]; then
+              echo "::error::generator failed to compile or run on linux/amd64"
+              exit 1
+            fi
+            echo "::warning title=Generator failed on ${{ matrix.os }}/${{ matrix.arch }}::non-gated platform; continuing."
+          fi
 
       - name: Check for generated code differences
+        env:
+          IS_GATE: ${{ matrix.os == 'linux' && matrix.arch == 'amd64' }}
         run: |
-          if ! git diff --quiet -- ./*.gen.go; then
-            echo "::notice title=Generated Code Diff on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ from committed version. This may be platform-specific behavior."
-            git diff -- ./*.gen.go > /tmp/generator-diff.txt
-            echo "::group::Generator Diff"
-            cat /tmp/generator-diff.txt
-            echo "::endgroup::"
-          else
+          if git diff --quiet -- ./*.gen.go; then
             echo "::notice title=Generated Code Match on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings match committed version."
+          elif [ "$IS_GATE" = "true" ]; then
+            echo "::error title=Generated Code Drift on linux/amd64::Generated bindings differ from committed version. Run 'just generate' inside nix develop and commit the updated *.gen.go."
+            git diff -- ./*.gen.go
+            exit 1
+          else
+            echo "::notice title=Generated Code Diff on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ; expected platform-specific variation, not gated."
+            git diff --stat -- ./*.gen.go
           fi
-        continue-on-error: true
