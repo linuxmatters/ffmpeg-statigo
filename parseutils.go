@@ -46,25 +46,31 @@ func AVParseVideoRate(rate *AVRational, str *CStr) error {
 	return WrapErr(int(ret))
 }
 
-// AVCodecGetTag2 looks up the codec tag for id in the supplied tag tables,
+// AVCodecGetTag2 looks up the codec tag for id in the supplied tag table,
 // writing the tag through the out-param and reporting whether a match was found.
 //
-// tags is a NULL-terminated list of AVCodecTag tables, as stored in
-// AVInputFormat.codec_tag and AVOutputFormat.codec_tag; the C side only reads
-// it. Pass the table list obtained from a format's CodecTag accessor.
+// tags is the address of a single AVCodecTag table pointer, such as the result
+// of AVFormatGetRiffVideoTags; the C side only reads it. The C function walks a
+// NULL-terminated list of tables, so the wrapper NULL-terminates the single
+// table internally before calling it.
 //
-//	@param[in]  tags list of supported codec_id-codec_tag pairs
+//	@param[in]  tags address of an AVCodecTag table of codec_id-codec_tag pairs
 //	@param[in]  id   codec ID to match to a codec tag
 //	@return          the matched tag and true on success, 0 and false if no tag
 //	                 was found for id
 func AVCodecGetTag2(tags **AVCodecTag, id AVCodecID) (tag uint, found bool) {
-	var ctags **C.struct_AVCodecTag
-	if tags != nil && *tags != nil {
-		inner := (*tags).ptr
-		ctags = (**C.struct_AVCodecTag)(unsafe.Pointer(&inner))
+	if tags == nil || *tags == nil {
+		return 0, false
 	}
 
+	// av_codec_get_tag2 walks the outer list until it reaches a NULL table
+	// pointer, so the list it receives must be NULL-terminated. The caller
+	// supplies the address of a single table pointer, which is not terminated;
+	// wrap it in a two-entry, NULL-terminated list so a missed lookup stops at
+	// the terminator instead of reading past the table pointer.
+	list := [2]*C.struct_AVCodecTag{(*tags).ptr, nil}
+
 	var ctag C.uint
-	ret := C.av_codec_get_tag2(ctags, C.enum_AVCodecID(id), &ctag)
+	ret := C.av_codec_get_tag2(&list[0], C.enum_AVCodecID(id), &ctag)
 	return uint(ctag), ret != 0
 }
