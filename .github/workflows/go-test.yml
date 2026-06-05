@@ -43,11 +43,15 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "linux" ]; then
             sudo apt-get update
-            # Use libclang-20 (Newbluecake/bootstrap v0.17.1 supports clang 17+)
             sudo apt-get install -y libclang-20-dev llvm-20-dev
+            # Link libclang-20 but do NOT add its include path. bootstrap
+            # vendors its own clang-c headers (via -I${SRCDIR}) where the
+            # pre-Clang-18 CXCursor_OMPArraySectionExpr still exists. Adding
+            # the system clang-20 headers shadows the vendored copy and drops
+            # that symbol, breaking the cgo compile. Enum values are stable,
+            # so the vendored headers link cleanly against libclang-20.
             {
               echo "CGO_LDFLAGS=-L/usr/lib/llvm-20/lib"
-              echo "CGO_CFLAGS=-I/usr/lib/llvm-20/include"
               echo "LD_LIBRARY_PATH=/usr/lib/llvm-20/lib:$LD_LIBRARY_PATH"
             } >> "$GITHUB_ENV"
           elif [ "${{ matrix.os }}" = "darwin" ]; then
@@ -62,9 +66,10 @@ jobs:
               rm -f "$brew_log"
               LLVM_PREFIX=$(brew --prefix llvm@20)
             fi
+            # Link libclang-20 only; omit its include path so bootstrap's
+            # vendored clang-c headers are used (see the Linux note above).
             {
               echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib"
-              echo "CGO_CFLAGS=-I${LLVM_PREFIX}/include"
               echo "PATH=${LLVM_PREFIX}/bin:$PATH"
               echo "DYLD_LIBRARY_PATH=${LLVM_PREFIX}/lib:$DYLD_LIBRARY_PATH"
             } >> "$GITHUB_ENV"
@@ -101,14 +106,13 @@ jobs:
 
       # The generator creates Go bindings from FFmpeg headers using libclang.
       # It's only needed during development when FFmpeg is updated.
-      # Using Newbluecake/bootstrap v0.17.1 which supports LLVM/Clang 17+
+      # bootstrap compiles against its vendored clang-c headers and links
+      # libclang-20; see the include-path note in the install step above.
       - name: Run generator (optional - for development only)
         run: |
-          echo "::notice::Generator uses Newbluecake/bootstrap v0.17.1 which supports LLVM 17+"
-          echo "::notice::Using LLVM 20 in CI, compatible with the fork's clang 17 support"
+          echo "::notice::Generator compiles against bootstrap's vendored clang-c headers, linked against libclang-20"
           echo "Running generator with environment:"
           echo "CGO_LDFLAGS=$CGO_LDFLAGS"
-          echo "CGO_CFLAGS=$CGO_CFLAGS"
           go run ./internal/generator 2>&1 | grep -v "cgo-gcc-prolog\|deprecated" || true
         continue-on-error: true
 
