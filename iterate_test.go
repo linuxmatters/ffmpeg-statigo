@@ -354,6 +354,42 @@ func TestAVBSFIterate_FindsBitstreamFilters(t *testing.T) {
 	})
 }
 
+// TestAVChannelLayoutStandard_IteratesStandardLayouts verifies that standard
+// channel-layout iteration enumerates the well-known layouts and terminates.
+func TestAVChannelLayoutStandard_IteratesStandardLayouts(t *testing.T) {
+	count := 0
+	channelCounts := make(map[int]bool)
+	var opaque unsafe.Pointer
+
+	for {
+		layout := AVChannelLayoutStandard(&opaque)
+		if layout == nil {
+			break
+		}
+		count++
+		channelCounts[layout.NbChannels()] = true
+
+		if count > 1000 {
+			t.Fatal("iteration did not terminate")
+		}
+	}
+
+	t.Logf("Found %d standard channel layouts", count)
+
+	if count < 5 {
+		t.Errorf("Expected at least 5 standard layouts, found %d", count)
+	}
+
+	t.Run("includes_mono_and_stereo", func(t *testing.T) {
+		if !channelCounts[1] {
+			t.Error("Expected a 1-channel (mono) standard layout")
+		}
+		if !channelCounts[2] {
+			t.Error("Expected a 2-channel (stereo) standard layout")
+		}
+	})
+}
+
 // TestAVIOEnumProtocols_FindsExpectedProtocols verifies that protocol
 // enumeration finds the expected I/O protocols.
 func TestAVIOEnumProtocols_FindsExpectedProtocols(t *testing.T) {

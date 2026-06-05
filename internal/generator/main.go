@@ -155,9 +155,32 @@ func printSkipSummary(w io.Writer, c *SkipCollector) {
 		return
 	}
 
+	manual := manualBindingBySymbol(c)
+
 	for _, sym := range sortedUniqueSymbols(c) {
+		if name := manual[sym]; name != "" {
+			fmt.Fprintf(w, "  %s (manual binding: %s)\n", sym, name)
+			continue
+		}
 		fmt.Fprintf(w, "  %s\n", sym)
 	}
+}
+
+// manualBindingBySymbol maps each skipped symbol to the hand-written Go binding
+// that covers it, when one was detected. Only entries with a non-empty Manual
+// field appear, so the map doubles as a presence test in printSkipSummary.
+func manualBindingBySymbol(c *SkipCollector) map[string]string {
+	if c == nil {
+		return nil
+	}
+
+	out := make(map[string]string)
+	for _, e := range c.Entries {
+		if e.Manual != "" {
+			out[e.Symbol] = e.Manual
+		}
+	}
+	return out
 }
 
 // sortedUniqueSymbols returns the unique skipped symbol names in lexical

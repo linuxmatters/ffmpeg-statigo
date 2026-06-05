@@ -202,7 +202,7 @@ All builds go through `just`. Never use `go build` directly—the justfile handl
 
 ## Project Layout
 
-The root package has three source tiers. The generator skips C symbols it cannot safely express — variadics, fixed-size array parameters, anonymous structs, unions, and function-pointer fields. Every skip is recorded with a reason string and the total is regression-capped by `skipCeiling` in `internal/generator/main.go`. The hand-written tier covers exactly these gaps.
+The root package has three source tiers. The generator skips C symbols it cannot safely express — variadics, fixed-size array parameters, anonymous structs, unions, and function-pointer fields. Every skip is recorded with a reason string and the total is regression-capped by `skipCeiling` in `internal/generator/main.go`. The skip summary also annotates each skipped symbol that has a hand-written binding with a `(manual binding: <Name>)` note, making the covered-but-skipped set directly observable. The hand-written tier covers exactly these gaps.
 
 ### Tier 1 — generated bindings (never hand-edit; regenerate with `just generate`)
 
@@ -227,8 +227,9 @@ The root package has three source tiers. The generator skips C symbols it cannot
 
 | File(s) | Why hand-written | Contents |
 |---------|-----------------|----------|
-| `iterate.go` | `void **opaque` iterator pattern; generator emits no Go wrapper for this idiom | Registry iterators for codecs, muxers, demuxers, parsers, filters, bsfs; protocol enumeration |
+| `iterate.go` | `void **opaque` iterator pattern; generator emits no Go wrapper for this idiom | Registry iterators for codecs, muxers, demuxers, parsers, filters, bsfs; protocol enumeration; `AVChannelLayoutStandard` standard channel-layout iterator |
 | `uuid.go` | Fixed `[16]uint8` array params; CGO cannot pass fixed arrays directly | `AVUUID` type, parse/format/compare |
+| `display.go` | Fixed `int32[9]` matrix params; CGO cannot pass fixed arrays directly | `av_display_rotation_get`, `av_display_rotation_set`, `av_display_matrix_flip`; `av_exif_matrix_to_orientation`, `av_exif_orientation_to_matrix`; `AVDisplayMatrix` type |
 | `streamgroup.go` | Anonymous C struct; CGO cannot reference it by name | `AVStreamGroupTileGridOffset` accessors |
 | `opt.go` | Generic Go-slice parameter; no generator analogue | `AVOptSetSlice` — Go slice → C binary option setter |
 | `image.go` | Fixed `[4]`-plane C arrays; cgo pointer rules prevent direct passing | `av_image_*` plane/linesize wrappers; shared fixed-plane helper |
@@ -239,7 +240,8 @@ The root package has three source tiers. The generator skips C symbols it cannot
 | `log.go` + `log.c` | `av_log` callback requires cgo `//export` | `av_log` bridge to Go/`slog` |
 | `log_format.go` | CGO cannot call C variadic functions | `AVLog`, `AVAsprintf`, `AVStrlcatf`, `AVBprintf`; formats on the Go side, passes through a fixed `"%s"` C shim (also neutralises format-string injection) |
 | `fields.go` | Array and pointer-array fields the generator cannot express | Quant matrices (`intra_matrix`/`inter_matrix`/`chroma_intra_matrix`), `AVFrame.extended_data`, `AVPixFmtDescriptor.comp`, `AVMasteringDisplayMetadata.display_primaries`, `AVPanScan.position` |
-| `helpers.go` | Small helpers with no generator analogue | `AVRational.String`, `ToAVHWFramesContext` |
+| `helpers.go` | Small helpers with no generator analogue | `AVRational.String`, `ToAVHWFramesContext`, `AVRescaleDelta`, `AVSizeMult` |
+| `parseutils.go` | Single out-params the generator cannot classify as in/out | `av_parse_ratio`, `av_parse_video_rate`, `av_codec_get_tag2` |
 
 ### Infrastructure and supporting paths
 

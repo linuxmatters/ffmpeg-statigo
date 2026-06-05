@@ -1,6 +1,6 @@
 # API coverage
 
-As of FFmpeg 8.1.1 (measured 2026-06-05), ffmpeg-statigo binds **~89%** of the
+As of FFmpeg 8.1.1 (measured 2026-06-05), ffmpeg-statigo binds **~90%** of the
 public C functions in the parsed FFmpeg headers.
 
 ## Metric definition
@@ -30,16 +30,24 @@ missing.
 | Function skips (generator) | 151 | skip summary, symbols without a `.` |
 | Struct-field / other skips | 94 | skip summary, symbols containing a `.` |
 | Total skip markers | 245 | skip summary header (`= skipCeiling`) |
-| Re-bound by hand (covered) | 43 | skipped functions re-exposed in topic files |
-| Genuinely missing functions | 108 | 151 − 43 |
-| **Numerator** (bound) | **900** | 857 + 43 |
+| Re-bound by hand (covered) | 53 | skipped functions re-exposed in topic files |
+| Genuinely missing functions | 98 | 151 − 53 |
+| **Numerator** (bound) | **910** | 857 + 53 |
 | **Denominator** (parsed public funcs) | **1008** | 857 + 151 |
-| **Coverage** | **89.3%** | 900 / 1008 |
+| **Coverage** | **90.3%** | 910 / 1008 |
 
 The previous README figure of 85% matched the generated-only lower bound
 (857 / 1008 = 85.0%); it ignored the hand-written re-binds, so it understated
 real coverage. The recent header-promotion and hand-binding work only added
-bindings, lifting the figure from ~85% to ~89%.
+bindings, lifting the figure from ~85% to ~89%. The new Tier-3 hand-written
+bindings (`display.go`, `parseutils.go`, additions to `helpers.go` and
+`iterate.go`) re-bind 10 previously unbound skipped functions, lifting coverage
+from ~89% to ~90% (910 / 1008).
+
+> **Note:** the 53 / 910 / 90.3% figures are derived arithmetically from the
+> prior 43 / 900 / 89.3% baseline plus exactly 10 new function re-binds. They
+> can be confirmed against a live `go run ./internal/generator` skip summary
+> inside `nix develop`.
 
 ## Scope
 
@@ -79,3 +87,13 @@ grep -c  '\.' /tmp/sym.txt   # struct-field / other skips
 Re-derive the numerator and denominator with the commands in the table above.
 The skip ceiling lives in `internal/generator/main.go` (`skipCeiling`); a run
 that exceeds it fails, so the skip total tracks API drift across FFmpeg upgrades.
+
+The generator now annotates each skipped symbol that has a hand-written binding.
+The re-bind count is directly readable from the skip summary — no manual
+cross-reference required:
+
+```sh
+# Count skipped-but-rebound symbols (function skips only, no dot).
+go run ./internal/generator 2>/tmp/skips.txt >/dev/null
+grep -c '(manual binding:' /tmp/skips.txt
+```

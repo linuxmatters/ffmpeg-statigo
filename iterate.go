@@ -6,6 +6,7 @@ package ffmpeg
 #include <libavcodec/avcodec.h>
 #include <libavcodec/bsf.h>
 #include <libavfilter/avfilter.h>
+#include <libavutil/channel_layout.h>
 
 // Forward declarations for iteration functions
 extern const AVCodec *av_codec_iterate(void **opaque);
@@ -15,6 +16,7 @@ extern const AVOutputFormat *av_muxer_iterate(void **opaque);
 extern const AVInputFormat *av_demuxer_iterate(void **opaque);
 extern const AVFilter *av_filter_iterate(void **opaque);
 extern const AVBitStreamFilter *av_bsf_iterate(void **opaque);
+extern const AVChannelLayout *av_channel_layout_standard(void **opaque);
 */
 import "C"
 
@@ -132,6 +134,23 @@ func AVBSFIterate(opaque *unsafe.Pointer) *AVBitStreamFilter {
 		},
 		func(p unsafe.Pointer) *AVBitStreamFilter {
 			return &AVBitStreamFilter{ptr: (*C.AVBitStreamFilter)(p)}
+		})
+}
+
+// AVChannelLayoutStandard iterates over all standard channel layouts.
+//
+// @param opaque a pointer where libavutil will store the iteration state. Must
+//
+//	point to NULL to start the iteration.
+//
+// @return the next standard channel layout or NULL when the iteration is finished
+func AVChannelLayoutStandard(opaque *unsafe.Pointer) *AVChannelLayout {
+	return iterateFFmpeg(opaque,
+		func(op *unsafe.Pointer) unsafe.Pointer {
+			return unsafe.Pointer(C.av_channel_layout_standard((*unsafe.Pointer)(unsafe.Pointer(op))))
+		},
+		func(p unsafe.Pointer) *AVChannelLayout {
+			return &AVChannelLayout{ptr: (*C.AVChannelLayout)(p)}
 		})
 }
 
