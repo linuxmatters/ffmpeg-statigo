@@ -1,16 +1,18 @@
-# ffmpeg-statigo
+# FFmpeg Statigo
 
 **Real FFmpeg bindings for Go. Not a wrapper. Not a CLI tool. The actual libraries.**
 
-Cross-platform, static FFmpeg libraries bundled directly into your Go binary.
-Hardware acceleration included. Zero runtime dependencies.
+> Cross-platform, static FFmpeg libraries bundled directly into your Go binary. Hardware acceleration included. Zero runtime dependencies.
 
 ## Why This Exists
 
-Every other Go FFmpeg projects wrap the `ffmpeg` command, ffmpeg-statigo gives you the actual FFmpeg C libraries with proper Go bindings.
+Every other Go FFmpeg project wraps the `ffmpeg` command. ffmpeg-statigo gives you the actual FFmpeg C libraries with proper Go bindings.
 Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches. Predictable codec support.
 
-## Features
+> [!NOTE]
+> Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.26, hardware acceleration, ~90% FFmpeg API coverage, and a 99.5% smaller git history.
+
+## Features ✨
 
 - **FFmpeg 8.1.1** - Latest release with AV1, H.265, H.264, VP8/9
 - **Truly static** - Builds into your binary (just needs system `m` and `stdc++` libraries)
@@ -18,9 +20,8 @@ Build once, deploy anywhere. No hunting for system FFmpeg. No version mismatches
 - **Hardware acceleration** - NVENC/NVDEC, QuickSync, VA-API, VideoToolbox, and Vulkan support
 - **GPL build** - x264, x265, and all the good codecs included
 - **Generated + curated bindings** - Most of the API is generated directly from FFmpeg headers; a hand-written layer covers symbols the generator cannot express (variadics, fixed-size arrays, anonymous structs, function-pointer bridges)
+- **Optional safe layer** - The `av` package adds owned `io.Closer` wrappers for leak-free pipelines; drop to raw bindings anytime
 - **Preserved documentation** - Original FFmpeg comments in your IDE
-
-*Hard fork of the excellent [csnewman/ffmpeg-go](https://github.com/csnewman/ffmpeg-go), modernised with FFmpeg 8.1.x, Go 1.26, hardware acceleration, ~90% FFmpeg API coverage (see [docs/API-COVERAGE.md](docs/API-COVERAGE.md)), and a 99.5% smaller git history.*
 
 ## Installation
 
@@ -32,36 +33,23 @@ Static libraries (~100MB per platform) cannot be distributed via `go get`. Use a
 4. Configure git for submodule-friendly pulls: `git config pull.ff only && git config submodule.recurse true`
 5. Build: `go build ./...`
 
-Step 4 prevents `git pull --rebase` from breaking submodule references. Fast-forward only pulls ensure submodule commits stay in sync with the parent repository.
+Step 4 prevents `git pull --rebase` from breaking submodule references. Fast-forward-only pulls keep submodule commits in sync with the parent repository.
 
-Static libraries are gitignored—only the submodule reference is committed.
+Static libraries are gitignored; only the submodule reference is committed.
 
 ### Checksum verification
 
-`download-lib` always verifies each downloaded tarball against the SHA256 checksum published with the GitHub release. If no checksum is available (the digest and `SHA256SUMS` are both missing, or the metadata fetch fails) or the checksum *mismatches*, the download is rejected and the extracted files are removed. There is no override.
+`download-lib` verifies each downloaded tarball against the SHA256 checksum published with the GitHub release. If no checksum is available (the digest and `SHA256SUMS` are both missing, or the metadata fetch fails) or the checksum mismatches, the download is rejected and the extracted files are removed. There is no override.
 
-**See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for CI/CD integration, cross-compilation, and troubleshooting.**
+## Codec Inclusion Policy 🎬
 
-## Memory and lifetimes
-
-These are thin bindings, exactly as memory-unsafe as the underlying C API. That is a deliberate design choice, not an oversight.
-
-- **`AV*` types are raw pointers.** Each `AV*` Go type wraps a raw C pointer; it is not a garbage-collected safe handle. There is no finaliser.
-- **Lifetime is yours to manage.** Call the matching `Free`/`Unref`/`Close` function per FFmpeg's own ownership contract, exactly as you would in C. Nothing is freed for you.
-- **`CStr` memory is caller-managed.** Call `.Free()` when you own the allocation (see the `CStr` doc comment in `ffmpeg.go`). Values from `GlobalCStr` are interned and shared; never free them.
-- **`Array[T]` indexing is unchecked.** Arrays carry no length, matching C. An out-of-bounds `Get` or `Set` is undefined behaviour.
-
-Want managed lifetimes? The optional [`av`](av) package (`github.com/linuxmatters/ffmpeg-statigo/av`) adds a high-level layer of owned `io.Closer` wrappers (`Input`, `Decoder`, `Encoder`, `FilterGraph`, `Output`) that free their handles in order on `Close`. It is opt-in. The root package remains the raw bridge and stays fully usable on its own. See [`docs/PIPELINE.md`](docs/PIPELINE.md) for the pipeline guide.
-
-## Codec Inclusion Policy
-
-ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core strengths of FFmpeg: **decoding, processing, and encoding** audio and video streams. ffmpeg-statigo is designed for **Go developers building modern streaming applications**. The pattern is:
+ffmpeg-statigo ships a curated FFmpeg static library focused on the core strengths of FFmpeg: decoding, processing, and encoding audio and video streams. It targets Go developers building modern streaming applications. The pattern is:
 
 1. **Generate content in Go** - Text, graphics, effects using Go's excellent libraries
 2. **Feed frames to FFmpeg** - Use ffmpeg-statigo for encoding and stream processing
 3. **Let FFmpeg handle codecs** - Hardware acceleration, format conversion, container muxing
 
-#### What's Included
+### What's Included
 
 - **Decoders**: All contemporary formats (H.264, H.265, AV1, VP8/9, Opus, AAC, MP3)
 - **Encoders**: Modern codecs for streaming and transcoding (x264, x265, dav1d, rav1e, vpx, lame, opus)
@@ -70,57 +58,34 @@ ffmpeg-statigo provides a **curated FFmpeg static library** focused on the core 
 - **Filters**: Video scaling, colour conversion, audio resampling, and processing filters
 - **Streaming protocols**: RTMP, SRT, HLS, DASH
 
-**Building something that deals with video?** You're probably covered:
-- Streaming platform (your own Twitch/YouTube/Owncast)
-- Content management system with media handling
-- Social media app with video uploads
-- Video conferencing service
-- Transcoding pipeline for your media library
-- Home media server ripping DVDs/Blu-rays
-- Web-based media player
-- Broadcasting tool or modern content creation workflow
-
-#### What's Intentionally Absent
-
-Some FFmpeg features commonly found in the `ffmpeg` CLI tool are **not included** because they're better implemented in Go:
-
-- ❌ **`drawtext` filter** - Use Go's `image/draw` + `golang.org/x/image/font` packages instead
-- ❌ **Font libraries** (freetype, harfbuzz, fontconfig) - Not needed when rendering in Go
-- ❌ **`subtitles` and `ass` filters** - Use separate subtitle streams instead
-- ❌ **libass** - Subtitle rendering library not needed
-  - FFmpeg can still **copy, extract, and mux** subtitle streams without libass.
-
-The excluded features can be added back if a compelling use case emerges. ffmpeg-statigo is a **living project** and the curated library evolves based on real-world needs.
-
-If you need complete FFmpeg with all filters, use the official FFmpeg distribution. If you need modern streaming codecs with Go integration, ffmpeg-statigo is designed for you.
-
 ### Library versions
 
-| Library          | Version     | Description                                                                        |
-|------------------|-------------|------------------------------------------------------------------------------------|
+| Library          | Version     | Description                                                                         |
+|------------------|-------------|-------------------------------------------------------------------------------------|
 | FFmpeg           | 8.1.1       | A complete, cross-platform solution to record, convert, and stream audio and video  |
 | dav1d            | 1.5.3       | AV1 cross-platform decoder, open-source, and focused on speed, size, and correctness|
-| glslang          | 16.3.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                   |
-| libdrm           | 2.4.134     | Direct Rendering Manager library and headers (*Linux only*)                        |
-| libiconv         | 1.19        | A character set conversion library (*macOS only*)                                  |
-| libsrt           | 1.5.5       | A transport protocol for ultra low latency live video and audio streaming          |
-| libva            | 2.23.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)               |
-| libvpl           | 2.16.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                      |
-| libvpx           | 1.16.0      | High-quality, open video format for the web that's freely available to everyone    |
-| libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression            |
-| libxml2          | 2.15.2      | An XML parser and toolkit implemented in C                                         |
-| mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                  |
-| nv-codec-headers | 13.0.19.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)               |
-| openssl          | 3.6.2       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                         |
-| opus             | 1.6.1       | A totally open, royalty-free, highly versatile audio codec                         |
-| rav1e            | 0.8.1       | The fastest and safest AV1 encoder.                                                |
-| Vulkan-Headers   | 1.4.352     | Vulkan header files and API registry                                               |
-| x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams             |
-| x265             | 4.2         | H.265/MPEG-H HEVC compression format library for encoding video streams            |
-| zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                              |
-| zlib             | 1.3.2       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                  |
+| glslang          | 16.3.0      | Khronos-reference front end for GLSL/ESSL and a SPIR-V generator                    |
+| libdrm           | 2.4.134     | Direct Rendering Manager library and headers (*Linux only*)                         |
+| libiconv         | 1.19        | A character set conversion library (*macOS only*)                                   |
+| libsrt           | 1.5.5       | A transport protocol for ultra low latency live video and audio streaming           |
+| libva            | 2.23.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)                |
+| libvpl           | 2.16.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                       |
+| libvpx           | 1.16.0      | High-quality, open video format for the web that's freely available to everyone     |
+| libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression             |
+| libxml2          | 2.15.2      | An XML parser and toolkit implemented in C                                          |
+| mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                   |
+| nv-codec-headers | 13.0.19.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)                |
+| openssl          | 3.6.2       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                          |
+| opus             | 1.6.1       | A totally open, royalty-free, highly versatile audio codec                          |
+| rav1e            | 0.8.1       | The fastest and safest AV1 encoder.                                                 |
+| Vulkan-Headers   | 1.4.352     | Vulkan header files and API registry                                                |
+| x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams              |
+| x265             | 4.2         | H.265/MPEG-H HEVC compression format library for encoding video streams             |
+| zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                               |
+| zlib             | 1.3.2       | A Massively Spiffy Yet Delicately Unobtrusive Compression Library                   |
 
-VVenC 1.13.1 (Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder) is in the build configuration, **but currently disabled**, as it adds ~25MB to the static FFmpeg library and is too slow for practical use.
+> [!NOTE]
+> VVenC 1.13.1 (Fraunhofer Versatile Video Encoder, a fast & efficient software H.266/VVC encoder) is in the build configuration, **but currently disabled**, as it adds ~25MB to the static FFmpeg library and is too slow for practical use.
 
 ### Enabled Codecs
 
@@ -170,13 +135,75 @@ Details of codecs, muxers and parsers available to enable in the static FFmpeg l
   - Decoding & Encoding AV1 8/10-bit
   - **Works via MoltenVK on macOS when MoltenVK runtime is installed**
 
+## Development 🧑‍💻
+
+**See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for CI/CD integration, cross-compilation, and troubleshooting, and [docs/API-COVERAGE.md](docs/API-COVERAGE.md) for the full FFmpeg API coverage breakdown.**
+
+### Memory and lifetimes
+
+> [!WARNING]
+> These are thin bindings, exactly as memory-unsafe as the underlying C API. That is a deliberate design choice, not an oversight.
+
+- **`AV*` types are raw pointers.** Each `AV*` Go type wraps a raw C pointer; it is not a garbage-collected safe handle. There is no finaliser.
+- **Lifetime is yours to manage.** Call the matching `Free`/`Unref`/`Close` function per FFmpeg's own ownership contract, exactly as you would in C. Nothing is freed for you.
+- **`CStr` memory is caller-managed.** Call `.Free()` when you own the allocation (see the `CStr` doc comment in `ffmpeg.go`). Values from `GlobalCStr` are interned and shared; never free them.
+- **`Array[T]` indexing is unchecked.** Arrays carry no length, matching C. An out-of-bounds `Get` or `Set` is undefined behaviour.
+
+### Managed lifetimes: the `av` package
+
+> [!TIP]
+> Don't fancy tracking every `Free`/`Unref`/`Close` by hand? Reach for the [`av`](av) package: idiomatic, safe Go resource management layered straight over the raw bindings.
+
+The optional [`av`](av) package (`github.com/linuxmatters/ffmpeg-statigo/av`) wraps the whole pipeline in owned `io.Closer` types: `Input`, `Decoder`, `Encoder`, `FilterGraph`, and `Output`. They release their handles in the correct order on `Close`. Pair them with `defer` and the C-style ownership dance disappears: no leaks, no double-frees, no use-after-free.
+
+It is fully opt-in. The root package stays the raw bridge and remains usable on its own, so you can drop down to direct calls wherever you need control and mix the two freely. See [`docs/PIPELINE.md`](docs/PIPELINE.md) for the pipeline guide.
+
+### What's Intentionally Absent
+
+Some FFmpeg features commonly found in the `ffmpeg` CLI tool are **not included** because they're better implemented in Go:
+
+- ❌ **`drawtext` filter** - Use Go's `image/draw` + `golang.org/x/image/font` packages instead
+- ❌ **Font libraries** (freetype, harfbuzz, fontconfig) - Not needed when rendering in Go
+- ❌ **`subtitles` and `ass` filters** - Use separate subtitle streams instead
+- ❌ **libass** - Subtitle rendering library not needed
+  - FFmpeg can still **copy, extract, and mux** subtitle streams without libass.
+
+The excluded features can be added back if a compelling use case emerges. ffmpeg-statigo is a living project and the curated library evolves based on real-world needs.
+
+If you need complete FFmpeg with all filters, use the official FFmpeg distribution. If you need modern streaming codecs with Go integration, ffmpeg-statigo is the one.
+
+### Building something that deals with video?
+
+You're probably covered:
+- Streaming platform (your own Twitch/YouTube/Owncast)
+- Content management system with media handling
+- Social media app with video uploads
+- Video conferencing service
+- Transcoding pipeline for your media library
+- Home media server ripping DVDs/Blu-rays
+- Web-based media player
+- Broadcasting tool or modern content creation workflow
+
 ## Examples
 
 The [`examples/`](examples/) directory contains working programs covering the common use cases: reading stream metadata, terminal ASCII video playback, and a full decode/filter/encode/mux transcode pipeline in both raw-binding and high-level `av`-package forms.
 
-See [examples/README.md](examples/README.md) for the full list, run signatures, and build instructions.
+> [!TIP]
+> See [examples/README.md](examples/README.md) for the full list, run signatures, and build instructions.
+
+## Built with FFmpeg Statigo
+
+Real tools shipping on top of these bindings, all part of the [Linux Matters](https://linuxmatters.sh) podcast toolchain:
+
+- **[jivedrop](https://github.com/linuxmatters/jivedrop)** 🪩 - drop your podcast `.wav` in, get a shiny MP3 out with metadata, cover art, and all.
+- **[jivefire](https://github.com/linuxmatters/jivefire)** 🔥 - spin a `.wav` into a groovy MP4 visualiser with Cava-inspired real-time audio frequencies.
+- **[jivetalking](https://github.com/linuxmatters/jivetalking)** 🕺 - turn raw microphone recordings into broadcast-ready audio in one command. No configuration, no surprises.
+
+Shipping something with FFmpeg Statigo? Open a PR and add it here.
 
 ## Licensing
 
 The Go binding code is MIT licensed. However, the bundled FFmpeg libraries are compiled with GPL-licensed components like `x264` and `x265`.
-Any project using ffmpeg-statigo inherits the GPL requirements from FFmpeg through this linking, making the combined work subject to GPLv3 licensing obligations.
+
+> [!IMPORTANT]
+> Any project using ffmpeg-statigo inherits the GPL requirements from FFmpeg through this linking, making the combined work subject to GPLv3 licensing obligations.
