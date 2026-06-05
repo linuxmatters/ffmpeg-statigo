@@ -3,6 +3,7 @@ package ffmpeg_test
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -442,6 +443,37 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 		if ffmpeg.EAgain.Code >= 0 {
 			t.Errorf("EAgain.Code should be negative, got %d", ffmpeg.EAgain.Code)
 		}
+	})
+}
+
+// =============================================================================
+// Test 4.3: AVError.Is contract
+// =============================================================================
+
+// TestAVErrorIs verifies that errors.Is matches AVError sentinels on Code alone,
+// so the drain-loop call sites keep working independent of any future field on
+// AVError. Equality keys on Code, not identity or full-struct comparison.
+func TestAVErrorIs(t *testing.T) {
+	t.Run("wrapped_eagain_matches_sentinel", func(t *testing.T) {
+		assert.True(t, errors.Is(ffmpeg.WrapErr(ffmpeg.EAgain.Code), ffmpeg.EAgain))
+	})
+
+	t.Run("wrapped_eof_matches_sentinel", func(t *testing.T) {
+		assert.True(t, errors.Is(ffmpeg.WrapErr(ffmpeg.AVErrorEofConst), ffmpeg.AVErrorEOF))
+	})
+
+	t.Run("different_code_does_not_match", func(t *testing.T) {
+		assert.False(t, errors.Is(ffmpeg.AVError{Code: -11}, ffmpeg.AVError{Code: -22}))
+	})
+
+	t.Run("non_averror_target_rejected", func(t *testing.T) {
+		assert.False(t, errors.Is(ffmpeg.AVError{Code: -11}, io.EOF))
+	})
+
+	t.Run("independent_values_match_by_code", func(t *testing.T) {
+		a := ffmpeg.AVError{Code: -1234}
+		b := ffmpeg.AVError{Code: -1234}
+		assert.True(t, errors.Is(a, b))
 	})
 }
 
