@@ -112,8 +112,10 @@ func ToCStr(val string) *CStr {
 // globalCStrCap bounds the GlobalCStr intern map. The cache is for a fixed set
 // of compile-time-known constant strings; this ceiling makes the bounded-set
 // contract load-bearing so misuse with dynamic strings cannot leak C memory
-// without limit. Past the cap, GlobalCStr falls back to a freeable ToCStr.
-const globalCStrCap = 65536 // ~10x FFmpeg's full constant surface; bounds misuse leak to single-digit MB
+// without limit. Exceeding the cap means GlobalCStr was called with too many
+// distinct values, which only happens with dynamic strings the contract forbids,
+// so it panics to surface the misuse rather than silently leaking.
+const globalCStrCap = 65536 // ~10x FFmpeg's full constant surface
 
 var (
 	strMap  = map[string]*CStr{}
@@ -151,10 +153,13 @@ func GlobalCStr(val string) *CStr {
 		return ptr
 	}
 
-	// Past the cap, return a freeable string without interning. This bounds the
-	// permanent C-memory cost if a dynamic string reaches GlobalCStr by mistake.
+	// The intern cache never frees its entries, so a caller that feeds it
+	// unbounded distinct values would leak C memory forever. Past the cap, fail
+	// fast: hitting it means GlobalCStr was called with too many distinct values,
+	// which only happens with the dynamic strings its contract forbids. Use ToCStr
+	// and Free the result for dynamic strings.
 	if len(strMap) >= globalCStrCap {
-		return ToCStr(val)
+		panic("ffmpeg: GlobalCStr intern cache exceeded its cap; it was called with too many distinct values (likely dynamic strings, which its contract forbids) — use ToCStr and Free the result instead")
 	}
 
 	ptr = ToCStr(val)
