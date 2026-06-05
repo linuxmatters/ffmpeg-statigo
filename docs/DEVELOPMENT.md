@@ -1,8 +1,10 @@
 # ffmpeg-statigo Developer Guide
 
+This guide covers two audiences: **consumers** integrating ffmpeg-statigo into their own projects, and **contributors** working on ffmpeg-statigo itself.
+
 ## Why Manual Setup?
 
-Go modules don't handle 100MB+ binary files. The `go get` command won't fetch static libraries from the module cache. Our solution: git submodule + replace directive + library download.
+Go modules don't handle 100MB+ binary files. `go get` won't fetch static libraries from the module cache. The solution: git submodule + replace directive + library download.
 
 ## Prerequisites
 
@@ -14,8 +16,8 @@ Go modules don't handle 100MB+ binary files. The `go get` command won't fetch st
 
 Projects using ffmpeg-statigo follow this pattern. Reference implementations with justfiles and GitHub workflows:
 
-- [jivedrop](https://github.com/linuxmatters/jivedrop) — *Drop your podcast .wav into a shiny MP3 with metadata, cover art, and all 🪩*
-- [jivefire](https://github.com/linuxmatters/jivefire) — *Spin your podcast .wav into a groovy MP4 visualiser with Cava-inspired real-time audio frequencies 🔥*
+- [jivedrop](https://github.com/linuxmatters/jivedrop) - *Drop your podcast .wav into a shiny MP3 with metadata, cover art, and all 🪩*
+- [jivefire](https://github.com/linuxmatters/jivefire) - *Spin your podcast .wav into a groovy MP4 visualiser with Cava-inspired real-time audio frequencies 🔥*
 
 ### Project Structure
 
@@ -38,7 +40,7 @@ go mod edit -replace github.com/linuxmatters/ffmpeg-statigo=./third_party/ffmpeg
 1. `git submodule update --init --recursive`
 2. `cd third_party/ffmpeg-statigo && go run ./cmd/download-lib`
 
-Wrap this in a `just setup` recipe for consistent developer experience.
+Wrap this in a `just setup` recipe for a consistent developer experience.
 
 ### Example justfile
 
@@ -181,17 +183,15 @@ jobs:
 
 Set `GOOS` and `GOARCH` before downloading: `GOOS=darwin GOARCH=arm64 go run ./cmd/download-lib`
 
-# ffmpeg-statigo Development
+## Working on ffmpeg-statigo
 
-For working on ffmpeg-statigo itself:
-
-1. Clone the repository
-2. `go run ./cmd/download-lib` (downloads pre-built libraries)
-3. `just build` (full rebuild from source + regenerate bindings)
+1. Clone the repository.
+2. `go run ./cmd/download-lib` - downloads pre-built libraries.
+3. `just build` - full rebuild from source and regenerate bindings.
 
 ## Build System
 
-All builds go through `just`. Never use `go build` directly—the justfile handles CGO flags and build sequencing.
+All builds go through `just`. Never use `go build` directly - the justfile handles CGO flags and build sequencing.
 
 | Command | Purpose |
 |---------|---------|
@@ -202,27 +202,27 @@ All builds go through `just`. Never use `go build` directly—the justfile handl
 
 ### Pinned build dependencies
 
-The from-source builder downloads ~20 third-party archives (x264, x265, dav1d, openssl, zlib, libvpx, rav1e, and more), then compiles and links them into the shipped `libffmpeg.a`. Each archive is SHA-256 pinned in `internal/builder/digests.go`, keyed by download URL, to close the supply-chain hole of trusting unverified downloads (CWE-494).
+The from-source builder downloads ~20 third-party archives (x264, x265, dav1d, openssl, zlib, libvpx, rav1e, and more), compiles them, and links them into the shipped `libffmpeg.a`. Each archive is SHA-256 pinned in `internal/builder/digests.go`, keyed by download URL, closing the supply-chain hole of trusting unverified downloads (CWE-494).
 
-How verification fails closed:
+Verification fails closed on three conditions:
 
 - The pin is checked against the final archive bytes for **both** a fresh download and a download-cache hit, so a poisoned cache cannot be silently trusted.
-- A digest mismatch deletes the archive (so a re-run re-downloads rather than reusing poison) and aborts the build.
-- A missing pin — which happens automatically when a library's version or URL is bumped — aborts with an actionable error instead of skipping verification.
+- A digest mismatch deletes the archive so a re-run re-downloads rather than reusing poison, then aborts the build.
+- A missing pin aborts with an actionable error instead of skipping verification. This fires automatically when a library's version or URL is bumped.
 
-Bootstrap or refresh pins (trust-on-first-use), run in a trusted environment:
+To bootstrap or refresh pins (trust-on-first-use), run in a trusted environment:
 
 ```sh
 go run ./internal/builder --update-digests
 ```
 
-This downloads every enabled library's archive, computes its SHA-256, and prints map entries for `archiveDigests`. Review each printed digest against the upstream-published checksum (openssl, opus, gnu.org and similar publish official values that supersede the seeded ones), then paste the entries into `internal/builder/digests.go` and commit. Platform-gated libraries (e.g. `libiconv`, `vvenc`) are only fetched on their target platform, so run the command on each platform whose archives you need to pin.
+This downloads every enabled library's archive, computes its SHA-256, and prints map entries for `archiveDigests`. Review each printed digest against the upstream-published checksum (openssl, opus, gnu.org, and similar publish official values that supersede the seeded ones), then paste the entries into `internal/builder/digests.go` and commit. Platform-gated libraries (e.g. `libiconv`, `vvenc`) are only fetched on their target platform, so run the command on each platform whose archives you need to pin.
 
 ## Project Layout
 
-The root package has three source tiers. The generator skips C symbols it cannot safely express — variadics, fixed-size array parameters, anonymous structs, unions, and function-pointer fields. Every skip is recorded with a reason string and the total is regression-capped by `skipCeiling` in `internal/generator/main.go`. The skip summary also annotates each skipped symbol that has a hand-written binding with a `(manual binding: <Name>)` note, making the covered-but-skipped set directly observable. The hand-written tier covers exactly these gaps.
+The root package has three source tiers. The generator skips C symbols it cannot safely express: variadics, fixed-size array parameters, anonymous structs, unions, and function-pointer fields. Every skip is recorded with a reason string and the total is regression-capped by `skipCeiling` in `internal/generator/main.go`. The skip summary annotates each skipped symbol that has a hand-written binding with a `(manual binding: <Name>)` note, making the covered-but-skipped set directly observable. The hand-written tier covers exactly these gaps.
 
-### Tier 1 — generated bindings (never hand-edit; regenerate with `just generate`)
+### Tier 1 - generated bindings (never hand-edit; regenerate with `just generate`)
 
 | File | Contents |
 |------|----------|
@@ -232,7 +232,7 @@ The root package has three source tiers. The generator skips C symbols it cannot
 | `functions.gen.go` | Function wrappers |
 | `callbacks.gen.go` | Callback typedefs |
 
-### Tier 2 — core and foundation (hand-written)
+### Tier 2 - core and foundation (hand-written)
 
 | File | Purpose |
 |------|---------|
@@ -241,7 +241,7 @@ The root package has three source tiers. The generator skips C symbols it cannot
 | `arch_guard.go` | Compile-time 64-bit-only invariant (unsigned-underflow guard) |
 | `doc.go` | Package documentation |
 
-### Tier 3 — hand-written topic wrappers
+### Tier 3 - hand-written topic wrappers
 
 | File(s) | Why hand-written | Contents |
 |---------|-----------------|----------|
@@ -249,7 +249,7 @@ The root package has three source tiers. The generator skips C symbols it cannot
 | `uuid.go` | Fixed `[16]uint8` array params; CGO cannot pass fixed arrays directly | `AVUUID` type, parse/format/compare |
 | `display.go` | Fixed `int32[9]` matrix params; CGO cannot pass fixed arrays directly | `av_display_rotation_get`, `av_display_rotation_set`, `av_display_matrix_flip`; `av_exif_matrix_to_orientation`, `av_exif_orientation_to_matrix`; `AVDisplayMatrix` type |
 | `streamgroup.go` | Anonymous C struct; CGO cannot reference it by name | `AVStreamGroupTileGridOffset` accessors |
-| `opt.go` | Generic Go-slice parameter; no generator analogue | `AVOptSetSlice` — Go slice → C binary option setter |
+| `opt.go` | Generic Go-slice parameter; no generator analogue | `AVOptSetSlice` - Go slice → C binary option setter |
 | `image.go` | Fixed `[4]`-plane C arrays; cgo pointer rules prevent direct passing | `av_image_*` plane/linesize wrappers; shared fixed-plane helper |
 | `samples.go` | Variable-length `uint8_t **` plane arrays; same shape constraint as `image.go` | `av_samples_*` audio sample-plane wrappers |
 | `swscale.go` | Same fixed-plane constraint as `image.go` | `sws_*` software scaling and pixel-format conversion |
@@ -270,25 +270,17 @@ The root package has three source tiers. The generator skips C symbols it cannot
 | `internal/builder/` | Builds FFmpeg + 20 dependencies from source |
 | `internal/generator/` | Generates Go bindings from headers using libclang (see [Generator](#generator) below) |
 | `cmd/download-lib/` | Downloads pre-built libraries from GitHub Releases |
-| `av/` | Optional high-level pipeline layer — owned `io.Closer` wrappers (Input/Decoder/Encoder/FilterGraph/Output); see [docs/PIPELINE.md](PIPELINE.md) |
+| `av/` | Optional high-level pipeline layer - owned `io.Closer` wrappers (Input/Decoder/Encoder/FilterGraph/Output); see [docs/PIPELINE.md](PIPELINE.md) |
 | `examples/` | Working examples (transcode, metadata, etc.) |
 
 ## Generator
 
-`internal/generator/` parses the FFmpeg headers with libclang via the cgo binding
-`github.com/Newbluecake/bootstrap` and emits the `*.gen.go` files. Because it links
-libclang, regeneration needs a pinned clang (currently 20) and a working C toolchain,
-which is why it is supported only inside `nix develop`. The correctness gate is
-byte-identical output: after any generator change, `just generate` then
-`git diff --stat -- '*.gen.go'` must be empty.
+> [!IMPORTANT]
+> Run `just generate` only inside `nix develop`. The generator links libclang 20 and relies on gcc 15 for system include discovery. Running it outside the Nix shell produces incorrect or incomplete output.
 
-**TODO (future consideration):** evaluate porting the generator to
-[`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C99 frontend.
-This would drop the libclang/cgo dependency and the clang-version pinning churn,
-making regeneration toolchain-independent (no Nix shell or distro clang in CI). The
-risk is that `cc/v4`'s parse model differs from libclang, so the generated output and
-the existing libclang workarounds (unnamed-struct naming, `size_t`-reported-as-`int`)
-would need re-validating against the byte-identical gate before switching.
+`internal/generator/` parses FFmpeg headers with libclang via the cgo binding `github.com/Newbluecake/bootstrap` and emits the `*.gen.go` files. Because it links libclang, regeneration requires a pinned clang (currently 20) and a working C toolchain, which is why it is only supported inside `nix develop`. The correctness gate is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty.
+
+> **TODO (future consideration):** evaluate porting the generator to [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C99 frontend. This would drop the libclang/cgo dependency and the clang-version pinning churn, making regeneration toolchain-independent (no Nix shell or distro clang in CI). The risk is that `cc/v4`'s parse model differs from libclang, so the generated output and the existing libclang workarounds (unnamed-struct naming, `size_t`-reported-as-`int`) would need re-validating against the byte-identical gate before switching.
 
 ## Versioning
 

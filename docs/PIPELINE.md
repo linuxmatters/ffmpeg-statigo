@@ -2,7 +2,7 @@
 
 The `av` package (`github.com/linuxmatters/ffmpeg-statigo/av`) is an optional high-level layer over the root `ffmpeg` package. It adds Go-idiomatic ownership and lifetime management to the common demux, decode, filter, encode, mux pipeline.
 
-Use `av` when you want resource safety and a smaller surface. The root `ffmpeg` package stays the raw bridge to FFmpeg's C API and remains fully usable on its own; drop to it whenever you need the full API. The two layers interoperate through `Raw`, so picking `av` never traps you.
+Use `av` when you want resource safety and a smaller API surface. The root `ffmpeg` package remains the raw bridge to FFmpeg's C API and is fully usable on its own; drop to it whenever you need the full API. The two layers interoperate through `Raw`, so choosing `av` never traps you.
 
 ## Owned types
 
@@ -12,11 +12,11 @@ The package owns five types. Each wraps an FFmpeg handle, implements [`io.Closer
 
 Owns a demux `*ffmpeg.AVFormatContext` opened from a URL.
 
-- `Open(url string) (*Input, error)` — opens the URL and reads stream information.
-- `Streams() *ffmpeg.Array[*ffmpeg.AVStream]` — the demuxer's stream array.
-- `NbStreams() uint` — the number of streams.
-- `BestStream(mediaType ffmpeg.AVMediaType) (*ffmpeg.AVStream, error)` — wraps `av_find_best_stream`.
-- `ReadPacket(pkt *ffmpeg.AVPacket) error` — reads the next packet; at end of stream the error satisfies `errors.Is(err, ffmpeg.AVErrorEOF)`.
+- `Open(url string) (*Input, error)` - opens the URL and reads stream information.
+- `Streams() *ffmpeg.Array[*ffmpeg.AVStream]` - the demuxer's stream array.
+- `NbStreams() uint` - the number of streams.
+- `BestStream(mediaType ffmpeg.AVMediaType) (*ffmpeg.AVStream, error)` - wraps `av_find_best_stream`.
+- `ReadPacket(pkt *ffmpeg.AVPacket) error` - reads the next packet; at end of stream the error satisfies `errors.Is(err, ffmpeg.AVErrorEOF)`.
 - `Raw() *ffmpeg.AVFormatContext`
 - `Close() error`
 
@@ -24,9 +24,9 @@ Owns a demux `*ffmpeg.AVFormatContext` opened from a URL.
 
 Owns a decode `*ffmpeg.AVCodecContext` and a scratch `*ffmpeg.AVFrame`.
 
-- `NewDecoder(stream *ffmpeg.AVStream) (*Decoder, error)` — finds the decoder for the stream's codec, configures a context from the stream parameters, opens the codec, and allocates a scratch frame.
-- `Decode(pkt *ffmpeg.AVPacket, fn func(*ffmpeg.AVFrame) error) error` — sends a packet and calls `fn` once per decoded frame.
-- `Flush(fn func(*ffmpeg.AVFrame) error) error` — sends a nil packet and drains the remaining frames through `fn`.
+- `NewDecoder(stream *ffmpeg.AVStream) (*Decoder, error)` - finds the decoder for the stream's codec, configures a context from the stream parameters, opens the codec, and allocates a scratch frame.
+- `Decode(pkt *ffmpeg.AVPacket, fn func(*ffmpeg.AVFrame) error) error` - sends a packet and calls `fn` once per decoded frame.
+- `Flush(fn func(*ffmpeg.AVFrame) error) error` - sends a nil packet and drains the remaining frames through `fn`.
 - `Raw() *ffmpeg.AVCodecContext`
 - `Close() error`
 
@@ -40,8 +40,8 @@ Owns an `*ffmpeg.AVFilterGraph` plus its single buffersrc and buffersink. It han
 - `NewAudioFilterGraph(params AudioFilterParams, spec string) (*FilterGraph, error)`
 - `NewVideoFilterGraphFromContext(decCtx *ffmpeg.AVCodecContext, spec string, outPixFmt ffmpeg.AVPixelFormat) (*FilterGraph, error)`
 - `NewAudioFilterGraphFromContext(decCtx *ffmpeg.AVCodecContext, spec string, outSampleFmt ffmpeg.AVSampleFormat, outSampleRate int, outChLayout *ffmpeg.AVChannelLayout) (*FilterGraph, error)`
-- `Push(frame *ffmpeg.AVFrame) error` — sends a frame into the buffersrc. Push `nil` to flush.
-- `Pull(fn func(*ffmpeg.AVFrame) error) error` — drains every filtered frame currently available, calling `fn` once per frame.
+- `Push(frame *ffmpeg.AVFrame) error` - sends a frame into the buffersrc. Push `nil` to flush.
+- `Pull(fn func(*ffmpeg.AVFrame) error) error` - drains every filtered frame currently available, calling `fn` once per frame.
 - `Raw() *ffmpeg.AVFilterGraph`
 - `Close() error`
 
@@ -51,10 +51,10 @@ The `...FromContext` constructors read source parameters from a decoder context.
 
 Owns an encode `*ffmpeg.AVCodecContext` and a scratch `*ffmpeg.AVPacket`. It mirrors `Decoder`: it sends frames and drains packets.
 
-- `NewEncoder(codec *ffmpeg.AVCodec, configure func(*ffmpeg.AVCodecContext)) (*Encoder, error)` — allocates a context, hands it to `configure` so you set every codec field before open, then opens the codec and allocates a scratch packet.
-- `NewEncoderByID(id ffmpeg.AVCodecID, configure func(*ffmpeg.AVCodecContext)) (*Encoder, error)` — looks up the encoder for `id` then calls `NewEncoder`.
-- `Encode(frame *ffmpeg.AVFrame, fn func(*ffmpeg.AVPacket) error) error` — sends a frame and calls `fn` once per encoded packet.
-- `Flush(fn func(*ffmpeg.AVPacket) error) error` — sends a nil frame and drains the remaining packets through `fn`.
+- `NewEncoder(codec *ffmpeg.AVCodec, configure func(*ffmpeg.AVCodecContext)) (*Encoder, error)` - allocates a context, hands it to `configure` so you set every codec field before open, then opens the codec and allocates a scratch packet.
+- `NewEncoderByID(id ffmpeg.AVCodecID, configure func(*ffmpeg.AVCodecContext)) (*Encoder, error)` - looks up the encoder for `id` then calls `NewEncoder`.
+- `Encode(frame *ffmpeg.AVFrame, fn func(*ffmpeg.AVPacket) error) error` - sends a frame and calls `fn` once per encoded packet.
+- `Flush(fn func(*ffmpeg.AVPacket) error) error` - sends a nil frame and drains the remaining packets through `fn`.
 - `Raw() *ffmpeg.AVCodecContext`
 - `Close() error`
 
@@ -64,11 +64,11 @@ Set `ffmpeg.AVCodecFlagGlobalHeader` in the `configure` callback when the muxer 
 
 Owns a mux `*ffmpeg.AVFormatContext` and its IO. It is the muxing counterpart to `Input`.
 
-- `CreateOutput(name string) (*Output, error)` — allocates a mux context, guessing the muxer from the filename. It does not open IO.
-- `AddStream(enc *Encoder) (*ffmpeg.AVStream, error)` — adds a stream and copies the encoder's codec parameters and time base into it. It does not mutate the encoder.
-- `WriteHeader() error` — opens IO when the format needs a file, then writes the header.
-- `WritePacket(pkt *ffmpeg.AVPacket) error` — interleaves a packet. The caller owns `pkt` and must set its stream index and rescale its timestamps to the stream time base first.
-- `WriteTrailer() error` — writes the trailer, finishing the file.
+- `CreateOutput(name string) (*Output, error)` - allocates a mux context, guessing the muxer from the filename. It does not open IO.
+- `AddStream(enc *Encoder) (*ffmpeg.AVStream, error)` - adds a stream and copies the encoder's codec parameters and time base into it. It does not mutate the encoder.
+- `WriteHeader() error` - opens IO when the format needs a file, then writes the header.
+- `WritePacket(pkt *ffmpeg.AVPacket) error` - interleaves a packet. The caller owns `pkt` and must set its stream index and rescale its timestamps to the stream time base first.
+- `WriteTrailer() error` - writes the trailer, finishing the file.
 - `Raw() *ffmpeg.AVFormatContext`
 - `Close() error`
 
@@ -88,11 +88,14 @@ defer in.Close()
 
 ## Callback frame lifetime
 
-Frames and packets passed to the `Decode`, `Encode`, and `Pull` callbacks are valid only for the duration of the callback. Each type unrefs its scratch frame or packet after the callback returns. Copy or ref the data (for example with `ffmpeg.AVFrameRef`) if you need to keep it past the callback.
+> [!WARNING]
+> Frames and packets passed to `Decode`, `Encode`, and `Pull` callbacks are valid only for the duration of that callback. Each type unrefs its scratch buffer after the callback returns.
+
+Copy or ref the data (for example with `ffmpeg.AVFrameRef`) if you need to keep it past the callback.
 
 ## The Raw escape hatch
 
-Every owned type exposes `Raw`, returning the underlying `*ffmpeg.AV*` handle. Any FFmpeg capability this layer does not surface stays reachable through `Raw`:
+Every owned type exposes `Raw`, returning the underlying `*ffmpeg.AV*` handle. Any FFmpeg capability the `av` layer does not surface stays reachable through `Raw`:
 
 ```go
 globalHeader := output.Raw().Oformat().Flags()&ffmpeg.AVFmtGlobalheader != 0

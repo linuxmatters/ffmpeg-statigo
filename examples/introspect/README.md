@@ -24,13 +24,13 @@ introspect
 
 Prints: build configuration string, license, then each of the following sections with counts and flag legends:
 
-- **CODECS** — all codecs, with `D` (decoder) and `E` (encoder) flags and media type
-- **HARDWARE ACCELERATORS** — compiled-in device type names, plus HARDWARE CODECS with presence probed at runtime (`Y`/`N`)
-- **FORMATS** — muxers and demuxers, with `D` and `E` flags, default codecs, and MIME type
-- **FILTERS** — all filters, with `T` (timeline), `S` (slice threads), `H` (hardware), `M` (metadata-only) flags
-- **BITSTREAM FILTERS** — each BSF and its supported codec list
-- **PARSERS** — each parser and its supported codec list
-- **PROTOCOLS** — all I/O protocols, with `I` (input) and `O` (output) flags
+- **CODECS**: all codecs, with `D` (decoder) and `E` (encoder) flags and media type
+- **HARDWARE ACCELERATORS**: compiled-in device type names, plus HARDWARE CODECS with presence probed at runtime (`Y`/`N`)
+- **FORMATS**: muxers and demuxers, with `D` and `E` flags, default codecs, and MIME type
+- **FILTERS**: all filters, with `T` (timeline), `S` (slice threads), `H` (hardware), `M` (metadata-only) flags
+- **BITSTREAM FILTERS**: each BSF and its supported codec list
+- **PARSERS**: each parser and its supported codec list
+- **PROTOCOLS**: all I/O protocols, with `I` (input) and `O` (output) flags
 
 ### Codec dependency analysis
 

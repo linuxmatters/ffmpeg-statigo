@@ -31,7 +31,7 @@ missing.
 | Struct-field / other skips | 94 | skip summary, symbols containing a `.` |
 | Total skip markers | 245 | skip summary header (`= skipCeiling`) |
 | Re-bound by hand (covered) | 53 | skipped functions re-exposed in topic files |
-| Genuinely missing functions | 98 | 151 − 53 |
+| Genuinely missing functions | 98 | 151 - 53 |
 | **Numerator** (bound) | **910** | 857 + 53 |
 | **Denominator** (parsed public funcs) | **1008** | 857 + 151 |
 | **Coverage** | **90.3%** | 910 / 1008 |
@@ -44,10 +44,11 @@ bindings (`display.go`, `parseutils.go`, additions to `helpers.go` and
 `iterate.go`) re-bind 10 previously unbound skipped functions, lifting coverage
 from ~89% to ~90% (910 / 1008).
 
-> **Note:** the 53 / 910 / 90.3% figures are derived arithmetically from the
-> prior 43 / 900 / 89.3% baseline plus exactly 10 new function re-binds. They
-> can be confirmed against a live `go run ./internal/generator` skip summary
-> inside `nix develop`.
+> [!NOTE]
+> The 53 / 910 / 90.3% figures are derived arithmetically from the prior
+> 43 / 900 / 89.3% baseline plus exactly 10 new function re-binds. Confirm
+> them against a live `go run ./internal/generator` skip summary inside
+> `nix develop`.
 
 ## Scope
 
@@ -89,7 +90,7 @@ The skip ceiling lives in `internal/generator/main.go` (`skipCeiling`); a run
 that exceeds it fails, so the skip total tracks API drift across FFmpeg upgrades.
 
 The generator now annotates each skipped symbol that has a hand-written binding.
-The re-bind count is directly readable from the skip summary — no manual
+The re-bind count is directly readable from the skip summary; no manual
 cross-reference required:
 
 ```sh
