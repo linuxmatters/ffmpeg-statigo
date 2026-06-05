@@ -93,7 +93,9 @@ The re-bind count is directly readable from the skip summary — no manual
 cross-reference required:
 
 ```sh
-# Count skipped-but-rebound symbols (function skips only, no dot).
+# Count skipped-but-rebound symbols. Function skips have no dot in the symbol;
+# struct-field skips do, so split them to match the counts table.
 go run ./internal/generator 2>/tmp/skips.txt >/dev/null
-grep -c '(manual binding:' /tmp/skips.txt
+grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 53 figure)
+grep '(manual binding:' /tmp/skips.txt | grep -c  '\.'   # struct-field rebinds
 ```

@@ -92,7 +92,9 @@ func TestAVCodecGetTag2(t *testing.T) {
 	})
 
 	t.Run("absent_codec", func(t *testing.T) {
-		// Opus is an audio codec, absent from the RIFF video table.
+		// Opus is an audio codec, absent from the RIFF video table. A miss walks
+		// the table list to its terminator, so this guards the wrapper's
+		// internal NULL-termination against reading past the table pointer.
 		_, found := ffmpeg.AVCodecGetTag2(&tags, ffmpeg.AVCodecIdOpus)
 		assert.False(t, found, "audio codec should not match the video tag table")
 	})
