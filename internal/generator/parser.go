@@ -36,10 +36,12 @@ var files = []string{
 	"libavcodec/dirac.h",
 	"libavcodec/dv_profile.h",
 	////"libavcodec/dxva2.h", // needs <d3d9.h>/<dxva2api.h> (Windows SDK)
+	"libavcodec/exif.h",
 	////"libavcodec/jni.h", // Android-only symbols, link risk on Linux/macOS static lib
 	////"libavcodec/mediacodec.h", // Android-only symbols, link risk
 	"libavcodec/packet.h",
 	////"libavcodec/qsv.h", // needs <mfxvideo.h> (Intel Media SDK)
+	////"libavcodec/smpte_436m.h", // header vendored but symbols absent from FFmpeg 8.1.1 static lib (link error); needs a build that ships the SMPTE 436M/291M code
 	////"libavcodec/vdpau.h", // needs <vdpau/vdpau.h>
 	"libavcodec/version.h",
 	"libavcodec/version_major.h",
@@ -104,6 +106,7 @@ var files = []string{
 	////"libavutil/hwcontext_cuda.h",
 	////"libavutil/hwcontext_d3d11va.h", // needs <d3d11.h> (Windows SDK)
 	////"libavutil/hwcontext_d3d12va.h", // needs <d3d12.h> (Windows SDK)
+	"libavutil/hwcontext_drm.h",
 	////"libavutil/hwcontext_dxva2.h", // needs <d3d9.h>/<dxva2api.h> (Windows SDK)
 	////"libavutil/hwcontext_mediacodec.h", // Android-only, link risk
 	////"libavutil/hwcontext_oh.h", // OpenHarmony-only, link risk

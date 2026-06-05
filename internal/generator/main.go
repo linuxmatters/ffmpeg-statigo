@@ -32,7 +32,17 @@ import (
 // avdct, dirac, dv_profile, vorbis_parser, md5): the newly bound headers carry
 // a handful of per-symbol unemittable shapes. This is an intentional curation
 // decision accompanying the allowlist expansion, not silencing a regression.
-const skipCeiling = 239
+//
+// Bumped 239 -> 245 for the Tier 2 header promotion (exif, hwcontext_drm): six
+// new per-symbol unemittable shapes land as recorded skips — two int32
+// matrix-pointer functions and the AVExifEntry union field from exif.h, plus
+// three fixed-size struct-array fields in the DRM descriptors
+// (AVDRMFrameDescriptor.objects/layers, AVDRMLayerDescriptor.planes). These are
+// deferred to a later hand-written-binding commit; the curation policy accepts
+// them as tracked skips, not a regression. (smpte_436m.h was evaluated for the
+// same tier but dropped: its symbols are absent from the FFmpeg 8.1.1 static
+// lib and would break the link.)
+const skipCeiling = 245
 
 func main() {
 	skips, err := run(os.Args[1:], os.Stderr)

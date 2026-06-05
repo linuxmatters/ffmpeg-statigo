@@ -16,6 +16,7 @@ import "unsafe"
 // #include <libavcodec/defs.h>
 // #include <libavcodec/dirac.h>
 // #include <libavcodec/dv_profile.h>
+// #include <libavcodec/exif.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
@@ -74,6 +75,7 @@ import "unsafe"
 // #include <libavutil/hdr_dynamic_vivid_metadata.h>
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/hwcontext_drm.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>

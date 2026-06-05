@@ -14,6 +14,7 @@ package ffmpeg
 // #include <libavcodec/defs.h>
 // #include <libavcodec/dirac.h>
 // #include <libavcodec/dv_profile.h>
+// #include <libavcodec/exif.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
@@ -72,6 +73,7 @@ package ffmpeg
 // #include <libavutil/hdr_dynamic_vivid_metadata.h>
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/hwcontext_drm.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>
@@ -1033,6 +1035,9 @@ const MaxDwtLevels = C.MAX_DWT_LEVELS
 
 // DvProfileBytes wraps DV_PROFILE_BYTES.
 const DvProfileBytes = C.DV_PROFILE_BYTES
+
+// AVExifFlagRecursive wraps AV_EXIF_FLAG_RECURSIVE.
+const AVExifFlagRecursive = C.AV_EXIF_FLAG_RECURSIVE
 
 // AVPktFlagKey wraps AV_PKT_FLAG_KEY.
 const AVPktFlagKey = C.AV_PKT_FLAG_KEY
@@ -2194,6 +2199,9 @@ const AVHWFrameMapOverwrite = C.AV_HWFRAME_MAP_OVERWRITE
 
 // AVHWFrameMapDirect wraps AV_HWFRAME_MAP_DIRECT.
 const AVHWFrameMapDirect = C.AV_HWFRAME_MAP_DIRECT
+
+// AVDrmMaxPlanes wraps AV_DRM_MAX_PLANES.
+const AVDrmMaxPlanes = C.AV_DRM_MAX_PLANES
 
 // AVIamfLayerFlagReconGain wraps AV_IAMF_LAYER_FLAG_RECON_GAIN.
 const AVIamfLayerFlagReconGain = C.AV_IAMF_LAYER_FLAG_RECON_GAIN

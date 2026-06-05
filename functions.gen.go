@@ -16,6 +16,7 @@ import "unsafe"
 // #include <libavcodec/defs.h>
 // #include <libavcodec/dirac.h>
 // #include <libavcodec/dv_profile.h>
+// #include <libavcodec/exif.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
@@ -74,6 +75,7 @@ import "unsafe"
 // #include <libavutil/hdr_dynamic_vivid_metadata.h>
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/hwcontext_drm.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>
@@ -2132,6 +2134,252 @@ func AVDvCodecProfile2(width int, height int, pixFmt AVPixelFormat, frameRate *A
 	}
 	return retMapped
 }
+
+// --- Function av_exif_get_tag_name ---
+
+// AVExifGetTagName wraps av_exif_get_tag_name.
+/*
+  Retrieves the tag name associated with the provided tag ID.
+  If the tag ID is unknown, NULL is returned.
+
+  For example, av_exif_get_tag_name(0x112) returns "Orientation".
+*/
+func AVExifGetTagName(id uint16) *CStr {
+	ret := C.av_exif_get_tag_name(C.uint16_t(id))
+	return wrapCStr(ret)
+}
+
+// --- Function av_exif_get_tag_id ---
+
+// AVExifGetTagId wraps av_exif_get_tag_id.
+/*
+  Retrieves the tag ID associated with the provided tag string name.
+  If the tag name is unknown, a negative number is returned. Otherwise
+  it always fits inside a uint16_t integer.
+
+  For example, av_exif_get_tag_id("Orientation") returns 274 (0x0112).
+*/
+func AVExifGetTagId(name *CStr) int32 {
+	var tmpname *C.char
+	if name != nil {
+		tmpname = name.ptr
+	}
+	ret := C.av_exif_get_tag_id(tmpname)
+	return int32(ret)
+}
+
+// --- Function av_exif_set_entry ---
+
+// AVExifSetEntry wraps av_exif_set_entry.
+/*
+  Add an entry to the provided EXIF metadata struct. If one already exists with the provided
+  ID, it will set the existing one to have the other information provided. Otherwise, it
+  will allocate a new entry.
+
+  This function reallocates ifd->entries using av_realloc and allocates (using av_malloc)
+  a new value member of the entry, then copies the contents of value into that buffer.
+*/
+func AVExifSetEntry(logctx unsafe.Pointer, ifd *AVExifMetadata, id uint16, _type AVTiffDataType, count uint32, ifdLead unsafe.Pointer, ifdOffset uint32, value unsafe.Pointer) (int, error) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	ret := C.av_exif_set_entry(logctx, tmpifd, C.uint16_t(id), C.enum_AVTiffDataType(_type), C.uint32_t(count), (*C.uint8_t)(ifdLead), C.uint32_t(ifdOffset), value)
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_exif_get_entry ---
+
+// AVExifGetEntry wraps av_exif_get_entry.
+/*
+  Get an entry with the tagged ID from the EXIF metadata struct. A pointer to the entry
+  will be written into *value.
+
+  If the entry was present and returned successfully, a positive number is returned.
+  If the entry was not found, *value is left untouched and zero is returned.
+  If an error occurred, a negative number is returned.
+*/
+func AVExifGetEntry(logctx unsafe.Pointer, ifd *AVExifMetadata, id uint16, flags int, value **AVExifEntry) (int, error) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	var ptrvalue **C.AVExifEntry
+	var tmpvalue *C.AVExifEntry
+	var oldTmpvalue *C.AVExifEntry
+	if value != nil {
+		innervalue := *value
+		if innervalue != nil {
+			tmpvalue = innervalue.ptr
+			oldTmpvalue = tmpvalue
+		}
+		ptrvalue = &tmpvalue
+	}
+	ret := C.av_exif_get_entry(logctx, tmpifd, C.uint16_t(id), C.int(flags), ptrvalue)
+	if tmpvalue != oldTmpvalue && value != nil {
+		if tmpvalue != nil {
+			*value = &AVExifEntry{ptr: tmpvalue}
+		} else {
+			*value = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_exif_remove_entry ---
+
+// AVExifRemoveEntry wraps av_exif_remove_entry.
+/*
+  Remove an entry from the provided EXIF metadata struct.
+
+  If the entry was present and removed successfully, a positive number is returned.
+  If the entry was not found, zero is returned.
+  If an error occurred, a negative number is returned.
+*/
+func AVExifRemoveEntry(logctx unsafe.Pointer, ifd *AVExifMetadata, id uint16, flags int) (int, error) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	ret := C.av_exif_remove_entry(logctx, tmpifd, C.uint16_t(id), C.int(flags))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_exif_parse_buffer ---
+
+// AVExifParseBuffer wraps av_exif_parse_buffer.
+/*
+  Decodes the EXIF data provided in the buffer and writes it into the
+  struct *ifd. If this function succeeds, the IFD is owned by the caller
+  and must be cleared after use by calling av_exif_free(); If this function
+  fails and returns a negative value, it will call av_exif_free(ifd) before
+  returning.
+*/
+func AVExifParseBuffer(logctx unsafe.Pointer, data unsafe.Pointer, size uint64, ifd *AVExifMetadata, headerMode AVExifHeaderMode) (int, error) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	ret := C.av_exif_parse_buffer(logctx, (*C.uint8_t)(data), C.size_t(size), tmpifd, C.enum_AVExifHeaderMode(headerMode))
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_exif_write ---
+
+// AVExifWrite wraps av_exif_write.
+/*
+  Allocates a buffer using av_malloc of an appropriate size and writes the
+  EXIF data represented by ifd into that buffer.
+
+  Upon error, *buffer will be NULL. The buffer becomes owned by the caller upon
+  success. The *buffer argument must be NULL before calling.
+*/
+func AVExifWrite(logctx unsafe.Pointer, ifd *AVExifMetadata, buffer **AVBufferRef, headerMode AVExifHeaderMode) (int, error) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	var ptrbuffer **C.AVBufferRef
+	var tmpbuffer *C.AVBufferRef
+	var oldTmpbuffer *C.AVBufferRef
+	if buffer != nil {
+		innerbuffer := *buffer
+		if innerbuffer != nil {
+			tmpbuffer = innerbuffer.ptr
+			oldTmpbuffer = tmpbuffer
+		}
+		ptrbuffer = &tmpbuffer
+	}
+	ret := C.av_exif_write(logctx, tmpifd, ptrbuffer, C.enum_AVExifHeaderMode(headerMode))
+	if tmpbuffer != oldTmpbuffer && buffer != nil {
+		if tmpbuffer != nil {
+			*buffer = &AVBufferRef{ptr: tmpbuffer}
+		} else {
+			*buffer = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_exif_free ---
+
+// AVExifFree wraps av_exif_free.
+/*
+  Frees all resources associated with the given EXIF metadata struct.
+  Does not free the pointer passed itself, in case it is stack-allocated.
+  The pointer passed to this function must be freed by the caller,
+  if it is heap-allocated. Passing NULL is permitted.
+*/
+func AVExifFree(ifd *AVExifMetadata) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	C.av_exif_free(tmpifd)
+}
+
+// --- Function av_exif_ifd_to_dict ---
+
+// AVExifIfdToDict wraps av_exif_ifd_to_dict.
+/*
+  Recursively reads all tags from the IFD and stores them in the
+  provided metadata dictionary.
+*/
+func AVExifIfdToDict(logctx unsafe.Pointer, ifd *AVExifMetadata, metadata **AVDictionary) (int, error) {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	var ptrmetadata **C.AVDictionary
+	var tmpmetadata *C.AVDictionary
+	var oldTmpmetadata *C.AVDictionary
+	if metadata != nil {
+		innermetadata := *metadata
+		if innermetadata != nil {
+			tmpmetadata = innermetadata.ptr
+			oldTmpmetadata = tmpmetadata
+		}
+		ptrmetadata = &tmpmetadata
+	}
+	ret := C.av_exif_ifd_to_dict(logctx, tmpifd, ptrmetadata)
+	if tmpmetadata != oldTmpmetadata && metadata != nil {
+		if tmpmetadata != nil {
+			*metadata = &AVDictionary{ptr: tmpmetadata}
+		} else {
+			*metadata = nil
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
+
+// --- Function av_exif_clone_ifd ---
+
+// AVExifCloneIfd wraps av_exif_clone_ifd.
+/*
+  Allocates a duplicate of the provided EXIF metadata struct. The caller owns
+  the duplicate and must free it with av_exif_free. Returns NULL if the duplication
+  process failed.
+*/
+func AVExifCloneIfd(ifd *AVExifMetadata) *AVExifMetadata {
+	var tmpifd *C.AVExifMetadata
+	if ifd != nil {
+		tmpifd = ifd.ptr
+	}
+	ret := C.av_exif_clone_ifd(tmpifd)
+	var retMapped *AVExifMetadata
+	if ret != nil {
+		retMapped = &AVExifMetadata{ptr: ret}
+	}
+	return retMapped
+}
+
+// --- Function av_exif_matrix_to_orientation ---
+
+// av_exif_matrix_to_orientation skipped due to matrix (non-output primitive pointer)
+
+// --- Function av_exif_orientation_to_matrix ---
+
+// av_exif_orientation_to_matrix skipped due to matrix (non-output primitive pointer)
 
 // --- Function av_packet_side_data_new ---
 
