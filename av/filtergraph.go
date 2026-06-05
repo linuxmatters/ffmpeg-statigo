@@ -325,13 +325,22 @@ func (g *FilterGraph) parseAndConfigure(spec string) error {
 	defer ffmpeg.AVFilterInoutFree(&inputs)
 
 	// avfilter_inout_free frees name via av_freep, so allocate it with the
-	// FFmpeg allocator (av_strdup) to match the free routing.
-	outputs.SetName(ffmpeg.AVStrdup(ffmpeg.GlobalCStr("in")))
+	// FFmpeg allocator (av_strdup) to match the free routing. av_strdup returns
+	// NULL on OOM, so check before SetName to avoid a nil deref.
+	outName := ffmpeg.AVStrdup(ffmpeg.GlobalCStr("in"))
+	if outName == nil {
+		return fmt.Errorf("allocate filter inout name %q", "in")
+	}
+	outputs.SetName(outName)
 	outputs.SetFilterCtx(g.srcCtx)
 	outputs.SetPadIdx(0)
 	outputs.SetNext(nil)
 
-	inputs.SetName(ffmpeg.AVStrdup(ffmpeg.GlobalCStr("out")))
+	inName := ffmpeg.AVStrdup(ffmpeg.GlobalCStr("out"))
+	if inName == nil {
+		return fmt.Errorf("allocate filter inout name %q", "out")
+	}
+	inputs.SetName(inName)
 	inputs.SetFilterCtx(g.sinkCtx)
 	inputs.SetPadIdx(0)
 	inputs.SetNext(nil)
