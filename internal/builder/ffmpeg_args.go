@@ -99,13 +99,6 @@ var commonFFmpegFeatureSets = []ffmpegFeatureSet{
 		Decoders: []string{"dvbsub", "dvdsub"},
 	},
 	{
-		Encoders:         []string{"eac3"},
-		Decoders:         []string{"eac3"},
-		Demuxers:         []string{"eac3"},
-		Muxers:           []string{"eac3"},
-		BitstreamFilters: []string{"eac3_core"},
-	},
-	{
 		Encoders: []string{"exr"},
 		Decoders: []string{"exr"},
 	},
