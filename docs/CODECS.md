@@ -1,6 +1,8 @@
-# ffmpeg-statigo
+# Codec and Filter Reference
 
-## CODECS
+Codecs, hardware accelerators, formats, filters, bitstream filters, parsers, and protocols bundled with ffmpeg-statigo. All data reflects the current static build.
+
+## Codecs
 
 ```
  DE  NAME                     DESCRIPTION                                TYPE
@@ -75,7 +77,7 @@
 - D - Decoder available
 - E - Encoder available
 
-## HARDWARE ACCELERATORS
+## Hardware Accelerators
 
 ```
     NAME
@@ -85,7 +87,7 @@
     vulkan
 ```
 
-### HARDWARE CODECS
+### Hardware Codecs
 
 ```
  DEH  NAME                     DESCRIPTION                                TYPE PRESENT
@@ -130,7 +132,7 @@ Summary:
   Hardware encoders: 13
 ```
 
-## FORMATS
+## Formats
 
 ```
 DE  NAME                     DESCRIPTION                                CODECS                              MIME TYPE
@@ -204,7 +206,7 @@ DE  webvtt                   WebVTT subtitle                            subtitle
 - Total demuxers: 41
 - Total muxers: 54
 
-## FILTERS
+## Filters
 
 ```
  TSHM  NAME                     DESCRIPTION                                TYPE
@@ -730,7 +732,7 @@ DE  webvtt                   WebVTT subtitle                            subtitle
 - H - Hardware device required
 - M - Metadata only (does not modify frame data)
 
-# BITSTREAM FILTERS
+## Bitstream Filters
 
 ```
     NAME                     SUPPORTED CODECS
@@ -779,7 +781,7 @@ DE  webvtt                   WebVTT subtitle                            subtitle
 - Codec-specific filters: 30
 - Generic filters: 7
 
-## PARSERS
+## Parsers
 
 ```
     NAME                     SUPPORTED CODECS
@@ -815,7 +817,7 @@ DE  webvtt                   WebVTT subtitle                            subtitle
 - Total parsers: 25
 
 
-## PROTOCOLS
+## Protocols
 
 ```
 IO  NAME
