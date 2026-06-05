@@ -11,6 +11,14 @@ clean:
     @rm examples/metadata/metadata 2>/dev/null || true
     @rm examples/transcode/transcode 2>/dev/null || true
     @rm examples/transcode-hl/transcode-hl 2>/dev/null || true
+    @rm asciiplayer 2>/dev/null || true
+    @rm hwdecode 2>/dev/null || true
+    @rm introspect 2>/dev/null || true
+    @rm metadata 2>/dev/null || true
+    @rm transcode 2>/dev/null || true
+    @rm transcode-hl 2>/dev/null || true
+    @rm generator 2>/dev/null || true
+    @rm builder 2>/dev/null || true
 
 # Build FFmpeg static library
 build-static +args='':
