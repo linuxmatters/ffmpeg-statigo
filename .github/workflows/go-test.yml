@@ -74,7 +74,15 @@ jobs:
       # libraries were built on a newer macOS version than the runner.
       # These warnings are harmless - the libraries have MACOSX_DEPLOYMENT_TARGET=13.0
       - name: Test
-        run: go test -v .
+        run: go test -v ./...
+
+      # Lint once on linux/amd64 — golangci-lint v2 (config declares version: "2").
+      # CGO project: needs libclang and the downloaded static libraries already present.
+      - name: Lint
+        if: matrix.os == 'linux' && matrix.arch == 'amd64'
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12
 
       # The generator creates Go bindings from FFmpeg headers using libclang.
       # It's only needed during development when FFmpeg is updated.
