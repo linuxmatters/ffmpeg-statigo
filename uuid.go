@@ -71,10 +71,9 @@ func AVUuidUnparse(uu *AVUUID, out *CStr) {
 //
 //	@param[in] uu1 AVUUID
 //	@param[in] uu2 AVUUID
-//	@return        Nonzero if uu1 and uu2 are equal, 0 otherwise.
-func AVUuidEqual(uu1 *AVUUID, uu2 *AVUUID) (int, error) {
-	ret := C.av_uuid_equal((*C.uint8_t)(unsafe.Pointer(&uu1[0])), (*C.uint8_t)(unsafe.Pointer(&uu2[0])))
-	return int(ret), WrapErr(int(ret))
+//	@return        true if uu1 and uu2 are equal, false otherwise.
+func AVUuidEqual(uu1 *AVUUID, uu2 *AVUUID) bool {
+	return C.av_uuid_equal((*C.uint8_t)(unsafe.Pointer(&uu1[0])), (*C.uint8_t)(unsafe.Pointer(&uu2[0]))) != 0
 }
 
 // AVUuidCopy copies the bytes of src into dest.
