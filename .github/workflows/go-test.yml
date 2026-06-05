@@ -52,12 +52,15 @@ jobs:
             } >> "$GITHUB_ENV"
           elif [ "${{ matrix.os }}" = "darwin" ]; then
             # On macOS, use LLVM 20 to match Linux environment
-            brew install llvm@20 || brew install llvm
-            if [ -d "$(brew --prefix llvm@20)" ]; then
+            if ! LLVM_PREFIX=$(brew --prefix llvm@20 2>/dev/null) || [ ! -d "$LLVM_PREFIX" ]; then
+              brew_log=$(mktemp)
+              if ! brew install llvm@20 >"$brew_log" 2>&1; then
+                cat "$brew_log"
+                rm -f "$brew_log"
+                exit 1
+              fi
+              rm -f "$brew_log"
               LLVM_PREFIX=$(brew --prefix llvm@20)
-            else
-              LLVM_PREFIX=$(brew --prefix llvm)
-              echo "::warning::Using latest LLVM on macOS instead of version 20"
             fi
             {
               echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib"
