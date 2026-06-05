@@ -96,9 +96,11 @@ func TestSwrSetMatrix(t *testing.T) {
 	}
 	defer SwrFree(&swr)
 
-	// Stereo matrix is nb_out x nb_in = 2 x 2; stride is the input channel count.
-	const stride = 2
-	matrix := make([]float64, stride*2)
+	// swr_build_matrix2 normalises across the full SWR_CH_MAX (64) grid, so the
+	// buffer must hold stride*(64-1)+64 doubles even for a 2x2 stereo matrix.
+	// FFmpeg's own auto_matrix uses a 64x64 buffer with stride 64; mirror that.
+	const stride = swrChMax
+	matrix := make([]float64, stride*(swrChMax-1)+swrChMax)
 
 	ret, err := SwrBuildMatrix2(
 		inLayout, outLayout,

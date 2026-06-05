@@ -39,10 +39,19 @@ func SwrConvert(s *SwrContext, out []unsafe.Pointer, outCount int, in []unsafe.P
 	return int(ret), WrapErr(int(ret))
 }
 
+// swrChMax mirrors libswresample's SWR_CH_MAX. swr_build_matrix2 normalises and
+// scales coefficients with loops that span the full SWR_CH_MAX range, indexing
+// matrix[stride*i + j] for i, j in [0, SWR_CH_MAX), so the buffer must hold the
+// worst-case index regardless of the active channel counts.
+const swrChMax = 64
+
 // SwrBuildMatrix2 computes a rematrixing coefficient matrix mapping inLayout to
-// outLayout and writes it into matrix, which must hold at least
-// outLayout.nb_channels * stride doubles. stride is the row stride in elements.
-// matrixEncoding selects an optional matrix-encoding downmix. logCtx may be nil.
+// outLayout and writes it into matrix. The buffer must hold at least
+// stride*(SWR_CH_MAX-1) + SWR_CH_MAX doubles (SWR_CH_MAX is 64): FFmpeg's
+// normalisation and rematrix-volume passes write across the full SWR_CH_MAX grid,
+// not just the active out/in channels, so a smaller buffer overflows. stride is
+// the row stride in elements. matrixEncoding selects an optional matrix-encoding
+// downmix. logCtx may be nil.
 //
 // Returns 0 on success or a negative error code.
 func SwrBuildMatrix2(inLayout, outLayout *AVChannelLayout, centerMixLevel, surroundMixLevel, lfeMixLevel, maxval, rematrixVolume float64, matrix []float64, stride int, matrixEncoding AVMatrixEncoding, logCtx unsafe.Pointer) (int, error) {
@@ -50,9 +59,11 @@ func SwrBuildMatrix2(inLayout, outLayout *AVChannelLayout, centerMixLevel, surro
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
 
-	// FFmpeg writes outLayout.nb_channels rows of stride doubles. Reject any
-	// slice too small to hold the result before handing its buffer to C.
-	if need := outLayout.NbChannels() * stride; need <= 0 || len(matrix) < need {
+	// FFmpeg's normalisation (build_matrix) and rematrix-volume passes iterate i,
+	// j over [0, SWR_CH_MAX) and write matrix[stride*i + j], so the highest index
+	// touched is stride*(SWR_CH_MAX-1) + (SWR_CH_MAX-1). Reject any slice too small
+	// to hold that worst case before handing its buffer to C.
+	if need := stride*(swrChMax-1) + swrChMax; need <= 0 || len(matrix) < need {
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
 
