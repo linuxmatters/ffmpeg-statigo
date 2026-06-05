@@ -7,6 +7,9 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build and test on ${{ matrix.os }} ${{ matrix.arch }}
@@ -65,6 +68,8 @@ jobs:
           fi
 
       - name: Download FFmpeg libraries
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
       - name: Build

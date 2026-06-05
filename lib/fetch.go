@@ -142,13 +142,10 @@ func findViaAPI(prefix string) (string, error) {
 	// Query GitHub API for releases
 	apiURL := "https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases?per_page=100"
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
+	req, err := newGitHubAPIRequest(apiURL)
 	if err != nil {
 		return "", err
 	}
-
-	// GitHub recommends setting User-Agent
-	req.Header.Set("User-Agent", "ffmpeg-statigo")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -200,15 +197,40 @@ type GitHubReleaseDetail struct {
 	Assets []GitHubAsset `json:"assets"`
 }
 
-// fetchReleaseDetails retrieves asset metadata from GitHub API for a release.
-func fetchReleaseDetails(release string) (*GitHubReleaseDetail, error) {
-	apiURL := fmt.Sprintf("https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s", release)
-
+func newGitHubAPIRequest(apiURL string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "ffmpeg-statigo")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	if token := githubToken(); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	return req, nil
+}
+
+func githubToken() string {
+	for _, name := range []string{"GITHUB_TOKEN", "GH_TOKEN"} {
+		if token := strings.TrimSpace(os.Getenv(name)); token != "" {
+			return token
+		}
+	}
+	return ""
+}
+
+// fetchReleaseDetails retrieves asset metadata from GitHub API for a release.
+func fetchReleaseDetails(release string) (*GitHubReleaseDetail, error) {
+	apiURL := fmt.Sprintf("https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s", release)
+
+	req, err := newGitHubAPIRequest(apiURL)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

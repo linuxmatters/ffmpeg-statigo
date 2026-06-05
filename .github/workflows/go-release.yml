@@ -47,6 +47,8 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Download FFmpeg libraries
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
       - name: Verify module builds
