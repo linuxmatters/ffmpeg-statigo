@@ -16,6 +16,7 @@ import "unsafe"
 // #include <libavcodec/defs.h>
 // #include <libavcodec/dirac.h>
 // #include <libavcodec/dv_profile.h>
+// #include <libavcodec/exif.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
@@ -74,6 +75,7 @@ import "unsafe"
 // #include <libavutil/hdr_dynamic_vivid_metadata.h>
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/hwcontext_drm.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>
@@ -7622,6 +7624,210 @@ func (s *AVDVProfile) AudioSamplesDist() *Array[int] {
 }
 
 // audio_shuffle skipped due to unhandled pointer inner type *main.ConstArray
+
+// --- Struct AVExifEntry ---
+
+// AVExifEntry wraps AVExifEntry.
+type AVExifEntry struct {
+	ptr *C.AVExifEntry
+}
+
+func (s *AVExifEntry) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVExifEntryArray(ptr unsafe.Pointer) *Array[*AVExifEntry] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVExifEntry]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVExifEntry {
+			ptr := (**C.AVExifEntry)(pointer)
+			value := *ptr
+			var valueMapped *AVExifEntry
+			if value != nil {
+				valueMapped = &AVExifEntry{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVExifEntry) {
+			ptr := (**C.AVExifEntry)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Id gets the id field.
+func (s *AVExifEntry) Id() uint16 {
+	value := s.ptr.id
+	return uint16(value)
+}
+
+// SetId sets the id field.
+func (s *AVExifEntry) SetId(value uint16) {
+	s.ptr.id = (C.uint16_t)(value)
+}
+
+// Type gets the type field.
+func (s *AVExifEntry) Type() AVTiffDataType {
+	value := s.ptr._type
+	return AVTiffDataType(value)
+}
+
+// SetType sets the type field.
+func (s *AVExifEntry) SetType(value AVTiffDataType) {
+	s.ptr._type = (C.enum_AVTiffDataType)(value)
+}
+
+// Count gets the count field.
+func (s *AVExifEntry) Count() uint32 {
+	value := s.ptr.count
+	return uint32(value)
+}
+
+// SetCount sets the count field.
+func (s *AVExifEntry) SetCount(value uint32) {
+	s.ptr.count = (C.uint32_t)(value)
+}
+
+// IfdOffset gets the ifd_offset field.
+/*
+  These are for IFD-style MakerNote
+  entries which occur after a fixed
+  offset rather than at the start of
+  the entry. The ifd_lead field contains
+  the leading bytes which typically
+  identify the type of MakerNote.
+*/
+func (s *AVExifEntry) IfdOffset() uint32 {
+	value := s.ptr.ifd_offset
+	return uint32(value)
+}
+
+// SetIfdOffset sets the ifd_offset field.
+/*
+  These are for IFD-style MakerNote
+  entries which occur after a fixed
+  offset rather than at the start of
+  the entry. The ifd_lead field contains
+  the leading bytes which typically
+  identify the type of MakerNote.
+*/
+func (s *AVExifEntry) SetIfdOffset(value uint32) {
+	s.ptr.ifd_offset = (C.uint32_t)(value)
+}
+
+// IfdLead gets the ifd_lead field.
+func (s *AVExifEntry) IfdLead() unsafe.Pointer {
+	value := s.ptr.ifd_lead
+	return unsafe.Pointer(value)
+}
+
+// SetIfdLead sets the ifd_lead field.
+func (s *AVExifEntry) SetIfdLead(value unsafe.Pointer) {
+	s.ptr.ifd_lead = (*C.uint8_t)(value)
+}
+
+// value skipped due to union type
+
+// --- Struct AVExifMetadata ---
+
+// AVExifMetadata wraps AVExifMetadata.
+type AVExifMetadata struct {
+	ptr *C.AVExifMetadata
+}
+
+func (s *AVExifMetadata) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVExifMetadataArray(ptr unsafe.Pointer) *Array[*AVExifMetadata] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVExifMetadata]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVExifMetadata {
+			ptr := (**C.AVExifMetadata)(pointer)
+			value := *ptr
+			var valueMapped *AVExifMetadata
+			if value != nil {
+				valueMapped = &AVExifMetadata{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVExifMetadata) {
+			ptr := (**C.AVExifMetadata)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Entries gets the entries field.
+//
+//	array of EXIF metadata entries
+func (s *AVExifMetadata) Entries() *AVExifEntry {
+	value := s.ptr.entries
+	var valueMapped *AVExifEntry
+	if value != nil {
+		valueMapped = &AVExifEntry{ptr: value}
+	}
+	return valueMapped
+}
+
+// SetEntries sets the entries field.
+//
+//	array of EXIF metadata entries
+func (s *AVExifMetadata) SetEntries(value *AVExifEntry) {
+	if value != nil {
+		s.ptr.entries = value.ptr
+	} else {
+		s.ptr.entries = nil
+	}
+}
+
+// Count gets the count field.
+//
+//	number of entries in this array
+func (s *AVExifMetadata) Count() uint {
+	value := s.ptr.count
+	return uint(value)
+}
+
+// SetCount sets the count field.
+//
+//	number of entries in this array
+func (s *AVExifMetadata) SetCount(value uint) {
+	s.ptr.count = (C.uint)(value)
+}
+
+// Size gets the size field.
+//
+//	size of the buffer, used for av_fast_realloc
+func (s *AVExifMetadata) Size() uint {
+	value := s.ptr.size
+	return uint(value)
+}
+
+// SetSize sets the size field.
+//
+//	size of the buffer, used for av_fast_realloc
+func (s *AVExifMetadata) SetSize(value uint) {
+	s.ptr.size = (C.uint)(value)
+}
 
 // --- Struct AVPacketSideData ---
 
@@ -24627,6 +24833,451 @@ func (s *AVHWFramesConstraints) MaxHeight() int {
 // SetMaxHeight sets the max_height field.
 func (s *AVHWFramesConstraints) SetMaxHeight(value int) {
 	s.ptr.max_height = (C.int)(value)
+}
+
+// --- Struct AVDRMObjectDescriptor ---
+
+// AVDRMObjectDescriptor wraps AVDRMObjectDescriptor.
+/*
+  DRM object descriptor.
+
+  Describes a single DRM object, addressing it as a PRIME file
+  descriptor.
+*/
+type AVDRMObjectDescriptor struct {
+	ptr *C.AVDRMObjectDescriptor
+}
+
+func (s *AVDRMObjectDescriptor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDRMObjectDescriptorArray(ptr unsafe.Pointer) *Array[*AVDRMObjectDescriptor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDRMObjectDescriptor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDRMObjectDescriptor {
+			ptr := (**C.AVDRMObjectDescriptor)(pointer)
+			value := *ptr
+			var valueMapped *AVDRMObjectDescriptor
+			if value != nil {
+				valueMapped = &AVDRMObjectDescriptor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDRMObjectDescriptor) {
+			ptr := (**C.AVDRMObjectDescriptor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Fd gets the fd field.
+//
+//	DRM PRIME fd for the object.
+func (s *AVDRMObjectDescriptor) Fd() int {
+	value := s.ptr.fd
+	return int(value)
+}
+
+// SetFd sets the fd field.
+//
+//	DRM PRIME fd for the object.
+func (s *AVDRMObjectDescriptor) SetFd(value int) {
+	s.ptr.fd = (C.int)(value)
+}
+
+// Size gets the size field.
+/*
+  Total size of the object.
+
+  (This includes any parts not which do not contain image data.)
+*/
+func (s *AVDRMObjectDescriptor) Size() uint64 {
+	value := s.ptr.size
+	return uint64(value)
+}
+
+// SetSize sets the size field.
+/*
+  Total size of the object.
+
+  (This includes any parts not which do not contain image data.)
+*/
+func (s *AVDRMObjectDescriptor) SetSize(value uint64) {
+	s.ptr.size = (C.size_t)(value)
+}
+
+// FormatModifier gets the format_modifier field.
+/*
+  Format modifier applied to the object (DRM_FORMAT_MOD_*).
+
+  If the format modifier is unknown then this should be set to
+  DRM_FORMAT_MOD_INVALID.
+*/
+func (s *AVDRMObjectDescriptor) FormatModifier() uint64 {
+	value := s.ptr.format_modifier
+	return uint64(value)
+}
+
+// SetFormatModifier sets the format_modifier field.
+/*
+  Format modifier applied to the object (DRM_FORMAT_MOD_*).
+
+  If the format modifier is unknown then this should be set to
+  DRM_FORMAT_MOD_INVALID.
+*/
+func (s *AVDRMObjectDescriptor) SetFormatModifier(value uint64) {
+	s.ptr.format_modifier = (C.uint64_t)(value)
+}
+
+// --- Struct AVDRMPlaneDescriptor ---
+
+// AVDRMPlaneDescriptor wraps AVDRMPlaneDescriptor.
+/*
+  DRM plane descriptor.
+
+  Describes a single plane of a layer, which is contained within
+  a single object.
+*/
+type AVDRMPlaneDescriptor struct {
+	ptr *C.AVDRMPlaneDescriptor
+}
+
+func (s *AVDRMPlaneDescriptor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDRMPlaneDescriptorArray(ptr unsafe.Pointer) *Array[*AVDRMPlaneDescriptor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDRMPlaneDescriptor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDRMPlaneDescriptor {
+			ptr := (**C.AVDRMPlaneDescriptor)(pointer)
+			value := *ptr
+			var valueMapped *AVDRMPlaneDescriptor
+			if value != nil {
+				valueMapped = &AVDRMPlaneDescriptor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDRMPlaneDescriptor) {
+			ptr := (**C.AVDRMPlaneDescriptor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// ObjectIndex gets the object_index field.
+/*
+  Index of the object containing this plane in the objects
+  array of the enclosing frame descriptor.
+*/
+func (s *AVDRMPlaneDescriptor) ObjectIndex() int {
+	value := s.ptr.object_index
+	return int(value)
+}
+
+// SetObjectIndex sets the object_index field.
+/*
+  Index of the object containing this plane in the objects
+  array of the enclosing frame descriptor.
+*/
+func (s *AVDRMPlaneDescriptor) SetObjectIndex(value int) {
+	s.ptr.object_index = (C.int)(value)
+}
+
+// Offset gets the offset field.
+//
+//	Offset within that object of this plane.
+func (s *AVDRMPlaneDescriptor) Offset() int64 {
+	value := s.ptr.offset
+	return int64(value)
+}
+
+// SetOffset sets the offset field.
+//
+//	Offset within that object of this plane.
+func (s *AVDRMPlaneDescriptor) SetOffset(value int64) {
+	s.ptr.offset = (C.ptrdiff_t)(value)
+}
+
+// Pitch gets the pitch field.
+//
+//	Pitch (linesize) of this plane.
+func (s *AVDRMPlaneDescriptor) Pitch() int64 {
+	value := s.ptr.pitch
+	return int64(value)
+}
+
+// SetPitch sets the pitch field.
+//
+//	Pitch (linesize) of this plane.
+func (s *AVDRMPlaneDescriptor) SetPitch(value int64) {
+	s.ptr.pitch = (C.ptrdiff_t)(value)
+}
+
+// --- Struct AVDRMLayerDescriptor ---
+
+// AVDRMLayerDescriptor wraps AVDRMLayerDescriptor.
+/*
+  DRM layer descriptor.
+
+  Describes a single layer within a frame.  This has the structure
+  defined by its format, and will contain one or more planes.
+*/
+type AVDRMLayerDescriptor struct {
+	ptr *C.AVDRMLayerDescriptor
+}
+
+func (s *AVDRMLayerDescriptor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDRMLayerDescriptorArray(ptr unsafe.Pointer) *Array[*AVDRMLayerDescriptor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDRMLayerDescriptor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDRMLayerDescriptor {
+			ptr := (**C.AVDRMLayerDescriptor)(pointer)
+			value := *ptr
+			var valueMapped *AVDRMLayerDescriptor
+			if value != nil {
+				valueMapped = &AVDRMLayerDescriptor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDRMLayerDescriptor) {
+			ptr := (**C.AVDRMLayerDescriptor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Format gets the format field.
+//
+//	Format of the layer (DRM_FORMAT_*).
+func (s *AVDRMLayerDescriptor) Format() uint32 {
+	value := s.ptr.format
+	return uint32(value)
+}
+
+// SetFormat sets the format field.
+//
+//	Format of the layer (DRM_FORMAT_*).
+func (s *AVDRMLayerDescriptor) SetFormat(value uint32) {
+	s.ptr.format = (C.uint32_t)(value)
+}
+
+// NbPlanes gets the nb_planes field.
+/*
+  Number of planes in the layer.
+
+  This must match the number of planes required by format.
+*/
+func (s *AVDRMLayerDescriptor) NbPlanes() int {
+	value := s.ptr.nb_planes
+	return int(value)
+}
+
+// SetNbPlanes sets the nb_planes field.
+/*
+  Number of planes in the layer.
+
+  This must match the number of planes required by format.
+*/
+func (s *AVDRMLayerDescriptor) SetNbPlanes(value int) {
+	s.ptr.nb_planes = (C.int)(value)
+}
+
+// planes skipped due to const array of struct pointers
+
+// --- Struct AVDRMFrameDescriptor ---
+
+// AVDRMFrameDescriptor wraps AVDRMFrameDescriptor.
+/*
+  DRM frame descriptor.
+
+  This is used as the data pointer for AV_PIX_FMT_DRM_PRIME frames.
+  It is also used by user-allocated frame pools - allocating in
+  AVHWFramesContext.pool must return AVBufferRefs which contain
+  an object of this type.
+
+  The fields of this structure should be set such it can be
+  imported directly by EGL using the EGL_EXT_image_dma_buf_import
+  and EGL_EXT_image_dma_buf_import_modifiers extensions.
+  (Note that the exact layout of a particular format may vary between
+  platforms - we only specify that the same platform should be able
+  to import it.)
+
+  The total number of planes must not exceed AV_DRM_MAX_PLANES, and
+  the order of the planes by increasing layer index followed by
+  increasing plane index must be the same as the order which would
+  be used for the data pointers in the equivalent software format.
+*/
+type AVDRMFrameDescriptor struct {
+	ptr *C.AVDRMFrameDescriptor
+}
+
+func (s *AVDRMFrameDescriptor) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDRMFrameDescriptorArray(ptr unsafe.Pointer) *Array[*AVDRMFrameDescriptor] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDRMFrameDescriptor]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDRMFrameDescriptor {
+			ptr := (**C.AVDRMFrameDescriptor)(pointer)
+			value := *ptr
+			var valueMapped *AVDRMFrameDescriptor
+			if value != nil {
+				valueMapped = &AVDRMFrameDescriptor{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDRMFrameDescriptor) {
+			ptr := (**C.AVDRMFrameDescriptor)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// NbObjects gets the nb_objects field.
+//
+//	Number of DRM objects making up this frame.
+func (s *AVDRMFrameDescriptor) NbObjects() int {
+	value := s.ptr.nb_objects
+	return int(value)
+}
+
+// SetNbObjects sets the nb_objects field.
+//
+//	Number of DRM objects making up this frame.
+func (s *AVDRMFrameDescriptor) SetNbObjects(value int) {
+	s.ptr.nb_objects = (C.int)(value)
+}
+
+// objects skipped due to const array of struct pointers
+
+// NbLayers gets the nb_layers field.
+//
+//	Number of layers in the frame.
+func (s *AVDRMFrameDescriptor) NbLayers() int {
+	value := s.ptr.nb_layers
+	return int(value)
+}
+
+// SetNbLayers sets the nb_layers field.
+//
+//	Number of layers in the frame.
+func (s *AVDRMFrameDescriptor) SetNbLayers(value int) {
+	s.ptr.nb_layers = (C.int)(value)
+}
+
+// layers skipped due to const array of struct pointers
+
+// --- Struct AVDRMDeviceContext ---
+
+// AVDRMDeviceContext wraps AVDRMDeviceContext.
+/*
+  DRM device.
+
+  Allocated as AVHWDeviceContext.hwctx.
+*/
+type AVDRMDeviceContext struct {
+	ptr *C.AVDRMDeviceContext
+}
+
+func (s *AVDRMDeviceContext) RawPtr() unsafe.Pointer {
+	return unsafe.Pointer(s.ptr)
+}
+
+func ToAVDRMDeviceContextArray(ptr unsafe.Pointer) *Array[*AVDRMDeviceContext] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[*AVDRMDeviceContext]{
+		elemSize: ptrSize,
+		loadPtr: func(pointer unsafe.Pointer) *AVDRMDeviceContext {
+			ptr := (**C.AVDRMDeviceContext)(pointer)
+			value := *ptr
+			var valueMapped *AVDRMDeviceContext
+			if value != nil {
+				valueMapped = &AVDRMDeviceContext{ptr: value}
+			}
+			return valueMapped
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value *AVDRMDeviceContext) {
+			ptr := (**C.AVDRMDeviceContext)(pointer)
+			if value != nil {
+				*ptr = value.ptr
+			} else {
+				*ptr = nil
+			}
+		},
+	}
+}
+
+// Fd gets the fd field.
+/*
+  File descriptor of DRM device.
+
+  This is used as the device to create frames on, and may also be
+  used in some derivation and mapping operations.
+
+  If no device is required, set to -1.
+*/
+func (s *AVDRMDeviceContext) Fd() int {
+	value := s.ptr.fd
+	return int(value)
+}
+
+// SetFd sets the fd field.
+/*
+  File descriptor of DRM device.
+
+  This is used as the device to create frames on, and may also be
+  used in some derivation and mapping operations.
+
+  If no device is required, set to -1.
+*/
+func (s *AVDRMDeviceContext) SetFd(value int) {
+	s.ptr.fd = (C.int)(value)
 }
 
 // --- Struct AVIAMFMixGain ---

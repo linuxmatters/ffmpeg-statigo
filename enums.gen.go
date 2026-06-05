@@ -16,6 +16,7 @@ import "unsafe"
 // #include <libavcodec/defs.h>
 // #include <libavcodec/dirac.h>
 // #include <libavcodec/dv_profile.h>
+// #include <libavcodec/exif.h>
 // #include <libavcodec/packet.h>
 // #include <libavcodec/version.h>
 // #include <libavcodec/version_major.h>
@@ -74,6 +75,7 @@ import "unsafe"
 // #include <libavutil/hdr_dynamic_vivid_metadata.h>
 // #include <libavutil/hmac.h>
 // #include <libavutil/hwcontext.h>
+// #include <libavutil/hwcontext_drm.h>
 // #include <libavutil/iamf.h>
 // #include <libavutil/imgutils.h>
 // #include <libavutil/intfloat.h>
@@ -1868,6 +1870,122 @@ const (
 	DiracPcodeIntraRefPict DiracParseCodes = C.DIRAC_PCODE_INTRA_REF_PICT
 	// DiracPcodeMagic wraps DIRAC_PCODE_MAGIC.
 	DiracPcodeMagic DiracParseCodes = C.DIRAC_PCODE_MAGIC
+)
+
+// --- Enum AVTiffDataType ---
+
+// AVTiffDataType wraps AVTiffDataType.
+//
+//	Data type identifiers for TIFF tags
+type AVTiffDataType C.enum_AVTiffDataType
+
+const SizeOfAVTiffDataType = C.sizeof_enum_AVTiffDataType
+
+func ToAVTiffDataTypeArray(ptr unsafe.Pointer) *Array[AVTiffDataType] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVTiffDataType]{
+		elemSize: SizeOfAVTiffDataType,
+		loadPtr: func(pointer unsafe.Pointer) AVTiffDataType {
+			ptr := (*AVTiffDataType)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVTiffDataType) {
+			ptr := (*AVTiffDataType)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVTiffDataTypeArray(size uint64) *Array[AVTiffDataType] {
+	return ToAVTiffDataTypeArray(AVCalloc(size, SizeOfAVTiffDataType))
+}
+
+const (
+	// AVTiffByte wraps AV_TIFF_BYTE.
+	AVTiffByte AVTiffDataType = C.AV_TIFF_BYTE
+	// AVTiffString wraps AV_TIFF_STRING.
+	AVTiffString AVTiffDataType = C.AV_TIFF_STRING
+	// AVTiffShort wraps AV_TIFF_SHORT.
+	AVTiffShort AVTiffDataType = C.AV_TIFF_SHORT
+	// AVTiffLong wraps AV_TIFF_LONG.
+	AVTiffLong AVTiffDataType = C.AV_TIFF_LONG
+	// AVTiffRational wraps AV_TIFF_RATIONAL.
+	AVTiffRational AVTiffDataType = C.AV_TIFF_RATIONAL
+	// AVTiffSbyte wraps AV_TIFF_SBYTE.
+	AVTiffSbyte AVTiffDataType = C.AV_TIFF_SBYTE
+	// AVTiffUndefined wraps AV_TIFF_UNDEFINED.
+	AVTiffUndefined AVTiffDataType = C.AV_TIFF_UNDEFINED
+	// AVTiffSshort wraps AV_TIFF_SSHORT.
+	AVTiffSshort AVTiffDataType = C.AV_TIFF_SSHORT
+	// AVTiffSlong wraps AV_TIFF_SLONG.
+	AVTiffSlong AVTiffDataType = C.AV_TIFF_SLONG
+	// AVTiffSrational wraps AV_TIFF_SRATIONAL.
+	AVTiffSrational AVTiffDataType = C.AV_TIFF_SRATIONAL
+	// AVTiffFloat wraps AV_TIFF_FLOAT.
+	AVTiffFloat AVTiffDataType = C.AV_TIFF_FLOAT
+	// AVTiffDouble wraps AV_TIFF_DOUBLE.
+	AVTiffDouble AVTiffDataType = C.AV_TIFF_DOUBLE
+	// AVTiffIfd wraps AV_TIFF_IFD.
+	AVTiffIfd AVTiffDataType = C.AV_TIFF_IFD
+)
+
+// --- Enum AVExifHeaderMode ---
+
+// AVExifHeaderMode wraps AVExifHeaderMode.
+type AVExifHeaderMode C.enum_AVExifHeaderMode
+
+const SizeOfAVExifHeaderMode = C.sizeof_enum_AVExifHeaderMode
+
+func ToAVExifHeaderModeArray(ptr unsafe.Pointer) *Array[AVExifHeaderMode] {
+	if ptr == nil {
+		return nil
+	}
+
+	return &Array[AVExifHeaderMode]{
+		elemSize: SizeOfAVExifHeaderMode,
+		loadPtr: func(pointer unsafe.Pointer) AVExifHeaderMode {
+			ptr := (*AVExifHeaderMode)(pointer)
+			return *ptr
+		},
+		ptr: ptr,
+		storePtr: func(pointer unsafe.Pointer, value AVExifHeaderMode) {
+			ptr := (*AVExifHeaderMode)(pointer)
+			*ptr = value
+		},
+	}
+}
+
+func AllocAVExifHeaderModeArray(size uint64) *Array[AVExifHeaderMode] {
+	return ToAVExifHeaderModeArray(AVCalloc(size, SizeOfAVExifHeaderMode))
+}
+
+const (
+	// AVExifTiffHeader wraps AV_EXIF_TIFF_HEADER.
+	/*
+	   The TIFF header starts with 0x49492a00, or 0x4d4d002a.
+	   This one is used internally by FFmpeg.
+	*/
+	AVExifTiffHeader AVExifHeaderMode = C.AV_EXIF_TIFF_HEADER
+	// AVExifAssumeLe wraps AV_EXIF_ASSUME_LE.
+	//
+	//	skip the TIFF header, assume little endian
+	AVExifAssumeLe AVExifHeaderMode = C.AV_EXIF_ASSUME_LE
+	// AVExifAssumeBe wraps AV_EXIF_ASSUME_BE.
+	//
+	//	skip the TIFF header, assume big endian
+	AVExifAssumeBe AVExifHeaderMode = C.AV_EXIF_ASSUME_BE
+	// AVExifTOff wraps AV_EXIF_T_OFF.
+	//
+	//	The first four bytes point to the actual start, then it's AV_EXIF_TIFF_HEADER
+	AVExifTOff AVExifHeaderMode = C.AV_EXIF_T_OFF
+	// AVExifExif00 wraps AV_EXIF_EXIF00.
+	//
+	//	The first six bytes contain "Exif\0\0", then it's AV_EXIF_TIFF_HEADER
+	AVExifExif00 AVExifHeaderMode = C.AV_EXIF_EXIF00
 )
 
 // --- Enum AVPacketSideDataType ---
