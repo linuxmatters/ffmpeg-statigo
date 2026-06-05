@@ -14,20 +14,20 @@ import (
 
 // skipCeiling caps the total skip-marker count a clean generator run is
 // allowed to record. It is an upper bound (`count > skipCeiling` trips), not
-// an exact equality, so the Phase 1 baseline (148 functions + 85 structs =
-// 233) acts as a regression ceiling rather than a brittle target.
+// an exact equality, so it acts as a regression ceiling rather than a brittle
+// target.
 //
-// Rationale: the unemittable-shape panics Task 3.2 converted to skip-with-reason
-// add zero markers on the pinned FFmpeg headers (none of those code paths
-// fire today), so the live count stays at the 233 baseline. An upper bound
-// tolerates a handful of legitimate per-symbol skips a future header bump
-// might introduce while still catching wholesale degradation (e.g. an
-// allowlist regression that drops dozens of bindings).
+// The 231 baseline is the post-Phase-1 count: the output-pointer table gained
+// av_parse_time and av_get_output_timestamp, dropping two non-output-pointer
+// skips from the former 233. An upper bound tolerates a handful of legitimate
+// per-symbol skips a future header bump might introduce while still catching
+// wholesale degradation (e.g. an allowlist regression that drops dozens of
+// bindings).
 //
 // Bumping this constant is a curation decision. A legitimate FFmpeg upgrade
 // that introduces new unemittable symbols requires an intentional bump
 // alongside the header update; do not raise it to silence a regression.
-const skipCeiling = 233
+const skipCeiling = 231
 
 func main() {
 	skips, err := run(os.Args[1:], os.Stderr)

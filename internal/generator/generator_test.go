@@ -187,6 +187,47 @@ func TestMarshalArgOutputPointerAllowlist(t *testing.T) {
 	}
 }
 
+// TestMarshalArgPhase1OutputPointers pins the Phase 1 output-pointer table
+// additions: av_parse_time.timeval and av_get_output_timestamp.{dts,wall} are
+// pure-output int64_t* parameters now present in outputParams, so marshalArg
+// must emit them (skip == false) rather than record the former
+// "non-output primitive pointer" skip. Reintroducing the skip (by dropping the
+// table entry) flips skip to true here and trips the lowered skipCeiling in the
+// generator run. av_expr_parse_and_eval.res is deliberately excluded: res is a
+// genuine output pointer, but the function stays skipped on its later
+// const char *const * params, so it never emits a callable binding.
+func TestMarshalArgPhase1OutputPointers(t *testing.T) {
+	g := skipGen()
+
+	tests := []struct {
+		name    string
+		fnName  string
+		argName string
+		argType Type
+	}{
+		{"av_parse_time.timeval emits", "av_parse_time", "timeval", ptr(ident("int64_t"))},
+		{"av_get_output_timestamp.dts emits", "av_get_output_timestamp", "dts", ptr(ident("int64_t"))},
+		{"av_get_output_timestamp.wall emits", "av_get_output_timestamp", "wall", ptr(ident("int64_t"))},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, ok := outputParams[tt.fnName][tt.argName]; !ok {
+				t.Fatalf("outputParams[%q][%q] absent: Phase 1 table entry missing", tt.fnName, tt.argName)
+			}
+
+			o := newFile()
+			fn := &Function{Name: tt.fnName}
+			arg := &Param{Name: tt.argName, Type: tt.argType}
+			_, _, _, _, skip := g.marshalArg(o, fn, arg)
+			if skip {
+				t.Errorf("marshalArg(%s.%s) skip = true, want false (output pointer must emit)",
+					tt.fnName, tt.argName)
+			}
+		})
+	}
+}
+
 // render returns the Go source for a single jen.Code fragment so tests can
 // string-match the emitted parameter type and C cast.
 func render(c jen.Code) string {

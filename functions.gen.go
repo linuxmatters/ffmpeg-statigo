@@ -6275,7 +6275,32 @@ func AVGuessCodec(fmt *AVOutputFormat, shortName *CStr, filename *CStr, mimeType
 
 // --- Function av_get_output_timestamp ---
 
-// av_get_output_timestamp skipped due to dts (non-output primitive pointer)
+// AVGetOutputTimestamp wraps av_get_output_timestamp.
+/*
+  Get timing information for the data currently output.
+  The exact meaning of "currently output" depends on the format.
+  It is mostly relevant for devices that have an internal buffer and/or
+  work in real time.
+  @param s          media file handle
+  @param stream     stream in the media file
+  @param[out] dts   DTS of the last packet output for the stream, in stream
+                    time_base units
+  @param[out] wall  absolute time when that packet whas output,
+                    in microsecond
+  @retval  0               Success
+  @retval  AVERROR(ENOSYS) The format does not support it
+
+  @note Some formats or devices may not allow to measure dts and wall
+        atomically.
+*/
+func AVGetOutputTimestamp(s *AVFormatContext, stream int, dts *int64, wall *int64) (int, error) {
+	var tmps *C.AVFormatContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	ret := C.av_get_output_timestamp(tmps, C.int(stream), (*C.int64_t)(unsafe.Pointer(dts)), (*C.int64_t)(unsafe.Pointer(wall)))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_hex_dump ---
 
@@ -11918,7 +11943,7 @@ func AVMakeErrorString(errbuf *CStr, errbufSize uint64, errnum int) *CStr {
 
 // --- Function av_expr_parse_and_eval ---
 
-// av_expr_parse_and_eval skipped due to res (non-output primitive pointer)
+// av_expr_parse_and_eval skipped due to constNames
 
 // --- Function av_expr_parse ---
 
@@ -16631,7 +16656,47 @@ func AVParseColor(rgbaColor unsafe.Pointer, colorString *CStr, slen int, logCtx 
 
 // --- Function av_parse_time ---
 
-// av_parse_time skipped due to timeval (non-output primitive pointer)
+// AVParseTime wraps av_parse_time.
+/*
+  Parse timestr and return in *time a corresponding number of
+  microseconds.
+
+  @param timeval puts here the number of microseconds corresponding
+  to the string in timestr. If the string represents a duration, it
+  is the number of microseconds contained in the time interval.  If
+  the string is a date, is the number of microseconds since 1st of
+  January, 1970 up to the time of the parsed date.  If timestr cannot
+  be successfully parsed, set *time to INT64_MIN.
+
+  @param timestr a string representing a date or a duration.
+  - If a date the syntax is:
+  @code
+  [{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH:MM:SS[.m...]]]}|{HHMMSS[.m...]]]}}[Z]
+  now
+  @endcode
+  If the value is "now" it takes the current time.
+  Time is local time unless Z is appended, in which case it is
+  interpreted as UTC.
+  If the year-month-day part is not specified it takes the current
+  year-month-day.
+  - If a duration the syntax is:
+  @code
+  [-][HH:]MM:SS[.m...]
+  [-]S+[.m...]
+  @endcode
+  @param duration flag which tells how to interpret timestr, if not
+  zero timestr is interpreted as a duration, otherwise as a date
+  @return >= 0 in case of success, a negative value corresponding to an
+  AVERROR code otherwise
+*/
+func AVParseTime(timeval *int64, timestr *CStr, duration int) (int, error) {
+	var tmptimestr *C.char
+	if timestr != nil {
+		tmptimestr = timestr.ptr
+	}
+	ret := C.av_parse_time((*C.int64_t)(unsafe.Pointer(timeval)), tmptimestr, C.int(duration))
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_find_info_tag ---
 
@@ -18780,31 +18845,31 @@ func AVTxUninit(ctx **AVTXContext) {
 
 // --- Function av_uuid_parse ---
 
-// av_uuid_parse skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_parse skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_uuid_urn_parse ---
 
-// av_uuid_urn_parse skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_urn_parse skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_uuid_parse_range ---
 
-// av_uuid_parse_range skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_parse_range skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_uuid_unparse ---
 
-// av_uuid_unparse skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_unparse skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_uuid_equal ---
 
-// av_uuid_equal skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_equal skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_uuid_copy ---
 
-// av_uuid_copy skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_copy skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_uuid_nil ---
 
-// av_uuid_nil skipped due to array typedef (manually wrapped in custom.go)
+// av_uuid_nil skipped due to array typedef (manually wrapped in uuid.go)
 
 // --- Function av_video_enc_params_block ---
 

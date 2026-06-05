@@ -56,13 +56,13 @@ outer:
 		}
 
 		// WORKAROUND: UUID functions use AVUUID (array typedef) which requires pointer conversion in CGO
-		// These are manually wrapped in custom.go with proper pointer handling
+		// These are manually wrapped in uuid.go with proper pointer handling
 		// Pinned by TestUUIDBindingsNotDuplicated in bindings_test.go (asserts the seven manual wrappers are not also generated).
 		if fn.Name == "av_uuid_parse" || fn.Name == "av_uuid_urn_parse" || fn.Name == "av_uuid_parse_range" ||
 			fn.Name == "av_uuid_unparse" || fn.Name == "av_uuid_equal" || fn.Name == "av_uuid_copy" || fn.Name == "av_uuid_nil" {
-			o.Commentf("%v skipped due to array typedef (manually wrapped in custom.go)", fn.Name)
+			o.Commentf("%v skipped due to array typedef (manually wrapped in uuid.go)", fn.Name)
 			o.Line()
-			g.skips.Record(fn.Name, "array typedef (manually wrapped in custom.go)")
+			g.skips.Record(fn.Name, "array typedef (manually wrapped in uuid.go)")
 
 			continue outer
 		}
@@ -500,7 +500,7 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 
 				args = append(args, jen.Id(convName))
 			} else {
-				// Unknown IdentType - could be a typedef alias defined in custom.go
+				// Unknown IdentType - could be a typedef alias defined in ffmpeg.go
 				// Try to use it directly (e.g., AVCRC, AVAdler)
 				// Cast through C type for the call
 				params = append(params, jen.Id(pName).Op("*").Id(iv.Name))

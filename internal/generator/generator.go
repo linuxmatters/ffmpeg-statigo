@@ -57,7 +57,7 @@ var fieldCTypeOverrides = map[string]map[string]string{
 }
 
 // skippedStructs contains struct names that should not be generated.
-// These require manual bindings in custom.go, typically because they are
+// These require manual bindings in streamgroup.go, typically because they are
 // anonymous C structs that CGO cannot directly reference by name.
 var skippedStructs = map[string]bool{
 	// Anonymous struct inside AVStreamGroupTileGrid - CGO generates an internal
@@ -66,13 +66,38 @@ var skippedStructs = map[string]bool{
 }
 
 // skippedFields contains struct.field combinations that should not be generated.
-// These require manual bindings in custom.go, typically because they reference
+// These require manual bindings in streamgroup.go, typically because they reference
 // types that CGO cannot directly access (like anonymous structs).
 var skippedFields = map[string]map[string]bool{
 	"AVStreamGroupTileGrid": {
 		// The offsets field is a pointer to an anonymous struct that CGO
-		// assigns an internal name. Manual binding in custom.go handles this.
+		// assigns an internal name. Manual binding in streamgroup.go handles this.
 		"offsets": true,
+	},
+}
+
+// manuallyWrappedFields lists struct.field combinations the generator cannot
+// emit but that have hand-written accessors in fields.go. They stay recorded as
+// skips (so the ceiling count is unchanged) but carry a "manually wrapped in
+// fields.go" reason so the skip summary stops counting them as coverage gaps.
+// Mirrors the func.go "manually wrapped in uuid.go" convention.
+var manuallyWrappedFields = map[string]map[string]bool{
+	"AVCodecContext": {
+		"intra_matrix":        true,
+		"inter_matrix":        true,
+		"chroma_intra_matrix": true,
+	},
+	"AVFrame": {
+		"extended_data": true,
+	},
+	"AVPixFmtDescriptor": {
+		"comp": true,
+	},
+	"AVMasteringDisplayMetadata": {
+		"display_primaries": true,
+	},
+	"AVPanScan": {
+		"position": true,
 	},
 }
 
@@ -138,6 +163,9 @@ var outputParams = map[string]map[string]outputParam{
 	"av_expr_count_vars": {
 		"counter": {},
 	},
+	"av_expr_parse_and_eval": {
+		"res": {},
+	},
 	"av_fast_malloc": {
 		"size": {},
 	},
@@ -158,6 +186,10 @@ var outputParams = map[string]map[string]outputParam{
 	},
 	"av_find_best_pix_fmt_of_2": {
 		"loss_ptr": {},
+	},
+	"av_get_output_timestamp": {
+		"dts":  {},
+		"wall": {},
 	},
 	"av_iamf_param_definition_alloc": {
 		"size": {sizeT: true},
@@ -219,6 +251,9 @@ var outputParams = map[string]map[string]outputParam{
 	},
 	"av_packet_side_data_remove": {
 		"nb_sd": {},
+	},
+	"av_parse_time": {
+		"timeval": {},
 	},
 	"av_parse_video_size": {
 		"height_ptr": {},

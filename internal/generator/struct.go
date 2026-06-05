@@ -21,7 +21,7 @@ func (g *Generator) generateStructs() {
 
 		// Skip structs that require manual bindings
 		if skippedStructs[st.Name] {
-			log.Println("Skipping struct", st.Name, "(manual binding in custom.go)")
+			log.Println("Skipping struct", st.Name, "(manual binding in streamgroup.go)")
 			continue
 		}
 
@@ -168,11 +168,24 @@ func (g *Generator) generateStructs() {
 func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	goName := st.Name
 
-	// Check if this field should be skipped (manual binding in custom.go)
+	// Check if this field should be skipped (manual binding in streamgroup.go)
 	if fields, ok := skippedFields[st.Name]; ok {
 		if fields[field.Name] {
-			o.Commentf("%v skipped (manual binding in custom.go)", field.Name)
+			o.Commentf("%v skipped (manual binding in streamgroup.go)", field.Name)
 			o.Line()
+			return
+		}
+	}
+
+	// Fields the generator cannot emit but that have hand-written accessors in
+	// fields.go. Record the skip (keeping the ceiling count) but annotate the
+	// reason so the summary stops counting them as coverage gaps.
+	if fields, ok := manuallyWrappedFields[st.Name]; ok {
+		if fields[field.Name] {
+			const reason = "manually wrapped in fields.go"
+			o.Commentf("%v skipped due to %v", field.Name, reason)
+			o.Line()
+			g.skips.Record(goName+"."+field.Name, reason)
 			return
 		}
 	}
