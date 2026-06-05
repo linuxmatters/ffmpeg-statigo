@@ -5,7 +5,6 @@ import (
 	"archive/zip"
 	"compress/bzip2"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
+	"github.com/linuxmatters/ffmpeg-statigo/internal/archiveextract"
 	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
 	"github.com/ulikunitz/xz"
 )
@@ -236,70 +236,14 @@ func extractTar(archivePath, destPath, archiveType string, logger io.Writer) err
 		reader = xzReader
 	}
 
-	tarReader := tar.NewReader(reader)
-
-	for {
-		header, err := tarReader.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		// Strip auto-detected prefix
-		name := header.Name
-		if stripPrefix != "" {
-			if !strings.HasPrefix(name, stripPrefix) {
-				continue
-			}
-			name = strings.TrimPrefix(name, stripPrefix)
-		}
-
-		if name == "" {
-			continue
-		}
-
-		// Security: Validate path to prevent path traversal attacks
-		target, err := pathsafe.SanitizePath(destPath, name)
-		if err != nil {
-			return err
-		}
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0o755); err != nil {
-				return err
-			}
-
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return err
-			}
-
-			outFile, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode&0o777))
-			if err != nil {
-				return err
-			}
-
-			if err := pathsafe.CopyCapped(outFile, tarReader); err != nil {
-				outFile.Close()
-				return err
-			}
-			outFile.Close()
-
-		case tar.TypeSymlink:
-			// Handle symlinks
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return err
-			}
-			if err := os.Symlink(header.Linkname, target); err != nil && !os.IsExist(err) {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return archiveextract.ExtractTar(reader, archiveextract.TarOptions{
+		DestDir:     destPath,
+		StripPrefix: stripPrefix,
+		LinkPolicy:  archiveextract.PreserveSymlinks,
+		FileMode: func(header *tar.Header) os.FileMode {
+			return os.FileMode(header.Mode & 0o777)
+		},
+	})
 }
 
 // extractZip extracts a zip archive

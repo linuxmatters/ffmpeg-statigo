@@ -1,13 +1,11 @@
 package lib
 
 import (
-	"archive/tar"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
+	"github.com/linuxmatters/ffmpeg-statigo/internal/archiveextract"
 )
 
 // Version is the FFmpeg library version (major.minor.patch)
@@ -320,67 +318,19 @@ func streamDownloadAndExtract(url, destDir string) (string, error) {
 	}
 	defer gzr.Close()
 
-	// Extract tar entries
-	tr := tar.NewReader(gzr)
-
-	for {
-		header, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
+	if err := archiveextract.ExtractTar(gzr, archiveextract.TarOptions{
+		DestDir:          absDestDir,
+		LinkPolicy:       archiveextract.SkipLinks,
+		RemoveIncomplete: true,
+		OnError: func() {
 			fmt.Println() // Clear progress line
-			return "", fmt.Errorf("reading tar header: %w", err)
-		}
-
-		// Security: Validate path to prevent path traversal attacks
-		target, err := pathsafe.SanitizePath(absDestDir, header.Name)
-		if err != nil {
-			fmt.Println() // Clear progress line
-			return "", err
-		}
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0o755); err != nil {
-				fmt.Println() // Clear progress line
-				return "", fmt.Errorf("creating directory %s: %w", target, err)
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				fmt.Println() // Clear progress line
-				return "", fmt.Errorf("creating parent directory for %s: %w", target, err)
-			}
-
-			if err := extractFile(tr, target); err != nil {
-				fmt.Println() // Clear progress line
-				return "", err
-			}
-		case tar.TypeSymlink, tar.TypeLink:
-			// Skip symlinks and hard links for security - they could point outside destDir
-			continue
-		}
+		},
+	}); err != nil {
+		return "", err
 	}
 
 	fmt.Println() // Clear progress line
 	return hex.EncodeToString(hasher.Sum(nil)), nil
-}
-
-// extractFile extracts a single file from a tar reader to the target path.
-func extractFile(tr *tar.Reader, target string) error {
-	outFile, err := os.Create(target)
-	if err != nil {
-		return fmt.Errorf("creating file %s: %w", target, err)
-	}
-	defer outFile.Close()
-
-	if err := pathsafe.CopyCapped(outFile, tr); err != nil {
-		_ = outFile.Close()
-		_ = os.Remove(target)
-		return fmt.Errorf("writing file %s: %w", target, err)
-	}
-
-	return nil
 }
 
 // checksumError reports whether an extracted library must be rejected for
@@ -479,43 +429,14 @@ func extractTarball(tarball, destDir string) error {
 	}
 	defer gzr.Close()
 
-	tr := tar.NewReader(gzr)
-
 	absDestDir, err := filepath.Abs(destDir)
 	if err != nil {
 		return fmt.Errorf("resolving destination directory: %w", err)
 	}
 
-	for {
-		header, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		target, err := pathsafe.SanitizePath(absDestDir, header.Name)
-		if err != nil {
-			return err
-		}
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0o755); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return err
-			}
-			if err := extractFile(tr, target); err != nil {
-				return err
-			}
-		case tar.TypeSymlink, tar.TypeLink:
-			continue // Skip symlinks for security
-		}
-	}
-
-	return nil
+	return archiveextract.ExtractTar(gzr, archiveextract.TarOptions{
+		DestDir:          absDestDir,
+		LinkPolicy:       archiveextract.SkipLinks,
+		RemoveIncomplete: true,
+	})
 }
