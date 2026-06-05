@@ -273,8 +273,8 @@ var commonFFmpegFeatureSets = []ffmpegFeatureSet{
 		BitstreamFilters: []string{"filter_units", "trace_headers"},
 	},
 	{
-		Encoders:         []string{"libvpx-vp9"},
-		Decoders:         []string{"libvpx-vp9", "vp9"},
+		Encoders:         []string{"libvpx_vp9"},
+		Decoders:         []string{"libvpx_vp9", "vp9"},
 		Parsers:          []string{"vp9"},
 		Muxers:           []string{"webm"},
 		BitstreamFilters: []string{"filter_units", "trace_headers", "vp9_metadata", "vp9_raw_reorder", "vp9_superframe", "vp9_superframe_split"},
