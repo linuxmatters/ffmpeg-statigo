@@ -22,9 +22,10 @@ import "unsafe"
 //
 // Returns nil on failure. Free the context with SwsFreeContext.
 func SwsGetContext(srcW, srcH int, srcFormat AVPixelFormat, dstW, dstH int, dstFormat AVPixelFormat, flags int, srcFilter, dstFilter *SwsFilter, param []float64) *SwsContext {
+	cParamBuf := toSwsParams(param)
 	var cParam *C.double
 	if len(param) > 0 {
-		cParam = (*C.double)(unsafe.Pointer(&param[0]))
+		cParam = &cParamBuf[0]
 	}
 
 	ret := C.sws_getContext(
@@ -48,9 +49,10 @@ func SwsGetContext(srcW, srcH int, srcFormat AVPixelFormat, dstW, dstH int, dstF
 //
 // Returns nil on failure. Free the returned context with SwsFreeContext.
 func SwsGetCachedContext(context *SwsContext, srcW, srcH int, srcFormat AVPixelFormat, dstW, dstH int, dstFormat AVPixelFormat, flags int, srcFilter, dstFilter *SwsFilter, param []float64) *SwsContext {
+	cParamBuf := toSwsParams(param)
 	var cParam *C.double
 	if len(param) > 0 {
-		cParam = (*C.double)(unsafe.Pointer(&param[0]))
+		cParam = &cParamBuf[0]
 	}
 
 	var cCtx *C.SwsContext
@@ -160,6 +162,23 @@ func copyIntTable(ptr *C.int, n int) []int {
 		out[i] = int(src[i])
 	}
 	return out
+}
+
+// swsMaxParams is the number of scaler-tuning entries FFmpeg reads from the
+// param array passed to sws_getContext/sws_getCachedContext (SWS_MAX_PARAMS).
+const swsMaxParams = 2
+
+// toSwsParams copies the caller's tuning values into a fixed swsMaxParams array.
+// FFmpeg reads a fixed number of entries (e.g. param[0] and param[1] for
+// SWS_BICUBIC) whenever a non-nil param pointer is supplied, so a caller slice
+// shorter than swsMaxParams would otherwise cause an out-of-bounds C read.
+// Missing entries default to zero. Extra entries are ignored.
+func toSwsParams(param []float64) [swsMaxParams]C.double {
+	var buf [swsMaxParams]C.double
+	for i := 0; i < swsMaxParams && i < len(param); i++ {
+		buf[i] = C.double(param[i])
+	}
+	return buf
 }
 
 // swsFilterPtr returns the underlying C pointer for a SwsFilter, or nil.

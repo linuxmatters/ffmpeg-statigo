@@ -46,7 +46,13 @@ func SwrConvert(s *SwrContext, out []unsafe.Pointer, outCount int, in []unsafe.P
 //
 // Returns 0 on success or a negative error code.
 func SwrBuildMatrix2(inLayout, outLayout *AVChannelLayout, centerMixLevel, surroundMixLevel, lfeMixLevel, maxval, rematrixVolume float64, matrix []float64, stride int, matrixEncoding AVMatrixEncoding, logCtx unsafe.Pointer) (int, error) {
-	if len(matrix) == 0 {
+	if len(matrix) == 0 || outLayout == nil || stride <= 0 {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
+
+	// FFmpeg writes outLayout.nb_channels rows of stride doubles. Reject any
+	// slice too small to hold the result before handing its buffer to C.
+	if need := outLayout.NbChannels() * stride; need <= 0 || len(matrix) < need {
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
 

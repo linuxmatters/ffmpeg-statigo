@@ -47,6 +47,7 @@ func (a *Array[T]) Set(i uintptr, value T) {
 // Free deallocates the underlying memory. You should only call this if you own the array.
 func (a *Array[T]) Free() {
 	AVFree(a.ptr)
+	a.ptr = nil
 }
 
 // RawPtr returns a raw handle the underlying allocation.

@@ -163,6 +163,11 @@ func AVSamplesFillArrays(buf unsafe.Pointer, nbChannels, nbSamples int, sampleFm
 //
 // Returns 0 on success or a negative error code.
 func AVSamplesCopy(dst, src []unsafe.Pointer, dstOffset, srcOffset, nbSamples, nbChannels int, sampleFmt AVSampleFormat) (int, error) {
+	nbPlanes := samplePlaneCount(nbChannels, sampleFmt)
+	if len(dst) < nbPlanes || len(src) < nbPlanes {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
+
 	dstArr := newSamplePointerArray(dst)
 	defer dstArr.free()
 	srcArr := newSamplePointerArray(src)
@@ -182,6 +187,10 @@ func AVSamplesCopy(dst, src []unsafe.Pointer, dstOffset, srcOffset, nbSamples, n
 //
 // Returns 0 on success or a negative error code.
 func AVSamplesSetSilence(audioData []unsafe.Pointer, offset, nbSamples, nbChannels int, sampleFmt AVSampleFormat) (int, error) {
+	if len(audioData) < samplePlaneCount(nbChannels, sampleFmt) {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
+
 	arr := newSamplePointerArray(audioData)
 	defer arr.free()
 
