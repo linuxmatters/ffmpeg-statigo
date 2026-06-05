@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 
 	"github.com/Newbluecake/bootstrap/clang"
 )
@@ -168,18 +169,12 @@ func sortedUniqueSymbols(c *SkipCollector) []string {
 	}
 
 	seen := make(map[string]bool, len(c.Entries))
-	out := make([]string, 0, len(c.Entries))
 
 	for _, e := range c.Entries {
-		if seen[e.Symbol] {
-			continue
-		}
 		seen[e.Symbol] = true
-		out = append(out, e.Symbol)
 	}
 
-	sort.Strings(out)
-	return out
+	return slices.Sorted(maps.Keys(seen))
 }
 
 // uniqueSymbolCount reports the number of distinct symbol names skipped,
