@@ -324,12 +324,14 @@ func (g *FilterGraph) parseAndConfigure(spec string) error {
 	defer ffmpeg.AVFilterInoutFree(&outputs)
 	defer ffmpeg.AVFilterInoutFree(&inputs)
 
-	outputs.SetName(ffmpeg.ToCStr("in"))
+	// avfilter_inout_free frees name via av_freep, so allocate it with the
+	// FFmpeg allocator (av_strdup) to match the free routing.
+	outputs.SetName(ffmpeg.AVStrdup(ffmpeg.GlobalCStr("in")))
 	outputs.SetFilterCtx(g.srcCtx)
 	outputs.SetPadIdx(0)
 	outputs.SetNext(nil)
 
-	inputs.SetName(ffmpeg.ToCStr("out"))
+	inputs.SetName(ffmpeg.AVStrdup(ffmpeg.GlobalCStr("out")))
 	inputs.SetFilterCtx(g.sinkCtx)
 	inputs.SetPadIdx(0)
 	inputs.SetNext(nil)
