@@ -14,8 +14,6 @@ import (
 // Binary representation of a UUID per IETF RFC 4122.
 type AVUUID = [16]uint8
 
-// --- Manual UUID function wrappers (arrays need pointer conversion in CGO) ---
-
 // AVUuidParse parses a string representation of a UUID formatted according to IETF RFC 4122
 // into an AVUUID. The parsing is case-insensitive. The string must be 37
 // characters long, including the terminating NUL character.

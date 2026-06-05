@@ -18,8 +18,6 @@ import (
 	"unsafe"
 )
 
-// --- Manual binding for anonymous struct in AVStreamGroupTileGrid ---
-
 // AVStreamGroupTileGridOffset wraps the anonymous struct used in AVStreamGroupTileGrid.offsets.
 // This is a tile grid offset structure containing the stream index and pixel offsets.
 type AVStreamGroupTileGridOffset struct {
