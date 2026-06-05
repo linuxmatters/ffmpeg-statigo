@@ -34,7 +34,7 @@
 ## PR/commit guidelines
 
 - **Submodule workflow:** Configure git for fast-forward pulls only: `git config pull.ff only && git config submodule.recurse true`
-- **Version schemes:** Two distinct versions — library releases (`lib-X.Y.Z.N`) and module releases (`v-X.Y.Z.N`)
+- **Version schemes:** Two distinct versions — library releases (`lib-X.Y.Z.N`) and module releases (`vX.Y.Z.N`)
 - **Release tags:** Library releases use `lib-` prefix; Go module releases use `v` prefix
 
 ## Development workflow

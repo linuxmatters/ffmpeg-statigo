@@ -9,6 +9,7 @@ Working examples for ffmpeg-statigo, the Go CGO bindings to FFmpeg 8.1.
 | [metadata](metadata/) | Opens a media file and dumps container and per-stream metadata | `./metadata <file>` |
 | [transcode](transcode/) | Port of `doc/examples/transcode.c`: full decode/filter/encode/mux pipeline written directly against the raw bindings | `./transcode <input> <output>` |
 | [transcode-hl](transcode-hl/) | The same pipeline rewritten on the `av` package (`Input`/`Decoder`/`FilterGraph`/`Encoder`/`Output`): the recommended starting point | `./transcode-hl <input> <output>` |
+| [hwdecode](hwdecode/) | Hardware-accelerated video decode via the `av` package; auto-selects the first usable hardware device, transfers frames to software memory, and falls back to software decoding when no hardware is available | `./hwdecode <input> [device-type]` |
 
 ## Prerequisites
 

@@ -52,7 +52,7 @@ ffmpeg-statigo ships a curated FFmpeg static library focused on the core strengt
 ### What's Included
 
 - **Decoders**: All contemporary formats (H.264, H.265, AV1, VP8/9, Opus, AAC, MP3)
-- **Encoders**: Modern codecs for streaming and transcoding (x264, x265, dav1d, rav1e, vpx, lame, opus)
+- **Encoders**: Modern codecs for streaming and transcoding (x264, x265, rav1e, vpx, lame, opus)
 - **Hardware acceleration**: NVENC, QuickSync, VA-API, VideoToolbox, Vulkan Video
 - **Containers**: MP4, MKV, WebM, DASH, HLS, and all major formats
 - **Filters**: Video scaling, colour conversion, audio resampling, and processing filters

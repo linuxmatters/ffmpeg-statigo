@@ -30,25 +30,16 @@ missing.
 | Function skips (generator) | 151 | skip summary, symbols without a `.` |
 | Struct-field / other skips | 94 | skip summary, symbols containing a `.` |
 | Total skip markers | 245 | skip summary header (`= skipCeiling`) |
-| Re-bound by hand (covered) | 53 | skipped functions re-exposed in topic files |
-| Genuinely missing functions | 98 | 151 - 53 |
-| **Numerator** (bound) | **910** | 857 + 53 |
+| Re-bound by hand (covered) | 49 | skipped functions re-exposed in topic files |
+| Genuinely missing functions | 102 | 151 - 49 |
+| **Numerator** (bound) | **906** | 857 + 49 |
 | **Denominator** (parsed public funcs) | **1008** | 857 + 151 |
-| **Coverage** | **90.3%** | 910 / 1008 |
+| **Coverage** | **89.9%** | 906 / 1008 |
 
 The previous README figure of 85% matched the generated-only lower bound
 (857 / 1008 = 85.0%); it ignored the hand-written re-binds, so it understated
-real coverage. The recent header-promotion and hand-binding work only added
-bindings, lifting the figure from ~85% to ~89%. The new Tier-3 hand-written
-bindings (`display.go`, `parseutils.go`, additions to `helpers.go` and
-`iterate.go`) re-bind 10 previously unbound skipped functions, lifting coverage
-from ~89% to ~90% (910 / 1008).
-
-> [!NOTE]
-> The 53 / 910 / 90.3% figures are derived arithmetically from the prior
-> 43 / 900 / 89.3% baseline plus exactly 10 new function re-binds. Confirm
-> them against a live `go run ./internal/generator` skip summary inside
-> `nix develop`.
+real coverage. The recent header-promotion and hand-binding work added bindings,
+lifting the figure from ~85% to ~90% (906 / 1008 = 89.9%).
 
 ## Scope
 
@@ -97,6 +88,6 @@ cross-reference required:
 # Count skipped-but-rebound symbols. Function skips have no dot in the symbol;
 # struct-field skips do, so split them to match the counts table.
 go run ./internal/generator 2>/tmp/skips.txt >/dev/null
-grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 53 figure)
+grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 49 figure)
 grep '(manual binding:' /tmp/skips.txt | grep -c  '\.'   # struct-field rebinds
 ```
