@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -76,25 +75,7 @@ outer:
 		}
 
 		for _, arg := range fn.Args {
-			skip := false
-
-			if typeEquals(arg.Type, fileType) || typeEquals(arg.Type, fileType2) || typeEquals(arg.Type, vaListType) || typeEquals(arg.Type, tmType) {
-				skip = true
-			}
-
-			if v, ok := arg.Type.(*PointerType); ok {
-				switch iv := v.Inner.(type) {
-				case *FuncType:
-					skip = true
-				case *IdentType:
-					// Skip pointer to tm (C standard library type)
-					if iv.Name == "tm" {
-						skip = true
-					}
-				}
-			}
-
-			if skip {
+			if g.classifyFunctionArgPreSkip(arg.Type) {
 				o.Commentf("%v skipped due to %v.", fn.Name, arg.Name)
 				o.Line()
 				g.skips.Record(fn.Name, fmt.Sprintf("arg %v", arg.Name))
@@ -153,144 +134,154 @@ outer:
 }
 
 func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen.Code, body, postCall []jen.Code) (retType, outBody []jen.Code, skip bool) {
-	switch v := result.(type) {
-	case nil:
+	shape := g.classifyReturnShape(result)
+
+	switch shape.kind {
+	case returnShapeVoid:
 		// nothing
 		body = append(body, cc)
 		body = append(body, postCall...)
 
-	case *IdentType:
-
+	case returnShapeInt:
 		body = append(body, jen.Id("ret").Op(":=").Add(cc))
 		body = append(body, postCall...)
+		retType = []jen.Code{jen.Params(jen.Id("int"), jen.Id("error"))}
+		body = append(
+			body,
+			jen.Return(
+				jen.Id("int").Params(jen.Id("ret")).Op(",").
+					Id("WrapErr").Params(jen.Id("int").Params(jen.Id("ret"))),
+			),
+		)
 
-		if v.Name == "int" {
-			retType = []jen.Code{jen.Params(jen.Id("int"), jen.Id("error"))}
-			body = append(
-				body,
-				jen.Return(
-					jen.Id("int").Params(jen.Id("ret")).Op(",").
-						Id("WrapErr").Params(jen.Id("int").Params(jen.Id("ret"))),
-				),
-			)
-		} else if m, ok := primTypes[v.Name]; ok {
-			retType = []jen.Code{jen.Id(m)}
-			body = append(body, jen.Return(jen.Id(m).Params(jen.Id("ret"))))
-		} else if s, ok := g.input.structs[v.Name]; ok {
-			if s.ByValue {
-				retType = []jen.Code{jen.Op("*").Id(v.Name)}
-				body = append(
-					body,
-					jen.Return(jen.Op("&").Id(v.Name).Values(jen.Dict{
-						jen.Id("value"): jen.Id("ret"),
-					})),
-				)
-			} else {
-				o.Commentf("%v skipped due to return", fn.Name)
-				o.Line()
-				g.skips.Record(fn.Name, "return")
-				return nil, nil, true
-			}
-		} else if _, ok := g.input.callbacks[v.Name]; ok {
-			// Callback type - convert C name to Go name
-			goTypeName := g.convCamel(v.Name)
-			retType = []jen.Code{jen.Id(goTypeName)}
-			body = append(body, jen.Return(jen.Id(goTypeName).Params(jen.Id("ret"))))
-		} else {
-			retType = []jen.Code{jen.Id(v.Name)}
-			body = append(body, jen.Return(jen.Id(v.Name).Params(jen.Id("ret"))))
-		}
+	case returnShapePrimitive:
+		body = append(body, jen.Id("ret").Op(":=").Add(cc))
+		body = append(body, postCall...)
+		retType = []jen.Code{jen.Id(shape.goType)}
+		body = append(body, jen.Return(jen.Id(shape.goType).Params(jen.Id("ret"))))
 
-	case *PointerType:
+	case returnShapeByValueStruct:
+		body = append(body, jen.Id("ret").Op(":=").Add(cc))
+		body = append(body, postCall...)
+		retType = []jen.Code{jen.Op("*").Id(shape.name)}
+		body = append(
+			body,
+			jen.Return(jen.Op("&").Id(shape.name).Values(jen.Dict{
+				jen.Id("value"): jen.Id("ret"),
+			})),
+		)
+
+	case returnShapeByPointerStructSkip:
+		o.Commentf("%v skipped due to return", fn.Name)
+		o.Line()
+		g.skips.Record(fn.Name, shape.reason)
+		return nil, nil, true
+
+	case returnShapeCallback:
+		body = append(body, jen.Id("ret").Op(":=").Add(cc))
+		body = append(body, postCall...)
+		retType = []jen.Code{jen.Id(shape.goTypeName)}
+		body = append(body, jen.Return(jen.Id(shape.goTypeName).Params(jen.Id("ret"))))
+
+	case returnShapeIdent:
+		body = append(body, jen.Id("ret").Op(":=").Add(cc))
+		body = append(body, postCall...)
+		retType = []jen.Code{jen.Id(shape.name)}
+		body = append(body, jen.Return(jen.Id(shape.name).Params(jen.Id("ret"))))
+
+	case returnShapeUnsafePointer:
 		body = append(
 			body,
 			jen.Id("ret").Op(":=").Add(cc),
 		)
 		body = append(body, postCall...)
+		retType = []jen.Code{
+			jen.Qual("unsafe", "Pointer"),
+		}
+		body = append(body, jen.Return(jen.Id("ret")))
 
-		switch iv := v.Inner.(type) {
-		case nil:
-			retType = []jen.Code{
-				jen.Qual("unsafe", "Pointer"),
-			}
-			body = append(body, jen.Return(jen.Id("ret")))
+	case returnShapeCStrPointer:
+		body = append(
+			body,
+			jen.Id("ret").Op(":=").Add(cc),
+		)
+		body = append(body, postCall...)
+		retType = []jen.Code{
+			jen.Op("*").Id("CStr"),
+		}
+		body = append(body, jen.Return(jen.Id("wrapCStr").Params(jen.Id("ret"))))
 
-		case *IdentType:
+	case returnShapeUint8Pointer:
+		body = append(
+			body,
+			jen.Id("ret").Op(":=").Add(cc),
+		)
+		body = append(body, postCall...)
+		retType = []jen.Code{
+			jen.Qual("unsafe", "Pointer"),
+		}
+		body = append(
+			body,
+			jen.Return(jen.Qual("unsafe", "Pointer").Params(jen.Id("ret"))),
+		)
 
-			if iv.Name == "char" {
-				retType = []jen.Code{
-					jen.Op("*").Id("CStr"),
-				}
-				body = append(body, jen.Return(jen.Id("wrapCStr").Params(jen.Id("ret"))))
-			} else if iv.Name == "uint8_t" {
-				retType = []jen.Code{
-					jen.Qual("unsafe", "Pointer"),
-				}
-				body = append(
-					body,
-					jen.Return(jen.Qual("unsafe", "Pointer").Params(jen.Id("ret"))),
-				)
-			} else if m, ok := primTypes[iv.Name]; ok {
-				// Handle pointer to primitive type (e.g., *int, *float64)
-				retType = []jen.Code{
-					jen.Op("*").Id(m),
-				}
-				body = append(
-					body,
-					jen.Return(jen.Params(jen.Op("*").Id(m)).Params(
-						jen.Qual("unsafe", "Pointer").Params(jen.Id("ret")),
-					)),
-				)
-			} else if _, ok := g.input.structs[iv.Name]; ok {
-				retType = []jen.Code{
-					jen.Op("*").Id(iv.Name),
-				}
+	case returnShapePrimitivePointer:
+		body = append(
+			body,
+			jen.Id("ret").Op(":=").Add(cc),
+		)
+		body = append(body, postCall...)
+		retType = []jen.Code{
+			jen.Op("*").Id(shape.goType),
+		}
+		body = append(
+			body,
+			jen.Return(jen.Params(jen.Op("*").Id(shape.goType)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("ret")),
+			)),
+		)
 
-				body = append(
-					body,
-					jen.Var().Id("retMapped").Op("*").Id(iv.Name),
-					jen.If(jen.Id("ret").Op("!=").Id("nil")).Block(
-						jen.Id("retMapped").Op("=").Op("&").Id(iv.Name).Values(jen.Dict{
-							jen.Id("ptr"): jen.Id("ret"),
-						}),
-					),
-					jen.Return(jen.Id("retMapped")),
-				)
-			} else {
-				// Unknown type - could be a typedef alias or enum
-				// Cast through unsafe.Pointer to handle typedef aliases correctly
-				retType = []jen.Code{
-					jen.Op("*").Id(iv.Name),
-				}
-				body = append(
-					body,
-					jen.Return(jen.Params(jen.Op("*").Id(iv.Name)).Params(
-						jen.Qual("unsafe", "Pointer").Params(jen.Id("ret")),
-					)),
-				)
-			}
-
-		case *PointerType:
-			// Pointer to pointer return type (e.g., AVFrameSideData *const *)
-			// Skip for now - these are complex array returns that need special handling
-			o.Commentf("%v skipped due to pointer-to-pointer return type", fn.Name)
-			o.Line()
-			g.skips.Record(fn.Name, "pointer-to-pointer return type")
-			return nil, nil, true
-
-		default:
-			reason := fmt.Sprintf("unhandled return pointer inner type %v", reflect.TypeOf(v.Inner))
-			o.Commentf("%v skipped due to %v", fn.Name, reason)
-			o.Line()
-			g.skips.Record(fn.Name, reason)
-			return nil, nil, true
+	case returnShapeStructPointer:
+		body = append(
+			body,
+			jen.Id("ret").Op(":=").Add(cc),
+		)
+		body = append(body, postCall...)
+		retType = []jen.Code{
+			jen.Op("*").Id(shape.name),
 		}
 
-	default:
-		reason := fmt.Sprintf("unhandled return type %v", reflect.TypeOf(fn.Result))
-		o.Commentf("%v skipped due to %v", fn.Name, reason)
+		body = append(
+			body,
+			jen.Var().Id("retMapped").Op("*").Id(shape.name),
+			jen.If(jen.Id("ret").Op("!=").Id("nil")).Block(
+				jen.Id("retMapped").Op("=").Op("&").Id(shape.name).Values(jen.Dict{
+					jen.Id("ptr"): jen.Id("ret"),
+				}),
+			),
+			jen.Return(jen.Id("retMapped")),
+		)
+
+	case returnShapeUnknownPointer:
+		body = append(
+			body,
+			jen.Id("ret").Op(":=").Add(cc),
+		)
+		body = append(body, postCall...)
+		retType = []jen.Code{
+			jen.Op("*").Id(shape.name),
+		}
+		body = append(
+			body,
+			jen.Return(jen.Params(jen.Op("*").Id(shape.name)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("ret")),
+			)),
+		)
+
+	case returnShapePointerPointerSkip, returnShapeUnhandledPointerSkip, returnShapeUnhandledSkip:
+		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)
 		o.Line()
-		g.skips.Record(fn.Name, reason)
+		g.skips.Record(fn.Name, shape.reason)
 		return nil, nil, true
 	}
 
@@ -298,99 +289,42 @@ func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen
 }
 
 func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, args, body, postCall []jen.Code, skip bool) {
-	pName := convParamName(arg.Name)
+	shape := g.classifyArgShape(fn, arg)
 
-	// WORKAROUND: libclang on Linux incorrectly reports size_t as int for some parameters
-	// Track actual type names for pointer-to-primitive cases
-	actualTypeName := ""
-	if ptrType, ok := arg.Type.(*PointerType); ok {
-		if identType, ok := ptrType.Inner.(*IdentType); ok {
-			actualTypeName = identType.Name
-			// libclang misreports some size_t* output parameters as int*. The
-			// affected (function, parameter) pairs are the sizeT entries in
-			// outputParams rather than matched by substring, so the rewrite is
-			// exact. Pinned by TestGeneratorOutputParameters in bindings_test.go
-			// and by the byte-identical regen gate.
-			if p, ok := outputParams[fn.Name][arg.Name]; ok && p.sizeT && actualTypeName == "int" {
-				actualTypeName = "size_t"
-			}
-		}
-	}
+	switch shape.kind {
+	case argShapeIdentPrimitive:
+		params = append(params, jen.Id(shape.name).Id(shape.goType))
+		args = append(args, jen.Qual("C", shape.cType).Params(jen.Id(shape.name)))
 
-	switch v := arg.Type.(type) {
-	case *IdentType:
-		// WORKAROUND: libclang on Linux incorrectly reports size_t as int
-		// Only fix specific known cases where FFmpeg headers use size_t
-		typeName := v.Name
-		if typeName == "int" && arg.Name == "buf_size" {
-			// These functions use size_t buf_size per FFmpeg headers.
-			// Pinned by TestGeneratorOutputParameters in bindings_test.go (size_t buf_size branch).
-			if fn.Name == "av_channel_name" || fn.Name == "av_channel_description" ||
-				fn.Name == "av_channel_layout_describe" {
-				typeName = "size_t"
-			}
-		} else if typeName == "int" && arg.Name == "max_size" {
-			// avio_read_to_bprint uses size_t max_size per FFmpeg headers.
-			// Pinned by TestGeneratorOutputParameters in bindings_test.go (size_t max_size branch).
-			if fn.Name == "avio_read_to_bprint" {
-				typeName = "size_t"
-			}
-		}
+	case argShapeIdentEnum:
+		params = append(params, jen.Id(shape.name).Id(shape.typeName))
+		args = append(args, jen.Qual("C", shape.enum.CName()).Params(jen.Id(shape.name)))
 
-		if m, ok := primTypes[typeName]; ok {
-			params = append(params, jen.Id(pName).Id(m))
-			cType := getCType(typeName, m)
-			args = append(args, jen.Qual("C", cType).Params(jen.Id(pName)))
-		} else if e, ok := g.input.enums[typeName]; ok {
-			params = append(params, jen.Id(pName).Id(typeName))
-			args = append(args, jen.Qual("C", e.CName()).Params(jen.Id(pName)))
-		} else if s, ok := g.input.structs[typeName]; ok {
-			if s.ByValue {
-				params = append(params, jen.Id(pName).Op("*").Id(s.Name))
-				args = append(args, jen.Id(pName).Dot("value"))
-			} else {
-				o.Commentf("%v skipped due to %v", fn.Name, pName)
-				o.Line()
-				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
+	case argShapeIdentByValueStruct:
+		params = append(params, jen.Id(shape.name).Op("*").Id(shape.st.Name))
+		args = append(args, jen.Id(shape.name).Dot("value"))
 
-				return params, args, body, postCall, true
-			}
-		} else if _, ok := g.input.callbacks[typeName]; ok {
-			// Callback type passed by value - CGO doesn't allow conversion from unsafe.Pointer to function pointer
-			// Skip these for now
-			o.Commentf("%v skipped due to %v (callback by value)", fn.Name, pName)
-			o.Line()
-			g.skips.Record(fn.Name, fmt.Sprintf("%v (callback by value)", pName))
-			return params, args, body, postCall, true
-		} else {
-			params = append(params, jen.Id(pName).Id(typeName))
-			args = append(args, jen.Qual("C", v.Name).Params(jen.Id(pName)))
-		}
+	case argShapeIdentByPointerStructSkip, argShapeIdentCallbackByValueSkip, argShapeArraySkip:
+		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)
+		o.Line()
+		g.skips.Record(fn.Name, shape.reason)
+		return params, args, body, postCall, true
 
-	case *PointerType:
+	case argShapeIdentUnknown:
+		params = append(params, jen.Id(shape.name).Id(shape.typeName))
+		args = append(args, jen.Qual("C", shape.typeName).Params(jen.Id(shape.name)))
+
+	case argShapePointer:
 		var pSkip bool
-		params, args, body, postCall, pSkip = g.marshalPointerArg(o, fn, arg, v, pName, actualTypeName)
+		params, args, body, postCall, pSkip = g.marshalPointerArg(o, fn, arg, shape.ptr, shape.name, shape.actualTypeName)
 		if pSkip {
 			return params, args, body, postCall, true
 		}
 
-	case *Array:
-		o.Commentf("%v skipped due to %v", fn.Name, pName)
+	case argShapeConstArraySkip, argShapeUnhandledSkip:
+		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)
 		o.Line()
-		g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
-		return params, args, body, postCall, true
-
-	case *ConstArray:
-		o.Commentf("%v skipped due to const array param %v", fn.Name, pName)
-		o.Line()
-		g.skips.Record(fn.Name, fmt.Sprintf("const array param %v", pName))
-		return params, args, body, postCall, true
-
-	default:
-		reason := fmt.Sprintf("unhandled arg type %v (%v)", reflect.TypeOf(arg.Type), pName)
-		o.Commentf("%v skipped due to %v", fn.Name, reason)
-		o.Line()
-		g.skips.Record(fn.Name, reason)
+		g.skips.Record(fn.Name, shape.reason)
 		return params, args, body, postCall, true
 	}
 
@@ -398,203 +332,140 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 }
 
 func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *PointerType, pName, actualTypeName string) (params, args, body, postCall []jen.Code, skip bool) {
-	switch iv := v.Inner.(type) {
-	case nil:
+	shape := g.classifyPointerArgShape(fn, arg, v, pName, actualTypeName)
+
+	switch shape.kind {
+	case pointerArgShapeUnsafePointer:
 		params = append(params, jen.Id(pName).Qual("unsafe", "Pointer"))
 		args = append(args, jen.Id(pName))
 
-	case *IdentType:
-		switch iv.Name {
-		case "char":
-			params = append(params, jen.Id(pName).Op("*").Id("CStr"))
-			convName := fmt.Sprintf("tmp%v", pName)
+	case pointerArgShapeCStr:
+		params = append(params, jen.Id(pName).Op("*").Id("CStr"))
+		convName := fmt.Sprintf("tmp%v", pName)
 
-			body = append(
-				body,
-				jen.Var().Id(convName).Op("*").Qual("C", "char"),
-				jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-					jen.Id(convName).Op("=").Id(pName).Dot("ptr"),
-				),
-			)
+		body = append(
+			body,
+			jen.Var().Id(convName).Op("*").Qual("C", "char"),
+			jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+				jen.Id(convName).Op("=").Id(pName).Dot("ptr"),
+			),
+		)
 
-			args = append(args, jen.Id(convName))
-		case "uint8_t", "uchar":
-			params = append(params, jen.Id(pName).Qual("unsafe", "Pointer"))
-			args = append(args, jen.Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Id(pName)))
-		default:
+		args = append(args, jen.Id(convName))
 
-			// Check if we have a corrected type name from the workaround
-			typeNameForParam := iv.Name
-			if actualTypeName != "" {
-				typeNameForParam = actualTypeName
-			}
+	case pointerArgShapeBytePointer:
+		params = append(params, jen.Id(pName).Qual("unsafe", "Pointer"))
+		args = append(args, jen.Params(jen.Op("*").Qual("C", shape.typeName)).Params(jen.Id(pName)))
 
-			if m, ok := primTypes[typeNameForParam]; ok {
-				// Pointer to primitive type - check if it's an output parameter
-				if _, ok := outputParams[fn.Name][arg.Name]; ok {
-					// This is likely an output parameter
-					// We'll generate a wrapper function that handles the output
-					params = append(params, jen.Id(pName).Op("*").Id(m))
+	case pointerArgShapeOutputPrimitive:
+		params = append(params, jen.Id(pName).Op("*").Id(shape.goType))
+		args = append(args, jen.Params(jen.Op("*").Qual("C", shape.cType)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))))
 
-					// For output parameters, we pass the Go pointer directly
-					// and let CGO handle the conversion
-					cType := getCType(typeNameForParam, m)
-					args = append(args, jen.Params(jen.Op("*").Qual("C", cType)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))))
-				} else {
-					// Not an output parameter - skip as it's ambiguous
-					o.Commentf("%v skipped due to %v (non-output primitive pointer)", fn.Name, pName)
-					o.Line()
-					g.skips.Record(fn.Name, fmt.Sprintf("%v (non-output primitive pointer)", pName))
-					return params, args, body, postCall, true
-				}
-			} else if s, ok := g.input.structs[iv.Name]; ok {
-				if s.ByValue {
-					o.Commentf("%v skipped due to %v", fn.Name, pName)
-					o.Line()
-					g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
-					return params, args, body, postCall, true
-				}
-
-				params = append(params, jen.Id(pName).Op("*").Id(iv.Name))
-
-				convName := fmt.Sprintf("tmp%v", pName)
-
-				body = append(
-					body,
-					jen.Var().Id(convName).Op("*").Qual("C", s.CName()),
-					jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-						jen.Id(convName).Op("=").Id(pName).Dot("ptr"),
-					),
-				)
-
-				args = append(args, jen.Id(convName))
-			} else if e, ok := g.input.enums[iv.Name]; ok {
-				// Pointer to enum type
-				params = append(params, jen.Id(pName).Op("*").Id(iv.Name))
-
-				convName := fmt.Sprintf("tmp%v", pName)
-
-				body = append(
-					body,
-					jen.Var().Id(convName).Op("*").Qual("C", e.CName()),
-					jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-						jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", e.CName())).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
-					),
-				)
-
-				args = append(args, jen.Id(convName))
-			} else if _, ok := g.input.callbacks[iv.Name]; ok {
-				// Pointer to callback type - use Go callback type name
-				goTypeName := g.convCamel(iv.Name)
-				params = append(params, jen.Id(pName).Op("*").Id(goTypeName))
-
-				convName := fmt.Sprintf("tmp%v", pName)
-
-				body = append(
-					body,
-					jen.Var().Id(convName).Op("*").Qual("C", iv.Name),
-					jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-						jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
-					),
-				)
-
-				args = append(args, jen.Id(convName))
-			} else {
-				// Unknown IdentType - could be a typedef alias defined in ffmpeg.go
-				// Try to use it directly (e.g., AVCRC, AVAdler)
-				// Cast through C type for the call
-				params = append(params, jen.Id(pName).Op("*").Id(iv.Name))
-
-				convName := fmt.Sprintf("tmp%v", pName)
-
-				body = append(
-					body,
-					jen.Var().Id(convName).Op("*").Qual("C", iv.Name),
-					jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-						jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
-					),
-				)
-
-				args = append(args, jen.Id(convName))
-			}
-		}
-
-	case *PointerType:
-
-		switch iiv := iv.Inner.(type) {
-		case *IdentType:
-
-			if iiv.Name == "uint8_t" || iiv.Name == "char" {
-				o.Commentf("%v skipped due to %v", fn.Name, pName)
-				o.Line()
-				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
-				return params, args, body, postCall, true
-			}
-
-			if _, ok := primTypes[iiv.Name]; ok {
-				o.Commentf("%v skipped due to %v", fn.Name, pName)
-				o.Line()
-				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
-				return params, args, body, postCall, true
-			} else if s, ok := g.input.structs[iiv.Name]; ok {
-				params = append(params, jen.Id(pName).Op("**").Id(iiv.Name))
-
-				ptrName := fmt.Sprintf("ptr%v", pName)
-				tmpName := fmt.Sprintf("tmp%v", pName)
-				oldName := fmt.Sprintf("oldTmp%v", pName)
-				innerName := fmt.Sprintf("inner%v", pName)
-
-				body = append(
-					body,
-					jen.Var().Id(ptrName).Op("**").Qual("C", s.CName()),
-					jen.Var().Id(tmpName).Op("*").Qual("C", s.CName()),
-					jen.Var().Id(oldName).Op("*").Qual("C", s.CName()),
-					jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
-						jen.Id(innerName).Op(":=").Op("*").Id(pName),
-						jen.If(jen.Id(innerName).Op("!=").Id("nil")).Block(
-							jen.Id(tmpName).Op("=").Id(innerName).Dot("ptr"),
-							jen.Id(oldName).Op("=").Id(tmpName),
-						),
-						jen.Id(ptrName).Op("=").Op("&").Id(tmpName),
-					),
-				)
-
-				postCall = append(
-					postCall,
-					jen.If(jen.Id(tmpName).Op("!=").Id(oldName).Op("&&").Id(pName).Op("!=").Id("nil")).Block(
-
-						jen.If(jen.Id(tmpName).Op("!=").Id("nil")).Block(
-							jen.Op("*").Id(pName).Op("=").Op("&").Id(iiv.Name).Values(jen.Dict{
-								jen.Id("ptr"): jen.Id(tmpName),
-							}),
-						).Else().Block(
-							jen.Op("*").Id(pName).Op("=").Id("nil"),
-						),
-					),
-				)
-
-				args = append(args, jen.Id(ptrName))
-			} else {
-				o.Commentf("%v skipped due to %v", fn.Name, pName)
-				o.Line()
-				g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
-				return params, args, body, postCall, true
-			}
-
-		default:
-			o.Commentf("%v skipped due to %v", fn.Name, pName)
-			o.Line()
-			g.skips.Record(fn.Name, fmt.Sprintf("%v", pName))
-			return params, args, body, postCall, true
-
-		}
-
-	default:
-		reason := fmt.Sprintf("unhandled pointer arg inner type %v (%v)", reflect.TypeOf(v.Inner), pName)
-		o.Commentf("%v skipped due to %v", fn.Name, reason)
+	case pointerArgShapeNonOutputPrimitiveSkip, pointerArgShapeByValueStructSkip, pointerArgShapePointerToPointerSkip, pointerArgShapeUnhandledSkip:
+		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)
 		o.Line()
-		g.skips.Record(fn.Name, reason)
+		g.skips.Record(fn.Name, shape.reason)
 		return params, args, body, postCall, true
+
+	case pointerArgShapeByPointerStruct:
+		params = append(params, jen.Id(pName).Op("*").Id(shape.typeName))
+
+		convName := fmt.Sprintf("tmp%v", pName)
+
+		body = append(
+			body,
+			jen.Var().Id(convName).Op("*").Qual("C", shape.st.CName()),
+			jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+				jen.Id(convName).Op("=").Id(pName).Dot("ptr"),
+			),
+		)
+
+		args = append(args, jen.Id(convName))
+
+	case pointerArgShapeEnum:
+		params = append(params, jen.Id(pName).Op("*").Id(shape.typeName))
+
+		convName := fmt.Sprintf("tmp%v", pName)
+
+		body = append(
+			body,
+			jen.Var().Id(convName).Op("*").Qual("C", shape.enum.CName()),
+			jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+				jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", shape.enum.CName())).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
+			),
+		)
+
+		args = append(args, jen.Id(convName))
+
+	case pointerArgShapeCallback:
+		goTypeName := g.convCamel(shape.typeName)
+		params = append(params, jen.Id(pName).Op("*").Id(goTypeName))
+
+		convName := fmt.Sprintf("tmp%v", pName)
+
+		body = append(
+			body,
+			jen.Var().Id(convName).Op("*").Qual("C", shape.typeName),
+			jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+				jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", shape.typeName)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
+			),
+		)
+
+		args = append(args, jen.Id(convName))
+
+	case pointerArgShapeUnknownIdent:
+		params = append(params, jen.Id(pName).Op("*").Id(shape.typeName))
+
+		convName := fmt.Sprintf("tmp%v", pName)
+
+		body = append(
+			body,
+			jen.Var().Id(convName).Op("*").Qual("C", shape.typeName),
+			jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+				jen.Id(convName).Op("=").Params(jen.Op("*").Qual("C", shape.typeName)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))),
+			),
+		)
+
+		args = append(args, jen.Id(convName))
+
+	case pointerArgShapePointerToStruct:
+		params = append(params, jen.Id(pName).Op("**").Id(shape.typeName))
+
+		ptrName := fmt.Sprintf("ptr%v", pName)
+		tmpName := fmt.Sprintf("tmp%v", pName)
+		oldName := fmt.Sprintf("oldTmp%v", pName)
+		innerName := fmt.Sprintf("inner%v", pName)
+
+		body = append(
+			body,
+			jen.Var().Id(ptrName).Op("**").Qual("C", shape.st.CName()),
+			jen.Var().Id(tmpName).Op("*").Qual("C", shape.st.CName()),
+			jen.Var().Id(oldName).Op("*").Qual("C", shape.st.CName()),
+			jen.If(jen.Id(pName).Op("!=").Id("nil")).Block(
+				jen.Id(innerName).Op(":=").Op("*").Id(pName),
+				jen.If(jen.Id(innerName).Op("!=").Id("nil")).Block(
+					jen.Id(tmpName).Op("=").Id(innerName).Dot("ptr"),
+					jen.Id(oldName).Op("=").Id(tmpName),
+				),
+				jen.Id(ptrName).Op("=").Op("&").Id(tmpName),
+			),
+		)
+
+		postCall = append(
+			postCall,
+			jen.If(jen.Id(tmpName).Op("!=").Id(oldName).Op("&&").Id(pName).Op("!=").Id("nil")).Block(
+
+				jen.If(jen.Id(tmpName).Op("!=").Id("nil")).Block(
+					jen.Op("*").Id(pName).Op("=").Op("&").Id(shape.typeName).Values(jen.Dict{
+						jen.Id("ptr"): jen.Id(tmpName),
+					}),
+				).Else().Block(
+					jen.Op("*").Id(pName).Op("=").Id("nil"),
+				),
+			),
+		)
+
+		args = append(args, jen.Id(ptrName))
 	}
 
 	return params, args, body, postCall, false
