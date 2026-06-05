@@ -12,8 +12,8 @@ import (
 )
 
 // TestParseFunctionDuplicateAborts pins the invariant-violation panic at
-// parser.go:619 (duplicate function registration). Task 3.2 converted shape
-// panics to skip-with-reason but deliberately kept invariant panics fatal:
+// parser.go:619 (duplicate function registration). The parser converts shape
+// panics to skip-with-reason but deliberately keeps invariant panics fatal:
 // a duplicate registration means libclang misreported or the parser visited
 // the same FunctionDecl twice, so the bindings are untrustworthy and aborting
 // is correct. This test fabricates the duplicate by pre-seeding the module's

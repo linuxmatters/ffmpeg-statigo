@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// TestAVSamplesAllocSilenceRoundTrip exercises the Task 2.3 alloc → silence → free
+// TestAVSamplesAllocSilenceRoundTrip exercises the alloc → silence → free
 // path for a planar format, asserting a balanced free. Run under -race to exercise
 // cgocheck on the plane-pointer array scratch.
 func TestAVSamplesAllocSilenceRoundTrip(t *testing.T) {

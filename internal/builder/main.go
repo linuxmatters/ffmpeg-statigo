@@ -504,7 +504,7 @@ func printLibraryList(libs []*Library) {
 		platform := getPlatformString(lib)
 		buildSys := getBuildSystemString(lib)
 
-		// Get link libs display string (without embedded colors for now)
+		// Link libs display string, without embedded colour codes
 		linkLibsDisplay := getLinkLibsString(lib)
 
 		// Color code based on library type

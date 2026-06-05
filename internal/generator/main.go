@@ -16,33 +16,20 @@ import (
 // skipCeiling caps the total skip-marker count a clean generator run is
 // allowed to record. It is an upper bound (`count > skipCeiling` trips), not
 // an exact equality, so it acts as a regression ceiling rather than a brittle
-// target.
+// target: it tolerates a handful of legitimate per-symbol skips a future header
+// bump might introduce while still catching wholesale degradation, such as an
+// allowlist regression that drops dozens of bindings.
 //
-// The 231 baseline is the post-Phase-1 count: the output-pointer table gained
-// av_parse_time and av_get_output_timestamp, dropping two non-output-pointer
-// skips from the former 233. An upper bound tolerates a handful of legitimate
-// per-symbol skips a future header bump might introduce while still catching
-// wholesale degradation (e.g. an allowlist regression that drops dozens of
-// bindings).
+// The current count is the residue of shapes the generator cannot safely emit:
+// int32 matrix-pointer functions, the AVExifEntry union field, and the
+// fixed-size struct-array fields in the DRM descriptors
+// (AVDRMFrameDescriptor.objects/layers, AVDRMLayerDescriptor.planes). Most are
+// covered by hand-written bindings; the skip marker records that the generator
+// declined them, not that the symbol is unavailable.
 //
-// Bumping this constant is a curation decision. A legitimate FFmpeg upgrade
-// that introduces new unemittable symbols requires an intentional bump
-// alongside the header update; do not raise it to silence a regression.
-//
-// Bumped 231 -> 239 for the Tier 1 header promotion (ac3_parser, adts_parser,
-// avdct, dirac, dv_profile, vorbis_parser, md5): the newly bound headers carry
-// a handful of per-symbol unemittable shapes. This is an intentional curation
-// decision accompanying the allowlist expansion, not silencing a regression.
-//
-// Bumped 239 -> 245 for the Tier 2 header promotion (exif, hwcontext_drm): six
-// new per-symbol unemittable shapes land as recorded skips — two int32
-// matrix-pointer functions and the AVExifEntry union field from exif.h, plus
-// three fixed-size struct-array fields in the DRM descriptors
-// (AVDRMFrameDescriptor.objects/layers, AVDRMLayerDescriptor.planes). These are
-// deferred to a later hand-written-binding commit; the curation policy accepts
-// them as tracked skips, not a regression. (smpte_436m.h was evaluated for the
-// same tier but dropped: its symbols are absent from the FFmpeg 8.1.1 static
-// lib and would break the link.)
+// Bumping this constant is a curation decision. An FFmpeg upgrade that binds new
+// headers carrying unemittable shapes needs an intentional bump alongside the
+// header update; do not raise it to silence a regression.
 const skipCeiling = 245
 
 func main() {
@@ -74,13 +61,9 @@ func enforceSkipCeiling(total, ceiling int) error {
 
 // run drives one end-to-end generator pass: parse the FFmpeg headers, apply
 // the in-tree fixups, and emit the five `*.gen.go` files. It returns the skip
-// collector populated during emission so callers (main, tests, the Task 3.4
-// ceiling check) can inspect every `skipped due to ...` decision the run made.
+// collector populated during emission so callers (main, the ceiling check,
+// tests) can inspect every `skipped due to ...` decision the run made.
 //
-// The function is the single extraction point Task 3.1 added so the run path
-// is testable without invoking the package binary. summaryOut is reserved for
-// callers that want non-stderr toolchain logging; today only the verbose flag
-// touches it via log.SetOutput.
 // It exists as a separate function so the whole run path is testable without
 // invoking the package binary.
 func run(args []string) (*SkipCollector, error) {
@@ -184,8 +167,8 @@ func manualBindingBySymbol(c *SkipCollector) map[string]string {
 }
 
 // sortedUniqueSymbols returns the unique skipped symbol names in lexical
-// order. Used by the run summary and exposed for Task 3.4 to feed the same
-// list into the ceiling diagnostic when the cap trips.
+// order, feeding both the run summary and the ceiling diagnostic when the cap
+// trips.
 func sortedUniqueSymbols(c *SkipCollector) []string {
 	if c == nil {
 		return nil

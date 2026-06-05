@@ -139,8 +139,8 @@ func TestMarshalReturnSkip(t *testing.T) {
 }
 
 // TestMarshalArgOutputPointerAllowlist pins the (function, parameter) allowlist
-// decision in marshalPointerArg. After Task 2.2 the allowlist is the only
-// output-pointer routing signal: a substring match like `width`, `size`, or
+// decision in marshalPointerArg. The allowlist is the only output-pointer
+// routing signal: a substring match like `width`, `size`, or
 // `_ptr` no longer keeps a parameter emittable on its own. This test asserts
 // that representative allowlisted pairs spanning the original heuristic
 // patterns still resolve to an emitted output pointer, and that near-miss
@@ -187,16 +187,15 @@ func TestMarshalArgOutputPointerAllowlist(t *testing.T) {
 	}
 }
 
-// TestMarshalArgPhase1OutputPointers pins the Phase 1 output-pointer table
-// additions: av_parse_time.timeval and av_get_output_timestamp.{dts,wall} are
-// pure-output int64_t* parameters now present in outputParams, so marshalArg
-// must emit them (skip == false) rather than record the former
-// "non-output primitive pointer" skip. Reintroducing the skip (by dropping the
-// table entry) flips skip to true here and trips the lowered skipCeiling in the
+// TestMarshalArgOutputPointers pins the output-pointer table entries:
+// av_parse_time.timeval and av_get_output_timestamp.{dts,wall} are pure-output
+// int64_t* parameters present in outputParams, so marshalArg must emit them
+// (skip == false) rather than record a "non-output primitive pointer" skip.
+// Dropping a table entry flips skip to true here and trips skipCeiling in the
 // generator run. av_expr_parse_and_eval.res is deliberately excluded: res is a
 // genuine output pointer, but the function stays skipped on its later
 // const char *const * params, so it never emits a callable binding.
-func TestMarshalArgPhase1OutputPointers(t *testing.T) {
+func TestMarshalArgOutputPointers(t *testing.T) {
 	g := skipGen()
 
 	tests := []struct {
@@ -213,7 +212,7 @@ func TestMarshalArgPhase1OutputPointers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if _, ok := outputParams[tt.fnName][tt.argName]; !ok {
-				t.Fatalf("outputParams[%q][%q] absent: Phase 1 table entry missing", tt.fnName, tt.argName)
+				t.Fatalf("outputParams[%q][%q] absent: output-pointer table entry missing", tt.fnName, tt.argName)
 			}
 
 			o := newFile()

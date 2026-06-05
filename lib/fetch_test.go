@@ -115,9 +115,8 @@ func TestFindViaAPI_ReleaseSorting(t *testing.T) {
 		// Last element should be the "highest"
 		highest := sortedReleases[len(sortedReleases)-1]
 
-		// Note: lexicographic sorting means "lib-8.1.1.2" > "lib-8.1.1.10"
-		// This is a known limitation of the current implementation
-		// For now, we document the behavior
+		// Note: lexicographic sorting means "lib-8.1.1.2" > "lib-8.1.1.10",
+		// a known limitation of this sort.
 		t.Logf("Sorted releases: %v", sortedReleases)
 		t.Logf("Selected highest: %s", highest)
 

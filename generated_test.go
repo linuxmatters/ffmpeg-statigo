@@ -285,8 +285,8 @@ func TestGeneratorCharVsUint8(t *testing.T) {
 	list := ToCStr("test,foo,bar")
 	defer list.Free()
 
-	// If this compiles, the char→C.char mapping is working correctly
-	// (Previously this would fail: cannot use _Ctype_uint8_t as _Ctype_char)
+	// If this compiles, the char→C.char mapping is correct. A uint8_t
+	// regression would fail to compile: cannot use _Ctype_uint8_t as _Ctype_char.
 	result, err := AVMatchList(name, list, ',')
 	if err != nil {
 		t.Fatalf("AVMatchList failed: %v", err)
@@ -443,8 +443,8 @@ func TestGeneratorTypePreservation(t *testing.T) {
 // This validates the Priority 1 enhancement that enables enum/struct const arrays
 func TestGeneratorConstArrayFields(t *testing.T) {
 	t.Run("struct_const_array_AVRational", func(t *testing.T) {
-		// Test that struct const array fields work (AVRational[N])
-		// Previously skipped as "unknown const array"
+		// Test that struct const array fields work (AVRational[N]).
+		// Without const-array support these skip as "unknown const array".
 		// Example: AVDetectionBBox.classify_confidences (AVRational[4])
 
 		// Create a detection bbox (would normally come from av_detection_bbox_alloc)
@@ -456,8 +456,8 @@ func TestGeneratorConstArrayFields(t *testing.T) {
 	})
 
 	t.Run("enum_const_array", func(t *testing.T) {
-		// Test that enum const array fields work (AVEnum[N])
-		// Previously skipped as "unknown const array"
+		// Test that enum const array fields work (AVEnum[N]).
+		// Without const-array support these skip as "unknown const array".
 		// Example: AVDOVIReshapingCurve.mapping_idc (AVDOVIMappingMethod[8])
 
 		// Verify the accessor compiles by taking the method value;
@@ -468,9 +468,9 @@ func TestGeneratorConstArrayFields(t *testing.T) {
 	})
 
 	t.Run("byvalue_struct_array_helper", func(t *testing.T) {
-		// Test that ToXArray helpers are generated for ByValue structs
-		// Previously only generated for pointer structs
-		// This enables the array field accessors above to work
+		// Test that ToXArray helpers are generated for ByValue structs,
+		// not only pointer structs. This enables the array field accessors
+		// above to work.
 
 		// AVRational is a ByValue struct, should have ToAVRationalArray
 		r1 := AVMakeQ(1, 2)

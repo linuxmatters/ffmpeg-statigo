@@ -223,8 +223,8 @@ func sentinelParse() {
 
 // Parse drives the libclang parse over the pinned FFmpeg headers. The skips
 // collector is the same instance Gen receives, so parse-layer unhandled-shape
-// skips (Task 3.2) land in the run-summary alongside codegen-layer skips. A nil
-// skips is tolerated: SkipCollector.Record is nil-safe.
+// skips land in the run-summary alongside codegen-layer skips. A nil skips is
+// tolerated: SkipCollector.Record is nil-safe.
 func Parse(skips *SkipCollector) *Module {
 	p := &Parser{
 		mod: &Module{

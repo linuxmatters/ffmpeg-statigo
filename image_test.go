@@ -5,7 +5,7 @@ import (
 	"unsafe"
 )
 
-// TestImagePlaneRoundTrip proves the Task 2.1 plane/linesize helper converts a
+// TestImagePlaneRoundTrip proves the plane/linesize helper converts a
 // four-plane set between Go slices and the fixed C [4] arrays without a cgocheck
 // abort. The plane pointers come from a C allocation (AVMalloc), mirroring how
 // real plane pointers originate from C-owned memory. Run under -race to exercise
@@ -43,7 +43,7 @@ func TestImagePlaneRoundTrip(t *testing.T) {
 	}
 }
 
-// TestAVImageAllocRoundTrip exercises the Task 2.2 alloc → fill → free path,
+// TestAVImageAllocRoundTrip exercises the alloc → fill → free path,
 // asserting dimensions and a balanced free.
 func TestAVImageAllocRoundTrip(t *testing.T) {
 	const (

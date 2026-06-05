@@ -436,8 +436,8 @@ type Generator struct {
 }
 
 // Gen runs the codegen pass. The skips collector is shared with Parse so a
-// single SkipCollector accumulates both parse-layer (Task 3.2) and codegen-layer
-// skips. A nil skips is tolerated: a fresh collector is allocated. The returned
+// single SkipCollector accumulates both parse-layer and codegen-layer skips.
+// A nil skips is tolerated: a fresh collector is allocated. The returned
 // collector is the active one (the argument when non-nil, otherwise the freshly
 // allocated one) so callers can read aggregated state without tracking it
 // separately.
