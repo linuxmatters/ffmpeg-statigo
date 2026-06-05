@@ -67,7 +67,7 @@ func ExtractTar(reader io.Reader, opts TarOptions) error {
 			}
 		case tar.TypeSymlink:
 			if opts.LinkPolicy == PreserveSymlinks {
-				if err := extractSymlink(header, target); err != nil {
+				if err := extractSymlink(opts.DestDir, header, target); err != nil {
 					return extractionError(opts, err)
 				}
 			}
@@ -125,12 +125,34 @@ func extractRegularFile(tarReader *tar.Reader, header *tar.Header, target string
 	return nil
 }
 
-func extractSymlink(header *tar.Header, target string) error {
+func extractSymlink(destDir string, header *tar.Header, target string) error {
+	if err := symlinkTargetSafe(destDir, target, header.Linkname); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fmt.Errorf("creating parent directory for %s: %w", target, err)
 	}
 	if err := os.Symlink(header.Linkname, target); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("creating symlink %s: %w", target, err)
+	}
+	return nil
+}
+
+// symlinkTargetSafe rejects symlink targets that resolve outside destDir,
+// preventing a malicious archive from planting a link to an absolute or
+// parent path that later entries could write through.
+func symlinkTargetSafe(destDir, linkPath, linkname string) error {
+	if linkname == "" {
+		return fmt.Errorf("symlink %s: empty link target", linkPath)
+	}
+	if filepath.IsAbs(linkname) {
+		return fmt.Errorf("symlink %s: absolute target %q not allowed", linkPath, linkname)
+	}
+
+	cleanDest := filepath.Clean(destDir)
+	resolved := filepath.Join(filepath.Dir(linkPath), linkname)
+	if resolved != cleanDest && !strings.HasPrefix(resolved, cleanDest+string(filepath.Separator)) {
+		return fmt.Errorf("symlink %s: target %q escapes destination directory", linkPath, linkname)
 	}
 	return nil
 }

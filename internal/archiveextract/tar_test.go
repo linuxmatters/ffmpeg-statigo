@@ -89,6 +89,45 @@ func TestExtractTar(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects_absolute_symlink_target", func(t *testing.T) {
+		destDir := t.TempDir()
+		err := ExtractTar(tarStream(t, tarEntry{
+			name:     "link",
+			linkname: "/etc/passwd",
+			typeflag: tar.TypeSymlink,
+		}), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected absolute symlink target error, got nil")
+		}
+		if !strings.Contains(err.Error(), "absolute target") {
+			t.Fatalf("error = %v, want absolute target", err)
+		}
+		if _, statErr := os.Lstat(filepath.Join(destDir, "link")); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("link stat error = %v, want not exist", statErr)
+		}
+	})
+
+	t.Run("rejects_escaping_symlink_target", func(t *testing.T) {
+		destDir := t.TempDir()
+		err := ExtractTar(tarStream(t, tarEntry{
+			name:     "link",
+			linkname: "../../etc/passwd",
+			typeflag: tar.TypeSymlink,
+		}), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected escaping symlink target error, got nil")
+		}
+		if !strings.Contains(err.Error(), "escapes destination directory") {
+			t.Fatalf("error = %v, want escapes destination directory", err)
+		}
+	})
+
 	t.Run("removes_incomplete_file_on_copy_error", func(t *testing.T) {
 		destDir := t.TempDir()
 		err := ExtractTar(failingTarReader(t, "file"), TarOptions{
