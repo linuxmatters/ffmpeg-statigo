@@ -98,12 +98,6 @@ func SwrSetMatrix(s *SwrContext, matrix []float64, stride int) (int, error) {
 	return int(ret), WrapErr(int(ret))
 }
 
-// constPtr returns the plane-pointer array typed as const uint8_t *const * for
-// swr_convert's input parameter.
-func (s samplePointerArray) constPtr() **C.uint8_t {
-	return s.ptr
-}
-
 // channelLayoutPtr returns the underlying C pointer for an AVChannelLayout, or nil.
 func channelLayoutPtr(l *AVChannelLayout) unsafe.Pointer {
 	if l == nil {
