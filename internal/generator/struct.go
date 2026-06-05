@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -222,266 +221,113 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		tgt = jen.Id("s").Dot("ptr").Dot(cName)
 	}
 
-	switch v := field.Type.(type) {
+	shape := g.classifyFieldShape(field)
 
-	case *IdentType:
+	switch shape.kind {
+	case fieldShapeIdentPrimitive:
+		getRetType = []jen.Code{jen.Id(shape.goType)}
+		setParams = append(setParams, jen.Id("value").Id(shape.goType))
 
-		if m, ok := primTypes[v.Name]; ok {
-			getRetType = []jen.Code{jen.Id(m)}
-			setParams = append(setParams, jen.Id("value").Id(m))
+		getBody = append(getBody, jen.Return(jen.Id(shape.goType).Params(jen.Id("value"))))
 
-			getBody = append(getBody, jen.Return(jen.Id(m).Params(jen.Id("value"))))
-
-			if v.IsAnonEnum {
-				setBody = append(
-					setBody,
-					tgt.Op("=").Id("value"),
-				)
-			} else {
-				// Use the original C type name if available, otherwise try override, otherwise map from Go type
-				cType := field.CTypeName
-				// Normalize C type names that have spaces (not valid after "C.")
-				cType = strings.ReplaceAll(cType, "unsigned long", "ulong")
-				cType = strings.ReplaceAll(cType, "unsigned int", "uint")
-				cType = strings.ReplaceAll(cType, "unsigned char", "uchar")
-				cType = strings.ReplaceAll(cType, "unsigned short", "ushort")
-
-				if cType == "" || cType == "int" || cType == "uint" {
-					// Check for struct-specific override
-					if overrides, ok := fieldCTypeOverrides[st.Name]; ok {
-						if override, ok := overrides[field.Name]; ok {
-							cType = override
-						}
-					}
-				}
-				if cType == "" || cType == "int" || cType == "uint" {
-					cType = getCType(v.Name, m)
-				}
-				setBody = append(
-					setBody,
-					tgt.Op("=").Params(jen.Qual("C", cType)).Params(jen.Id("value")),
-				)
-			}
-		} else if s, ok := g.input.structs[v.Name]; ok {
-			if s.ByValue {
-				getRetType = []jen.Code{
-					jen.Op("*").Id(s.Name),
-				}
-				setParams = append(setParams, jen.Id("value").Op("*").Id(s.Name))
-
-				getBody = append(
-					getBody,
-					jen.Return(jen.Op("&").Id(s.Name).Values(jen.Dict{
-						jen.Id("value"): jen.Id("value"),
-					})),
-				)
-
-				setBody = append(
-					setBody,
-					tgt.Op("=").Id("value").Dot("value"),
-				)
-			} else {
-				refField = true
-
-				getRetType = []jen.Code{
-					jen.Op("*").Id(s.Name),
-				}
-
-				getBody = append(
-					getBody,
-					jen.Return(jen.Op("&").Id(s.Name).Values(jen.Dict{
-						jen.Id("ptr"): jen.Id("value"),
-					})),
-				)
-			}
-		} else if _, ok := g.input.callbacks[v.Name]; ok {
-			o.Commentf("%v skipped due to ident callback", field.Name)
-			o.Line()
-			g.skips.Record(goName+"."+field.Name, "ident callback")
-
-			return
-		} else if e, ok := g.input.enums[v.Name]; ok {
-			getRetType = []jen.Code{jen.Id(v.Name)}
-			setParams = append(setParams, jen.Id("value").Id(v.Name))
-
-			getBody = append(getBody, jen.Return(jen.Id(v.Name).Params(jen.Id("value"))))
-
+		if shape.anonEnum {
 			setBody = append(
 				setBody,
-				tgt.Op("=").Params(jen.Qual("C", e.CName())).Params(jen.Id("value")),
+				tgt.Op("=").Id("value"),
 			)
 		} else {
-			// Unknown IdentType - might be a typedef alias or external type
-			// Try to use it as-is, treating it like a struct passed by reference
-			structName := st.Name
-			fieldName := field.Name
-			typeName := v.Name
-
-			log.Printf("unexpected IdentType in struct field - struct: %v, field: %v, type: %v (treating as struct reference)\n", structName, fieldName, typeName)
-
-			// Treat as a struct passed by reference (like typedef aliases)
-			refField = true
-
-			getRetType = []jen.Code{
-				jen.Op("*").Id(typeName),
-			}
-
-			getBody = append(
-				getBody,
-				jen.Return(jen.Op("&").Id(typeName).Values(jen.Dict{
-					jen.Id("ptr"): jen.Id("value"),
-				})),
+			cType := normalizedFieldCType(st, field, shape.typeName, shape.goType)
+			setBody = append(
+				setBody,
+				tgt.Op("=").Params(jen.Qual("C", cType)).Params(jen.Id("value")),
 			)
 		}
 
-	case *PointerType:
+	case fieldShapeIdentByValueStruct:
+		getRetType = []jen.Code{
+			jen.Op("*").Id(shape.st.Name),
+		}
+		setParams = append(setParams, jen.Id("value").Op("*").Id(shape.st.Name))
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Op("&").Id(shape.st.Name).Values(jen.Dict{
+				jen.Id("value"): jen.Id("value"),
+			})),
+		)
+
+		setBody = append(
+			setBody,
+			tgt.Op("=").Id("value").Dot("value"),
+		)
+
+	case fieldShapeIdentRefStruct:
+		refField = true
+
+		getRetType = []jen.Code{
+			jen.Op("*").Id(shape.st.Name),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Op("&").Id(shape.st.Name).Values(jen.Dict{
+				jen.Id("ptr"): jen.Id("value"),
+			})),
+		)
+
+	case fieldShapeIdentCallbackSkip:
+		o.Commentf("%v skipped due to ident callback", field.Name)
+		o.Line()
+		g.skips.Record(goName+"."+field.Name, shape.reason)
+
+		return
+
+	case fieldShapeIdentEnum:
+		getRetType = []jen.Code{jen.Id(shape.typeName)}
+		setParams = append(setParams, jen.Id("value").Id(shape.typeName))
+
+		getBody = append(getBody, jen.Return(jen.Id(shape.typeName).Params(jen.Id("value"))))
+
+		setBody = append(
+			setBody,
+			tgt.Op("=").Params(jen.Qual("C", shape.enum.CName())).Params(jen.Id("value")),
+		)
+
+	case fieldShapeIdentUnknownRef:
+		log.Printf("unexpected IdentType in struct field - struct: %v, field: %v, type: %v (treating as struct reference)\n", st.Name, field.Name, shape.typeName)
+
+		refField = true
+
+		getRetType = []jen.Code{
+			jen.Op("*").Id(shape.typeName),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Op("&").Id(shape.typeName).Values(jen.Dict{
+				jen.Id("ptr"): jen.Id("value"),
+			})),
+		)
+
+	case fieldShapePointer:
 		var pSkip bool
-		getRetType, setParams, getBody, setBody, pSkip = g.marshalPointerField(o, st, field, v, tgt)
+		getRetType, setParams, getBody, setBody, pSkip = g.marshalPointerField(o, st, field, shape.ptr, tgt)
 		if pSkip {
 			return
 		}
 
-	case *ConstArray:
+	case fieldShapeConstArray:
 		refField = true
-
-		switch iv := v.Inner.(type) {
-		case *IdentType:
-			if pt, ok := primTypes[iv.Name]; ok {
-				// Primitive type array (e.g., uint8_t[64])
-				getRetType = []jen.Code{
-					jen.Op("*").Id("Array").Types(jen.Id(pt)),
-				}
-
-				goName := strcase.ToCamel(pt)
-
-				getBody = append(
-					getBody,
-					jen.Return(jen.Id(fmt.Sprintf("To%vArray", goName)).Params(
-						jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-					)),
-				)
-			} else if en, ok := g.input.enums[iv.Name]; ok {
-				// Enum type array (e.g., AVDOVIMappingMethod[AV_DOVI_MAX_PIECES])
-				getRetType = []jen.Code{
-					jen.Op("*").Id("Array").Types(jen.Id(en.Name)),
-				}
-
-				getBody = append(
-					getBody,
-					jen.Return(jen.Id(fmt.Sprintf("To%vArray", en.Name)).Params(
-						jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-					)),
-				)
-			} else if st, ok := g.input.structs[iv.Name]; ok {
-				// Struct type array (e.g., AVDOVIReshapingCurve[3])
-				if st.ByValue {
-					// Array of struct values
-					getRetType = []jen.Code{
-						jen.Op("*").Id("Array").Types(jen.Op("*").Id(st.Name)),
-					}
-
-					getBody = append(
-						getBody,
-						jen.Return(jen.Id(fmt.Sprintf("To%vArray", st.Name)).Params(
-							jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-						)),
-					)
-				} else {
-					// Array of struct pointers - skip for now (complex)
-					o.Commentf("%v skipped due to const array of struct pointers", field.Name)
-					o.Line()
-					g.skips.Record(goName+"."+field.Name, "const array of struct pointers")
-
-					return
-				}
-			} else {
-				// Unknown type - might be typedef or forward declaration
-				o.Commentf("%v skipped due to unknown const array type %v", field.Name, iv.Name)
-				o.Line()
-				g.skips.Record(goName+"."+field.Name, fmt.Sprintf("unknown const array type %v", iv.Name))
-
-				return
-			}
-
-		case *PointerType:
-
-			switch iiv := iv.Inner.(type) {
-			case *IdentType:
-				if iiv.Name == "uint8_t" {
-					getRetType = []jen.Code{
-						jen.Op("*").Id("Array").Types(jen.Qual("unsafe", "Pointer")),
-					}
-
-					getBody = append(
-						getBody,
-						jen.Return(jen.Id("ToUint8PtrArray").Params(
-							jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-						)),
-					)
-				} else if st, ok := g.input.structs[iiv.Name]; ok {
-					if st.ByValue {
-						o.Commentf("%v skipped due to value ident ptr const array", field.Name)
-						o.Line()
-						g.skips.Record(goName+"."+field.Name, "value ident ptr const array")
-
-						return
-					}
-
-					getRetType = []jen.Code{
-						jen.Op("*").Id("Array").Types(jen.Op("*").Id(iiv.Name)),
-					}
-
-					getBody = append(
-						getBody,
-						jen.Return(jen.Id(fmt.Sprintf("To%vArray", iiv.Name)).Params(
-							jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-						)),
-					)
-				} else {
-					o.Commentf("%v skipped due to ident pointer const array", field.Name)
-					o.Line()
-					g.skips.Record(goName+"."+field.Name, "ident pointer const array")
-
-					return
-				}
-
-			default:
-				reason := fmt.Sprintf("unhandled const array pointer inner type %v", reflect.TypeOf(iv.Inner))
-				o.Commentf("%v skipped due to %v", field.Name, reason)
-				o.Line()
-				g.skips.Record(goName+"."+field.Name, reason)
-
-				return
-			}
-
-		case *ConstArray:
-			o.Commentf("%v skipped due to multi dim const array", field.Name)
-			o.Line()
-			g.skips.Record(goName+"."+field.Name, "multi dim const array")
-
-			return
-
-		default:
-			reason := fmt.Sprintf("unhandled const array inner type %v", reflect.TypeOf(v.Inner))
-			o.Commentf("%v skipped due to %v", field.Name, reason)
-			o.Line()
-			g.skips.Record(goName+"."+field.Name, reason)
-
+		var aSkip bool
+		getRetType, getBody, aSkip = g.marshalConstArrayField(o, st, field, shape.array)
+		if aSkip {
 			return
 		}
 
-	case *UnionType:
-		o.Commentf("%v skipped due to union type", field.Name)
+	case fieldShapeUnionSkip, fieldShapeUnhandledSkip:
+		o.Commentf("%v skipped due to %v", field.Name, shape.reason)
 		o.Line()
-		g.skips.Record(goName+"."+field.Name, "union type")
-
-		return
-
-	default:
-		reason := fmt.Sprintf("unhandled field type %v", reflect.TypeOf(field.Type))
-		o.Commentf("%v skipped due to %v", field.Name, reason)
-		o.Line()
-		g.skips.Record(goName+"."+field.Name, reason)
+		g.skips.Record(goName+"."+field.Name, shape.reason)
 
 		return
 	}
@@ -542,14 +388,113 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	}
 }
 
-func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v *PointerType, tgt *jen.Statement) (getRetType, setParams, getBody, setBody []jen.Code, skip bool) {
-	// Capture before the `st, ok := g.input.structs[...]` branches below
-	// shadow the outer struct binding. The skip collector needs the
-	// containing struct name, not the array-element struct name.
-	parentName := st.Name
+func normalizedFieldCType(st *Struct, field *Field, typeName, goType string) string {
+	cType := field.CTypeName
+	cType = strings.ReplaceAll(cType, "unsigned long", "ulong")
+	cType = strings.ReplaceAll(cType, "unsigned int", "uint")
+	cType = strings.ReplaceAll(cType, "unsigned char", "uchar")
+	cType = strings.ReplaceAll(cType, "unsigned short", "ushort")
 
-	switch iv := v.Inner.(type) {
-	case nil:
+	if cType == "" || cType == "int" || cType == "uint" {
+		if overrides, ok := fieldCTypeOverrides[st.Name]; ok {
+			if override, ok := overrides[field.Name]; ok {
+				cType = override
+			}
+		}
+	}
+	if cType == "" || cType == "int" || cType == "uint" {
+		cType = getCType(typeName, goType)
+	}
+
+	return cType
+}
+
+func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, v *ConstArray) (getRetType, getBody []jen.Code, skip bool) {
+	shape := g.classifyConstArrayFieldShape(v)
+
+	switch shape.kind {
+	case constArrayFieldShapePrimitive:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Id(shape.goType)),
+		}
+
+		goName := strcase.ToCamel(shape.goType)
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id(fmt.Sprintf("To%vArray", goName)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
+
+	case constArrayFieldShapeEnum:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Id(shape.enum.Name)),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id(fmt.Sprintf("To%vArray", shape.enum.Name)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
+
+	case constArrayFieldShapeByValueStruct:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Op("*").Id(shape.st.Name)),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id(fmt.Sprintf("To%vArray", shape.st.Name)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
+
+	case constArrayFieldShapeUint8PointerArray:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Qual("unsafe", "Pointer")),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id("ToUint8PtrArray").Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
+
+	case constArrayFieldShapeStructPointerArray:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Op("*").Id(shape.typeName)),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id(fmt.Sprintf("To%vArray", shape.typeName)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
+
+	case constArrayFieldShapeStructPointerSkip, constArrayFieldShapeValueIdentPointerSkip,
+		constArrayFieldShapeIdentPointerSkip, constArrayFieldShapeMultiDimSkip,
+		constArrayFieldShapeUnknownTypeSkip, constArrayFieldShapeUnhandledPointerInnerSkip,
+		constArrayFieldShapeUnhandledInnerSkip:
+		o.Commentf("%v skipped due to %v", field.Name, shape.reason)
+		o.Line()
+		g.skips.Record(st.Name+"."+field.Name, shape.reason)
+
+		return getRetType, getBody, true
+	}
+
+	return getRetType, getBody, false
+}
+
+func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v *PointerType, tgt *jen.Statement) (getRetType, setParams, getBody, setBody []jen.Code, skip bool) {
+	parentName := st.Name
+	shape := g.classifyPointerFieldShape(v)
+
+	switch shape.kind {
+	case pointerFieldShapeUnsafePointer:
 		getRetType = []jen.Code{
 			jen.Qual("unsafe", "Pointer"),
 		}
@@ -557,174 +502,112 @@ func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v
 		getBody = append(getBody, jen.Return(jen.Id("value")))
 		setBody = append(setBody, tgt.Op("=").Id("value"))
 
-	case *IdentType:
-
-		if iv.Name == "URLContext" || iv.Name == "AVFilterCommand" || iv.Name == "AVCodecInternal" {
-			o.Commentf("%v skipped due to ptr to ignored type", field.Name)
-			o.Line()
-			g.skips.Record(parentName+"."+field.Name, "ptr to ignored type")
-
-			return getRetType, setParams, getBody, setBody, true
-		} else if iv.Name == "char" {
-			getRetType = []jen.Code{
-				jen.Op("*").Id("CStr"),
-			}
-			setParams = append(setParams, jen.Id("value").Op("*").Id("CStr"))
-			getBody = append(getBody, jen.Return(jen.Id("wrapCStr").Params(jen.Id("value"))))
-			setBody = append(setBody, tgt.Op("=").Id("value").Dot("ptr"))
-
-		} else if iv.Name == "uint8_t" {
-			getRetType = []jen.Code{
-				jen.Qual("unsafe", "Pointer"),
-			}
-			getBody = append(getBody, jen.Return(jen.Qual("unsafe", "Pointer").Params(jen.Id("value"))))
-
-			setParams = append(setParams, jen.Id("value").Qual("unsafe", "Pointer"))
-			setBody = append(setBody, tgt.Op("=").Params(jen.Op("*").Qual("C", iv.Name)).Params(jen.Id("value")))
-		} else if _, ok := primTypes[iv.Name]; ok {
-			o.Commentf("%v skipped due to prim ptr", field.Name)
-			o.Line()
-			g.skips.Record(parentName+"."+field.Name, "prim ptr")
-
-			return getRetType, setParams, getBody, setBody, true
-		} else if enum, ok := g.input.enums[iv.Name]; ok {
-			getRetType = []jen.Code{
-				jen.Op("*").Id("Array").Types(jen.Id(iv.Name)),
-			}
-
-			getBody = append(
-				getBody,
-				jen.Return(jen.Id(fmt.Sprintf("To%vArray", iv.Name)).Params(
-					jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-				)),
-			)
-
-			setParams = append(setParams, jen.Id("value").Op("*").Id("Array").Types(jen.Id(iv.Name)))
-
-			cName := enum.CName()
-
-			setBody = append(
-				setBody,
-				jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
-					tgt.Clone().Op("=").Params(jen.Op("*").Qual("C", cName)).Params(jen.Id("value").Dot("ptr")),
-				).Else().Block(
-					tgt.Clone().Op("=").Id("nil"),
-				),
-			)
-
-		} else if _, ok := g.input.callbacks[iv.Name]; ok {
-			o.Commentf("%v skipped due to callback ptr", field.Name)
-			o.Line()
-			g.skips.Record(parentName+"."+field.Name, "callback ptr")
-
-			return getRetType, setParams, getBody, setBody, true
-		} else if ist, ok := g.input.structs[iv.Name]; ok {
-			if ist.ByValue {
-				o.Commentf("%v skipped due to struct value ptr", field.Name)
-				o.Line()
-				g.skips.Record(parentName+"."+field.Name, "struct value ptr")
-
-				return getRetType, setParams, getBody, setBody, true
-			}
-
-			getRetType = []jen.Code{
-				jen.Op("*").Id(iv.Name),
-			}
-			setParams = append(setParams, jen.Id("value").Op("*").Id(iv.Name))
-
-			getBody = append(
-				getBody,
-				jen.Var().Id("valueMapped").Op("*").Id(iv.Name),
-				jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
-					jen.Id("valueMapped").Op("=").Op("&").Id(iv.Name).Values(jen.Dict{
-						jen.Id("ptr"): jen.Id("value"),
-					}),
-				),
-				jen.Return(jen.Id("valueMapped")),
-			)
-
-			setBody = append(
-				setBody,
-				jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
-					tgt.Clone().Op("=").Id("value").Dot("ptr"),
-				).Else().Block(
-					tgt.Clone().Op("=").Id("nil"),
-				),
-			)
-		} else {
-			structName := st.Name
-			fieldName := field.Name
-			typeName := iv.Name
-
-			log.Printf("unexpected IdentType in struct setter - struct: %v, field: %v, type: %v\n", structName, fieldName, typeName)
-			o.Commentf("%v skipped due to unexpected IdentType %v", fieldName, typeName)
-			o.Line()
-			g.skips.Record(parentName+"."+field.Name, fmt.Sprintf("unexpected IdentType %v", typeName))
-			return getRetType, setParams, getBody, setBody, true
-		}
-
-	case *FuncType:
-		o.Commentf("%v skipped due to func ptr", field.Name)
+	case pointerFieldShapeIgnoredTypeSkip, pointerFieldShapePrimitivePointerSkip,
+		pointerFieldShapeCallbackPointerSkip, pointerFieldShapeStructValuePointerSkip,
+		pointerFieldShapeFuncPointerSkip, pointerFieldShapeUnknownPointerPointerSkip,
+		pointerFieldShapeUnhandledPointerPointerSkip, pointerFieldShapeUnhandledSkip:
+		o.Commentf("%v skipped due to %v", field.Name, shape.reason)
 		o.Line()
-		g.skips.Record(parentName+"."+field.Name, "func ptr")
-
+		g.skips.Record(parentName+"."+field.Name, shape.reason)
 		return getRetType, setParams, getBody, setBody, true
 
-	case *PointerType:
+	case pointerFieldShapeCStr:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("CStr"),
+		}
+		setParams = append(setParams, jen.Id("value").Op("*").Id("CStr"))
+		getBody = append(getBody, jen.Return(jen.Id("wrapCStr").Params(jen.Id("value"))))
+		setBody = append(setBody, tgt.Op("=").Id("value").Dot("ptr"))
 
-		switch iiv := iv.Inner.(type) {
-		case *IdentType:
-			if st, ok := g.input.structs[iiv.Name]; ok {
+	case pointerFieldShapeUint8Pointer:
+		getRetType = []jen.Code{
+			jen.Qual("unsafe", "Pointer"),
+		}
+		getBody = append(getBody, jen.Return(jen.Qual("unsafe", "Pointer").Params(jen.Id("value"))))
 
-				getRetType = []jen.Code{
-					jen.Op("*").Id("Array").Types(jen.Op("*").Id(iiv.Name)),
-				}
+		setParams = append(setParams, jen.Id("value").Qual("unsafe", "Pointer"))
+		setBody = append(setBody, tgt.Op("=").Params(jen.Op("*").Qual("C", shape.typeName)).Params(jen.Id("value")))
 
-				getBody = append(
-					getBody,
-					jen.Return(jen.Id(fmt.Sprintf("To%vArray", iiv.Name)).Params(
-						jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
-					)),
-				)
-
-				setParams = append(setParams, jen.Id("value").Op("*").Id("Array").Types(jen.Id(iiv.Name)))
-
-				cName := st.CName()
-
-				setBody = append(
-					setBody,
-					jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
-						tgt.Clone().Op("=").Params(jen.Op("**").Qual("C", cName)).Params(jen.Id("value").Dot("ptr")),
-					).Else().Block(
-						tgt.Clone().Op("=").Id("nil"),
-					),
-				)
-			} else {
-				//nolint:dupword // "ptr ptr" describes a pointer-to-pointer field; changing it would alter generated output
-				o.Commentf("%v skipped due to unknown ptr ptr", field.Name)
-				o.Line()
-				//nolint:dupword // "ptr ptr" describes a pointer-to-pointer field; the skip reason must match the generated comment
-				g.skips.Record(parentName+"."+field.Name, "unknown ptr ptr")
-
-				return getRetType, setParams, getBody, setBody, true
-			}
-
-		default:
-			reason := fmt.Sprintf("unhandled pointer-pointer inner type %v", reflect.TypeOf(iv.Inner))
-			o.Commentf("%v skipped due to %v", field.Name, reason)
-			o.Line()
-			g.skips.Record(parentName+"."+field.Name, reason)
-
-			return getRetType, setParams, getBody, setBody, true
+	case pointerFieldShapeEnumArray:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Id(shape.typeName)),
 		}
 
-	default:
-		reason := fmt.Sprintf("unhandled pointer inner type %v", reflect.TypeOf(v.Inner))
-		o.Commentf("%v skipped due to %v", field.Name, reason)
-		o.Line()
-		g.skips.Record(parentName+"."+field.Name, reason)
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id(fmt.Sprintf("To%vArray", shape.typeName)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
 
+		setParams = append(setParams, jen.Id("value").Op("*").Id("Array").Types(jen.Id(shape.typeName)))
+
+		cName := shape.enum.CName()
+
+		setBody = append(
+			setBody,
+			jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
+				tgt.Clone().Op("=").Params(jen.Op("*").Qual("C", cName)).Params(jen.Id("value").Dot("ptr")),
+			).Else().Block(
+				tgt.Clone().Op("=").Id("nil"),
+			),
+		)
+
+	case pointerFieldShapeStructPointer:
+		getRetType = []jen.Code{
+			jen.Op("*").Id(shape.typeName),
+		}
+		setParams = append(setParams, jen.Id("value").Op("*").Id(shape.typeName))
+
+		getBody = append(
+			getBody,
+			jen.Var().Id("valueMapped").Op("*").Id(shape.typeName),
+			jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
+				jen.Id("valueMapped").Op("=").Op("&").Id(shape.typeName).Values(jen.Dict{
+					jen.Id("ptr"): jen.Id("value"),
+				}),
+			),
+			jen.Return(jen.Id("valueMapped")),
+		)
+
+		setBody = append(
+			setBody,
+			jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
+				tgt.Clone().Op("=").Id("value").Dot("ptr"),
+			).Else().Block(
+				tgt.Clone().Op("=").Id("nil"),
+			),
+		)
+
+	case pointerFieldShapeUnknownIdentSkip:
+		log.Printf("unexpected IdentType in struct setter - struct: %v, field: %v, type: %v\n", st.Name, field.Name, shape.typeName)
+		o.Commentf("%v skipped due to unexpected IdentType %v", field.Name, shape.typeName)
+		o.Line()
+		g.skips.Record(parentName+"."+field.Name, shape.reason)
 		return getRetType, setParams, getBody, setBody, true
+
+	case pointerFieldShapeStructPointerArray:
+		getRetType = []jen.Code{
+			jen.Op("*").Id("Array").Types(jen.Op("*").Id(shape.typeName)),
+		}
+
+		getBody = append(
+			getBody,
+			jen.Return(jen.Id(fmt.Sprintf("To%vArray", shape.typeName)).Params(
+				jen.Qual("unsafe", "Pointer").Params(jen.Id("value")),
+			)),
+		)
+
+		setParams = append(setParams, jen.Id("value").Op("*").Id("Array").Types(jen.Id(shape.typeName)))
+
+		setBody = append(
+			setBody,
+			jen.If(jen.Id("value").Op("!=").Id("nil")).Block(
+				tgt.Clone().Op("=").Params(jen.Op("**").Qual("C", shape.cName)).Params(jen.Id("value").Dot("ptr")),
+			).Else().Block(
+				tgt.Clone().Op("=").Id("nil"),
+			),
+		)
 	}
 
 	return getRetType, setParams, getBody, setBody, false

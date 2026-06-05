@@ -5904,7 +5904,7 @@ func (s *AVCodecDescriptor) SetProps(value int) {
 	s.ptr.props = (C.int)(value)
 }
 
-// mime_types skipped due to unknown ptr ptr
+// mime_types skipped due to unknown pointer pair
 
 // Profiles gets the profiles field.
 /*
@@ -20312,7 +20312,7 @@ func (s *AVEncryptionInitInfo) SetSystemIdSize(value uint32) {
 	s.ptr.system_id_size = (C.uint32_t)(value)
 }
 
-// key_ids skipped due to unknown ptr ptr
+// key_ids skipped due to unknown pointer pair
 
 // NumKeyIds gets the num_key_ids field.
 //
