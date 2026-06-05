@@ -202,15 +202,55 @@ All builds go through `just`. Never use `go build` directly—the justfile handl
 
 ## Project Layout
 
+The root package has three source tiers. The generator skips C symbols it cannot safely express — variadics, fixed-size array parameters, anonymous structs, unions, and function-pointer fields. Every skip is recorded with a reason string and the total is regression-capped by `skipCeiling` in `internal/generator/main.go`. The hand-written tier covers exactly these gaps.
+
+### Tier 1 — generated bindings (never hand-edit; regenerate with `just generate`)
+
+| File | Contents |
+|------|----------|
+| `constants.gen.go` | FFmpeg `#define` constants |
+| `enums.gen.go` | C enum types and values |
+| `structs.gen.go` | Struct wrappers and field accessors |
+| `functions.gen.go` | Function wrappers |
+| `callbacks.gen.go` | Callback typedefs |
+
+### Tier 2 — core and foundation (hand-written)
+
+| File | Purpose |
+|------|---------|
+| `ffmpeg.go` | CGO directives, platform linker flags, `AVError`/`WrapErr`, `CStr`, common type aliases |
+| `array.go` | Generic `Array[T]` type, typed `To*Array` constructors, element-size constants |
+| `arch_guard.go` | Compile-time 64-bit-only invariant (unsigned-underflow guard) |
+| `doc.go` | Package documentation |
+
+### Tier 3 — hand-written topic wrappers
+
+| File(s) | Why hand-written | Contents |
+|---------|-----------------|----------|
+| `iterate.go` | `void **opaque` iterator pattern; generator emits no Go wrapper for this idiom | Registry iterators for codecs, muxers, demuxers, parsers, filters, bsfs; protocol enumeration |
+| `uuid.go` | Fixed `[16]uint8` array params; CGO cannot pass fixed arrays directly | `AVUUID` type, parse/format/compare |
+| `streamgroup.go` | Anonymous C struct; CGO cannot reference it by name | `AVStreamGroupTileGridOffset` accessors |
+| `opt.go` | Generic Go-slice parameter; no generator analogue | `AVOptSetSlice` — Go slice → C binary option setter |
+| `image.go` | Fixed `[4]`-plane C arrays; cgo pointer rules prevent direct passing | `av_image_*` plane/linesize wrappers; shared fixed-plane helper |
+| `samples.go` | Variable-length `uint8_t **` plane arrays; same shape constraint as `image.go` | `av_samples_*` audio sample-plane wrappers |
+| `swscale.go` | Same fixed-plane constraint as `image.go` | `sws_*` software scaling and pixel-format conversion |
+| `swresample.go` | Same plane-pointer constraint as `samples.go` | `swr_*` audio resampling |
+| `avio.go` + `avio.c` | Function-pointer callbacks; requires `runtime/cgo.Handle` bridge | Custom-I/O `AVIOContext` (`AVIOAllocContext`, `AVBufferCreate`); each context gets its own handle, deleted on teardown |
+| `log.go` + `log.c` | `av_log` callback requires cgo `//export` | `av_log` bridge to Go/`slog` |
+| `log_format.go` | CGO cannot call C variadic functions | `AVLog`, `AVAsprintf`, `AVStrlcatf`, `AVBprintf`; formats on the Go side, passes through a fixed `"%s"` C shim (also neutralises format-string injection) |
+| `fields.go` | Array and pointer-array fields the generator cannot express | Quant matrices (`intra_matrix`/`inter_matrix`/`chroma_intra_matrix`), `AVFrame.extended_data`, `AVPixFmtDescriptor.comp`, `AVMasteringDisplayMetadata.display_primaries`, `AVPanScan.position` |
+| `helpers.go` | Small helpers with no generator analogue | `AVRational.String`, `ToAVHWFramesContext` |
+
+### Infrastructure and supporting paths
+
 | Path | Description |
 |------|-------------|
-| `*.gen.go` | Auto-generated bindings (do not edit) |
-| `ffmpeg.go` | Core CGO directives, helper types |
 | `include/` | FFmpeg C headers |
-| `lib/<os>_<arch>/` | Platform-specific static libraries |
-| `internal/builder/` | Builds FFmpeg + dependencies from source |
-| `internal/generator/` | Generates Go bindings from headers using libclang |
+| `lib/<os>_<arch>/` | Platform-specific static libraries (gitignored) |
+| `internal/builder/` | Builds FFmpeg + 20 dependencies from source |
+| `internal/generator/` | Generates Go bindings from headers using libclang (see [Generator](#generator) below) |
 | `cmd/download-lib/` | Downloads pre-built libraries from GitHub Releases |
+| `av/` | Optional high-level pipeline layer — owned `io.Closer` wrappers (Input/Decoder/Encoder/FilterGraph/Output); see [docs/PIPELINE.md](PIPELINE.md) |
 | `examples/` | Working examples (transcode, metadata, etc.) |
 
 ## Generator

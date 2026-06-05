@@ -47,8 +47,22 @@
 
 ## Key architecture
 
-- **Core:** `ffmpeg.go` contains CGO directives, platform linker flags, helper types
-- **Generated bindings:** `*.gen.go` files in root directory
+- **Core:** `ffmpeg.go` contains CGO directives, platform linker flags, and base types (`AVError`/`WrapErr`, `CStr`); `array.go` holds the generic `Array[T]` type and its typed constructors; `arch_guard.go` enforces 64-bit-only at compile time
+- **Generated bindings:** `*.gen.go` files in root directory — constants, enums, struct wrappers, function wrappers, callback typedefs; emitted by `internal/generator/` from FFmpeg headers; never hand-edit
+- **Hand-written bindings:** topic files in the root package for symbols the generator skips (variadics, fixed-size array params, anonymous structs, function-pointer bridges); each skip is recorded with a reason and the total is capped by `skipCeiling` in `internal/generator/main.go`
+  - `iterate.go` — registry iterators (codec/muxer/demuxer/parser/filter/bsf) + protocol enumeration
+  - `uuid.go` — `AVUUID` type; `[16]uint8` array params CGO can't pass directly
+  - `streamgroup.go` — `AVStreamGroupTileGridOffset` accessors for anonymous C struct
+  - `opt.go` — `AVOptSetSlice`; Go-slice → C binary option setter
+  - `image.go` — `av_image_*` plane/linesize wrappers
+  - `samples.go` — `av_samples_*` audio sample-plane wrappers
+  - `swscale.go` — `sws_*` software scaling / pixel-format conversion
+  - `swresample.go` — `swr_*` audio resampling
+  - `avio.go` + `avio.c` — custom-I/O `AVIOContext` via `runtime/cgo.Handle` callback bridge
+  - `log.go` + `log.c` — `av_log` callback bridge to Go/`slog` via cgo `//export`
+  - `log_format.go` — variadic-format shims (`AVLog`, `AVAsprintf`, etc.); CGO can't call C varargs, so these format on the Go side and pass through a fixed `"%s"` C shim
+  - `fields.go` — struct-field accessors the generator can't express (quant matrices, `AVFrame.extended_data`, pixel-format descriptor components, etc.)
+  - `helpers.go` — small cross-cutting helpers (`AVRational.String`, `ToAVHWFramesContext`)
 - **Headers:** `include/` contains FFmpeg C headers
 - **Libraries:** `lib/<os>_<arch>/` contains platform-specific static libraries (gitignored)
 - **Builder:** `internal/builder/` compiles FFmpeg + 20 dependencies from source

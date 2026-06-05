@@ -1591,11 +1591,11 @@ func (s *AVCodecContext) SetMbDecision(value int) {
 	s.ptr.mb_decision = (C.int)(value)
 }
 
-// intra_matrix skipped due to prim ptr
+// intra_matrix skipped due to manually wrapped in fields.go
 
-// inter_matrix skipped due to prim ptr
+// inter_matrix skipped due to manually wrapped in fields.go
 
-// chroma_intra_matrix skipped due to prim ptr
+// chroma_intra_matrix skipped due to manually wrapped in fields.go
 
 // IntraDcPrecision gets the intra_dc_precision field.
 /*
@@ -6494,7 +6494,7 @@ func (s *AVPanScan) SetHeight(value int) {
 	s.ptr.height = (C.int)(value)
 }
 
-// position skipped due to multi dim const array
+// position skipped due to manually wrapped in fields.go
 
 // --- Struct AVCPBProperties ---
 
@@ -11330,7 +11330,7 @@ func (s *AVStreamGroupTileGrid) SetCodedHeight(value int) {
 	s.ptr.coded_height = (C.int)(value)
 }
 
-// offsets skipped (manual binding in custom.go)
+// offsets skipped (manual binding in streamgroup.go)
 
 // Background gets the background field.
 /*
@@ -20705,7 +20705,7 @@ func (s *AVFrame) Linesize() *Array[int] {
 	return ToIntArray(unsafe.Pointer(value))
 }
 
-// extended_data skipped due to unknown ptr ptr
+// extended_data skipped due to manually wrapped in fields.go
 
 // Width gets the width field.
 func (s *AVFrame) Width() int {
@@ -25864,7 +25864,7 @@ func ToAVMasteringDisplayMetadataArray(ptr unsafe.Pointer) *Array[*AVMasteringDi
 	}
 }
 
-// display_primaries skipped due to multi dim const array
+// display_primaries skipped due to manually wrapped in fields.go
 
 // WhitePoint gets the white_point field.
 //
@@ -27135,7 +27135,7 @@ func (s *AVPixFmtDescriptor) SetFlags(value uint64) {
 	s.ptr.flags = (C.uint64_t)(value)
 }
 
-// comp skipped due to const array of struct pointers
+// comp skipped due to manually wrapped in fields.go
 
 // Alias gets the alias field.
 //
