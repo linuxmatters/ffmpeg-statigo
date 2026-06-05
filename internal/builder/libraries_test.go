@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -9,16 +10,6 @@ import (
 // append last. To exercise custom graphs, these tests swap allLibraryDefinitions
 // (restored via defer) and include the real ffmpeg var as the terminal node so
 // the hold-aside path is honoured.
-
-// indexOf returns the position of lib in order, or -1 if absent.
-func indexOf(order []*Library, lib *Library) int {
-	for i, l := range order {
-		if l == lib {
-			return i
-		}
-	}
-	return -1
-}
 
 // withDefinitions swaps allLibraryDefinitions for the duration of fn.
 func withDefinitions(defs []*Library, fn func()) {
@@ -44,7 +35,7 @@ func TestBuildLibraryOrder(t *testing.T) {
 
 			for _, pair := range [][2]*Library{{base, mid}, {mid, top}, {base, top}} {
 				dep, dependent := pair[0], pair[1]
-				di, ddi := indexOf(order, dep), indexOf(order, dependent)
+				di, ddi := slices.Index(order, dep), slices.Index(order, dependent)
 				if di == -1 || ddi == -1 {
 					t.Fatalf("missing %s (%d) or %s (%d) in order", dep.Name, di, dependent.Name, ddi)
 				}
@@ -86,7 +77,7 @@ func TestBuildLibraryOrder(t *testing.T) {
 		// Every dependency precedes its dependents.
 		for _, lib := range order {
 			for _, dep := range lib.Dependencies {
-				if indexOf(order, dep) >= indexOf(order, lib) {
+				if slices.Index(order, dep) >= slices.Index(order, lib) {
 					t.Errorf("dependency %s does not precede %s", dep.Name, lib.Name)
 				}
 			}
