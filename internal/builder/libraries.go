@@ -75,11 +75,9 @@ var allLibraryDefinitions = []*Library{
 // Returns libraries in build order (dependencies before dependents)
 // FFmpeg is always placed last as it depends on all other libraries
 func buildLibraryOrder() ([]*Library, error) {
-	// Build dependency graph
 	graph := make(map[*Library][]*Library)
 	inDegree := make(map[*Library]int)
 
-	// Initialize all libraries in the graph
 	for _, lib := range allLibraryDefinitions {
 		if _, exists := inDegree[lib]; !exists {
 			inDegree[lib] = 0
@@ -108,7 +106,6 @@ func buildLibraryOrder() ([]*Library, error) {
 	var result []*Library
 	ffmpegSeen := false
 	for len(queue) > 0 {
-		// Pop from queue
 		current := queue[0]
 		queue = queue[1:]
 
@@ -133,7 +130,6 @@ func buildLibraryOrder() ([]*Library, error) {
 		fmt.Fprintf(os.Stderr, "\n=== CIRCULAR DEPENDENCY DETECTED ===\n")
 		fmt.Fprintf(os.Stderr, "Expected %d libraries, but only sorted %d (plus ffmpeg)\n", len(allLibraryDefinitions), len(result))
 
-		// Find which libraries weren't processed
 		processed := make(map[*Library]bool)
 		for _, lib := range result {
 			processed[lib] = true
@@ -795,13 +791,11 @@ var ffmpeg = &Library{
 		// Apply OpenSSL 3.6 compatibility patch
 		patchFile := filepath.Join(srcPath, "libavformat", "tls_openssl.c")
 
-		// Read the file
 		content, err := os.ReadFile(patchFile)
 		if err != nil {
 			return fmt.Errorf("failed to read tls_openssl.c: %w", err)
 		}
 
-		// Apply the replacements
 		patched := strings.ReplaceAll(string(content),
 			"X509_gmtime_adj(X509_get_notBefore(*cert)",
 			"X509_gmtime_adj(X509_get0_notBefore(*cert)")
@@ -809,7 +803,6 @@ var ffmpeg = &Library{
 			"X509_gmtime_adj(X509_get_notAfter(*cert)",
 			"X509_gmtime_adj(X509_get0_notAfter(*cert)")
 
-		// Write back
 		if err := os.WriteFile(patchFile, []byte(patched), 0o644); err != nil {
 			return fmt.Errorf("failed to write patched tls_openssl.c: %w", err)
 		}
@@ -840,7 +833,6 @@ var ffmpeg = &Library{
 			args = append(args, "--cc=clang", "--cxx=clang++")
 		}
 
-		// Add common FFmpeg arguments (platform-specific)
 		args = append(args, FFmpegArgsCommon(targetOS)...)
 
 		return args
@@ -859,19 +851,15 @@ var ffmpeg = &Library{
 // CollectFFmpegEnables collects --enable-* flags from all enabled external libraries
 // This must be called AFTER AllLibraries is initialized to inject the enables into ffmpeg's ConfigureArgs
 func CollectFFmpegEnables() {
-	// Wrap the original ConfigureArgs function
 	originalConfigureArgs := ffmpeg.ConfigureArgs
 	ffmpeg.ConfigureArgs = func(os string) []string {
-		// Get base args from original function
 		args := originalConfigureArgs(os)
 
-		// Collect and add --enable-* flags from all enabled external libraries
 		for _, lib := range AllLibraries {
 			// Skip ffmpeg itself and libraries that are disabled or shouldn't build on current platform
 			if lib == ffmpeg || !lib.ShouldBuild() {
 				continue
 			}
-			// Add all FFmpeg enable flags for this library
 			for _, flag := range lib.FFmpegEnables {
 				args = append(args, "--enable-"+flag)
 			}

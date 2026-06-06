@@ -29,7 +29,6 @@ func testHardwareAvailable(deviceType ffmpeg.AVHWDeviceType) bool {
 
 // getHWDeviceTypeFromCodec determines the hardware device type from codec's hardware config
 func getHWDeviceTypeFromCodec(codec *ffmpeg.AVCodec) ffmpeg.AVHWDeviceType {
-	// Iterate through hardware configurations to find device type
 	for i := 0; ; i++ {
 		hwConfig := ffmpeg.AVCodecGetHWConfig(codec, i)
 		if hwConfig == nil {
@@ -96,13 +95,11 @@ func listHWAccels() {
 	fmt.Println("HARDWARE ACCELERATORS")
 	fmt.Println("==================================================")
 
-	// First list hardware device types
 	fmt.Printf("    %-24s\n", "NAME")
 	fmt.Println()
 
 	var hwaccels []string
 
-	// Iterate through hardware device types
 	deviceType := ffmpeg.AVHWDeviceTypeNone
 	for {
 		deviceType = ffmpeg.AVHWDeviceIterateTypes(deviceType)
@@ -116,12 +113,9 @@ func listHWAccels() {
 		}
 	}
 
-	// Sort hwaccels by name
 	slices.Sort(hwaccels)
 
-	// Display hwaccels
 	for _, name := range hwaccels {
-		// Truncate long names to 24 chars
 		if len(name) > 24 {
 			name = name[:24]
 		}
@@ -166,7 +160,6 @@ func listHWAccels() {
 			break
 		}
 
-		// Only check decoders
 		isDecoderVal, _ := ffmpeg.AVCodecIsDecoder(codec)
 		if isDecoderVal == 0 {
 			continue
@@ -186,14 +179,12 @@ func listHWAccels() {
 
 		mediaType := getMediaTypeString(codec.Type())
 
-		// Get codec descriptor for better description
 		codecDesc := ffmpeg.AVCodecDescriptorGet(codec.Id())
 		baseDescription := ""
 		if codecDesc != nil && codecDesc.LongName() != nil {
 			baseDescription = codecDesc.LongName().String()
 		}
 
-		// Check for hardware acceleration configurations
 		for i := 0; ; i++ {
 			hwConfig := ffmpeg.AVCodecGetHWConfig(codec, i)
 			if hwConfig == nil {
@@ -205,7 +196,6 @@ func listHWAccels() {
 				continue
 			}
 
-			// Get device type name
 			deviceTypeName := ""
 			if name := ffmpeg.AVHWDeviceGetTypeName(deviceType); name != nil {
 				deviceTypeName = name.String()
@@ -219,7 +209,6 @@ func listHWAccels() {
 			if description == "" {
 				description = codecName
 			}
-			// Capitalize device type name for description
 			deviceTypeCapitalized := deviceTypeName
 			if deviceTypeName != "" {
 				deviceTypeCapitalized = strings.ToUpper(deviceTypeName[:1]) + deviceTypeName[1:]
@@ -266,7 +255,6 @@ func listHWAccels() {
 		capabilities := codec.Capabilities()
 		isHWCodec := (capabilities & ffmpeg.AVCodecCapHardware) != 0
 
-		// Also check if codec has hardware configurations
 		if !isHWCodec {
 			hwConfig := ffmpeg.AVCodecGetHWConfig(codec, 0)
 			isHWCodec = hwConfig != nil
@@ -289,10 +277,8 @@ func listHWAccels() {
 		isDecoderVal, _ := ffmpeg.AVCodecIsDecoder(codec)
 		isDecoder := isDecoderVal != 0
 
-		// Determine hardware device type from codec's hardware config
 		deviceType := getHWDeviceTypeFromCodec(codec)
 
-		// Add to unified list
 		unifiedList = append(unifiedList, unifiedHWEntry{
 			name:        name,
 			description: longName,
@@ -304,17 +290,14 @@ func listHWAccels() {
 		})
 	}
 
-	// Sort by name
 	slices.SortFunc(unifiedList, func(a, b unifiedHWEntry) int {
 		return cmp.Compare(a.name, b.name)
 	})
 
-	// Count encoders, decoders, and hwaccels
 	hwaccelCount := 0
 	hwEncoders := 0
 	hwDecoders := 0
 
-	// Display unified list
 	for _, info := range unifiedList {
 		flags := ""
 		if info.isDecoder {
@@ -350,7 +333,6 @@ func listHWAccels() {
 			description = description[:42]
 		}
 
-		// Check if hardware is present
 		present := "N"
 		if info.deviceType != ffmpeg.AVHWDeviceTypeNone {
 			if availableHW[info.deviceType] {

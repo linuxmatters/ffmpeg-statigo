@@ -65,7 +65,6 @@ func TestUUID(t *testing.T) {
 	})
 
 	t.Run("UUID Operations", func(t *testing.T) {
-		// Create two identical UUIDs
 		var uuid1, uuid2 AVUUID
 		uuidStr := "550e8400-e29b-41d4-a716-446655440000"
 		cStr := ToCStr(uuidStr)
@@ -76,12 +75,10 @@ func TestUUID(t *testing.T) {
 		}
 		AVUuidCopy(&uuid2, &uuid1)
 
-		// Test equality
 		if !AVUuidEqual(&uuid1, &uuid2) {
 			t.Fatal("UUIDs should be equal")
 		}
 
-		// Test nil UUID
 		var nilUUID AVUUID
 		AVUuidNil(&nilUUID)
 
@@ -322,7 +319,6 @@ func TestUUID_ParseErrorPaths(t *testing.T) {
 		uuidStr := "550e8400-e29b-41d4-a716-446655440000"
 		var uuid AVUUID
 
-		// Create start and end pointers into the UUID string
 		start := ToCStr(uuidStr)
 		defer start.Free()
 

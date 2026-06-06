@@ -409,7 +409,6 @@ func (p *Parser) generateUnnamedStructName(t clang.Type) string {
 
 // cleanIdentifier converts a string into a valid Go identifier
 func cleanIdentifier(s string) string {
-	// Replace common special characters with underscores
 	s = strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
 			return r
@@ -417,12 +416,10 @@ func cleanIdentifier(s string) string {
 		return '_'
 	}, s)
 
-	// Remove consecutive underscores
 	for strings.Contains(s, "__") {
 		s = strings.ReplaceAll(s, "__", "_")
 	}
 
-	// Trim underscores from start/end
 	s = strings.Trim(s, "_")
 
 	return s
@@ -430,7 +427,6 @@ func cleanIdentifier(s string) string {
 
 // registerUnnamedStruct creates a struct definition for an unnamed struct
 func (p *Parser) registerUnnamedStruct(indent string, t clang.Type, syntheticName string) {
-	// Check if we've already registered this struct
 	if _, exists := p.mod.structs[syntheticName]; exists {
 		log.Println(indent, "Unnamed struct already registered:", syntheticName)
 		return
@@ -438,7 +434,6 @@ func (p *Parser) registerUnnamedStruct(indent string, t clang.Type, syntheticNam
 
 	log.Println(indent, "Registering unnamed struct:", syntheticName)
 
-	// Get the declaration to extract fields
 	decl := t.Declaration()
 	if decl.Spelling() == "" {
 		log.Println(indent, "Warning: unnamed struct has no valid declaration")
@@ -451,7 +446,6 @@ func (p *Parser) registerUnnamedStruct(indent string, t clang.Type, syntheticNam
 		Comment:  "Synthetic type for unnamed struct",
 	}
 
-	// Visit fields of the struct
 	decl.Visit(func(cursor, parent clang.Cursor) clang.ChildVisitResult {
 		if cursor.Kind() == clang.Cursor_FieldDecl {
 			fieldName := cursor.Spelling()
@@ -475,7 +469,6 @@ func (p *Parser) registerUnnamedStruct(indent string, t clang.Type, syntheticNam
 		return clang.ChildVisit_Continue
 	})
 
-	// Register the struct
 	p.mod.structs[syntheticName] = s
 	p.mod.structOrder = append(p.mod.structOrder, syntheticName)
 

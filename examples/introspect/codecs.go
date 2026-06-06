@@ -14,10 +14,8 @@ func listCodecs() {
 	fmt.Printf(" %s  %-24s %-42s %s\n", "DE", "NAME", "DESCRIPTION", "TYPE")
 	fmt.Println()
 
-	// Collect all codec information
 	codecMap := make(map[string]*codecInfo)
 
-	// Iterate through all codec descriptors
 	var desc *ffmpeg.AVCodecDescriptor
 	for {
 		desc = ffmpeg.AVCodecDescriptorNext(desc)
@@ -36,9 +34,7 @@ func listCodecs() {
 		}
 		mediaType := getMediaTypeString(desc.Type())
 
-		// Check if encoder exists for this codec
 		encoder := ffmpeg.AVCodecFindEncoder(codecID)
-		// Check if decoder exists for this codec
 		decoder := ffmpeg.AVCodecFindDecoder(codecID)
 
 		if encoder != nil || decoder != nil {
@@ -52,20 +48,17 @@ func listCodecs() {
 		}
 	}
 
-	// Sort codecs by name for consistent output
 	names := make([]string, 0, len(codecMap))
 	for name := range codecMap {
 		names = append(names, name)
 	}
 	slices.Sort(names)
 
-	// Count encoders and decoders by type
 	videoEncoders, videoDecoders := 0, 0
 	audioEncoders, audioDecoders := 0, 0
 	subtitleEncoders, subtitleDecoders := 0, 0
 	otherEncoders, otherDecoders := 0, 0
 
-	// Print all codecs
 	for _, name := range names {
 		info := codecMap[name]
 
@@ -101,7 +94,6 @@ func listCodecs() {
 			flags += "."
 		}
 
-		// Truncate long codec names and descriptions to match format style
 		codecName := info.name
 		if len(codecName) > 24 {
 			codecName = codecName[:24]

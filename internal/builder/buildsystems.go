@@ -107,14 +107,12 @@ func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, bu
 		)
 	}
 
-	// Run configure from source directory
 	configurePath := "./configure"
 	absConfigurePath := filepath.Join(srcPath, "configure")
 	if !fileExists(absConfigurePath) {
 		return fmt.Errorf("configure script not found at %s", absConfigurePath)
 	}
 
-	// Make configure executable
 	if err := os.Chmod(absConfigurePath, 0o755); err != nil {
 		return fmt.Errorf("failed to make configure executable: %w", err)
 	}
@@ -251,13 +249,11 @@ func (m *MakefileBuild) Build(ctx context.Context, lib *Library, srcPath, buildD
 	installDir := stagingDir(buildDir)
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		// Build the targets
 		args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
 		if err := runCommand(ctx, srcPath, output, installDir, "make", args...); err != nil {
 			return err
 		}
 
-		// If a custom install function is provided, use it
 		if m.InstallFunc != nil {
 			return m.InstallFunc(ctx, srcPath, installDir)
 		}
@@ -283,14 +279,12 @@ func (o *OpenSSLBuild) Configure(ctx context.Context, lib *Library, srcPath, bui
 		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
 	}
 
-	// Run Configure from source directory
 	configurePath := "./Configure"
 	absConfigurePath := filepath.Join(srcPath, "Configure")
 	if !fileExists(absConfigurePath) {
 		return fmt.Errorf("Configure script not found at %s", absConfigurePath)
 	}
 
-	// Make Configure executable
 	if err := os.Chmod(absConfigurePath, 0o755); err != nil {
 		return fmt.Errorf("failed to make Configure executable: %w", err)
 	}

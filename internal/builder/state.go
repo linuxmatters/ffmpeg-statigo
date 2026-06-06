@@ -51,7 +51,6 @@ func (s *BuildState) Save() error {
 	s.ConfigHash = s.lib.ConfigHash()
 	s.BuildTime = time.Now()
 
-	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(s.statePath), 0o755); err != nil {
 		return err
 	}
@@ -81,7 +80,6 @@ func (s *BuildState) CanSkip(installDir string) bool {
 		return false
 	}
 
-	// Check if outputs exist
 	// For header-only libraries (LinkLibs == nil), we can skip if we built before
 	if s.lib.LinkLibs == nil {
 		return true

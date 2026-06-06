@@ -28,7 +28,6 @@ func listFilters() {
 
 	var filters []filterInfo
 
-	// Iterate through all filters
 	var opaque unsafe.Pointer
 	for {
 		filter := ffmpeg.AVFilterIterate(&opaque)
@@ -50,18 +49,15 @@ func listFilters() {
 			description = filter.Description().String()
 		}
 
-		// Check filter flags
 		flags := filter.Flags()
 		supportTimeline := (flags & ffmpeg.AVFilterFlagSupportTimelineGeneric) != 0
 		supportSliceThreads := (flags & ffmpeg.AVFilterFlagSliceThreads) != 0
 		isHardware := (flags & ffmpeg.AVFilterFlagHWDevice) != 0
 		isMetadataOnly := (flags & ffmpeg.AVFilterFlagMetadataOnly) != 0
 
-		// Determine filter media type by checking input pads
 		mediaType := "UNKNOWN"
 		inputs := filter.Inputs()
 		if inputs != nil {
-			// Get the type of the first input pad
 			padType := ffmpeg.AVFilterPadGetType(inputs, 0)
 			mediaType = getMediaTypeString(padType)
 		} else {
@@ -85,12 +81,10 @@ func listFilters() {
 		})
 	}
 
-	// Sort filters by name
 	slices.SortFunc(filters, func(a, b filterInfo) int {
 		return cmp.Compare(a.name, b.name)
 	})
 
-	// Count filters by type
 	timelineFilters := 0
 	sliceThreadFilters := 0
 	hwFilters := 0
@@ -100,7 +94,6 @@ func listFilters() {
 	subtitleFilters := 0
 	dataFilters := 0
 
-	// Display filters
 	for _, f := range filters {
 		timelineFlag := "."
 		if f.supportTimeline {
@@ -126,7 +119,6 @@ func listFilters() {
 			metadataFilters++
 		}
 
-		// Count by media type
 		switch f.mediaType {
 		case "VIDEO":
 			videoFilters++

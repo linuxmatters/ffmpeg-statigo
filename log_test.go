@@ -56,7 +56,6 @@ func TestSLogAdapter_MultilineMessages(t *testing.T) {
 		logger := slog.New(handler)
 		callback := ffmpeg.SLogAdapter(logger)
 
-		// Single complete line
 		callback(nil, ffmpeg.AVLogInfo, "This is a complete message\n")
 
 		records := handler.getRecords()
@@ -64,7 +63,6 @@ func TestSLogAdapter_MultilineMessages(t *testing.T) {
 			t.Fatalf("Expected 1 record, got %d", len(records))
 		}
 
-		// Check the message contains our text
 		var logValue string
 		records[0].Attrs(func(a slog.Attr) bool {
 			if a.Key == "log" {
@@ -113,7 +111,6 @@ func TestSLogAdapter_MultilineMessages(t *testing.T) {
 		logger := slog.New(handler)
 		callback := ffmpeg.SLogAdapter(logger)
 
-		// Multiple lines in one callback
 		callback(nil, ffmpeg.AVLogInfo, "Line one\nLine two\nLine three\n")
 
 		records := handler.getRecords()
@@ -142,7 +139,6 @@ func TestSLogAdapter_MultilineMessages(t *testing.T) {
 		logger := slog.New(handler)
 		callback := ffmpeg.SLogAdapter(logger)
 
-		// Send incomplete line (no newline)
 		callback(nil, ffmpeg.AVLogInfo, "Incomplete line without newline")
 
 		// Should not log yet
@@ -151,7 +147,6 @@ func TestSLogAdapter_MultilineMessages(t *testing.T) {
 			t.Errorf("Expected 0 records for incomplete line, got %d", len(records))
 		}
 
-		// Now complete it
 		callback(nil, ffmpeg.AVLogInfo, " - now complete\n")
 
 		records = handler.getRecords()
@@ -178,7 +173,6 @@ func TestSLogAdapter_MultilineMessages(t *testing.T) {
 		logger := slog.New(handler)
 		callback := ffmpeg.SLogAdapter(logger)
 
-		// Empty lines between content
 		callback(nil, ffmpeg.AVLogInfo, "Before\n\n\nAfter\n")
 
 		records := handler.getRecords()
@@ -228,7 +222,6 @@ func TestSLogAdapter_NilContext(t *testing.T) {
 		logger := slog.New(handler)
 		callback := ffmpeg.SLogAdapter(logger)
 
-		// Multiple calls with nil context should all work
 		for range 10 {
 			callback(nil, ffmpeg.AVLogInfo, "Message\n")
 		}
@@ -238,7 +231,6 @@ func TestSLogAdapter_NilContext(t *testing.T) {
 			t.Errorf("Expected 10 records, got %d", len(records))
 		}
 
-		// All should have global scope
 		for i, rec := range records {
 			var scopeValue string
 			rec.Attrs(func(a slog.Attr) bool {
@@ -329,7 +321,6 @@ func TestSLogAdapter_ThreadSafety(t *testing.T) {
 	for range numGoroutines {
 		wg.Go(func() {
 			for range messagesPerGoroutine {
-				// Each goroutine sends complete messages
 				callback(nil, ffmpeg.AVLogInfo, "Message\n")
 			}
 		})

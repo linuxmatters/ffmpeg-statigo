@@ -24,7 +24,6 @@ func listParsers() {
 
 	var parsers []parserInfo
 
-	// Iterate through all registered parsers
 	var parserOpaque unsafe.Pointer
 	for {
 		parser := ffmpeg.AVParserIterate(&parserOpaque)
@@ -32,7 +31,6 @@ func listParsers() {
 			break
 		}
 
-		// Get codec IDs
 		codecIDs := []string{}
 		codecIDArray := parser.CodecIds()
 		for i := uintptr(0); ; i++ {
@@ -40,7 +38,6 @@ func listParsers() {
 			if codecID == 0 {
 				break
 			}
-			// Get codec name from ID
 			codecName := getCodecName(ffmpeg.AVCodecID(codecID)) //nolint:gosec // G115: codec IDs are small enum values
 			codecIDs = append(codecIDs, codecName)
 		}
@@ -53,14 +50,11 @@ func listParsers() {
 		}
 	}
 
-	// Sort parsers by name
 	slices.SortFunc(parsers, func(a, b parserInfo) int {
 		return cmp.Compare(a.name, b.name)
 	})
 
-	// Display parsers
 	for _, p := range parsers {
-		// Truncate long parser names to 24 chars
 		parserName := p.name
 		if len(parserName) > 24 {
 			parserName = parserName[:24]

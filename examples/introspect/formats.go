@@ -31,7 +31,6 @@ func listFormats() {
 
 	formatMap := make(map[string]*formatInfo)
 
-	// Iterate through all registered muxers
 	var muxerOpaque unsafe.Pointer
 	for {
 		muxer := ffmpeg.AVMuxerIterate(&muxerOpaque)
@@ -110,7 +109,6 @@ func listFormats() {
 		}
 	}
 
-	// Iterate through all registered demuxers
 	var demuxerOpaque unsafe.Pointer
 	for {
 		demuxer := ffmpeg.AVDemuxerIterate(&demuxerOpaque)
@@ -155,7 +153,7 @@ func listFormats() {
 				hasDemuxer:    true,
 			}
 		}
-	} // Convert map to slice and sort
+	}
 	var formats []formatInfo
 	for _, f := range formatMap {
 		formats = append(formats, *f)
@@ -165,7 +163,6 @@ func listFormats() {
 		return cmp.Compare(a.name, b.name)
 	})
 
-	// Count totals
 	totalMuxers := 0
 	totalDemuxers := 0
 
@@ -182,7 +179,6 @@ func listFormats() {
 			totalMuxers++
 		}
 
-		// Build codec list
 		codecs := []string{}
 		if f.videoCodec != "" {
 			codecs = append(codecs, fmt.Sprintf("video:%s", f.videoCodec))
@@ -204,7 +200,6 @@ func listFormats() {
 			mimeType = mimeType[:20]
 		}
 
-		// Truncate long names and descriptions
 		formatName := f.name
 		if len(formatName) > 24 {
 			formatName = formatName[:24]
@@ -215,7 +210,6 @@ func listFormats() {
 			description = description[:42]
 		}
 
-		// Display format on single line
 		fmt.Printf("%s%s  %-24s %-42s %-35s %s\n", demuxFlag, muxFlag, formatName, description, codecList, mimeType)
 	}
 

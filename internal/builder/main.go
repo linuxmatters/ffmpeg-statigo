@@ -29,7 +29,6 @@ func run() error {
 	// Initialize FFmpeg library enables after AllLibraries is fully defined
 	CollectFFmpegEnables()
 
-	// Derive output path based on architecture
 	arch := runtime.GOARCH
 	targetOutput := filepath.Join("lib", runtime.GOOS+"_"+arch, "libffmpeg.a")
 	targetOutput, err := filepath.Abs(targetOutput)
@@ -37,7 +36,6 @@ func run() error {
 		return fmt.Errorf("get absolute path for output: %w", err)
 	}
 
-	// Parse arguments
 	selectedLibs := make(map[string]bool)
 	cleanBuild := false
 	listMode := false
@@ -74,7 +72,6 @@ func run() error {
 		return updateDigestsMode(ctx, buildRoot, AllLibraries)
 	}
 
-	// Setup directories
 	buildRoot, err := filepath.Abs(".build")
 	if err != nil {
 		return fmt.Errorf("get absolute path for build root: %w", err)
@@ -95,7 +92,6 @@ func run() error {
 		}
 	}
 
-	// Filter libraries based on selection
 	libs := AllLibraries
 	if len(selectedLibs) > 0 {
 		filtered := []*Library{}
@@ -141,7 +137,6 @@ func run() error {
 		return nil
 	}
 
-	// Build all libraries
 	total := len(libs)
 	built := 0
 
@@ -149,7 +144,6 @@ func run() error {
 		fmt.Printf("\n[%d/%d] %s\n", i+1, total, lib.Name)
 		fmt.Println(strings.Repeat("=", 60))
 
-		// Create per-library logger
 		logDir := filepath.Join(buildRoot, "build", lib.Name)
 		if err := os.MkdirAll(logDir, 0o755); err != nil {
 			return fmt.Errorf("create log directory for %s: %w", lib.Name, err)
@@ -498,7 +492,6 @@ func printLibraryList(libs []*Library) {
 		maxName, maxPlatform, maxBuildSys, maxLinkLibs,
 	))
 
-	// Print rows
 	for i, lib := range libs {
 		num := fmt.Sprintf("%2d", i+1)
 		platform := getPlatformString(lib)

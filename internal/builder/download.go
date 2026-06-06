@@ -24,12 +24,10 @@ import (
 // so a poisoned download cache cannot be silently trusted. On a missing or
 // mismatched pin it fails closed (see verifyDigest).
 func DownloadFile(url, dest string, logger io.Writer) error {
-	// Create downloads directory
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
 
-	// Check if file already exists and is complete
 	if fileExists(dest) {
 		fmt.Fprintf(logger, "Using cached %s\n", filepath.Base(dest))
 		return verifyDigest(url, dest)
@@ -62,14 +60,12 @@ func downloadRaw(url, dest string, logger io.Writer) error {
 			time.Sleep(backoff)
 		}
 
-		// Create download client
 		client := grab.NewClient()
 		req, err := grab.NewRequest(dest, url)
 		if err != nil {
 			return err
 		}
 
-		// Start download
 		resp := client.Do(req)
 
 		// Monitor progress - update every 2 seconds to avoid log spam
@@ -91,7 +87,6 @@ func downloadRaw(url, dest string, logger io.Writer) error {
 
 		ticker.Stop()
 
-		// Check for errors
 		if err := resp.Err(); err != nil {
 			lastErr = err
 			fmt.Fprintf(logger, "Download attempt %d failed: %v\n", attempt, err)
@@ -159,7 +154,6 @@ func detectTarPrefix(archivePath, archiveType string) (string, error) {
 			continue
 		}
 
-		// Get the first directory component
 		parts := strings.Split(strings.TrimSuffix(name, "/"), "/")
 		if len(parts) == 0 {
 			continue
@@ -175,7 +169,6 @@ func detectZipPrefix(reader *zip.ReadCloser) string {
 		return ""
 	}
 
-	// Get first entry
 	name := reader.File[0].Name
 
 	// Skip if empty or contains .. (security)
@@ -183,7 +176,6 @@ func detectZipPrefix(reader *zip.ReadCloser) string {
 		return ""
 	}
 
-	// Get the first directory component
 	parts := strings.Split(strings.TrimSuffix(name, "/"), "/")
 	if len(parts) == 0 {
 		return ""
@@ -197,7 +189,6 @@ func detectZipPrefix(reader *zip.ReadCloser) string {
 func ExtractArchive(archivePath, destPath, archiveType string, logger io.Writer) error {
 	fmt.Fprintf(logger, "Extracting %s...\n", filepath.Base(archivePath))
 
-	// Create destination directory
 	if err := os.MkdirAll(destPath, 0o755); err != nil {
 		return err
 	}

@@ -361,7 +361,6 @@ func TestReleaseVersionSemanticSortBug(t *testing.T) {
 
 func TestVerifyChecksum_ChecksumCalculation(t *testing.T) {
 	t.Run("sha256_calculation_correct", func(t *testing.T) {
-		// Create a temp file with known content
 		content := []byte("Hello, FFmpeg!")
 		tmpFile, err := os.CreateTemp("", "checksum-test-*.txt")
 		if err != nil {
@@ -374,7 +373,6 @@ func TestVerifyChecksum_ChecksumCalculation(t *testing.T) {
 		}
 		tmpFile.Close()
 
-		// Calculate expected checksum
 		h := sha256.New()
 		h.Write(content)
 		expectedChecksum := hex.EncodeToString(h.Sum(nil))
@@ -587,7 +585,6 @@ func TestExtractTarball_PathTraversal(t *testing.T) {
 	})
 
 	t.Run("accepts_valid_paths", func(t *testing.T) {
-		// Create a valid tarball
 		tarball := createValidTarball(t, map[string][]byte{
 			"linux_amd64/libffmpeg.a": []byte("library content"),
 			"linux_amd64/README.txt":  []byte("readme content"),
@@ -601,7 +598,6 @@ func TestExtractTarball_PathTraversal(t *testing.T) {
 			t.Errorf("Valid tarball should extract without error, got: %v", err)
 		}
 
-		// Verify files were created
 		libPath := filepath.Join(destDir, "linux_amd64", "libffmpeg.a")
 		if _, err := os.Stat(libPath); os.IsNotExist(err) {
 			t.Error("Expected libffmpeg.a to be extracted")
@@ -1075,7 +1071,6 @@ func (e *wrappedError) Unwrap() error {
 // =============================================================================
 
 func TestExtractTarball_ValidExtraction(t *testing.T) {
-	// Create a valid tarball matching expected structure
 	files := map[string][]byte{
 		"linux_amd64/libffmpeg.a": []byte("mock library content"),
 	}
@@ -1090,7 +1085,6 @@ func TestExtractTarball_ValidExtraction(t *testing.T) {
 		t.Fatalf("Extraction failed: %v", err)
 	}
 
-	// Verify file exists
 	extractedFile := filepath.Join(destDir, "linux_amd64", "libffmpeg.a")
 	content, err := os.ReadFile(extractedFile)
 	if err != nil {

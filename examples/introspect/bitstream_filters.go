@@ -26,15 +26,12 @@ func listBSFs() {
 		}
 		count++
 
-		// Get the bitstream filter name
 		nameStr := bsf.Name().String()
 
-		// Truncate name if too long
 		if len(nameStr) > 24 {
 			nameStr = nameStr[:24]
 		}
 
-		// Get supported codec IDs
 		codecList := "all"
 		codecIDs := bsf.CodecIds()
 		if codecIDs != nil {

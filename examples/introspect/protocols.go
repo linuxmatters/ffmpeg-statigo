@@ -24,7 +24,6 @@ func listProtocols() {
 
 	protocolMap := make(map[string]*protocolInfo)
 
-	// Iterate through input protocols
 	var inputOpaque unsafe.Pointer
 	for {
 		name := ffmpeg.AVIOEnumProtocols(&inputOpaque, 0)
@@ -43,7 +42,6 @@ func listProtocols() {
 		}
 	}
 
-	// Iterate through output protocols
 	var outputOpaque unsafe.Pointer
 	for {
 		name := ffmpeg.AVIOEnumProtocols(&outputOpaque, 1)
@@ -62,7 +60,6 @@ func listProtocols() {
 		}
 	}
 
-	// Convert map to slice and sort
 	var protocols []protocolInfo
 	for _, p := range protocolMap {
 		protocols = append(protocols, *p)
@@ -72,11 +69,9 @@ func listProtocols() {
 		return cmp.Compare(a.name, b.name)
 	})
 
-	// Count totals
 	totalInput := 0
 	totalOutput := 0
 
-	// Display protocols
 	for _, p := range protocols {
 		inputFlag := "."
 		if p.isInput {
@@ -90,7 +85,6 @@ func listProtocols() {
 			totalOutput++
 		}
 
-		// Truncate long protocol names to 24 chars
 		protocolName := p.name
 		if len(protocolName) > 24 {
 			protocolName = protocolName[:24]

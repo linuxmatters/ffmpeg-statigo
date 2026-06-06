@@ -26,7 +26,6 @@ func TestVersions(t *testing.T) {
 // concurrent access. This test should be run with -race flag to detect data races.
 func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 	t.Run("concurrent_reads_same_key", func(t *testing.T) {
-		// Pre-populate a key
 		key := "concurrent_read_test_key"
 		initial := ffmpeg.GlobalCStr(key)
 
@@ -45,7 +44,6 @@ func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 
 		wg.Wait()
 
-		// All goroutines should get the same pointer
 		for i, result := range results {
 			if result != initial {
 				t.Errorf("Goroutine %d got different CStr instance", i)
@@ -57,7 +55,6 @@ func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 		var wg sync.WaitGroup
 		const numGoroutines = 100
 
-		// Each goroutine writes a unique key
 		for i := range numGoroutines {
 			wg.Add(1)
 			go func(idx int) {
@@ -81,7 +78,6 @@ func TestGlobalCStr_ConcurrentAccess(t *testing.T) {
 		const numGoroutines = 100
 		const numKeys = 10
 
-		// Multiple goroutines read and write overlapping keys
 		for i := range numGoroutines {
 			wg.Add(1)
 			go func(idx int) {
@@ -144,7 +140,6 @@ func TestCStr_DoubleFreeProtection(t *testing.T) {
 		cstr1 := ffmpeg.GlobalCStr(key)
 		cstr1.Free() // Should be no-op
 
-		// Getting the same key should return the same instance
 		cstr2 := ffmpeg.GlobalCStr(key)
 		if cstr1 != cstr2 {
 			t.Error("GlobalCStr returned different instance after Free() attempt")
@@ -152,7 +147,6 @@ func TestCStr_DoubleFreeProtection(t *testing.T) {
 	})
 
 	t.Run("allocated_cstr_can_be_freed", func(t *testing.T) {
-		// Regular allocated CStr should be freeable
 		cstr := ffmpeg.AllocCStr(64)
 		if cstr == nil {
 			t.Fatal("AllocCStr returned nil")
@@ -168,7 +162,6 @@ func TestCStr_DoubleFreeProtection(t *testing.T) {
 	})
 
 	t.Run("tocstr_can_be_freed", func(t *testing.T) {
-		// ToCStr creates a freeable CStr
 		cstr := ffmpeg.ToCStr("freeable_string")
 		if cstr == nil {
 			t.Fatal("ToCStr returned nil")
@@ -257,12 +250,10 @@ func TestAVError_KnownCodes(t *testing.T) {
 			t.Errorf("Error string should contain code %d, got: %s", ffmpeg.AVErrorEofConst, errStr)
 		}
 
-		// Should contain "averror" prefix
 		if !strings.Contains(errStr, "averror") {
 			t.Errorf("Error string should contain 'averror', got: %s", errStr)
 		}
 
-		// Should have some description (not empty after the colon)
 		parts := strings.SplitN(errStr, ":", 2)
 		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
 			t.Errorf("Error string should have non-empty description, got: %s", errStr)
@@ -276,12 +267,10 @@ func TestAVError_KnownCodes(t *testing.T) {
 
 		errStr := err.Error()
 
-		// Should contain "averror" prefix
 		if !strings.Contains(errStr, "averror") {
 			t.Errorf("Error string should contain 'averror', got: %s", errStr)
 		}
 
-		// Should have some description
 		parts := strings.SplitN(errStr, ":", 2)
 		if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
 			t.Errorf("Error string should have non-empty description, got: %s", errStr)
@@ -291,17 +280,14 @@ func TestAVError_KnownCodes(t *testing.T) {
 	})
 
 	t.Run("custom_error_code", func(t *testing.T) {
-		// Test with a generic negative error code
 		err := ffmpeg.AVError{Code: -1}
 
 		errStr := err.Error()
 
-		// Should contain the error code
 		if !strings.Contains(errStr, "-1") {
 			t.Errorf("Error string should contain code -1, got: %s", errStr)
 		}
 
-		// Should contain "averror" prefix
 		if !strings.Contains(errStr, "averror") {
 			t.Errorf("Error string should contain 'averror', got: %s", errStr)
 		}
@@ -313,7 +299,6 @@ func TestAVError_KnownCodes(t *testing.T) {
 		// AVError must satisfy the error interface (compile-time check).
 		var err error = ffmpeg.AVError{Code: -1}
 
-		// Error() should return a string
 		if err.Error() == "" {
 			t.Error("Error() should return non-empty string")
 		}
@@ -411,7 +396,6 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 	})
 
 	t.Run("error_comparison", func(t *testing.T) {
-		// Wrapped errors with same code should be comparable
 		err1 := ffmpeg.WrapErr(-1)
 		err2 := ffmpeg.WrapErr(-1)
 
@@ -427,19 +411,16 @@ func TestWrapErr_BoundaryConditions(t *testing.T) {
 			t.Error("Two AVErrors with same code should have equal Code fields")
 		}
 
-		// Value comparison should work
 		if avErr1 != avErr2 {
 			t.Error("Two AVErrors with same code should be equal")
 		}
 	})
 
 	t.Run("predefined_errors", func(t *testing.T) {
-		// Test predefined error variables
 		if ffmpeg.AVErrorEOF.Code != ffmpeg.AVErrorEofConst {
 			t.Errorf("AVErrorEOF.Code should be %d, got %d", ffmpeg.AVErrorEofConst, ffmpeg.AVErrorEOF.Code)
 		}
 
-		// EAgain should have a negative code
 		if ffmpeg.EAgain.Code >= 0 {
 			t.Errorf("EAgain.Code should be negative, got %d", ffmpeg.EAgain.Code)
 		}

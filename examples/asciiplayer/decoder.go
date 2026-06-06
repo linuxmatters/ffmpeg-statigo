@@ -33,7 +33,6 @@ func Open(url string, width int, height int) (*Decoder, error) {
 
 	ffmpeg.AVDumpFormat(fmtCtx, 0, urlPtr, 0)
 
-	// Find best stream
 	if _, err := ffmpeg.AVFormatFindStreamInfo(fmtCtx, nil); err != nil {
 		return nil, err
 	}
@@ -47,7 +46,6 @@ func Open(url string, width int, height int) (*Decoder, error) {
 
 	log.Println("Stream index", vsi)
 
-	// Create decoding context
 	decCtx := ffmpeg.AVCodecAllocContext3(dec)
 
 	vs := fmtCtx.Streams().Get(uintptr(vsi))
@@ -56,7 +54,6 @@ func Open(url string, width int, height int) (*Decoder, error) {
 		return nil, err
 	}
 
-	// Init decoder
 	if _, err := ffmpeg.AVCodecOpen2(decCtx, dec, nil); err != nil {
 		return nil, err
 	}

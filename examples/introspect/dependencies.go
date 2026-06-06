@@ -20,13 +20,11 @@ type codecDependencies struct {
 
 // analyzeCodecDependencies finds all dependencies for a given codec and outputs configure flags
 func analyzeCodecDependencies(codecName string, disable bool) {
-	// Build lookup maps for all components
 	codecNameMap := buildCodecNameMap()
 	parserMap := buildParserMap()
 	formatMap := buildFormatMap()
 	bsfMap := buildBSFMap()
 
-	// Find all matching codecs using improved matching logic
 	matches := findMatchingCodecs(codecName, codecNameMap, parserMap, formatMap, bsfMap)
 
 	if len(matches) == 0 {
@@ -34,10 +32,8 @@ func analyzeCodecDependencies(codecName string, disable bool) {
 		os.Exit(1)
 	}
 
-	// Sort codecs: exact match first, then software, then hardware
 	sortedMatches := sortCodecsByPriority(matches, codecName)
 
-	// Consolidate all codecs into single dependency set
 	prefix := "--enable"
 	if disable {
 		prefix = "--disable"
@@ -59,7 +55,6 @@ func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
 	for _, info := range codecNameMap {
 		nameLower := strings.ToLower(info.name)
 
-		// Exact match
 		if nameLower == searchLower {
 			matchedCodecs[info.name] = info
 			continue
@@ -88,7 +83,6 @@ func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
 	for codecID, parserNames := range parserMap {
 		for _, parserName := range parserNames {
 			if strings.Contains(strings.ToLower(parserName), searchLower) {
-				// Find all codecs with this codecID
 				for _, info := range codecNameMap {
 					if info.codecID == codecID {
 						matchedCodecs[info.name] = info
@@ -116,7 +110,6 @@ func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
 	for codecID, bsfNames := range bsfMap {
 		for _, bsfName := range bsfNames {
 			if strings.Contains(strings.ToLower(bsfName), searchLower) {
-				// Find all codecs with this codecID
 				for _, info := range codecNameMap {
 					if info.codecID == codecID {
 						matchedCodecs[info.name] = info
@@ -126,7 +119,6 @@ func findMatchingCodecs(search string, codecNameMap map[string]*codecInfo,
 		}
 	}
 
-	// Convert map to slice
 	var result []*codecInfo
 	for _, info := range matchedCodecs {
 		result = append(result, info)
@@ -146,7 +138,6 @@ func sortCodecsByPriority(codecs []*codecInfo, searchTerm string) []*codecInfo {
 	for _, codec := range codecs {
 		nameLower := strings.ToLower(codec.name)
 
-		// Exact match
 		switch {
 		case nameLower == searchLower:
 			exact = append(exact, codec)
@@ -157,7 +148,6 @@ func sortCodecsByPriority(codecs []*codecInfo, searchTerm string) []*codecInfo {
 		}
 	}
 
-	// Combine: exact first, then software, then hardware
 	result := make([]*codecInfo, 0, len(codecs))
 	result = append(result, exact...)
 	result = append(result, software...)
@@ -209,7 +199,6 @@ func consolidateCodecDependencies(codecs []*codecInfo,
 	muxerSet := make(map[string]bool)
 	bsfSet := make(map[string]bool)
 
-	// Collect all components from all codecs
 	for _, codec := range codecs {
 		// Add description (deduplicate)
 		if !descriptionSet[codec.longName] {
@@ -219,7 +208,6 @@ func consolidateCodecDependencies(codecs []*codecInfo,
 
 		codecID := codec.codecID
 
-		// Get encoders and decoders
 		if codec.isEncoder {
 			encoderSet[codec.name] = true
 		}
@@ -227,14 +215,12 @@ func consolidateCodecDependencies(codecs []*codecInfo,
 			decoderSet[codec.name] = true
 		}
 
-		// Get parsers
 		if parsers, ok := parserMap[codecID]; ok {
 			for _, p := range parsers {
 				parserSet[p] = true
 			}
 		}
 
-		// Get formats
 		if formats, ok := formatMap[codecID]; ok {
 			for _, d := range formats.demuxers {
 				demuxerSet[d] = true
@@ -244,7 +230,6 @@ func consolidateCodecDependencies(codecs []*codecInfo,
 			}
 		}
 
-		// Get BSFs
 		if bsfs, ok := bsfMap[codecID]; ok {
 			for _, b := range bsfs {
 				bsfSet[b] = true

@@ -7,21 +7,16 @@ import (
 	"unsafe"
 )
 
-// TestCRC tests basic CRC calculation using standard tables
 func TestCRC(t *testing.T) {
-	// Get a standard CRC table
 	table := AVCrcGetTable(AVCrc32Ieee)
 	if table == nil {
 		t.Fatal("AVCrcGetTable returned nil")
 	}
 
-	// Test data
 	testData := []byte("Hello, World!")
 
-	// Calculate CRC
 	crc := AVCrc(table, 0, unsafe.Pointer(&testData[0]), uint64(len(testData)))
 
-	// CRC should be non-zero for non-empty data
 	if crc == 0 {
 		t.Error("CRC calculation returned 0 for non-empty data")
 	}
@@ -29,13 +24,10 @@ func TestCRC(t *testing.T) {
 	t.Logf("CRC of %q: 0x%08x", string(testData), crc)
 }
 
-// TestCRCInit tests custom CRC table initialization
 func TestCRCInit(t *testing.T) {
-	// Allocate space for CRC table (257 entries for 8-bit CRC)
 	const tableSize = 257
 	ctx := make([]AVCRC, tableSize)
 
-	// Initialize CRC table for CRC-32 IEEE
 	result, err := AVCrcInit(&ctx[0], 0, 32, 0x04C11DB7, int(unsafe.Sizeof(AVCRC(0))*tableSize))
 	if err != nil {
 		t.Fatalf("AVCrcInit failed: %v", err)
@@ -44,13 +36,10 @@ func TestCRCInit(t *testing.T) {
 		t.Fatalf("AVCrcInit returned error: %d", result)
 	}
 
-	// Test data
 	testData := []byte("Hello, World!")
 
-	// Calculate CRC using our initialized table
 	crc := AVCrc(&ctx[0], 0, unsafe.Pointer(&testData[0]), uint64(len(testData)))
 
-	// CRC should be non-zero for non-empty data
 	if crc == 0 {
 		t.Error("CRC calculation returned 0 for non-empty data")
 	}
@@ -62,7 +51,6 @@ func TestCRCInit(t *testing.T) {
 // This validates the typedef alias pointer support that was recently added
 func TestGeneratorTypeAliases(t *testing.T) {
 	t.Run("AVCRC", func(t *testing.T) {
-		// Test that AVCRC typedef alias works
 		table := AVCrcGetTable(AVCrc32Ieee)
 		if table == nil {
 			t.Fatal("AVCrcGetTable returned nil")
@@ -77,7 +65,6 @@ func TestGeneratorTypeAliases(t *testing.T) {
 	})
 
 	t.Run("AVAdler", func(t *testing.T) {
-		// Test that AVAdler typedef alias works
 		testData := []byte("Hello, World!")
 		adler := AVAdler32Update(1, unsafe.Pointer(&testData[0]), uint64(len(testData)))
 		if adler == 0 {
@@ -96,7 +83,7 @@ func TestGeneratorEnumPointers(t *testing.T) {
 		var fmt AVPixelFormat
 		// We can't fully test this without setting up an options context,
 		// but we can verify it compiles and the type signature is correct
-		_ = &fmt // Use the variable
+		_ = &fmt
 		t.Log("AVPixelFormat pointer type test passed (compiles)")
 	})
 
@@ -157,7 +144,6 @@ func TestGeneratorBasicFunctions(t *testing.T) {
 // TestGeneratorStructWrappers tests struct wrapper generation
 func TestGeneratorStructWrappers(t *testing.T) {
 	t.Run("AVRational", func(t *testing.T) {
-		// Test basic by-value struct
 		r := AVMakeQ(1, 2)
 		if r.Num() != 1 || r.Den() != 2 {
 			t.Errorf("AVMakeQ failed: got %d/%d, want 1/2", r.Num(), r.Den())
@@ -166,7 +152,6 @@ func TestGeneratorStructWrappers(t *testing.T) {
 	})
 
 	t.Run("AVFrame", func(t *testing.T) {
-		// Test pointer struct allocation
 		frame := AVFrameAlloc()
 		if frame == nil {
 			t.Fatal("AVFrameAlloc returned nil")
@@ -176,7 +161,6 @@ func TestGeneratorStructWrappers(t *testing.T) {
 	})
 
 	t.Run("AVPacket", func(t *testing.T) {
-		// Test packet allocation
 		pkt := AVPacketAlloc()
 		if pkt == nil {
 			t.Fatal("AVPacketAlloc returned nil")
@@ -189,7 +173,6 @@ func TestGeneratorStructWrappers(t *testing.T) {
 // TestGeneratorEnums tests enum generation
 func TestGeneratorEnums(t *testing.T) {
 	t.Run("AVMediaType", func(t *testing.T) {
-		// Test that enum constants are generated
 		types := []AVMediaType{
 			AVMediaTypeUnknown,
 			AVMediaTypeVideo,
@@ -205,7 +188,6 @@ func TestGeneratorEnums(t *testing.T) {
 	})
 
 	t.Run("AVPixelFormat", func(t *testing.T) {
-		// Test enum with large value range
 		if AVPixFmtNone < 0 {
 			t.Log("AVPixelFormat enum test passed")
 		}
@@ -215,7 +197,6 @@ func TestGeneratorEnums(t *testing.T) {
 // TestGeneratorConstants tests constant generation
 func TestGeneratorConstants(t *testing.T) {
 	t.Run("ErrorCodes", func(t *testing.T) {
-		// Test that error constants are generated
 		if AVErrorEofConst == 0 {
 			t.Error("AVERROR_EOF should not be 0")
 		}
@@ -223,7 +204,6 @@ func TestGeneratorConstants(t *testing.T) {
 	})
 
 	t.Run("MathConstants", func(t *testing.T) {
-		// Test that FFmpeg-specific math constants are generated
 		// Note: Standard constants like M_E and M_PI may come from system headers
 		// on Linux/NixOS and won't be redefined by FFmpeg
 		if MLog210 == 0 {
@@ -239,21 +219,17 @@ func TestGeneratorConstants(t *testing.T) {
 // TestGeneratorPointerConversions tests various pointer parameter conversions
 func TestGeneratorPointerConversions(t *testing.T) {
 	t.Run("DoublePointerStruct", func(t *testing.T) {
-		// Test **AVFormatContext pattern
 		var fmtCtx *AVFormatContext
-		// Should be able to pass &fmtCtx
 		_ = &fmtCtx
 		t.Log("Double pointer struct parameter test passed")
 	})
 
 	t.Run("PointerToPointerUpdate", func(t *testing.T) {
-		// Test that functions update pointer-to-pointer correctly
 		frame := AVFrameAlloc()
 		if frame == nil {
 			t.Fatal("AVFrameAlloc returned nil")
 		}
 
-		// This should update frame to nil
 		AVFrameFree(&frame)
 		if frame != nil {
 			t.Error("AVFrameFree didn't set frame to nil")
@@ -265,7 +241,6 @@ func TestGeneratorPointerConversions(t *testing.T) {
 // TestGeneratorErrorHandling tests error wrapping
 func TestGeneratorErrorHandling(t *testing.T) {
 	t.Run("ErrorConstantsExist", func(t *testing.T) {
-		// Test that error constants are properly generated and accessible
 		if AVErrorEofConst >= 0 {
 			t.Error("AVERROR_EOF should be negative")
 		}
@@ -337,7 +312,6 @@ func TestGeneratorPixFmtDescriptorTypes(t *testing.T) {
 func TestGeneratorPrimitiveTypeMapping(t *testing.T) {
 	t.Run("ptrdiff_t", func(t *testing.T) {
 		// av_image_copy_plane_uc_from uses ptrdiff_t (mapped to int64)
-		// Verify it compiles and doesn't panic
 		dst := make([]byte, 100)
 		src := make([]byte, 100)
 		AVImageCopyPlaneUcFrom(
@@ -349,7 +323,6 @@ func TestGeneratorPrimitiveTypeMapping(t *testing.T) {
 	})
 
 	t.Run("size_t", func(t *testing.T) {
-		// AVMalloc uses size_t
 		ptr := AVMalloc(1024)
 		if ptr != nil {
 			AVFree(ptr)
@@ -364,7 +337,6 @@ func TestGeneratorManualBindings(t *testing.T) {
 		// av_log is variadic and intentionally skipped in favor of manual binding
 		// Just verify that our manual logging system works
 		callback := func(ctx *LogCtx, level int, msg string) {
-			// Test callback
 		}
 		AVLogSetCallback(callback)
 		// If we reach here without panic, logging system initialized correctly
@@ -373,7 +345,6 @@ func TestGeneratorManualBindings(t *testing.T) {
 
 	t.Run("iterator_functions", func(t *testing.T) {
 		// Iterator functions with opaque pointers are manually bound
-		// Verify at least one iterator works
 		var opaque unsafe.Pointer
 		codec := AVCodecIterate(&opaque)
 		if codec == nil {
@@ -494,13 +465,10 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	t.Run("av_opt_get family compiles", func(t *testing.T) {
 		// These functions should compile - we're just testing signature availability
 		// Actual runtime testing would require a valid AVClass object
-
-		// Test that output parameter functions are accessible
 		var outInt int64
 		var outDouble float64
 		var outW, outH int
 
-		// Verify function signatures compile (won't run without valid context)
 		_ = func() (int, error) {
 			return AVOptGetInt(nil, nil, 0, &outInt)
 		}
@@ -519,7 +487,6 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	t.Run("av_packet_get_side_data compiles", func(t *testing.T) {
 		var size uint64
 
-		// Verify av_packet_get_side_data compiles with size output parameter
 		_ = func() unsafe.Pointer {
 			return AVPacketGetSideData(nil, AVPacketSideDataType(0), &size)
 		}
@@ -534,7 +501,6 @@ func TestGeneratorOutputParameters(t *testing.T) {
 		var size uint64
 		sizePtr := &size
 
-		// Verify av_cpb_properties_alloc compiles with *uint64 size output parameter
 		_ = func() *AVCPBProperties {
 			return AVCpbPropertiesAlloc(sizePtr)
 		}
@@ -613,7 +579,6 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	t.Run("dimension output parameters compile", func(t *testing.T) {
 		var width, height int
 
-		// Verify functions with width/height output parameters compile
 		_ = func() {
 			AVCodecAlignDimensions(nil, &width, &height)
 		}
@@ -644,7 +609,6 @@ func TestGeneratorFieldAccessors(t *testing.T) {
 		}
 		defer AVFrameFree(&frame)
 
-		// Test that getters return expected types and compile
 		_ = frame.Width()    // int
 		_ = frame.Height()   // int
 		_ = frame.Format()   // int (pix_fmt)
@@ -663,7 +627,6 @@ func TestGeneratorFieldAccessors(t *testing.T) {
 		}
 		defer AVFrameFree(&frame)
 
-		// Test ByValue struct field returns proper type
 		timebase := frame.TimeBase()
 		_ = timebase.Num()
 		_ = timebase.Den()
@@ -682,7 +645,6 @@ func TestGeneratorFieldAccessors(t *testing.T) {
 		}
 		defer AVCodecFreeContext(&codecCtx)
 
-		// Test pointer field accessors
 		_ = codecCtx.Extradata()     // unsafe.Pointer
 		_ = codecCtx.ExtradataSize() // int
 		_ = codecCtx.Codec()         // *AVCodec
@@ -695,14 +657,12 @@ func TestGeneratorFieldAccessors(t *testing.T) {
 // This tests the AllocXArray generation pattern for enums
 func TestGeneratorEnumArrayHelpers(t *testing.T) {
 	t.Run("codec_id_array", func(t *testing.T) {
-		// Allocate an enum array using generated helper
 		arr := AllocAVCodecIDArray(3)
 		if arr == nil {
 			t.Fatal("AllocAVCodecIDArray returned nil")
 		}
 		defer AVFree(arr.RawPtr())
 
-		// Set and get enum values
 		arr.Set(0, AVCodecIdH264)
 		arr.Set(1, AVCodecIdHevc)
 		arr.Set(2, AVCodecIdAV1)
@@ -721,7 +681,6 @@ func TestGeneratorEnumArrayHelpers(t *testing.T) {
 	})
 
 	t.Run("pixel_format_array", func(t *testing.T) {
-		// Test that pixel format arrays compile and work
 		arr := AllocAVPixelFormatArray(2)
 		if arr == nil {
 			t.Fatal("AllocAVPixelFormatArray returned nil")
@@ -739,7 +698,6 @@ func TestGeneratorEnumArrayHelpers(t *testing.T) {
 	})
 
 	t.Run("sample_format_array", func(t *testing.T) {
-		// Test sample format array generation
 		arr := AllocAVSampleFormatArray(3)
 		if arr == nil {
 			t.Fatal("AllocAVSampleFormatArray returned nil")
@@ -777,7 +735,6 @@ func TestGeneratorCStrHandling(t *testing.T) {
 	})
 
 	t.Run("cstr_as_parameter", func(t *testing.T) {
-		// Test that CStr works as function parameter
 		codecName := ToCStr("libx264")
 		defer codecName.Free()
 
@@ -793,7 +750,6 @@ func TestGeneratorCStrHandling(t *testing.T) {
 	})
 
 	t.Run("nil_cstr_handling", func(t *testing.T) {
-		// Test that nil returns are properly detected with CStr parameters
 		nonexistent := ToCStr("nonexistent_codec_xyz_12345")
 		defer nonexistent.Free()
 
@@ -810,7 +766,6 @@ func TestGeneratorCStrHandling(t *testing.T) {
 // This tests the nil-safety code generation pattern
 func TestGeneratorNilSafety(t *testing.T) {
 	t.Run("nil_struct_pointer_parameter", func(t *testing.T) {
-		// Test that functions accepting nil struct pointers work
 		// AVCodecIsEncoder accepts nil and returns (0, nil) error gracefully
 		result, err := AVCodecIsEncoder(nil)
 		if err != nil {
@@ -824,7 +779,6 @@ func TestGeneratorNilSafety(t *testing.T) {
 	})
 
 	t.Run("nil_double_pointer_parameter", func(t *testing.T) {
-		// Test that nil double pointers are handled
 		var frame *AVFrame = nil
 		AVFrameFree(&frame) // Should not crash with nil pointer
 
@@ -832,7 +786,6 @@ func TestGeneratorNilSafety(t *testing.T) {
 	})
 
 	t.Run("nil_return_value", func(t *testing.T) {
-		// Test that nil returns are properly detected
 		codec := AVCodecFindDecoder(AVCodecIdNone)
 		if codec != nil {
 			t.Error("Should return nil for CODEC_ID_NONE")
@@ -846,7 +799,6 @@ func TestGeneratorNilSafety(t *testing.T) {
 // This tests the error wrapping generation pattern
 func TestGeneratorMultipleReturnValues(t *testing.T) {
 	t.Run("success_case", func(t *testing.T) {
-		// Test successful operation returns (0, nil)
 		var dict *AVDictionary = nil
 		key := ToCStr("key")
 		value := ToCStr("value")
@@ -866,7 +818,6 @@ func TestGeneratorMultipleReturnValues(t *testing.T) {
 	})
 
 	t.Run("error_case", func(t *testing.T) {
-		// Test error operation returns (negative, error)
 		frame := AVFrameAlloc()
 		if frame == nil {
 			t.Fatal("AVFrameAlloc returned nil")
@@ -890,7 +841,6 @@ func TestGeneratorMultipleReturnValues(t *testing.T) {
 // This tests that callback function pointer typedefs are properly aliased to unsafe.Pointer
 func TestGeneratorCallbackTypes(t *testing.T) {
 	t.Run("callback_type_exists", func(t *testing.T) {
-		// Test that callback type aliases are generated
 		var txFn AVTxFn
 		var sadFn AVPixelutilsSadFn
 
@@ -902,7 +852,6 @@ func TestGeneratorCallbackTypes(t *testing.T) {
 	})
 
 	t.Run("callback_pointer_parameters", func(t *testing.T) {
-		// Test that functions accepting pointers to callbacks compile
 		var txFn AVTxFn
 		// AVTxInit should accept *AVTxFn
 		_ = &txFn
@@ -915,7 +864,6 @@ func TestGeneratorCallbackTypes(t *testing.T) {
 // This serves as a regression test to ensure skip logic remains consistent
 func TestGeneratorSkipPatterns(t *testing.T) {
 	t.Run("documented_skips", func(t *testing.T) {
-		// Document all intentional skip patterns for future reference
 		skips := map[string]string{
 			"variadic_functions":           "Cannot represent ... in Go (e.g., av_log)",
 			"function_pointer_params":      "CGO callback limitations (e.g., av_fifo_write_from_cb)",

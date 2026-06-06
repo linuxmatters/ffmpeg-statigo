@@ -98,7 +98,6 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		return nil
 	}
 
-	// Check if we can skip this build
 	state := NewBuildState(lib, buildRoot)
 	if state.CanSkip(installDir) {
 		fmt.Fprintf(logger, "Skipping %s (already built)\n", lib.Name)
@@ -107,7 +106,6 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 
 	fmt.Fprintf(logger, "Building %s...\n", lib.Name)
 
-	// Download and extract
 	archivePath := filepath.Join(buildRoot, "downloads", filepath.Base(lib.URL))
 	if err := DownloadFile(lib.URL, archivePath, logger); err != nil {
 		return fmt.Errorf("download failed: %w", err)
@@ -129,7 +127,6 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		}
 	}
 
-	// Build
 	buildDir := filepath.Join(buildRoot, "build", lib.Name)
 	if err := os.MkdirAll(buildDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create build dir: %w", err)
@@ -143,7 +140,6 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		return fmt.Errorf("build failed: %w", err)
 	}
 
-	// Save state
 	if err := state.Save(); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
@@ -224,7 +220,6 @@ func buildEnv(installDir string) []string {
 	env := os.Environ()
 	pkgConfigPath := pkgConfigPath(installDir)
 
-	// Update or add PKG_CONFIG_PATH
 	env = upsertEnv(env, "PKG_CONFIG_PATH", pkgConfigPath, ":", true)
 
 	// Update or add PATH to include staging/bin for tools like glslang, spirv-*

@@ -26,7 +26,6 @@ func NewDisplay() (*Display, error) {
 
 	pixelStyles := make([]tcell.Style, 256)
 
-	// Clear screen
 	s.SetStyle(defStyle)
 	s.Clear()
 

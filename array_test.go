@@ -16,14 +16,12 @@ import "testing"
 // Users MUST track array lengths themselves, just as in C code.
 func TestArray_BoundsBehaviour(t *testing.T) {
 	t.Run("valid_indices_work_correctly", func(t *testing.T) {
-		// Allocate array of 3 elements
 		arr := AllocAVCodecIDArray(3)
 		if arr == nil {
 			t.Fatal("AllocAVCodecIDArray returned nil")
 		}
 		defer AVFree(arr.RawPtr())
 
-		// Valid indices: 0, 1, 2
 		arr.Set(0, AVCodecIdH264)
 		arr.Set(1, AVCodecIdHevc)
 		arr.Set(2, AVCodecIdAV1)
@@ -79,7 +77,6 @@ func TestArray_BoundsBehaviour(t *testing.T) {
 		}
 		defer AVFree(arr.RawPtr())
 
-		// Set last element (index size-1)
 		arr.Set(size-1, AVCodecIdVp9)
 		if arr.Get(size-1) != AVCodecIdVp9 {
 			t.Errorf("Get(%d) = %v, want AVCodecIdVp9", size-1, arr.Get(size-1))
@@ -88,9 +85,6 @@ func TestArray_BoundsBehaviour(t *testing.T) {
 
 	t.Run("primitive_arrays_same_behaviour", func(t *testing.T) {
 		// Verify primitive type arrays also have no bounds checking
-		// Test with int array using ToIntArray
-
-		// Allocate raw memory for 3 ints
 		ptr := AVMalloc(uint64(3 * intSize))
 		if ptr == nil {
 			t.Fatal("AVMalloc returned nil")
@@ -102,7 +96,6 @@ func TestArray_BoundsBehaviour(t *testing.T) {
 			t.Fatal("ToIntArray returned nil")
 		}
 
-		// Valid access
 		arr.Set(0, 42)
 		arr.Set(1, 100)
 		arr.Set(2, -1)
@@ -132,7 +125,6 @@ func TestArray_BoundsBehaviour(t *testing.T) {
 			}
 		}()
 
-		// This should panic
 		_ = arr.Get(0)
 	})
 }

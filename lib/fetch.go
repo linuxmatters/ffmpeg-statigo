@@ -64,7 +64,6 @@ func ensureLibrary() error {
 		return fmt.Errorf("finding release: %w", err)
 	}
 
-	// Download tarball
 	tarballName := fmt.Sprintf("ffmpeg-%s-%s.tar.gz", platform, arch)
 	downloadURL := fmt.Sprintf(
 		"https://github.com/linuxmatters/ffmpeg-statigo/releases/download/%s/%s",
@@ -101,7 +100,6 @@ func ensureLibrary() error {
 }
 
 func findCompatibleRelease(moduleVersion string) (string, error) {
-	// Parse major.minor.patch from module version
 	parts := strings.Split(moduleVersion, ".")
 	if len(parts) != 3 {
 		return "", fmt.Errorf("invalid version format: %s", moduleVersion)
@@ -128,7 +126,6 @@ type GitHubRelease struct {
 }
 
 func findViaAPI(prefix string) (string, error) {
-	// Query GitHub API for releases
 	apiURL := "https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases?per_page=100"
 
 	req, err := newGitHubAPIRequest(apiURL)
@@ -151,13 +148,11 @@ func findViaAPI(prefix string) (string, error) {
 		return "", fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
 	}
 
-	// Parse releases
 	var releases []GitHubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
 		return "", fmt.Errorf("parsing releases: %w", err)
 	}
 
-	// Find all tags matching our prefix
 	var matchingReleases []string
 	for _, rel := range releases {
 		if strings.HasPrefix(rel.TagName, prefix) {
@@ -290,19 +285,16 @@ func streamDownloadAndExtract(url, destDir string) (string, error) {
 		return "", fmt.Errorf("resolving destination directory: %w", err)
 	}
 
-	// Wrap response body with progress reporting
 	progressBody := &progressReader{
 		reader: resp.Body,
 		total:  resp.ContentLength,
 	}
 
-	// Create a hash writer to calculate checksum while streaming
 	hasher := sha256.New()
 
 	// TeeReader: data flows to both hasher and gzip decompressor simultaneously
 	teeReader := io.TeeReader(progressBody, hasher)
 
-	// Decompress gzip stream
 	gzr, err := gzip.NewReader(teeReader)
 	if err != nil {
 		return "", fmt.Errorf("gzip reader: %w", err)

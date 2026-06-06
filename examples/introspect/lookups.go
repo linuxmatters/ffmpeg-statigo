@@ -48,11 +48,9 @@ func buildCodecNameMap() map[string]*codecInfo {
 
 		// Check if codec already exists in map (e.g., separate encoder/decoder entries)
 		if existing, exists := codecMap[name]; exists {
-			// Merge encoder/decoder flags
 			existing.isEncoder = existing.isEncoder || isEncoder
 			existing.isDecoder = existing.isDecoder || isDecoder
 		} else {
-			// Create new entry
 			codecMap[name] = &codecInfo{
 				name:      name,
 				longName:  longName,
@@ -180,7 +178,6 @@ func buildBSFMap() map[ffmpeg.AVCodecID][]string {
 		}
 	}
 
-	// Add generic BSFs to all codec IDs
 	for codecID := range bsfMap {
 		bsfMap[codecID] = append(bsfMap[codecID], genericBSFs...)
 	}
