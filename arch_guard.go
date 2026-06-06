@@ -6,10 +6,10 @@ import "unsafe"
 
 // Compile-time guard: this package targets 64-bit only.
 // Holders of the invariant:
-//   - internal/generator/generator.go:30 (size_t -> uint64 codegen choice)
-//   - ffmpeg.go:75 (C.ulong(len) runtime cast)
+//   - the size_t -> uint64 entry in the generator's type map (generator.go)
+//   - the C.ulong(len) runtime cast in AllocCStr (ffmpeg.go)
 //
-// The supported target list lives at ffmpeg.go:12.
+// The supported target list lives in the per-platform #cgo ... LDFLAGS block in ffmpeg.go.
 //
 // On a 32-bit target sizeof(uintptr) == 4, so the subtraction underflows
 // the unsigned domain and the compiler rejects the constant expression.

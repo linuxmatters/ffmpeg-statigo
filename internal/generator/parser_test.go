@@ -11,8 +11,8 @@ import (
 	"github.com/Newbluecake/bootstrap/clang"
 )
 
-// TestParseFunctionDuplicateAborts pins the invariant-violation panic at
-// parser.go:619 (duplicate function registration). The parser converts shape
+// TestParseFunctionDuplicateAborts pins the invariant-violation panic in
+// parseFunction (duplicate function registration). The parser converts shape
 // panics to skip-with-reason but deliberately keeps invariant panics fatal:
 // a duplicate registration means libclang misreported or the parser visited
 // the same FunctionDecl twice, so the bindings are untrustworthy and aborting
