@@ -57,11 +57,13 @@
   - `opt.go` — `AVOptSetSlice`; Go-slice → C binary option setter
   - `image.go` — `av_image_*` plane/linesize wrappers
   - `samples.go` — `av_samples_*` audio sample-plane wrappers
+  - `audio_fifo.go` — `av_audio_fifo_*` data-path wrappers (write/read/peek/peek_at); `void * const *data` plane-pointer params CGO can't pass directly (reuses `samplePointerArray`)
   - `swscale.go` — `sws_*` software scaling / pixel-format conversion
   - `swresample.go` — `swr_*` audio resampling
   - `get_format.go` + `get_format.c` — `AVCodecContext.get_format` callback bridge (cgo `//export` trampoline) for selecting a decode pixel format, e.g. a hardware format
   - `avio.go` + `avio.c` — custom-I/O `AVIOContext` via `runtime/cgo.Handle` callback bridge
   - `log.go` + `log.c` — `av_log` callback bridge to Go/`slog` via cgo `//export`
+  - `tx.go` + `tx.c` — `AVTxCall` forward-call invoker for the `av_tx_fn` pointer `av_tx_init` returns; CGO can't call a C function pointer from Go, so the shim invokes it C-side
   - `log_format.go` — variadic-format shims (`AVLog`, `AVAsprintf`, etc.); CGO can't call C varargs, so these format on the Go side and pass through a fixed `"%s"` C shim
   - `fields.go` — struct-field accessors the generator can't express (quant matrices, `AVFrame.extended_data`, pixel-format descriptor components, etc.)
   - `helpers.go` — small cross-cutting helpers (`AVRational.String`, `ToAVHWFramesContext`, `AVRescaleDelta`, `AVSizeMult`)
