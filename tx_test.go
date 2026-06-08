@@ -66,7 +66,7 @@ func TestAVTxFloatFFTForwardDC(t *testing.T) {
 	defer AVTxUninit(&ctx)
 
 	// Fill input: constant real value, zero imaginary, across all samples.
-	for i := 0; i < length; i++ {
+	for i := range length {
 		s := (*complexFloat)(unsafe.Add(inBuf, i*elemSize))
 		s.re = realVal
 		s.im = 0
@@ -77,7 +77,7 @@ func TestAVTxFloatFFTForwardDC(t *testing.T) {
 
 	// Constant real input of value V over N samples => bin 0 = N*V, others ~ 0.
 	wantDC := realVal * float32(length)
-	for i := 0; i < length; i++ {
+	for i := range length {
 		s := (*complexFloat)(unsafe.Add(outBuf, i*elemSize))
 		re, im := s.re, s.im
 		mag := float32(math.Hypot(float64(re), float64(im)))
