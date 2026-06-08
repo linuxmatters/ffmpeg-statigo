@@ -102,9 +102,16 @@ jobs:
             echo ""
             echo "## Installation"
             echo ""
+            echo "Static libraries (~100MB) are too large for \`go get\`; install via git submodule and a replace directive:"
+            echo ""
             echo '```bash'
-            echo "go get github.com/linuxmatters/ffmpeg-statigo@$VERSION"
+            echo 'git submodule add https://github.com/linuxmatters/ffmpeg-statigo third_party/ffmpeg-statigo'
+            echo "(cd third_party/ffmpeg-statigo && git checkout $VERSION)"
+            echo 'go mod edit -replace github.com/linuxmatters/ffmpeg-statigo=./third_party/ffmpeg-statigo'
+            echo '(cd third_party/ffmpeg-statigo && go run ./cmd/download-lib)'
             echo '```'
+            echo ""
+            echo "See the [Installation guide](https://github.com/linuxmatters/ffmpeg-statigo#installation) for the full setup, including git fast-forward config."
             echo ""
             echo "**Full Changelog**: https://github.com/linuxmatters/ffmpeg-statigo/compare/${PREV_TAG:-main}...$VERSION"
           } > changelog.md
