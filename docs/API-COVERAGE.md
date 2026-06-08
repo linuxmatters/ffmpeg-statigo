@@ -1,6 +1,6 @@
 # API coverage
 
-As of FFmpeg 8.1.1 (measured 2026-06-05), ffmpeg-statigo binds **~90%** of the
+As of FFmpeg 8.1.1 (measured 2026-06-08), ffmpeg-statigo binds **~90%** of the
 public C functions in the parsed FFmpeg headers.
 
 ## Metric definition
@@ -17,7 +17,8 @@ coverage = bound functions / parsed public functions
 - **Bound functions** is the generated wrappers plus the hand-written wrappers
   that re-bind a skipped function (variadics, fixed-size arrays, anonymous
   structs, function-pointer bridges) in the topic files (`iterate.go`,
-  `uuid.go`, `swscale.go`, `avio.go`, `log_format.go`, and so on).
+  `uuid.go`, `swscale.go`, `avio.go`, `log_format.go`, `audio_fifo.go`,
+  `tx.go` + `tx.c`, and so on).
 
 A function the generator skips but a topic file re-binds counts as covered, not
 missing.
@@ -30,16 +31,18 @@ missing.
 | Function skips (generator) | 151 | skip summary, symbols without a `.` |
 | Struct-field / other skips | 94 | skip summary, symbols containing a `.` |
 | Total skip markers | 245 | skip summary header (`= skipCeiling`) |
-| Re-bound by hand (covered) | 49 | skipped functions re-exposed in topic files |
-| Genuinely missing functions | 102 | 151 - 49 |
-| **Numerator** (bound) | **906** | 857 + 49 |
+| Re-bound by hand (covered) | 54 | skipped functions re-exposed in topic files |
+| Genuinely missing functions | 97 | 151 - 54 |
+| **Numerator** (bound) | **911** | 857 + 54 |
 | **Denominator** (parsed public funcs) | **1008** | 857 + 151 |
-| **Coverage** | **89.9%** | 906 / 1008 |
+| **Coverage** | **90.4%** | 911 / 1008 |
 
 The previous README figure of 85% matched the generated-only lower bound
 (857 / 1008 = 85.0%); it ignored the hand-written re-binds, so it understated
 real coverage. The recent header-promotion and hand-binding work added bindings,
-lifting the figure from ~85% to ~90% (906 / 1008 = 89.9%).
+lifting the figure from ~85% to ~90% (906 / 1008 = 89.9%). The five additional
+hand-written bindings for the AVAudioFifo data path and av_tx invocation bring
+the total to 911 / 1008 = 90.4%, still rounding to ~90%.
 
 ## Scope
 
@@ -88,6 +91,6 @@ cross-reference required:
 # Count skipped-but-rebound symbols. Function skips have no dot in the symbol;
 # struct-field skips do, so split them to match the counts table.
 go run ./internal/generator 2>/tmp/skips.txt >/dev/null
-grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 49 figure)
+grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 54 figure)
 grep '(manual binding:' /tmp/skips.txt | grep -c  '\.'   # struct-field rebinds
 ```
