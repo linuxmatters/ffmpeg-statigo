@@ -35,7 +35,7 @@ func fifoRoundTrip(t *testing.T, sampleFmt AVSampleFormat, nbChannels, nbSamples
 	// Fill each source plane with a distinct, position-dependent pattern so a
 	// dropped or swapped plane changes the read-back bytes.
 	want := make([][]byte, nbPlanes)
-	for p := 0; p < nbPlanes; p++ {
+	for p := range nbPlanes {
 		plane := unsafe.Slice((*byte)(src[p]), srcLinesize)
 		want[p] = make([]byte, srcLinesize)
 		for i := range plane {
@@ -76,7 +76,7 @@ func fifoRoundTrip(t *testing.T, sampleFmt AVSampleFormat, nbChannels, nbSamples
 		t.Fatalf("AVAudioFifoRead read %d samples, want %d", ret, nbSamples)
 	}
 
-	for p := 0; p < nbPlanes; p++ {
+	for p := range nbPlanes {
 		got := unsafe.Slice((*byte)(dst[p]), dstLinesize)
 		for i := range got {
 			if got[i] != want[p][i] {
