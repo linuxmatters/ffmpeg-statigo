@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v6
         with:
@@ -68,7 +68,7 @@ jobs:
           echo "buildsystems-hash=$(sha256sum internal/builder/buildsystems.go | cut -d' ' -f1 | head -c 8)" >> "$GITHUB_OUTPUT"
 
       - name: Cache FFmpeg source downloads
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .build/downloads
           # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
@@ -78,7 +78,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-
 
       - name: Cache compiled dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             .build/staging
