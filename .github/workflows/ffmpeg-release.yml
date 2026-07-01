@@ -46,7 +46,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v6
         with:
@@ -74,7 +74,7 @@ jobs:
         run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
 
       - name: Cache FFmpeg source downloads
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .build/downloads
           key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-${{ hashFiles('internal/builder/libraries.go') }}
@@ -82,7 +82,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-
 
       - name: Cache compiled dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             .build/staging
