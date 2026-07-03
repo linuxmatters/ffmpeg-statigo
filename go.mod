@@ -1,6 +1,6 @@
 module github.com/linuxmatters/ffmpeg-statigo
 
-go 1.26.3
+go 1.26
 
 require (
 	github.com/Newbluecake/bootstrap v0.17.1
