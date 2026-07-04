@@ -31,6 +31,9 @@ import (
 //   - openssl, opus, lame: independently confirmed against the upstream-published
 //     SHA-256 (openssl .sha256 asset, xiph SHA256SUMS.txt, sourceforge published
 //     value). Treat these as authoritative.
+//   - libiconv 1.19: verified against the GNU-published GPG signature (good
+//     signature from maintainer Bruno Haible) and cross-checked against the
+//     Homebrew formula digest and a second GNU mirror. Treat as authoritative.
 //   - All other entries: TOFU-seeded by `--update-digests` in an automated
 //     environment. A maintainer should independently re-verify each before
 //     relying on it. Several upstreams (gnome, videolan/gitlab on-demand
@@ -43,6 +46,7 @@ var archiveDigests = map[string]string{
 	"https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.2.tar.xz":                                                                            "c8b9bc81f8b590c33af8cc6c336dbff2f53409973588a351c95f1c621b13d09d",
 	"https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz":                                                                      "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e",
 	"https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz":                                                                                       "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1",
+	"https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz":                                                                                        "88dd96a8c0464eca144fc791ae60cd31cd8ee78321e67397e25fc095c4a19aa6",
 	"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.1.tar.gz":                                                                                 "918929faccab2700c9cc7be2531c0b74f054a4dd5d3862bc485b0ab17af76486",
 	"https://github.com/FFmpeg/nv-codec-headers/releases/download/n13.0.19.0/nv-codec-headers-13.0.19.0.tar.gz":                                        "13da39edb3a40ed9713ae390ca89faa2f1202c9dda869ef306a8d4383e242bee",
 	"https://github.com/Haivision/srt/archive/refs/tags/v1.5.5.tar.gz":                                                                                 "c3518bc43a71b5289032395b2db4c3e09e73d78b54247d56c14553a503b491cf",
