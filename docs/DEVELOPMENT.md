@@ -16,8 +16,9 @@ Go modules don't handle 100MB+ binary files. `go get` won't fetch static librari
 
 Projects using ffmpeg-statigo follow this pattern. Reference implementations with justfiles and GitHub workflows:
 
-- [jivedrop](https://github.com/linuxmatters/jivedrop) - *Drop your podcast .wav into a shiny MP3 with metadata, cover art, and all 🪩*
-- [jivefire](https://github.com/linuxmatters/jivefire) - *Spin your podcast .wav into a groovy MP4 visualiser with Cava-inspired real-time audio frequencies 🔥*
+- **[Jive Encoder](https://github.com/linuxmatters/jive-encoder)** 🪩 - drop your podcast `.wav` in, get a shiny MP3 out with metadata, cover art, and all.
+- **[Jive Visualiser](https://github.com/linuxmatters/jive-visualiser)** 🔥 - spin a `.wav` into a groovy MP4 visualiser with real-time audio frequencies.
+- **[Jive Vocals](https://github.com/linuxmatters/jive-vocals)** 🕺 - turn raw microphone recordings into broadcast-ready audio in one command. No configuration, no surprises.
 
 ### Project Structure
 

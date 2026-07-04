@@ -195,9 +195,9 @@ The [`examples/`](examples/) directory contains working programs covering the co
 
 Real tools shipping on top of these bindings, all part of the [Linux Matters](https://linuxmatters.sh) podcast toolchain:
 
-- **[jivedrop](https://github.com/linuxmatters/jivedrop)** 🪩 - drop your podcast `.wav` in, get a shiny MP3 out with metadata, cover art, and all.
-- **[jivefire](https://github.com/linuxmatters/jivefire)** 🔥 - spin a `.wav` into a groovy MP4 visualiser with Cava-inspired real-time audio frequencies.
-- **[jivetalking](https://github.com/linuxmatters/jivetalking)** 🕺 - turn raw microphone recordings into broadcast-ready audio in one command. No configuration, no surprises.
+- **[Jive Encoder](https://github.com/linuxmatters/jive-encoder)** 🪩 - drop your podcast `.wav` in, get a shiny MP3 out with metadata, cover art, and all.
+- **[Jive Visualiser](https://github.com/linuxmatters/jive-visualiser)** 🔥 - spin a `.wav` into a groovy MP4 visualiser with real-time audio frequencies.
+- **[Jive Vocals](https://github.com/linuxmatters/jive-vocals)** 🕺 - turn raw microphone recordings into broadcast-ready audio in one command. No configuration, no surprises.
 
 Shipping something with FFmpeg Statigo? Open a PR and add it here.
 
