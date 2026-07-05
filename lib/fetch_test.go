@@ -25,7 +25,7 @@ func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
 	t.Run("valid_version_format", func(t *testing.T) {
 		// Valid versions should produce a release string (even if API fails, fallback works)
 		validVersions := []string{
-			"8.1.1",
+			"8.1.2",
 			"1.2.3",
 			"10.20.30",
 		}
@@ -67,8 +67,8 @@ func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
 
 	t.Run("release_prefix_construction", func(t *testing.T) {
 		// Verify that release prefix is constructed correctly
-		moduleVersion := "8.1.1"
-		expectedPrefix := "lib-8.1.1"
+		moduleVersion := "8.1.2"
+		expectedPrefix := "lib-8.1.2"
 		actualPrefix := "lib-" + moduleVersion
 
 		if actualPrefix != expectedPrefix {
@@ -888,8 +888,8 @@ func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 func TestFindCompatibleRelease_APIFailureRecovery(t *testing.T) {
 	t.Run("fallback_when_api_unavailable", func(t *testing.T) {
 		// Test the fallback pattern construction
-		moduleVersion := "8.1.1"
-		expectedFallback := "lib-8.1.1.0"
+		moduleVersion := "8.1.2"
+		expectedFallback := "lib-8.1.2.0"
 
 		// Simulate what happens when API fails: fallback to predictable pattern
 		fallbackRelease := "lib-" + moduleVersion + ".0"
@@ -907,7 +907,7 @@ func TestFindCompatibleRelease_APIFailureRecovery(t *testing.T) {
 			expected string
 		}{
 			{"8.0.0", "lib-8.0.0.0"},
-			{"8.1.1", "lib-8.1.1.0"},
+			{"8.1.2", "lib-8.1.2.0"},
 			{"9.1.0", "lib-9.1.0.0"},
 			{"10.0.0", "lib-10.0.0.0"},
 		}

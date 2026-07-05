@@ -41,7 +41,7 @@ var files = []string{
 	////"libavcodec/mediacodec.h", // Android-only symbols, link risk
 	"libavcodec/packet.h",
 	////"libavcodec/qsv.h", // needs <mfxvideo.h> (Intel Media SDK)
-	////"libavcodec/smpte_436m.h", // header vendored but symbols absent from FFmpeg 8.1.1 static lib (link error); needs a build that ships the SMPTE 436M/291M code
+	////"libavcodec/smpte_436m.h", // header vendored but symbols absent from FFmpeg 8.1.2 static lib (link error); needs a build that ships the SMPTE 436M/291M code
 	////"libavcodec/vdpau.h", // needs <vdpau/vdpau.h>
 	"libavcodec/version.h",
 	"libavcodec/version_major.h",

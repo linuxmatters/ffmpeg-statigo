@@ -1,6 +1,6 @@
 # API coverage
 
-As of FFmpeg 8.1.1 (measured 2026-06-08), ffmpeg-statigo binds **~90%** of the
+As of FFmpeg 8.1.2 (measured 2026-07-05), ffmpeg-statigo binds **~90%** of the
 public C functions in the parsed FFmpeg headers.
 
 ## Metric definition
@@ -23,7 +23,7 @@ coverage = bound functions / parsed public functions
 A function the generator skips but a topic file re-binds counts as covered, not
 missing.
 
-## Counts (FFmpeg 8.1.1)
+## Counts (FFmpeg 8.1.2)
 
 | Quantity | Value | Source |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ The figure covers the **parsed public API only**. Headers excluded by design in
   VideoToolbox, QSV, VA-API, CUDA, Vulkan, OpenCL, AMF, MediaCodec/JNI,
   OpenHarmony) that need vendor SDKs or risk link failures on the static Linux
   and macOS builds.
-- `smpte_436m.h` (symbols absent from the FFmpeg 8.1.1 static lib).
+- `smpte_436m.h` (symbols absent from the FFmpeg 8.1.2 static lib).
 - Non-API or union-only headers (`attributes.h`, `intreadwrite.h`,
   `refstruct.h`).
 
