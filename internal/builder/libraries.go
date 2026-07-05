@@ -204,7 +204,7 @@ var libiconv = &Library{
 // libxml2 - XML parsing library
 var libxml2 = &Library{
 	Name:          "libxml2",
-	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.2.tar.xz",
+	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.3.tar.xz",
 	FFmpegEnables: []string{"libxml2"},
 	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -243,7 +243,7 @@ var nvcodecheaders = &Library{
 // vulkanheaders - Vulkan API headers (cross-platform)
 var vulkanheaders = &Library{
 	Name:          "Vulkan-Headers",
-	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.352.tar.gz",
+	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.356.tar.gz",
 	FFmpegEnables: []string{"vulkan"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -333,7 +333,7 @@ var libdrm = &Library{
 // libva - Video Acceleration API (Linux only, provides VA-API backend for QSV)
 var libva = &Library{
 	Name:          "libva",
-	URL:           "https://github.com/intel/libva/releases/download/2.23.0/libva-2.23.0.tar.bz2",
+	URL:           "https://github.com/intel/libva/releases/download/2.24.0/libva-2.24.0.tar.bz2",
 	Platform:      []string{"linux"},
 	Dependencies:  []*Library{libdrm},
 	FFmpegEnables: []string{"vaapi"},
@@ -373,7 +373,7 @@ var libva = &Library{
 // libvpl - Intel VPL/oneVPL headers (Linux only, for QuickSync)
 var libvpl = &Library{
 	Name:          "libvpl",
-	URL:           "https://github.com/intel/libvpl/archive/refs/tags/v2.16.0.tar.gz",
+	URL:           "https://github.com/intel/libvpl/archive/refs/tags/v2.17.0.tar.gz",
 	Platform:      []string{"linux"},
 	FFmpegEnables: []string{"libvpl"},
 	BuildSystem:   &CMakeBuild{},
@@ -686,7 +686,7 @@ var vvenc = &Library{
 // - BIO, EVP APIs
 var openssl = &Library{
 	Name:          "openssl",
-	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.2/openssl-3.6.2.tar.gz",
+	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz",
 	FFmpegEnables: []string{"openssl"},
 	BuildSystem:   &OpenSSLBuild{},
 	ConfigureArgs: func(os string) []string {

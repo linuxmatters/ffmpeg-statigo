@@ -68,17 +68,17 @@ ffmpeg-statigo ships a curated FFmpeg static library focused on the core strengt
 | libdrm           | 2.4.134     | Direct Rendering Manager library and headers (*Linux only*)                         |
 | libiconv         | 1.19        | A character set conversion library (*macOS only*)                                   |
 | libsrt           | 1.5.5       | A transport protocol for ultra low latency live video and audio streaming           |
-| libva            | 2.23.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)                |
-| libvpl           | 2.16.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                       |
+| libva            | 2.24.0      | An implementation for VA-API (Video Acceleration API) (*Linux only*)                |
+| libvpl           | 2.17.0      | Intel Video Processing Library (Intel VPL) API (*Linux only*)                       |
 | libvpx           | 1.16.0      | High-quality, open video format for the web that's freely available to everyone     |
 | libwebp          | 1.6.0       | A modern image format providing superior lossless and lossy compression             |
-| libxml2          | 2.15.2      | An XML parser and toolkit implemented in C                                          |
+| libxml2          | 2.15.3      | An XML parser and toolkit implemented in C                                          |
 | mp3lame          | 3.100       | A high quality MPEG Audio Layer III (MP3) encoder                                   |
 | nv-codec-headers | 13.0.19.0   | Headers required to interface with Nvidias codec APIs (*Linux only*)                |
-| openssl          | 3.6.2       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                          |
+| openssl          | 3.6.3       | Open Source Toolkit for the TLS, DTLS, and QUIC protocols.                          |
 | opus             | 1.6.1       | A totally open, royalty-free, highly versatile audio codec                          |
 | rav1e            | 0.8.1       | The fastest and safest AV1 encoder.                                                 |
-| Vulkan-Headers   | 1.4.352     | Vulkan header files and API registry                                                |
+| Vulkan-Headers   | 1.4.356     | Vulkan header files and API registry                                                |
 | x264             | head        | H.264/MPEG-4 AVC compression format library for encoding video streams              |
 | x265             | 4.2         | H.265/MPEG-H HEVC compression format library for encoding video streams             |
 | zimg             | 3.0.6       | Scaling, colorspace conversion, and dithering library                               |
