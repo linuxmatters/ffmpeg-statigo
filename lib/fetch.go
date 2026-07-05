@@ -19,8 +19,8 @@ import (
 )
 
 // Version is the FFmpeg library version (major.minor.patch)
-// The downloader will find the latest internal release (e.g., lib-8.1.1.0)
-const Version = "8.1.1"
+// The downloader will find the latest internal release (e.g., lib-8.1.2.0)
+const Version = "8.1.2"
 
 // DownloadLibs downloads the FFmpeg static libraries for the current platform
 func DownloadLibs() error {

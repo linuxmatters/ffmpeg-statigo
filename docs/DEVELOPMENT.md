@@ -287,10 +287,10 @@ The root package has three source tiers. The generator skips C symbols it cannot
 
 Two distinct version schemes:
 
-- **Library releases** (`lib-8.1.1.x`): Static library builds, distributed via GitHub Releases
-- **Module releases** (`v8.1.1.x`): Go module versions
+- **Library releases** (`lib-8.1.2.x`): Static library builds, distributed via GitHub Releases
+- **Module releases** (`v8.1.2.x`): Go module versions
 
-The download tool automatically fetches the latest `lib-8.1.1.x` release matching the FFmpeg version in `lib/fetch.go`.
+The download tool automatically fetches the latest `lib-8.1.2.x` release matching the FFmpeg version in `lib/fetch.go`.
 
 ## Troubleshooting
 
