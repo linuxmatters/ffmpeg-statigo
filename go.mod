@@ -9,7 +9,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.13.10
 	github.com/iancoleman/strcase v0.3.0
 	github.com/stretchr/testify v1.11.1
-	github.com/ulikunitz/xz v0.5.15
+	github.com/ulikunitz/xz v0.5.16
 )
 
 require (
