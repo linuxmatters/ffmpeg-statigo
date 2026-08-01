@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Newbluecake/bootstrap/clang"
+	"modernc.org/cc/v4"
 )
 
 type Type interface {
@@ -156,255 +156,347 @@ func (t *UnionType) Equals(other Type) bool {
 	return true
 }
 
-func (p *Parser) parseType(indent string, t clang.Type) Type {
+// unnamedStructComment is the Comment a synthetic record carries. It is a
+// literal, not a parsed comment: the record has no declaration of its own to
+// take a comment from, so registerUnnamedStruct writes this exact string and
+// the golden pins it.
+const unnamedStructComment = "Synthetic type for unnamed struct"
+
+// parseType converts a cc/v4 type into the generator's Type tree. renderType
+// writes that tree straight into the IR golden, so every node it builds is
+// pinned.
+//
+// A nil result is C void. renderType prints it as "void".
+func (w *ccWalk) parseType(indent string, t cc.Type) Type {
+	if t == nil {
+		return nil
+	}
+
+	// Typedef sugar wins at every level, and is tested before the kind switch.
+	// This is the _t-suffix guard: the written typedef spelling is kept, so
+	// size_t, ptrdiff_t and the intN_t family reach the IR as themselves rather
+	// than as the widths they canonicalise to. It also covers every FFmpeg
+	// typedef the golden names directly, from AVRational to the function
+	// typedefs such as av_pixelutils_sad_fn.
+	//
+	// Keep it. WW-141 probe answer 4 measured that this guard, the sizeT flags
+	// in outputParams and the actualTypeName == "int" test in
+	// correctPointerArgTypeName are one unit. Drop the sugar here and
+	// actualTypeName falls back to "int", at which point
+	// correctPointerArgTypeName silently emits int for every size_t output
+	// parameter. Phase 5.2 owns the table entries; do not change one alone.
+	if td := t.Typedef(); td != nil && td.Name() != "" {
+		log.Println(indent, "Parsing type as typedef", td.Name())
+
+		return &IdentType{Name: td.Name()}
+	}
+
 	switch t.Kind() {
-	case clang.Type_Void:
-		log.Println(indent, "Parsing type", t.Spelling(), "as void")
+	case cc.Void:
+		log.Println(indent, "Parsing type as void")
+
 		return nil
 
-	case clang.Type_Int, clang.Type_UInt, clang.Type_Long, clang.Type_ULong, clang.Type_UChar, clang.Type_Char_S,
-		clang.Type_Float, clang.Type_Double, clang.Type_Enum, clang.Type_Record:
+	// The base kinds the IR names. They take the canonical C spelling with
+	// "unsigned " rewritten to a "u" prefix, so "unsigned int" is uint and
+	// "unsigned char" is uchar. Any other base kind falls through to the default
+	// branch and records a skip.
+	case cc.Int:
+		return &IdentType{Name: "int"}
 
-		// First try to use the original type spelling (preserves typedefs like uint8_t)
-		spelling := t.Spelling()
-		spelling = strings.TrimPrefix(spelling, "const ")
-		spelling = strings.TrimPrefix(spelling, "struct ")
-		spelling = strings.TrimPrefix(spelling, "enum ")
+	case cc.UInt:
+		return &IdentType{Name: "uint"}
 
-		// If the spelling is a standard typedef (ends with _t), use it directly
-		if spelling != "" && (strings.HasSuffix(spelling, "_t") || spelling == "size_t" || spelling == "ptrdiff_t") {
-			log.Println(indent, "Parsing type", t.Spelling(), "as ident (using typedef spelling)")
-			return &IdentType{
-				Name: spelling,
-			}
+	case cc.Long:
+		return &IdentType{Name: "long"}
+
+	case cc.ULong:
+		return &IdentType{Name: "ulong"}
+
+	case cc.Char:
+		return &IdentType{Name: "char"}
+
+	case cc.UChar:
+		return &IdentType{Name: "uchar"}
+
+	case cc.Float:
+		return &IdentType{Name: "float"}
+
+	case cc.Double:
+		return &IdentType{Name: "double"}
+
+	case cc.Ptr:
+		pt, ok := t.(*cc.PointerType)
+		if !ok {
+			return w.skipType(indent, t)
 		}
 
-		log.Println(indent, "Parsing type", t.Spelling(), "as ident")
-		name := t.CanonicalType().Spelling()
-		name = strings.TrimPrefix(name, "const ")
-		name = strings.TrimPrefix(name, "struct ")
-		name = strings.TrimPrefix(name, "enum ")
+		return &PointerType{Inner: w.parseType(indent, pt.Elem())}
 
-		if rest, ok := strings.CutPrefix(name, "unsigned "); ok {
-			name = fmt.Sprintf("u%v", rest)
+	case cc.Array:
+		at, ok := t.(*cc.ArrayType)
+		if !ok {
+			return w.skipType(indent, t)
 		}
 
-		if name == "" {
-			log.Panicln(indent, "No name")
+		inner := w.parseType(indent, at.Elem())
+
+		// Len is negative for an array of unspecified size, which the IR spells
+		// as a plain Array rather than a ConstArray.
+		if at.Len() < 0 {
+			return &Array{Inner: inner}
 		}
 
-		// Handle unnamed structs/unions by generating a synthetic name
-		if strings.Contains(name, " ") {
-			if strings.HasPrefix(name, "(unnamed") || strings.HasPrefix(name, "(anonymous") {
-				syntheticName := p.generateUnnamedStructName(t)
-				log.Println(indent, "Generated synthetic name for unnamed struct:", syntheticName)
+		return &ConstArray{Inner: inner, Size: at.Len()}
 
-				// Register the unnamed struct so it gets generated
-				p.registerUnnamedStruct(indent, t, syntheticName)
-
-				return &IdentType{
-					Name: syntheticName,
-				}
-			}
-
-			log.Panicln(indent, "name", name, "contains space")
+	case cc.Function:
+		ft, ok := t.(*cc.FunctionType)
+		if !ok {
+			return w.skipType(indent, t)
 		}
-
-		return &IdentType{
-			Name: name,
-		}
-
-	case clang.Type_Typedef:
-		log.Println(indent, "Parsing type", t.Spelling(), "as typedef")
-
-		name := t.DefName()
-		if name == "" {
-			log.Panicln(indent, "Unexpected def name", name)
-		}
-
-		return &IdentType{
-			Name: t.DefName(),
-		}
-
-	case clang.Type_Pointer:
-		log.Println(indent, "Parsing type", t.Spelling(), "as pointer")
-
-		inner := p.parseType(indent, t.PointeeType())
-
-		return &PointerType{
-			Inner: inner,
-		}
-
-	case clang.Type_Elaborated:
-		log.Println(indent, "Parsing type", t.Spelling(), "as elaborated")
-
-		dec := t.Declaration()
-
-		switch dec.Kind() {
-		case clang.Cursor_EnumDecl:
-			name := dec.Spelling()
-
-			if name == "" {
-				log.Panicln(indent, "No name")
-			}
-
-			if strings.HasPrefix(name, "enum (unnamed") {
-				dec.Visit(func(cursor, parent clang.Cursor) (status clang.ChildVisitResult) {
-					if cursor.Kind() != clang.Cursor_EnumConstantDecl {
-						reason := fmt.Sprintf("unhandled unnamed-enum child cursor kind %v", cursor.Kind().String())
-						log.Printf("%v skipped due to %v", indent, reason)
-						p.skips.Record(indent, reason)
-
-						return clang.ChildVisit_Continue
-					}
-
-					name := cursor.Spelling()
-
-					p.mod.constants[name] = &Constant{
-						Name:     name,
-						FromEnum: true,
-					}
-					p.mod.constantOrder = append(p.mod.constantOrder, name)
-
-					return clang.ChildVisit_Continue
-				})
-
-				return &IdentType{Name: "uint32_t", IsAnonEnum: true}
-			}
-
-			if strings.Contains(name, " ") {
-				log.Panicln(indent, "name", name, "contains space")
-			}
-
-			return &IdentType{Name: name}
-
-		case clang.Cursor_StructDecl, clang.Cursor_TypedefDecl:
-			name := dec.Spelling()
-
-			if name == "" {
-				log.Panicln(indent, "No name")
-			}
-
-			// Handle unnamed structs
-			if strings.Contains(name, " ") {
-				if strings.HasPrefix(name, "struct (unnamed") || strings.HasPrefix(name, "union (unnamed") {
-					syntheticName := p.generateUnnamedStructName(t)
-					log.Println(indent, "Generated synthetic name for unnamed struct:", syntheticName)
-
-					// Register the unnamed struct so it gets generated
-					p.registerUnnamedStruct(indent, t, syntheticName)
-
-					return &IdentType{
-						Name: syntheticName,
-					}
-				}
-
-				log.Panicln(indent, "name", name, "contains space")
-			}
-
-			return &IdentType{Name: name}
-
-		case clang.Cursor_UnionDecl:
-			u := &UnionType{}
-
-			dec.Visit(func(cursor, parent clang.Cursor) (status clang.ChildVisitResult) {
-				if cursor.Kind() == clang.Cursor_FieldDecl {
-					name := cursor.Spelling()
-					if name == "" {
-						log.Fatal("no field name")
-					}
-
-					ty := p.parseType(fmt.Sprintf("%v[%v]", indent, name), cursor.Type())
-
-					u.Fields = append(u.Fields, &Field{
-						Name: name,
-						Type: ty,
-					})
-				}
-
-				return clang.ChildVisit_Continue
-			})
-
-			return u
-
-		default:
-			reason := fmt.Sprintf("unhandled elaborated declaration kind %v", dec.Kind())
-			log.Printf("%v skipped due to %v", indent, reason)
-			p.skips.Record(indent, reason)
-
-			return nil
-		}
-
-	case clang.Type_FunctionProto:
-		log.Println(indent, "Parsing type", t.Spelling(), "as funcproto")
 
 		var args []Type
 
-		for i := int32(0); i < t.NumArgTypes(); i++ {
-			arg := t.ArgType(uint32(i))
-			parsed := p.parseType(indent, arg)
-			args = append(args, parsed)
+		for _, p := range ccParameters(ft) {
+			args = append(args, w.parseType(indent, ccParamType(p.Type())))
 		}
 
-		result := p.parseType(indent, t.ResultType())
+		return &FuncType{Args: args, Result: w.parseType(indent, ft.Result())}
 
-		return &FuncType{
-			Args:   args,
-			Result: result,
+	case cc.Enum:
+		return w.parseEnumType(indent, t)
+
+	case cc.Struct:
+		st, ok := t.(*cc.StructType)
+		if !ok {
+			return w.skipType(indent, t)
 		}
 
-	case clang.Type_ConstantArray:
-		log.Println(indent, "Parsing type", t.Spelling(), "as const array")
-		inner := p.parseType(indent, t.ArrayElementType())
-
-		return &ConstArray{
-			Inner: inner,
-			Size:  t.ArraySize(),
+		tag := st.Tag()
+		if name := tag.SrcStr(); name != "" {
+			return &IdentType{Name: name}
 		}
 
-	case clang.Type_IncompleteArray:
-		log.Println(indent, "Parsing type", t.Spelling(), "as array")
-		inner := p.parseType(indent, t.ArrayElementType())
+		return w.unnamedStructType(indent)
 
-		return &Array{
-			Inner: inner,
-		}
+	case cc.Union:
+		return w.parseUnionType(indent, t)
 
 	default:
-		log.Println(indent, "Parsing type", t.Spelling(), "as ???")
-		reason := fmt.Sprintf("unhandled type kind %v", t.Kind().Spelling())
-		log.Printf("%v skipped due to %v", indent, reason)
-		p.skips.Record(indent, reason)
-		return nil
+		return w.skipType(indent, t)
 	}
 }
 
-// generateUnnamedStructName creates a synthetic name for an unnamed struct/union
-func (p *Parser) generateUnnamedStructName(t clang.Type) string {
-	// Get the canonical spelling which contains location info
-	spelling := t.CanonicalType().Spelling()
+// parseEnumType routes "enum X" and "enum {...}" apart. cc/v4 has no node for
+// the difference, so the tag token decides.
+//
+// A tagged enum is its own IdentType. A tagless one is not a type the emitter
+// can name, so its members become loose constants and the field takes the
+// uint32_t/anonymous-enum form. The golden holds no anonymous-enum type today,
+// so this path adds nothing to constantOrder on the pinned headers.
+func (w *ccWalk) parseEnumType(indent string, t cc.Type) Type {
+	et, ok := t.(*cc.EnumType)
+	if !ok {
+		return w.skipType(indent, t)
+	}
 
-	// Fallback: try to parse location from the spelling string
-	// Format: "struct (unnamed at .../avformat.h:1022:5)"
-	if strings.Contains(spelling, "unnamed at ") {
-		parts := strings.Split(spelling, "unnamed at ")
-		if len(parts) == 2 {
-			locStr := strings.TrimSuffix(parts[1], ")")
-			locParts := strings.Split(locStr, ":")
-			if len(locParts) >= 3 {
-				filename := filepath.Base(locParts[0])
-				filename = strings.TrimSuffix(filename, filepath.Ext(filename))
-				filename = cleanIdentifier(filename)
-				line := locParts[len(locParts)-2]
-				col := locParts[len(locParts)-1]
+	tag := et.Tag()
+	if tag.Seq() != 0 {
+		return &IdentType{Name: tag.SrcStr()}
+	}
 
-				return fmt.Sprintf("UnnamedStruct_%s_%s_%s", filename, line, col)
-			}
+	log.Println(indent, "Treating unnamed enum as constants")
+
+	for _, en := range et.Enumerators() {
+		name := en.Token.SrcStr()
+		if name == "" {
+			continue
+		}
+
+		w.mod.constants[name] = &Constant{Name: name, FromEnum: true}
+		w.mod.constantOrder = append(w.mod.constantOrder, name)
+	}
+
+	return &IdentType{Name: "uint32_t", IsAnonEnum: true}
+}
+
+// parseUnionType expands a union written in place, field by field, tagged or
+// not. A union reached through a typedef never gets here: parseType returns its
+// typedef name before the kind switch.
+func (w *ccWalk) parseUnionType(indent string, t cc.Type) Type {
+	ut, ok := t.(*cc.UnionType)
+	if !ok {
+		return w.skipType(indent, t)
+	}
+
+	u := &UnionType{}
+
+	for i := 0; i < ut.NumFields(); i++ {
+		f := ut.FieldByIndex(i)
+		if f == nil {
+			continue
+		}
+
+		name := f.Name()
+		if name == "" {
+			failLog.Fatal("no field name")
+		}
+
+		u.Fields = append(u.Fields, &Field{
+			Name: name,
+			Type: w.parseType(fmt.Sprintf("%v[%v]", indent, name), f.Type()),
+		})
+	}
+
+	return u
+}
+
+// unnamedStructType names and registers the tagless struct written inline as
+// the base type of the field currently being walked, and returns a reference to
+// it.
+//
+// The position has to come from the syntax node structFields put on the walk.
+// A StructType carries no tag token when the record is tagless, and nothing
+// reachable from the type gives the "struct" keyword, so there is no other
+// route to a name.
+func (w *ccWalk) unnamedStructType(indent string) Type {
+	if w.anon == nil {
+		// Every tagless record reaches parseType through a field declaration,
+		// which always supplies the specifier. Panic rather than record a skip:
+		// the parse layer records none, and a silently unnamed record would
+		// reach the emitter as an identifier nothing declares.
+		log.Panicln(indent, "tagless record type with no specifier on the walk")
+	}
+
+	name := ccSyntheticStructName(w.anon)
+	if name == "" {
+		log.Panicln(indent, "No name")
+	}
+
+	w.registerUnnamedStruct(indent, w.anon, name)
+
+	return &IdentType{Name: name}
+}
+
+// ccSyntheticStructName builds the name a tagless record is registered under,
+// from the position of its "struct" or "union" keyword.
+//
+// The record has no name of its own, so the position supplies one: the file
+// stem, the line and the column. cc/v4 carries all three on the keyword token
+// (WW-141 probe answer 5), so libavformat/avformat.h:986:5 gives
+// UnnamedStruct_avformat_986_5, the string generator.go hardcodes in
+// skippedStructs.
+func ccSyntheticStructName(sus *cc.StructOrUnionSpecifier) string {
+	if sus == nil || sus.StructOrUnion == nil {
+		return ""
+	}
+
+	p := sus.StructOrUnion.Token.Position()
+
+	base := filepath.Base(p.Filename)
+	base = cleanIdentifier(strings.TrimSuffix(base, filepath.Ext(base)))
+
+	return fmt.Sprintf("UnnamedStruct_%s_%d_%d", base, p.Line, p.Column)
+}
+
+// registerUnnamedStruct adds a tagless record as a struct of its own, under the
+// synthetic name, so the emitter has a type to refer to. The golden pins all
+// three of the following:
+//
+//   - Typedefd is false. The record is not written as a typedef.
+//   - Comment is the unnamedStructComment literal. The record has no comment of
+//     its own to claim, so the matcher is never asked for one. Its fields do,
+//     and claim theirs the way any other field does.
+//   - CTypeName is left unset on every field, which is why the golden pins all
+//     three of this record's ctype values as empty.
+//
+// structOrder takes the entry where parseType first meets the type, which is
+// while the owning struct's own fields are being walked, so the synthetic record
+// lands immediately ahead of its owner.
+func (w *ccWalk) registerUnnamedStruct(indent string, sus *cc.StructOrUnionSpecifier, name string) {
+	if _, ok := w.mod.structs[name]; ok {
+		log.Println(indent, "Unnamed struct already registered:", name)
+
+		return
+	}
+
+	log.Println(indent, "Registering unnamed struct:", name)
+
+	s := &Struct{
+		Name:     name,
+		Typedefd: false,
+		Comment:  unnamedStructComment,
+	}
+
+	ccEachFieldDeclarator(sus, func(sd *cc.StructDeclarator, anon *cc.StructOrUnionSpecifier) {
+		dcl := sd.Declarator
+
+		prev := w.anon
+		w.anon = anon
+
+		s.Fields = append(s.Fields, &Field{
+			Name:     dcl.Name(),
+			Type:     w.parseType(fmt.Sprintf("%v[%v]", indent, dcl.Name()), dcl.Type()),
+			BitWidth: ccFieldBitWidth(sd),
+			Comment:  w.comment(dcl.NameTok(), 0),
+		})
+
+		w.anon = prev
+	})
+
+	w.mod.structs[name] = s
+	w.mod.structOrder = append(w.mod.structOrder, name)
+
+	log.Println(indent, "Successfully registered unnamed struct:", name, "with", len(s.Fields), "fields")
+}
+
+// skipType records an unhandled type kind and returns nil. The pinned headers
+// produce zero parse-layer skips, so this must never fire; it exists so a new
+// type kind shows up in skips.txt rather than as a silent void.
+func (w *ccWalk) skipType(indent string, t cc.Type) Type {
+	reason := fmt.Sprintf("unhandled type kind %v", t.Kind())
+	log.Printf("%v skipped due to %v", indent, reason)
+	w.skips.Record(indent, reason)
+
+	return nil
+}
+
+// ccParameters lists a function type's parameters, dropping the single unnamed
+// void of an empty parameter list. cc/v4's newFunctionType keeps "f(void)" as
+// one Void parameter and sets maxArgs to zero; the IR takes it as no arguments
+// at all, and the golden holds no "func()" expansion.
+func ccParameters(ft *cc.FunctionType) []*cc.Parameter {
+	fp := ft.Parameters()
+
+	if len(fp) == 1 {
+		if pt := fp[0].Type(); pt != nil && pt.Kind() == cc.Void {
+			return nil
 		}
 	}
 
-	// Last resort fallback
-	return fmt.Sprintf("UnnamedStruct_%d", len(p.mod.structs))
+	return fp
+}
+
+// ccParamType returns the parameter type to walk.
+//
+// cc/v4 decays an array or function parameter to a pointer, but the IR carries
+// the written type. So "uint8_t *data[4]" has to read as an array of pointers,
+// and a parameter of a function typedef as that typedef.
+//
+// The decayed pointer is tested for typedef sugar first, because the sugar sits
+// on different sides for different typedefs: AVUUID, an array typedef, can keep
+// its name on the pointer, while AVFifoCB, a function typedef, keeps it only on
+// the undecayed function type (WW-141 probe answer 4).
+func ccParamType(t cc.Type) cc.Type {
+	if t == nil {
+		return nil
+	}
+
+	if t.Typedef() != nil {
+		return t
+	}
+
+	return t.Undecay()
 }
 
 // cleanIdentifier converts a string into a valid Go identifier
@@ -423,54 +515,4 @@ func cleanIdentifier(s string) string {
 	s = strings.Trim(s, "_")
 
 	return s
-}
-
-// registerUnnamedStruct creates a struct definition for an unnamed struct
-func (p *Parser) registerUnnamedStruct(indent string, t clang.Type, syntheticName string) {
-	if _, exists := p.mod.structs[syntheticName]; exists {
-		log.Println(indent, "Unnamed struct already registered:", syntheticName)
-		return
-	}
-
-	log.Println(indent, "Registering unnamed struct:", syntheticName)
-
-	decl := t.Declaration()
-	if decl.Spelling() == "" {
-		log.Println(indent, "Warning: unnamed struct has no valid declaration")
-		return
-	}
-
-	s := &Struct{
-		Name:     syntheticName,
-		Typedefd: false,
-		Comment:  "Synthetic type for unnamed struct",
-	}
-
-	decl.Visit(func(cursor, parent clang.Cursor) clang.ChildVisitResult {
-		if cursor.Kind() == clang.Cursor_FieldDecl {
-			fieldName := cursor.Spelling()
-			if fieldName == "" {
-				log.Println(indent, "Warning: unnamed struct has field with no name")
-				return clang.ChildVisit_Continue
-			}
-
-			comment := processComment(cursor.RawCommentText())
-			fIndent := fmt.Sprintf("%v[%v]", indent, fieldName)
-			fieldType := p.parseType(fIndent, cursor.Type())
-
-			s.Fields = append(s.Fields, &Field{
-				Name:     fieldName,
-				Type:     fieldType,
-				BitWidth: cursor.FieldDeclBitWidth(),
-				Comment:  comment,
-			})
-		}
-
-		return clang.ChildVisit_Continue
-	})
-
-	p.mod.structs[syntheticName] = s
-	p.mod.structOrder = append(p.mod.structOrder, syntheticName)
-
-	log.Println(indent, "Successfully registered unnamed struct:", syntheticName, "with", len(s.Fields), "fields")
 }

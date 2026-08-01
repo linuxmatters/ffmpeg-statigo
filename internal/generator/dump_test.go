@@ -721,9 +721,9 @@ func recordBodyLines(line string) (int, error) {
 //
 // A golden that names the directory it was generated in matches only on that
 // machine, so TestIRGoldensMatchFreshRun would fail for everyone else and in
-// CI. libclang is the source of such paths: it spells an unnamed union or
-// struct with the absolute path of the header that declares it, which reaches
-// the structural stream through Field.CTypeName and is why
+// CI. The C type spellings are the source of such paths: an unnamed union or
+// struct is spelled with the absolute path of the header that declares it,
+// which reaches the structural stream through Field.CTypeName and is why
 // normalizeCTypeName exists.
 //
 // The assertion is on the generic property, not on one machine's string: the
@@ -749,8 +749,8 @@ func TestGoldensCarryNoMachinePaths(t *testing.T) {
 
 	needles := []string{"/home/", "/Users/", "/tmp/", repoRoot}
 
-	// libclang may report a header through its resolved path, which differs from
-	// the repo root when the checkout is reached through a symlink.
+	// A header may be reported through its resolved path, which differs from the
+	// repo root when the checkout is reached through a symlink.
 	if resolved, err := filepath.EvalSymlinks(repoRoot); err == nil && resolved != repoRoot {
 		needles = append(needles, resolved)
 	}
@@ -777,7 +777,7 @@ func TestGoldensCarryNoMachinePaths(t *testing.T) {
 	}
 }
 
-// TestIRGoldensMatchFreshRun regenerates all three goldens from a real libclang
+// TestIRGoldensMatchFreshRun regenerates all three goldens from a real cc/v4
 // parse and compares them byte for byte with the committed files. This is the
 // test that makes the goldens a parser fingerprint rather than a snapshot
 // someone has to remember to refresh: any parser change that moves the IR fails
@@ -843,7 +843,7 @@ func TestIRGoldensMatchFreshRun(t *testing.T) {
 
 	skips := &SkipCollector{}
 
-	m := clangParser{}.Parse(skips)
+	m := ccParser{}.Parse(skips)
 
 	if err := writeIRDump(tmp, m); err != nil {
 		t.Fatalf("writeIRDump: %v", err)

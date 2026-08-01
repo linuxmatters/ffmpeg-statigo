@@ -1,6 +1,5 @@
 package main
 
-import "C"
 import (
 	"fmt"
 	"log"
@@ -43,10 +42,9 @@ var primTypes = map[string]string{
 	"double":    "float64",
 }
 
-// getCType returns the correct C type name to use in C.xxx() conversions.
-// This handles cases where libclang might report the wrong type.
-// fieldCTypeOverrides provides explicit C type names for fields that libclang misreports.
-// This is needed when libclang can't find system headers and resolves typedefs incorrectly.
+// fieldCTypeOverrides provides explicit C type names for fields the parser
+// reports with the wrong type. It is needed when a system-header typedef
+// resolves to its underlying width instead of its written name.
 var fieldCTypeOverrides = map[string]map[string]string{
 	"AVPixFmtDescriptor": {
 		"nb_components": "uint8_t",
@@ -62,6 +60,14 @@ var fieldCTypeOverrides = map[string]map[string]string{
 var skippedStructs = map[string]bool{
 	// Anonymous struct inside AVStreamGroupTileGrid - CGO generates an internal
 	// name like "struct___12" which is unstable across compilations.
+	//
+	// WW-141 phase 3.3 decision: the hand-written binding in streamgroup.go
+	// stays, and this skip with it. The cc/v4 parser models the anonymous record
+	// natively, so the field could now be generated, but the reason the binding
+	// is hand-written is CGO's unstable naming of the type, not the parser, and
+	// that has not changed. Generating it would also break the byte-identical
+	// *.gen.go the parser swap is measured against, for nothing a caller can
+	// see. Revisit only if CGO gives the type a stable name.
 	"UnnamedStruct_avformat_986_5": true,
 }
 
@@ -104,18 +110,26 @@ var manuallyWrappedFields = map[string]map[string]bool{
 // outputParam describes how marshalPointerArg and marshalArg treat an
 // output-pointer parameter. Membership in outputParams marks the parameter as
 // an output pointer that marshalPointerArg must emit as
-// (*C.<type>)(unsafe.Pointer(p)). sizeT marks the size_t-width subset that
-// libclang misreports as int but whose FFmpeg headers declare size_t;
-// marshalArg rewrites those to size_t.
+// (*C.<type>)(unsafe.Pointer(p)). sizeT marks the size_t-width subset, which
+// correctPointerArgTypeName rewrites to size_t if the parser reported int.
+//
+// The sizeT flag has no effect today. WW-141 phase 5.2 measured all 16 entries
+// as *size_t already, under libclang and under cc/v4 alike, because parseType
+// keeps a spelling ending in _t. The flag, that _t guard and the
+// actualTypeName == "int" test in correctPointerArgTypeName are one unit; the
+// note on correctIdentArgTypeName says why none of the three may go alone.
 type outputParam struct {
 	sizeT bool
 }
 
 // outputParams enumerates the (function, parameter) pairs whose
-// primitive-pointer parameter is an output pointer. Mirrors the shape of
-// skippedFields. Seeded against the pinned FFmpeg headers. Entries with
-// sizeT: true are the size_t-width subset that libclang misreports as int
-// (replacing the former substring heuristic).
+// primitive-pointer parameter is an output pointer. Mirrors the form of
+// skippedFields. Seeded against the pinned FFmpeg headers.
+//
+// 68 entries across 61 functions, of which 16 carry sizeT. WW-141 phase 5.2
+// checked every entry against what the cc/v4 parser reports and found none
+// stale: each names a function and a parameter that still exist.
+//
 // Sorted by function name then parameter name for reviewability.
 var outputParams = map[string]map[string]outputParam{
 	"av_ambient_viewing_environment_alloc": {
@@ -312,16 +326,15 @@ var outputParams = map[string]map[string]outputParam{
 
 // getCType returns the C type name to emit after "C." in a generated cast.
 //
-// The special cases below exist because libclang and CGO disagree about type
-// identity. When libclang cannot fully resolve a system-header typedef it
-// canonicalises or misreports the underlying type, collapsing distinct named
-// types onto a same-width primitive. CGO then rejects the result: it treats
-// same-width named C types as distinct (C.char vs C.uint8_t, C.ptrdiff_t vs
-// C.int64_t, C.ulong/C.long vs C.uint64_t/C.int64_t), so a cast spelled with
-// the wrong-but-same-width name fails to compile. Each branch preserves the
-// exact C spelling the cast needs. This is essential complexity compensating
-// for libclang/CGO type-distinctness, not accidental cruft; the per-branch
-// notes record the specific type pair each guards.
+// The special cases below exist because the parser and CGO disagree about type
+// identity. Where a system-header typedef is not fully resolved, the parser
+// canonicalises the underlying type and collapses distinct named types onto a
+// same-width primitive. CGO then rejects the result: it treats same-width named
+// C types as distinct (C.char vs C.uint8_t, C.ptrdiff_t vs C.int64_t,
+// C.ulong/C.long vs C.uint64_t/C.int64_t), so a cast spelled with the
+// wrong-but-same-width name fails to compile. Each branch preserves the exact C
+// spelling the cast needs. This is essential complexity, not accidental cruft;
+// the per-branch notes record the specific type pair each guards.
 func getCType(typeName string, goType string) string {
 	// Special case: char should stay as char, not become uint8_t
 	// This is important for function parameters where char != uint8_t
@@ -381,7 +394,7 @@ func getCType(typeName string, goType string) string {
 
 	// For other types, map Go pseudo-types to CGO types
 	// Special case: uchar kept as its named C type; CGO treats C.uchar as
-	// distinct from C.uint8_t, so preserve the spelling libclang reported.
+	// distinct from C.uint8_t, so preserve the spelling the parser reported.
 	if typeName == "uchar" {
 		return "uchar"
 	}

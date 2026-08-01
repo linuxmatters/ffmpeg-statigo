@@ -64,7 +64,7 @@ func TestEnforceSkipCeilingExceeds(t *testing.T) {
 // the same check path the production run uses: Record() one symbol per
 // extra-skip slot above the ceiling, then call enforceSkipCeiling on
 // collector.Total(). This exercises the full collector+check contract
-// without invoking libclang or touching `*.h` headers.
+// without invoking the parser or touching `*.h` headers.
 func TestSkipCollectorThroughCeiling(t *testing.T) {
 	c := &SkipCollector{}
 
@@ -97,7 +97,7 @@ func TestSkipCollectorThroughCeiling(t *testing.T) {
 // target is absent from the parsed module, applyManualFixups returns a non-nil
 // error naming the missing symbol instead of nil-panicking on the assignment.
 // Each case omits exactly one target so the per-symbol diagnostic is exercised
-// independently. Builds the Module by hand so the test needs no libclang parse.
+// independently. Builds the Module by hand so the test needs no header parse.
 func TestApplyManualFixupsMissingTarget(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -141,7 +141,7 @@ func TestApplyManualFixupsMissingTarget(t *testing.T) {
 func TestApplyManualFixupsAppliesMutations(t *testing.T) {
 	m := &Module{
 		structs: map[string]*Struct{"AVRational": {ByValue: false}},
-		enums:   map[string]*Enum{"AVOptionType": {Comment: "stray libclang comment"}},
+		enums:   map[string]*Enum{"AVOptionType": {Comment: "stray parser comment"}},
 	}
 
 	if err := applyManualFixups(m); err != nil {

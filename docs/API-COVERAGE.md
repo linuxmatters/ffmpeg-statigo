@@ -63,7 +63,8 @@ are excluded.
 
 ## Reproduce
 
-Run inside the Nix dev shell (libclang 20.1.8, gcc 15.2.0):
+Run inside the Nix dev shell (gcc 15.2.0, which the parser probes for its
+predefined macros and include paths):
 
 ```sh
 # Print the skip summary (total markers + sorted unique symbols).

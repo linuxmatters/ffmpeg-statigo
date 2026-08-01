@@ -496,8 +496,8 @@ func TestGeneratorOutputParameters(t *testing.T) {
 
 	t.Run("av_cpb_properties_alloc compiles", func(t *testing.T) {
 		// Pins the size_t pointer fixup in internal/generator/generator.go.
-		// AVCpbPropertiesAlloc must keep its *uint64 size out-parameter; a libclang
-		// version that stops misreporting size_t* as int* would change the signature.
+		// AVCpbPropertiesAlloc must keep its *uint64 size out-parameter; a parser
+		// that stops preserving the size_t spelling would change the signature.
 		var size uint64
 		sizePtr := &size
 
@@ -512,7 +512,7 @@ func TestGeneratorOutputParameters(t *testing.T) {
 		// Pins the size_t buf_size fixup in internal/generator/generator.go.
 		// AVChannelName, AVChannelDescription and AVChannelLayoutDescribe must keep
 		// their bufSize uint64 parameter; passing a uint64 literal here fails to
-		// compile if libclang stops misreporting size_t as int.
+		// compile if the parser stops preserving the size_t spelling.
 		const bufLen uint = 64
 		bufSize := uint64(bufLen)
 
@@ -936,10 +936,10 @@ func TestGeneratorSkipPatterns(t *testing.T) {
 
 	t.Run("av_fopen_utf8_absent_from_bindings", func(t *testing.T) {
 		// Pins the av_fopen_utf8 skip in internal/generator/generator.go.
-		// libclang misreports FILE* as int* on Linux, so the generator skips
-		// av_fopen_utf8. If a future libclang stops misreporting the symbol,
-		// the binding would re-emerge and this assertion would fire, signalling
-		// that the skip site is now spurious and can be removed.
+		// The generator drops av_fopen_utf8 unconditionally, because its FILE*
+		// return read as int* on Linux. If the skip is removed the binding
+		// re-emerges and this assertion fires, signalling that the skip site is
+		// now spurious and can be removed.
 		data, err := os.ReadFile("functions.gen.go")
 		if err != nil {
 			t.Fatalf("read functions.gen.go: %v", err)

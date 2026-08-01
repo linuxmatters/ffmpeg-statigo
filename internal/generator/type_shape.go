@@ -226,6 +226,21 @@ func (g *Generator) classifyArgShape(fn *Function, arg *Param) argShape {
 	}
 }
 
+// correctIdentArgTypeName restores size_t on the four by-value parameters a
+// parser could report as int.
+//
+// Both branches are unreachable today, measured by WW-141 phase 5.2. parseType
+// keeps a spelling ending in _t (the _t guard in type.go), so all four already
+// read size_t under libclang and under cc/v4 alike; instrumenting the two
+// branches over a full generator run records zero hits. They are kept as the
+// guard against a parser that stops preserving the typedef.
+//
+// The _t guard in parseType, the sizeT flags in outputParams and the
+// actualTypeName == "int" test in correctPointerArgTypeName are one unit. Drop
+// the _t guard alone and these branches wake up and stay correct; drop these
+// alone and a later loss of the _t guard emits int in place of size_t with no
+// error. Change all three together or none, and check
+// git diff -- '*.gen.go' after each step.
 func (g *Generator) correctIdentArgTypeName(fn *Function, arg *Param, typeName string) string {
 	if typeName == "int" && arg.Name == "buf_size" {
 		if fn.Name == "av_channel_name" || fn.Name == "av_channel_description" ||
@@ -241,6 +256,13 @@ func (g *Generator) correctIdentArgTypeName(fn *Function, arg *Param, typeName s
 	return typeName
 }
 
+// correctPointerArgTypeName names the pointed-to type of an output-pointer
+// parameter, restoring size_t where a parser reports int.
+//
+// The actualTypeName == "int" test is unreachable today for the same reason as
+// correctIdentArgTypeName: all 16 sizeT entries already read *size_t, so the
+// test falls through to the plain return below. See the coupling note there
+// before changing this line, the sizeT flags, or the _t guard in parseType.
 func (g *Generator) correctPointerArgTypeName(fn *Function, arg *Param, ptr *PointerType) string {
 	ident, ok := ptr.Inner.(*IdentType)
 	if !ok {
