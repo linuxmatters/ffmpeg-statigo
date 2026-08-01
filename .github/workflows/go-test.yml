@@ -39,106 +39,52 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install libclang for generator
-        run: |
-          if [ "${{ matrix.os }}" = "linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y libclang-20-dev llvm-20-dev
-            # Link libclang-20 but do NOT add its include path. bootstrap
-            # vendors its own clang-c headers (via -I${SRCDIR}) where the
-            # pre-Clang-18 CXCursor_OMPArraySectionExpr still exists. Adding
-            # the system clang-20 headers shadows the vendored copy and drops
-            # that symbol, breaking the cgo compile. Enum values are stable,
-            # so the vendored headers link cleanly against libclang-20.
-            {
-              echo "CGO_LDFLAGS=-L/usr/lib/llvm-20/lib"
-              echo "LD_LIBRARY_PATH=/usr/lib/llvm-20/lib:$LD_LIBRARY_PATH"
-            } >> "$GITHUB_ENV"
-          elif [ "${{ matrix.os }}" = "darwin" ]; then
-            # On macOS, use LLVM 20 to match Linux environment
-            if ! LLVM_PREFIX=$(brew --prefix llvm@20 2>/dev/null) || [ ! -d "$LLVM_PREFIX" ]; then
-              brew_log=$(mktemp)
-              if ! brew install llvm@20 >"$brew_log" 2>&1; then
-                cat "$brew_log"
-                rm -f "$brew_log"
-                exit 1
-              fi
-              rm -f "$brew_log"
-              LLVM_PREFIX=$(brew --prefix llvm@20)
-            fi
-            # Link libclang-20 only; omit its include path so bootstrap's
-            # vendored clang-c headers are used (see the Linux note above).
-            {
-              echo "CGO_LDFLAGS=-L${LLVM_PREFIX}/lib"
-              echo "PATH=${LLVM_PREFIX}/bin:$PATH"
-              echo "DYLD_LIBRARY_PATH=${LLVM_PREFIX}/lib:$DYLD_LIBRARY_PATH"
-            } >> "$GITHUB_ENV"
-          fi
-
       - name: Download FFmpeg libraries
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
       - name: Build
-        run: go build -v .
+        run: go build -v ./...
 
       # Note: macOS may show linker warnings about version mismatches if the static
       # libraries were built on a newer macOS version than the runner.
       # These warnings are harmless - the libraries have MACOSX_DEPLOYMENT_TARGET=13.0
       - name: Test
-        run: go test -v . ./av/...
+        run: go test -v ./...
 
       # Race detector on one leg. The global callback registries and cgo
       # bridges are platform-independent, so one platform suffices.
       - name: Test (race)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
-        run: go test -race -count=1 . ./av/...
+        run: go test -race -count=1 ./...
 
-      # Lint on one leg. Scoped to . and ./av/... so the libclang-dependent
-      # generator package is never compiled by the linter (that broke CI before).
+      # Lint on one leg, over every package including internal/generator.
       - name: Lint
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
-          args: . ./av/...
+          args: ./...
 
-      # Regenerate the Go bindings from FFmpeg headers via libclang. bootstrap
-      # compiles against its vendored clang-c headers and links libclang-20
-      # (see the include-path note in the install step above).
+      # Regenerate the Go bindings from the FFmpeg headers. The parser is pure
+      # Go (modernc.org/cc/v4), so there is nothing to install; cc.NewConfig
+      # asks the runner's own C compiler for its predefined macros and include
+      # search paths.
       #
-      # Gated on linux/amd64 only — the canonical platform the committed
-      # *.gen.go are generated on. Other legs run it for visibility but are not
-      # gated: libclang output varies across platforms (e.g. linux/arm64), so
-      # drift or a toolchain hiccup there must not fail the build.
-      - name: Run generator (regeneration gate on linux/amd64)
-        env:
-          IS_GATE: ${{ matrix.os == 'linux' && matrix.arch == 'amd64' }}
-        run: |
-          echo "::notice::Generator compiles against bootstrap's vendored clang-c headers, linked against libclang-20"
-          if go run ./internal/generator > generator.log 2>&1; then
-            grep -v "cgo-gcc-prolog\|deprecated" generator.log || true
-          else
-            grep -v "cgo-gcc-prolog\|deprecated" generator.log || true
-            if [ "$IS_GATE" = "true" ]; then
-              echo "::error::generator failed to compile or run on linux/amd64"
-              exit 1
-            fi
-            echo "::warning title=Generator failed on ${{ matrix.os }}/${{ matrix.arch }}::non-gated platform; continuing."
-          fi
+      # Gated on every platform. The committed *.gen.go must come back
+      # byte-identical from all four legs, so a parse failure or a drift on any
+      # one of them fails the build. Output is not filtered: a warning that only
+      # appears on one platform is exactly what this step exists to surface.
+      - name: Run generator
+        run: go run ./internal/generator
 
       - name: Check for generated code differences
-        env:
-          IS_GATE: ${{ matrix.os == 'linux' && matrix.arch == 'amd64' }}
         run: |
           if git diff --quiet -- ./*.gen.go; then
             echo "::notice title=Generated Code Match on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings match committed version."
-          elif [ "$IS_GATE" = "true" ]; then
-            echo "::error title=Generated Code Drift on linux/amd64::Generated bindings differ from committed version. Run 'just generate' inside nix develop and commit the updated *.gen.go."
+          else
+            echo "::error title=Generated Code Drift on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ from committed version. Run 'just generate' and commit the updated *.gen.go."
             git diff -- ./*.gen.go
             exit 1
-          else
-            echo "::notice title=Generated Code Diff on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ; expected platform-specific variation, not gated."
-            git diff --stat -- ./*.gen.go
           fi

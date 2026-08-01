@@ -44,7 +44,7 @@
 - **Cross-compilation:** Set `GOOS` and `GOARCH` before downloading: `GOOS=darwin GOARCH=arm64 go run ./cmd/download-lib`
 - **Platform-specific builds:** Justfile auto-detects current platform, outputs to `lib/<os>_<arch>/`
 - **Binding regeneration:** Required after FFmpeg header changes — run `just generate`
-- **Nix-only regeneration:** Run `just generate` / `go run ./internal/generator` only inside `nix develop` (gcc 15.2.0). The parser itself is pure Go, but `cc.NewConfig` runs the host compiler to collect its predefined macros and its include search paths, so the generator is not hermetic and its output tracks whichever compiler is first on `PATH`. The pinned dev-shell compiler is what keeps that discovery reproducible. Pass `-v` for toolchain and include-path trace output.
+- **Regeneration:** Run `just generate` / `go run ./internal/generator` on any host with a C compiler. No libclang is needed. The parser is pure Go, but the run is not hermetic. `cc.NewConfig` runs the host compiler (`$CC`, else `cc`, else `gcc`) to read its predefined macros and its include search paths. On a glibc host, use gcc. gcc 13, 14 and 15 each emit byte-identical output. clang fails there, because it cannot parse glibc's `bits/stdio2.h`. `nix develop` supplies a known-good gcc. Pass `-v` for toolchain and include-path trace output.
 
 ## Key architecture
 

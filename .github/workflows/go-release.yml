@@ -43,16 +43,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
-      # Scoped to exclude internal/generator: it depends on libclang via
-      # Newbluecake/bootstrap, which references CXCursor_OMPArraySectionExpr,
-      # a cursor-kind symbol removed in Clang 18+. The generator is a
-      # development-only tool that consumers never compile, so the module
-      # release skips it. go-test.yml scopes its build/test/lint the same way.
       - name: Verify module builds
-        run: go list ./... | grep -v '/internal/generator$' | xargs -r go build -v
+        run: go build -v ./...
 
       - name: Run tests
-        run: go list ./... | grep -v '/internal/generator$' | xargs -r go test -v
+        run: go test -v ./...
 
       - name: Create tag (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch'

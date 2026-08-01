@@ -277,9 +277,9 @@ The root package has three source tiers. The generator skips C symbols it cannot
 ## Generator
 
 > [!IMPORTANT]
-> Run `just generate` only inside `nix develop`. The generator asks the host compiler for its predefined macros and include search paths, and relies on gcc 15 for that. Running it outside the Nix shell produces incorrect or incomplete output.
+> `just generate` needs a C compiler on `PATH`, not libclang. On a glibc host, use gcc. gcc 13, 14 and 15 each emit byte-identical output. clang fails there, because it cannot parse glibc's `bits/stdio2.h`. `nix develop` supplies a known-good gcc.
 
-`internal/generator/` parses FFmpeg headers with [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C frontend, and emits the `*.gen.go` files. The package needs no cgo and builds under `CGO_ENABLED=0`, but it is not hermetic: `cc.NewConfig` runs the host compiler for the predefined macros and the include search list, so a different compiler can move the output. That is why regeneration is only supported inside `nix develop`. The correctness gate has two halves. The first is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty. The second is the IR goldens below, which name what moved when that diff is not empty.
+`internal/generator/` parses FFmpeg headers with [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C frontend, and emits the `*.gen.go` files. The package needs no cgo and builds under `CGO_ENABLED=0`. It is not hermetic: `cc.NewConfig` runs the host compiler (`$CC`, else `cc`, else `gcc`) for the predefined macros and the include search list, so a different compiler can move the output. The correctness gate has two halves. The first is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty. CI runs that same check on linux/amd64, linux/arm64, darwin/amd64 and darwin/arm64, and a drift on any one of them fails the build. The second is the IR goldens below, which name what moved when that diff is not empty.
 
 Parsing sits behind the `HeaderParser` interface in `headerparser.go`: `Parse` returns the `*Module` the emitter reads, and `Version` names the backend and its module version in the verbose run log. `ccParser` in `ccparser.go` is the only implementation, and the `cc/v4` import is confined to `ccparser.go`, `type.go`, `ctypename.go` and `hostcpp.go`, so a second backend can be added without touching the emitter.
 
@@ -290,7 +290,7 @@ A byte diff across the five `*.gen.go` files runs to tens of thousands of lines,
 `-dump-ir` is additive on a normal run: it still emits the five `*.gen.go` files exactly as before, and also writes the three goldens.
 
 ```sh
-nix develop -c go run ./internal/generator -dump-ir
+go run ./internal/generator -dump-ir
 ```
 
 | File | Contents | A diff means |
