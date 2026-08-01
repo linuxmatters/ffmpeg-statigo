@@ -735,17 +735,7 @@ func recordBodyLines(line string) (int, error) {
 // marked parallel: TestIRGoldensMatchFreshRun changes the working directory for
 // the whole process.
 func TestGoldensCarryNoMachinePaths(t *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-
-	// go test runs with the package directory as the working directory, so the
-	// repo root is two levels up.
-	repoRoot, err := filepath.Abs(filepath.Join(cwd, "..", ".."))
-	if err != nil {
-		t.Fatalf("resolve repo root: %v", err)
-	}
+	repoRoot := testRepoRoot(t)
 
 	needles := []string{"/home/", "/Users/", "/tmp/", repoRoot}
 
@@ -791,36 +781,7 @@ func TestGoldensCarryNoMachinePaths(t *testing.T) {
 // The chdir puts the five *.gen.go files Gen writes into a temporary directory,
 // where they are discarded, so a test run cannot touch the committed bindings.
 func TestIRGoldensMatchFreshRun(t *testing.T) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-
-	// go test runs with the package directory as the working directory, so the
-	// repo root is two levels up.
-	repoRoot, err := filepath.Abs(filepath.Join(cwd, "..", ".."))
-	if err != nil {
-		t.Fatalf("resolve repo root: %v", err)
-	}
-
-	includeDir := filepath.Join(repoRoot, "include")
-	if _, err := os.Stat(includeDir); err != nil {
-		t.Skipf("FFmpeg headers absent at %s: %v\ninitialise them with: git submodule update --init --recursive", includeDir, err)
-	}
-
-	// AVLibPath is resolved at package init against the test's working
-	// directory, so it points at internal/generator/include, which does not
-	// exist. Point it at the real header tree for the duration of this test.
-	originalLibPath := AVLibPath
-	AVLibPath = includeDir
-
-	t.Cleanup(func() { AVLibPath = originalLibPath })
-
-	// A real parse logs one line per type it visits and would drown go test -v.
-	originalLogOutput := log.Writer()
-
-	log.SetOutput(io.Discard)
-	t.Cleanup(func() { log.SetOutput(originalLogOutput) })
+	repoRoot := setupHeaderParse(t)
 
 	// Read the committed goldens before the chdir, while the relative package
 	// paths still resolve.
@@ -883,4 +844,58 @@ func TestIRGoldensMatchFreshRun(t *testing.T) {
 			"if the parser changed on purpose, regenerate with: %s",
 			name, d.num, len(diff), truncate(d.want), truncate(d.got), regenerateCmd)
 	}
+}
+
+// testRepoRoot returns the absolute path of the checkout root.
+//
+// go test runs with the package directory as the working directory, so the
+// repo root is two levels up.
+func testRepoRoot(t *testing.T) string {
+	t.Helper()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+
+	repoRoot, err := filepath.Abs(filepath.Join(cwd, "..", ".."))
+	if err != nil {
+		t.Fatalf("resolve repo root: %v", err)
+	}
+
+	return repoRoot
+}
+
+// setupHeaderParse prepares a test that runs a real parse over the committed
+// FFmpeg headers and returns the repo root. It skips the test when those
+// headers are absent.
+//
+// AVLibPath is resolved at package init against the test's working directory,
+// so it points at internal/generator/include, which does not exist. It is
+// repointed at the real header tree for the duration of the test.
+//
+// A real parse logs one line per type it visits and would drown go test -v, so
+// the log is discarded too. Both values are restored through t.Cleanup, and
+// both are process-wide, so no caller may be marked parallel.
+func setupHeaderParse(t *testing.T) string {
+	t.Helper()
+
+	repoRoot := testRepoRoot(t)
+
+	includeDir := filepath.Join(repoRoot, "include")
+	if _, err := os.Stat(includeDir); err != nil {
+		t.Skipf("FFmpeg headers absent at %s: %v\ninitialise them with: git submodule update --init --recursive", includeDir, err)
+	}
+
+	originalLibPath := AVLibPath
+	AVLibPath = includeDir
+
+	t.Cleanup(func() { AVLibPath = originalLibPath })
+
+	originalLogOutput := log.Writer()
+
+	log.SetOutput(io.Discard)
+	t.Cleanup(func() { log.SetOutput(originalLogOutput) })
+
+	return repoRoot
 }

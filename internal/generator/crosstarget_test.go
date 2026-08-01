@@ -1,8 +1,6 @@
 package main
 
 import (
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -91,22 +89,7 @@ func TestGeneratorIRIsIdenticalAcrossTargets(t *testing.T) {
 		t.Skipf("no second target for host %s/%s among the four claimed targets", runtime.GOOS, runtime.GOARCH)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-
-	// go test runs with the package directory as the working directory, so the
-	// repo root is two levels up.
-	repoRoot, err := filepath.Abs(filepath.Join(cwd, "..", ".."))
-	if err != nil {
-		t.Fatalf("resolve repo root: %v", err)
-	}
-
-	includeDir := filepath.Join(repoRoot, "include")
-	if _, err := os.Stat(includeDir); err != nil {
-		t.Skipf("FFmpeg headers absent at %s: %v\ninitialise them with: git submodule update --init --recursive", includeDir, err)
-	}
+	repoRoot := setupHeaderParse(t)
 
 	// Read the committed goldens before the chdir, while the relative package
 	// paths still resolve.
@@ -115,21 +98,6 @@ func TestGeneratorIRIsIdenticalAcrossTargets(t *testing.T) {
 		comments:  readGolden(t, repoRoot, "comments.txt"),
 		skips:     readGolden(t, repoRoot, "skips.txt"),
 	}
-
-	// AVLibPath is resolved at package init against the test's working
-	// directory, so it points at internal/generator/include, which does not
-	// exist. Point it at the real header tree, as TestIRGoldensMatchFreshRun
-	// does.
-	originalLibPath := AVLibPath
-	AVLibPath = includeDir
-
-	t.Cleanup(func() { AVLibPath = originalLibPath })
-
-	// A real parse logs one line per type it visits and would drown go test -v.
-	originalLogOutput := log.Writer()
-
-	log.SetOutput(io.Discard)
-	t.Cleanup(func() { log.SetOutput(originalLogOutput) })
 
 	// Gen writes the five *.gen.go files relative to the working directory, so
 	// they land in a temporary directory and are discarded. A test run cannot
