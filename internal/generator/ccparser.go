@@ -64,9 +64,9 @@ func (ccParser) Parse(skips *SkipCollector) *Module {
 		failLog.Fatalf("cc/v4 configuration failed: %v", err)
 	}
 
-	// The verbose run log carries the discovered include paths. The config is
-	// built here rather than in run, so the trace is written here too.
-	log.Printf("include paths: %v", hostIncludePaths(cfg))
+	// The verbose run log carries the include paths. The config is built here
+	// rather than in run, so the trace is written here too.
+	log.Printf("include paths: %v", cfg.SysIncludePaths)
 
 	w := &ccWalk{
 		mod: &Module{

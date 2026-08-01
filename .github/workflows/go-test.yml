@@ -68,9 +68,10 @@ jobs:
           args: ./...
 
       # Regenerate the Go bindings from the FFmpeg headers. The parser is pure
-      # Go (modernc.org/cc/v4), so there is nothing to install; cc.NewConfig
-      # asks the runner's own C compiler for its predefined macros and include
-      # search paths.
+      # Go (modernc.org/cc/v4), so there is nothing to install, and the parse is
+      # hermetic: it reads the committed headers under include/ and the stub C
+      # library headers embedded from internal/generator/sysinclude/, never the
+      # runner's own compiler or system headers.
       #
       # Gated on every platform. The committed *.gen.go must come back
       # byte-identical from all four legs, so a parse failure or a drift on any
