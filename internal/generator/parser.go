@@ -221,11 +221,21 @@ func sentinelParse() {
 	}
 }
 
+// clangParser is the libclang-backed HeaderParser implementation. Parser
+// remains the per-file cursor visitor state.
+type clangParser struct{}
+
+// Version reports the libclang build in use. The libclang string already names
+// the backend, so it is returned unchanged.
+func (clangParser) Version() string { return clang.GetClangVersion() }
+
 // Parse drives the libclang parse over the pinned FFmpeg headers. The skips
 // collector is the same instance Gen receives, so parse-layer unhandled-shape
 // skips land in the run-summary alongside codegen-layer skips. A nil skips is
 // tolerated: SkipCollector.Record is nil-safe.
-func Parse(skips *SkipCollector) *Module {
+//
+// It is the HeaderParser implementation for the libclang backend.
+func (clangParser) Parse(skips *SkipCollector) *Module {
 	p := &Parser{
 		mod: &Module{
 			functions: make(map[string]*Function),
