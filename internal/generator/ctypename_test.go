@@ -161,11 +161,7 @@ func ctypeProbeFields(t *testing.T, path string) map[string]string {
 
 	cfg, err := newCCConfig(runtime.GOOS, runtime.GOARCH)
 	if err != nil {
-		if os.Getenv("NIX_CC") == "" {
-			t.Skipf("no host C compiler configuration available: %v", err)
-		}
-
-		t.Fatalf("newCCConfig under NIX_CC: %v", err)
+		t.Fatalf("newCCConfig: %v", err)
 	}
 
 	ast, err := ccTranslate(cfg, path)

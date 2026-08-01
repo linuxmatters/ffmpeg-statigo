@@ -277,11 +277,19 @@ The root package has three source tiers. The generator skips C symbols it cannot
 ## Generator
 
 > [!IMPORTANT]
-> `just generate` needs a C compiler on `PATH`, not libclang. On a glibc host, use gcc. gcc 13, 14 and 15 each emit byte-identical output. clang fails there, because it cannot parse glibc's `bits/stdio2.h`. `nix develop` supplies a known-good gcc.
+> `just generate` needs neither libclang nor a C compiler. The parse is hermetic, so any host produces the same bytes.
 
-`internal/generator/` parses FFmpeg headers with [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C frontend, and emits the `*.gen.go` files. The package needs no cgo and builds under `CGO_ENABLED=0`. It is not hermetic: `cc.NewConfig` runs the host compiler (`$CC`, else `cc`, else `gcc`) for the predefined macros and the include search list, so a different compiler can move the output. The correctness gate has two halves. The first is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty. CI runs that same check on linux/amd64, linux/arm64, darwin/amd64 and darwin/arm64, and a drift on any one of them fails the build. The second is the IR goldens below, which name what moved when that diff is not empty.
+`internal/generator/` parses FFmpeg headers with [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C frontend, and emits the `*.gen.go` files. The package needs no cgo and builds under `CGO_ENABLED=0`.
 
-Parsing sits behind the `HeaderParser` interface in `headerparser.go`: `Parse` returns the `*Module` the emitter reads, and `Version` names the backend and its module version in the verbose run log. `ccParser` in `ccparser.go` is the only implementation, and the `cc/v4` import is confined to `ccparser.go`, `type.go`, `ctypename.go` and `hostcpp.go`, so a second backend can be added without touching the emitter.
+Every file the parse reads is either a committed FFmpeg header under `include/` or one of the eleven stub C library headers in `internal/generator/sysinclude/`, which `ccconfig.go` embeds and serves through `cc.Config.FS`. `cc.Config.Predefined` is a literal in `ccconfig.go` rather than a `cc -dM -E -` dump, and the target `(GOOS, GOARCH)` pair selects a `cc.NewABI` table and nothing else. The host's compiler and system headers take no part.
+
+That matters because FFmpeg's own headers change shape according to what the C library defines. `libavutil/mathematics.h` wraps all 26 `M_*` constants in an `#ifndef`, so every name the C library leaves undefined becomes a macro of an FFmpeg header and enters the bindings. glibc defines all 26 under `_GNU_SOURCE`; the Apple SDK defines only the 13 without the `f` suffix. On the host route that alone put 13 extra constants in the macOS output. glibc's aarch64 `bits/math-vector.h` was worse: `cc/v4` cannot parse it, so no header translated on linux/arm64 at all.
+
+If a future FFmpeg release includes a C library header the stubs do not cover, the parse fails and names the header. Add the stub; do not reach for the host's copy.
+
+The correctness gate has two halves. The first is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty. CI runs that same check on linux/amd64, linux/arm64, darwin/amd64 and darwin/arm64, and a drift on any one of them fails the build. `TestGeneratorIRIsIdenticalAcrossTargets` runs all four targets from whichever host it is on, so a target-dependent change fails locally rather than only in CI. The second half is the IR goldens below, which name what moved when that diff is not empty.
+
+Parsing sits behind the `HeaderParser` interface in `headerparser.go`: `Parse` returns the `*Module` the emitter reads, and `Version` names the backend and its module version in the verbose run log. `ccParser` in `ccparser.go` is the only implementation, and the `cc/v4` import is confined to `ccparser.go`, `type.go`, `ctypename.go` and `ccconfig.go`, so a second backend can be added without touching the emitter.
 
 ### IR goldens
 

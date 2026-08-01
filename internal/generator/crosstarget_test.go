@@ -10,8 +10,9 @@ import (
 )
 
 // crossTargets are the four platforms WW-141 claims produce identical generator
-// output. Only the pair matching the host operating system can be measured on
-// any one machine; the test below records why.
+// output. Every one of them is measurable on every host: the parse reads only
+// the committed FFmpeg headers and the embedded stubs, so no host's C library
+// can take part.
 var crossTargets = []struct{ goos, goarch string }{
 	{"linux", "amd64"},
 	{"linux", "arm64"},
@@ -19,16 +20,23 @@ var crossTargets = []struct{ goos, goarch string }{
 	{"darwin", "arm64"},
 }
 
-// crossTargetsToRun returns the entries of crossTargets this host can measure:
-// the host's own operating system, minus the host pair itself, which
+// crossTargetsToRun returns every target except the host pair itself, which
 // TestIRGoldensMatchFreshRun already runs against the same goldens.
+//
+// It used to return only the pairs sharing the host's operating system, because
+// on the host-header route a darwin target on a Linux host preprocessed glibc
+// under Apple's ABI and did not even translate. That restriction hid the defect
+// this test exists to catch: the darwin legs of CI produced 13 M_* constants a
+// Linux run never did, and no Linux run could see it.
 func crossTargetsToRun() []struct{ goos, goarch string } {
 	var out []struct{ goos, goarch string }
 
 	for _, tgt := range crossTargets {
-		if tgt.goos == runtime.GOOS && tgt.goarch != runtime.GOARCH {
-			out = append(out, tgt)
+		if tgt.goos == runtime.GOOS && tgt.goarch == runtime.GOARCH {
+			continue
 		}
+
+		out = append(out, tgt)
 	}
 
 	return out
@@ -51,24 +59,23 @@ func crossTargetsToRun() []struct{ goos, goarch string } {
 // cross-target run that also matches them puts both targets on the same bytes
 // without parsing the host target twice.
 //
-// What it proves: the parsed Module and the skip set do not vary with the target
-// ABI. That is the risk worth guarding. cc.NewConfig(goos, goarch, ...) picks
-// cc/v4's ABI table, and the four pairs differ in it - char is unsigned on
-// linux/arm64, and long double is 8 bytes rather than 16 on darwin/arm64 - yet
-// the generator never asks for a size or an offset. It emits an enum constant
-// and a macro alike as `= C.NAME` (generator.go), so cgo resolves every number
-// at build time. This test keeps that true.
+// What it proves: the parsed Module and the skip set do not vary with the
+// target. cc.NewABI(goos, goarch) picks cc/v4's ABI table, and the four pairs
+// differ in it - char is unsigned on linux/arm64, and long double is 8 bytes
+// rather than 16 on darwin/arm64 - yet the generator never asks for a size or an
+// offset. It emits an enum constant and a macro alike as `= C.NAME`
+// (generator.go), so cgo resolves every number at build time. This test keeps
+// that true.
 //
-// What it does NOT prove: anything about the other operating system. The include
-// paths always come from the host compiler, so a darwin target on a Linux host
-// would preprocess glibc headers under Apple's ABI. That is not a macOS parse
-// and it does not even translate: cc/v4's darwin ABI tables carry no _Float32,
-// _Float64 or _Float64x kind, while glibc's math.h declares prototypes for all
-// three, so every header fails its type check with "_Float32 not supported on
-// darwin/arm64". The test therefore runs only targets sharing the host's
-// operating system. A Linux run leaves both darwin targets untested and a macOS
-// run leaves both linux targets untested; covering all four needs a run on each
-// operating system.
+// It covers all four targets on any host, which is the whole point of the
+// hermetic configuration in ccconfig.go: the target selects an ABI table and
+// nothing else, so there is no operating system left for a host to be wrong
+// about. On the host-header route it could only run the pairs sharing the host's
+// operating system, and a Linux run therefore proved nothing about either darwin
+// leg.
+//
+// What it still does NOT prove: that the generator runs at all on a macOS or
+// arm64 machine. That needs the CI matrix.
 //
 // The comparison is live, not vacuous. The IR is not ABI-proof everywhere:
 // FF_PAD_STRUCTURE sizes AVBPrint.reserved_padding from sizeof expressions, so

@@ -44,7 +44,7 @@
 - **Cross-compilation:** Set `GOOS` and `GOARCH` before downloading: `GOOS=darwin GOARCH=arm64 go run ./cmd/download-lib`
 - **Platform-specific builds:** Justfile auto-detects current platform, outputs to `lib/<os>_<arch>/`
 - **Binding regeneration:** Required after FFmpeg header changes — run `just generate`
-- **Regeneration:** Run `just generate` / `go run ./internal/generator` on any host with a C compiler. No libclang is needed. The parser is pure Go, but the run is not hermetic. `cc.NewConfig` runs the host compiler (`$CC`, else `cc`, else `gcc`) to read its predefined macros and its include search paths. On a glibc host, use gcc. gcc 13, 14 and 15 each emit byte-identical output. clang fails there, because it cannot parse glibc's `bits/stdio2.h`. `nix develop` supplies a known-good gcc. Pass `-v` for toolchain and include-path trace output.
+- **Regeneration:** Run `just generate` / `go run ./internal/generator` on any host. No libclang and no C compiler are needed. The parser is pure Go and the run is hermetic: every file it reads is either a committed FFmpeg header under `include/` or a stub C library header embedded from `internal/generator/sysinclude/`. The host's compiler, its predefined macros and its system headers take no part, so the output is the same on every platform. Pass `-v` for include-path trace output.
 
 ## Key architecture
 
@@ -74,7 +74,7 @@
 - **Libraries:** `lib/<os>_<arch>/` contains platform-specific static libraries (gitignored)
 - **Builder:** `internal/builder/` compiles FFmpeg + 20 dependencies from source
 - **Generator:** `internal/generator/` parses headers with `modernc.org/cc/v4`, a pure-Go C frontend, and outputs Go bindings; parsing sits behind the `HeaderParser` interface (`headerparser.go`), whose only implementation is `ccParser` in `ccparser.go`
-  - **Parser files:** `ccparser.go` walks the declarations (which symbols exist, under which names, in which order); `type.go` builds the type trees; `ctypename.go` spells `Field.CTypeName`; `comments.go` holds the comment table and the rules that claim a comment for a declaration; `hostcpp.go` builds the `cc/v4` config and discovers the host include paths
+  - **Parser files:** `ccparser.go` walks the declarations (which symbols exist, under which names, in which order); `type.go` builds the type trees; `ctypename.go` spells `Field.CTypeName`; `comments.go` holds the comment table and the rules that claim a comment for a declaration; `ccconfig.go` builds the hermetic `cc/v4` config and serves the stub C library headers in `sysinclude/`
   - **IR goldens:** `-dump-ir` writes three committed files to `internal/generator/testdata/ir/` so a parser change can be read as a `diff` with the emitter out of the loop; `TestIRGoldensMatchFreshRun` (`dump_test.go`) reparses the headers in a temp directory and fails on any byte difference, naming the first differing line
   - `structure.txt`: the parsed `Module` snapshotted at the `HeaderParser` boundary, before `applyManualFixups`; a diff means the parsed form moved (order slices, expanded type trees, `CTypeName`, `BitWidth`, `Variadic`, `Typedefd`, `ByValue`, param names)
   - `comments.txt`: post-`processComment` text per symbol; a diff means comment extraction moved

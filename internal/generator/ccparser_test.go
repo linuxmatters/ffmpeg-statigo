@@ -108,11 +108,11 @@ func writeTestHeader(t *testing.T, dir, name, src string) string {
 // the offending header in its report, so a stack trace out of a dependency is
 // not an acceptable outcome.
 //
-// The two panic cases are real C that the host compiler accepts:
+// The two panic cases are real C that any compiler accepts:
 //
 //   - #ifdef __STDC_MB_MIGHT_NEQ_WC__ reaches cpp.go:1369. The name sits in
 //     cc/v4's protectedMacros table but has no arm in the switch that follows,
-//     and glibc does not predefine it, so an ordinary feature test for a C99
+//     and ccPredefined does not define it, so an ordinary feature test for a C99
 //     standard macro falls straight through to todo().
 //   - A function-like macro invocation whose closing parenthesis never arrives
 //     reaches cpp.go:1497, where parseMacroArgs runs into end of file.
@@ -201,30 +201,18 @@ func translateNoPanic(t *testing.T, cfg *cc.Config, path string) (ast *cc.AST, e
 	return ccTranslate(cfg, path)
 }
 
-// TestCCConfigPinsDialectAndDefines pins the dialect and the feature-test
-// macros in the config newCCConfig builds, so a toolchain bump that changes
-// what the host compiler defaults to fails here instead of quietly changing
-// which declarations the generator can see.
+// TestCCConfigTranslatesEveryTarget parses one real header for each of the four
+// supported targets, so a configuration that cannot translate FFmpeg at all
+// fails here with a named target and cause rather than only in the golden run.
 //
-// The assertions read cfg.Predefined, which is the `cc -dM -E -` dump cc/v4
-// takes from the real host compiler with the real flags. That is the effect of
-// the flags rather than the flag strings themselves, so it stays honest if the
-// constants are refactored, and it distinguishes every way the dialect can
-// drift. Measured on the pinned dev shell (gcc 15.3.0), over the 120 headers in
-// files:
+// Every target runs on every host. That is new: on the host-header route a
+// darwin target on a Linux host preprocessed glibc under Apple's ABI and failed
+// its type check on _Float32, and the linux/arm64 target failed to parse glibc's
+// aarch64 bits/math-vector.h. Neither host header is in the parse any more.
 //
-//	-std=gnu11 (current)  120 headers translate, 3307 function names in scope
-//	-std=c11 or -std=c17  defines __STRICT_ANSI__
-//	no -std at all        62 of 120 headers fail: stddef.h "undefined: nullptr"
-//
-// What it does not catch: the exact symbol count. With ccDefines in place,
-// -std=c11 reaches the same 3307 names as -std=gnu11, because _GNU_SOURCE
-// restores everything __STRICT_ANSI__ hides in glibc. Drop ccDefines and the
-// gap opens to 1997 against 1742, which is where the issue's 1955-against-1714
-// figure comes from. So the dialect and the defines are one unit and are pinned
-// together here. The counts themselves are pinned exactly, and far harder, by
-// TestIRGoldensMatchFreshRun.
-func TestCCConfigPinsDialectAndDefines(t *testing.T) {
+// av_frame_alloc is a long-lived public symbol, so this does not pin the FFmpeg
+// version.
+func TestCCConfigTranslatesEveryTarget(t *testing.T) {
 	root := commentHeaderRoot(t)
 
 	// AVLibPath is resolved at package init against the test's working
@@ -236,51 +224,30 @@ func TestCCConfigPinsDialectAndDefines(t *testing.T) {
 
 	t.Cleanup(func() { AVLibPath = originalLibPath })
 
-	cfg, err := newCCConfig(runtime.GOOS, runtime.GOARCH)
-	if err != nil {
-		t.Fatalf("newCCConfig: %v", err)
-	}
-
-	// -std=gnu11 selects C11, so the host compiler reports 201112L. A dropped
-	// flag gives the compiler default (202311L on gcc 15), which is the
-	// nullptr failure.
-	if got, ok := predefinedMacro(cfg.Predefined, "__STDC_VERSION__"); !ok || got != "201112L" {
-		t.Errorf("__STDC_VERSION__ = %q (defined: %v), want %q; the parse config no longer selects C11", got, ok, "201112L")
-	}
-
-	// The gnu prefix is the other half. -std=c11 and -std=c17 also report
-	// 201112L and 201710L respectively, but define __STRICT_ANSI__, which hides
-	// the glibc declarations FFmpeg's headers reach through.
-	if got, ok := predefinedMacro(cfg.Predefined, "__STRICT_ANSI__"); ok {
-		t.Errorf("__STRICT_ANSI__ is defined as %q; the parse config uses a strict ISO dialect instead of %s", got, ccStd)
-	}
-
-	for _, name := range []string{"_GNU_SOURCE", "_DEFAULT_SOURCE", "__STDC_CONSTANT_MACROS"} {
-		if _, ok := predefinedMacro(cfg.Predefined, name); !ok {
-			t.Errorf("%s is not defined; ccDefines did not reach the host compiler, so glibc's math.h leaves M_Ef and its siblings undefined and FFmpeg's own fallbacks add macros to the constant table", name)
-		}
-	}
-
-	// A live parse of one real header, so a config that cannot translate FFmpeg
-	// at all fails here with a named cause rather than only in the golden run.
-	// av_frame_alloc is a long-lived public symbol, so this does not pin the
-	// FFmpeg version.
 	header := filepath.Join(root, "libavutil", "frame.h")
 
-	ast, err := ccTranslate(cfg, header)
-	if err != nil {
-		t.Fatalf("ccTranslate(libavutil/frame.h) under %s: %v", ccStd, err)
-	}
+	for _, tgt := range crossTargets {
+		t.Run(tgt.goos+"/"+tgt.goarch, func(t *testing.T) {
+			cfg, err := newCCConfig(tgt.goos, tgt.goarch)
+			if err != nil {
+				t.Fatalf("newCCConfig: %v", err)
+			}
 
-	if !declaresFunction(ast, "av_frame_alloc") {
-		t.Errorf("libavutil/frame.h translated but declares no function av_frame_alloc; the parse config reaches fewer symbols than it should")
+			ast, err := ccTranslate(cfg, header)
+			if err != nil {
+				t.Fatalf("ccTranslate(libavutil/frame.h) under %s: %v", ccStd, err)
+			}
+
+			if !declaresFunction(ast, "av_frame_alloc") {
+				t.Errorf("libavutil/frame.h translated but declares no function av_frame_alloc; the parse config reaches fewer symbols than it should")
+			}
+		})
 	}
 }
 
-// predefinedMacro looks name up in a `cc -dM -E -` dump and returns its
-// replacement text. Each line is "#define NAME REPLACEMENT" or, for a
-// function-like macro, "#define NAME(ARGS) REPLACEMENT"; only object-like
-// macros are wanted here.
+// predefinedMacro looks name up in a `#define` dump and returns its replacement
+// text. Each line is "#define NAME REPLACEMENT" or, for a function-like macro,
+// "#define NAME(ARGS) REPLACEMENT"; only object-like macros are wanted here.
 func predefinedMacro(predefined, name string) (string, bool) {
 	prefix := "#define " + name + " "
 
