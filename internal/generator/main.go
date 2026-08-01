@@ -48,8 +48,8 @@ func main() {
 }
 
 // enforceSkipCeiling returns a non-nil error when total exceeds ceiling.
-// Extracted so the ceiling policy is testable without invoking the libclang
-// parse path: pass any fabricated total and ceiling. The message names both
+// Extracted so the ceiling policy is testable without invoking the parse path:
+// pass any fabricated total and ceiling. The message names both
 // values so a tripped ceiling surfaces the actionable numbers in the run log.
 func enforceSkipCeiling(total, ceiling int) error {
 	if total > ceiling {
@@ -77,12 +77,10 @@ func run(args []string) (*SkipCollector, error) {
 		log.SetOutput(io.Discard)
 	}
 
-	var parser HeaderParser = clangParser{}
+	var parser HeaderParser = ccParser{}
 
 	log.Println("Bindings generator")
 	log.Printf("parser: %s", parser.Version())
-	log.Printf("platform args: %v", getPlatformArgs())
-	log.Printf("system includes: %v", getSystemIncludes())
 
 	skips := &SkipCollector{}
 
@@ -121,12 +119,12 @@ func run(args []string) (*SkipCollector, error) {
 	return skips, nil
 }
 
-// applyManualFixups is the single home for per-type corrections that libclang
+// applyManualFixups is the single home for per-type corrections the parser
 // resolves incorrectly on the pinned FFmpeg headers. Each mutation patches a
-// parsed type whose shape the generator cannot infer from the headers alone:
-//   - AVRational must pass by value (libclang reports it as a pointer-style
+// parsed type the generator cannot infer from the headers alone:
+//   - AVRational must pass by value (the parser reports it as a pointer-style
 //     aggregate, but the C API takes and returns it as a value type).
-//   - AVOptionType carries a stray doc comment that libclang attaches; clearing
+//   - AVOptionType carries a stray doc comment the parser attaches; clearing
 //     it keeps the generated enum free of unwanted leading text.
 //
 // Apply after Parse and before Gen. Add new corrections here rather than

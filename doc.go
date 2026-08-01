@@ -10,8 +10,8 @@
 //
 // Tier 1 — generated bindings: constants.gen.go, enums.gen.go, structs.gen.go,
 // functions.gen.go, and callbacks.gen.go are emitted by internal/generator
-// (libclang + dave/jennifer) from the FFmpeg headers. They cover the bulk of the
-// API. Never edit these files; regenerate with just generate.
+// (modernc.org/cc/v4 + dave/jennifer) from the FFmpeg headers. They cover the
+// bulk of the API. Never edit these files; regenerate with just generate.
 //
 // Tier 2 — core and foundation: ffmpeg.go defines CGO directives, platform
 // linker flags, and the base types every tier builds on (AVError/WrapErr, CStr).

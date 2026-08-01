@@ -29,20 +29,20 @@ const (
 // absolute header directory, and the anchor normalizeCTypeName cuts back to.
 const includeSegment = "include" + string(filepath.Separator)
 
-// normalizeCTypeName rewrites the absolute header path libclang embeds in a C
-// type spelling into a checkout-relative one.
+// normalizeCTypeName rewrites the absolute header path a C type spelling
+// embeds into a checkout-relative one.
 //
-// libclang spells an unnamed union or struct as "union (unnamed union at
+// An unnamed union or struct is spelled "union (unnamed union at
 // <absolute-header-path>:<line>:<col>)", so Field.CTypeName carries the path of
 // the checkout that parsed the headers. Written to the golden unchanged, that
 // path would make the file match only on the machine and at the directory that
 // generated it, and fail everywhere else, CI included.
 //
-// AVLibPath is the absolute include directory and is exactly the prefix
-// libclang reports, so replacing it covers the normal case. The fallback covers
-// a libclang that reports a resolved or symlinked path that does not literally
-// match AVLibPath: an absolute path left in the spelling still names a header
-// below an include directory, so it is cut back to the last "include/" segment,
+// AVLibPath is the absolute include directory and is exactly the prefix the
+// spelling carries, so replacing it covers the normal case. The fallback covers
+// a resolved or symlinked path that does not literally match AVLibPath: an
+// absolute path left in the spelling still names a header below an include
+// directory, so it is cut back to the last "include/" segment,
 // which is stable wherever the checkout lives.
 func normalizeCTypeName(s string) string {
 	s = strings.ReplaceAll(s, AVLibPath+string(filepath.Separator), includeSegment)

@@ -44,7 +44,7 @@ outer:
 			continue
 		}
 
-		// WORKAROUND: libclang on Linux reports FILE* as int* for av_fopen_utf8
+		// WORKAROUND: av_fopen_utf8's FILE* return read as int* on Linux
 		// Pinned by TestGeneratorSkipPatterns in bindings_test.go (asserts AVFopenUtf8 absent).
 		if fn.Name == "av_fopen_utf8" {
 			o.Commentf("%v skipped due to return", fn.Name)

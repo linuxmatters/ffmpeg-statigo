@@ -72,7 +72,7 @@ func ShouldBeIgnored() {}
 }
 
 // newTestGenerator builds a Generator backed by an empty struct table so
-// convCamel runs without a libclang parse. The struct-collision suffix path is
+// convCamel runs without a header parse. The struct-collision suffix path is
 // inert with no structs registered, matching the symbols under test.
 func newTestGenerator() *Generator {
 	return &Generator{

@@ -9,8 +9,8 @@ import (
 // TestUUIDBindingsNotDuplicated pins the av_uuid_* skip in
 // internal/generator/generator.go. The seven av_uuid_* symbols are manually
 // wrapped in uuid.go because AVUUID is an array typedef that needs explicit
-// pointer conversion in CGO. If a future libclang fixes the array-typedef
-// handling, the generator might also emit these symbols, double-defining them.
+// pointer conversion in CGO. If the generator stops skipping them it emits
+// them too, double-defining all seven.
 // This assertion fires when any of the seven Go wrapper names also appears as
 // a generated function, signalling that the skip site is now spurious.
 func TestUUIDBindingsNotDuplicated(t *testing.T) {
