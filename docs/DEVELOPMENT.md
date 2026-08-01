@@ -279,11 +279,31 @@ The root package has three source tiers. The generator skips C symbols it cannot
 > [!IMPORTANT]
 > Run `just generate` only inside `nix develop`. The generator links libclang 20 and relies on gcc 15 for system include discovery. Running it outside the Nix shell produces incorrect or incomplete output.
 
-`internal/generator/` parses FFmpeg headers with libclang via the cgo binding `github.com/Newbluecake/bootstrap` and emits the `*.gen.go` files. Because it links libclang, regeneration requires a pinned clang (currently 20) and a working C toolchain, which is why it is only supported inside `nix develop`. The correctness gate is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty.
+`internal/generator/` parses FFmpeg headers with libclang via the cgo binding `github.com/Newbluecake/bootstrap` and emits the `*.gen.go` files. Because it links libclang, regeneration requires a pinned clang (currently 20) and a working C toolchain, which is why it is only supported inside `nix develop`. The correctness gate has two halves. The first is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty. The second is the IR goldens below, which name what moved when that diff is not empty.
 
 Parsing sits behind the `HeaderParser` interface in `headerparser.go`: `Parse` returns the `*Module` the emitter reads, and `Version` names the backend in the verbose run log. `clangParser` in `parser.go` is the only implementation, and the clang import is confined to `parser.go` and `type.go`, so a second backend can be added without touching the emitter.
 
-> **TODO (future consideration):** evaluate porting the generator to [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C99 frontend. This would drop the libclang/cgo dependency and the clang-version pinning churn, making regeneration toolchain-independent (no Nix shell or distro clang in CI). The risk is that `cc/v4`'s parse model differs from libclang, so the generated output and the existing libclang workarounds (unnamed-struct naming, `size_t`-reported-as-`int`) would need re-validating against the byte-identical gate before switching.
+### IR goldens
+
+A byte diff across the five `*.gen.go` files runs to tens of thousands of lines, so it tells you that something moved but not what. A wrong typedef name, a reordered struct and a dropped comment all look alike in it. The goldens under `internal/generator/testdata/ir/` snapshot the parsed form directly, with the emitter out of the loop, so a `diff` names the change.
+
+`-dump-ir` is additive on a normal run: it still emits the five `*.gen.go` files exactly as before, and also writes the three goldens.
+
+```sh
+nix develop -c go run ./internal/generator -dump-ir
+```
+
+| File | Contents | A diff means |
+|------|----------|--------------|
+| `structure.txt` | The parsed `Module` at the `HeaderParser` boundary, before `applyManualFixups`: the five insertion-order slices verbatim, then per symbol the fully expanded type tree, `CTypeName`, `BitWidth`, `Variadic`, `Typedefd`, `ByValue`, every parameter name, and a comment hash | The parsed form moved |
+| `comments.txt` | Post-`processComment` text, keyed by symbol | Comment extraction moved |
+| `skips.txt` | Sorted, deduplicated `(Symbol, Reason)` pairs under a header line carrying the marker, symbol and pair counts | A skip decision or its reason text moved; reason text is emitted verbatim into the generated files |
+
+`TestIRGoldensMatchFreshRun` reparses the headers in a temporary directory and fails on any byte difference, naming the first differing line and printing the regeneration command. Commit the refreshed goldens alongside the generator change that moved them.
+
+The dump format is a test artefact. It is deliberately unstable and is not a public interface.
+
+> **TODO (future consideration):** evaluate porting the generator to [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C99 frontend. This would drop the libclang/cgo dependency and the clang-version pinning churn, making regeneration toolchain-independent (no Nix shell or distro clang in CI). The risk is that `cc/v4`'s parse model differs from libclang, so the generated output and the existing libclang workarounds (unnamed-struct naming, `size_t`-reported-as-`int`) would need re-validating before switching. `structure.txt` is snapshotted at the `HeaderParser` boundary for exactly this: it compares the two backends' parsed output directly, rather than through the emitter.
 
 ## Versioning
 
