@@ -75,6 +75,12 @@ func ccCTypeName(d *cc.Declarator, anon *cc.StructOrUnionSpecifier) string {
 // Type.Attributes().IsConst() per level spells both wrongly. The declarator
 // carries a TypeQualifiers list on every '*' and carries both correctly.
 //
+// A parenthesised declarator holds its '*' on a nested Declarator rather than
+// on this one, which is where "int (*const table)[4]" keeps its const, so the
+// walk takes the outer Pointer chain first and then recurses into that nested
+// declarator, appending what it carries after. Both steps run left to right, so
+// the whole list stays in source order.
+//
 // The leftmost '*' is the innermost derivation, so index i names the pointer
 // level len-1-i counted from the outermost. Base-level const is not collected at
 // all, because ccCTypeName trims a leading "const " and it could never survive
@@ -82,11 +88,26 @@ func ccCTypeName(d *cc.Declarator, anon *cc.StructOrUnionSpecifier) string {
 func ccPointerQualifiers(d *cc.Declarator) []string {
 	var quals []string
 
-	for p := d.Pointer; p != nil; p = p.Pointer {
-		quals = append(quals, ccQualifierNames(p.TypeQualifiers))
+	for ; d != nil; d = ccParenthesisedDeclarator(d.DirectDeclarator) {
+		for p := d.Pointer; p != nil; p = p.Pointer {
+			quals = append(quals, ccQualifierNames(p.TypeQualifiers))
+		}
 	}
 
 	return quals
+}
+
+// ccParenthesisedDeclarator returns the declarator a '(' Declarator ')' form
+// wraps, following the DirectDeclarator chain down to it past any array or
+// function derivation, or nil when the declarator writes no parentheses.
+func ccParenthesisedDeclarator(dd *cc.DirectDeclarator) *cc.Declarator {
+	for ; dd != nil; dd = dd.DirectDeclarator {
+		if dd.Case == cc.DirectDeclaratorDecl {
+			return dd.Declarator
+		}
+	}
+
+	return nil
 }
 
 // ccQualifierNames flattens a TypeQualifiers list to its keywords.
@@ -152,9 +173,7 @@ func (s ccTypeSpeller) split(t cc.Type) (base, decl string) {
 			level++
 
 		case *cc.ArrayType:
-			if strings.HasPrefix(decl, "*") {
-				decl = "(" + decl + ")"
-			}
+			decl = ccParenPointer(decl)
 
 			if x.IsIncomplete() {
 				decl += "[]"
@@ -165,9 +184,7 @@ func (s ccTypeSpeller) split(t cc.Type) (base, decl string) {
 			t = x.Elem()
 
 		case *cc.FunctionType:
-			if strings.HasPrefix(decl, "*") {
-				decl = "(" + decl + ")"
-			}
+			decl = ccParenPointer(decl)
 
 			params := make([]string, 0, len(x.Parameters()))
 			for _, p := range x.Parameters() {
@@ -188,6 +205,18 @@ func (s ccTypeSpeller) split(t cc.Type) (base, decl string) {
 	}
 
 	return "void", decl
+}
+
+// ccParenPointer wraps a pointer declarator in the parentheses C needs when an
+// array or a function derives from it, and leaves anything else alone. A
+// pointer qualifier ends in a space because a further '*' would follow it, so
+// the wrap drops it again: clang spells "int (*const)[4]", not "int (*const )[4]".
+func ccParenPointer(decl string) string {
+	if !strings.HasPrefix(decl, "*") {
+		return decl
+	}
+
+	return "(" + strings.TrimRight(decl, " ") + ")"
 }
 
 // ccNestedTypeName renders a function-pointer parameter type. It reads const off
