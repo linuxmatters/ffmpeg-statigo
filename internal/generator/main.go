@@ -9,8 +9,6 @@ import (
 	"maps"
 	"os"
 	"slices"
-
-	"github.com/Newbluecake/bootstrap/clang"
 )
 
 // skipCeiling caps the total skip-marker count a clean generator run is
@@ -77,14 +75,16 @@ func run(args []string) (*SkipCollector, error) {
 		log.SetOutput(io.Discard)
 	}
 
+	var parser HeaderParser = clangParser{}
+
 	log.Println("Bindings generator")
-	log.Printf("libclang: %s", clang.GetClangVersion())
+	log.Printf("parser: %s", parser.Version())
 	log.Printf("platform args: %v", getPlatformArgs())
 	log.Printf("system includes: %v", getSystemIncludes())
 
 	skips := &SkipCollector{}
 
-	m := Parse(skips)
+	m := parser.Parse(skips)
 
 	if err := applyManualFixups(m); err != nil {
 		return nil, err

@@ -281,6 +281,8 @@ The root package has three source tiers. The generator skips C symbols it cannot
 
 `internal/generator/` parses FFmpeg headers with libclang via the cgo binding `github.com/Newbluecake/bootstrap` and emits the `*.gen.go` files. Because it links libclang, regeneration requires a pinned clang (currently 20) and a working C toolchain, which is why it is only supported inside `nix develop`. The correctness gate is byte-identical output: after any generator change, run `just generate` then `git diff --stat -- '*.gen.go'` and confirm the diff is empty.
 
+Parsing sits behind the `HeaderParser` interface in `headerparser.go`: `Parse` returns the `*Module` the emitter reads, and `Version` names the backend in the verbose run log. `clangParser` in `parser.go` is the only implementation, and the clang import is confined to `parser.go` and `type.go`, so a second backend can be added without touching the emitter.
+
 > **TODO (future consideration):** evaluate porting the generator to [`modernc.org/cc/v4`](https://pkg.go.dev/modernc.org/cc/v4), a pure-Go C99 frontend. This would drop the libclang/cgo dependency and the clang-version pinning churn, making regeneration toolchain-independent (no Nix shell or distro clang in CI). The risk is that `cc/v4`'s parse model differs from libclang, so the generated output and the existing libclang workarounds (unnamed-struct naming, `size_t`-reported-as-`int`) would need re-validating against the byte-identical gate before switching.
 
 ## Versioning
