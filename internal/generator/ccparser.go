@@ -914,17 +914,22 @@ func (w *ccWalk) nameSpan(tok cc.Token, fallbackLine int) (line, col int) {
 //
 // The test is that the source at the reported position does not spell the name.
 // It is the invocation's own identifier that is written there instead, so the
-// name is looked for in three places, in the order clang resolves them:
+// name is resolved by where it comes from, which is how clang resolves it:
 //
-//  1. the invocation's argument text, which is where a macro argument is
-//     written, and which gives the AVBPrint fields their own trailing comments;
-//  2. the macro's replacement list, which is where a name the macro body
-//     declares is written, and which puts AVBPrint.reserved_padding next to the
-//     "#define" that a leading comment can never cross;
-//  3. the invocation itself, unchanged, for a name no source position spells,
-//     which is what "##" pasting produces. clang gives such a token a scratch
-//     location, and struct ff_pad_helper_AVBPrint claims the comment above its
-//     invocation.
+//   - a name the replacement list writes literally did not come from an
+//     argument, so it takes the replacement list's position, which puts
+//     AVBPrint.reserved_padding next to the "#define" that a leading comment can
+//     never cross;
+//   - a replacement-list token spelling a macro parameter name is a
+//     substitution rather than literal macro text, so it is not resolved there:
+//     AVBPrint.size takes its name from the argument text even though the macro
+//     body writes "size" too, for its own parameter;
+//   - every other name comes from the invocation's argument text, which gives
+//     the AVBPrint fields their own trailing comments;
+//   - a name no source position spells, which is what "##" pasting produces,
+//     falls through to the invocation itself, unchanged. clang gives such a
+//     token a scratch location, and struct ff_pad_helper_AVBPrint claims the
+//     comment above its invocation.
 func (w *ccWalk) spellingSite(name string, line, col int) (int, int) {
 	if w.table.IdentifierAt(line, col) == name {
 		return line, col
@@ -935,24 +940,37 @@ func (w *ccWalk) spellingSite(name string, line, col int) (int, int) {
 		return line, col
 	}
 
+	if !macroHasParam(m, name) {
+		for _, tok := range m.ReplacementList() {
+			if tok.SrcStr() != name {
+				continue
+			}
+
+			p := tok.Position()
+			if p.Filename != w.abs {
+				return 0, 0
+			}
+
+			return p.Line, p.Column
+		}
+	}
+
 	if l, c, ok := w.table.MacroArgumentSite(name, line, col); ok {
 		return l, c
 	}
 
-	for _, tok := range m.ReplacementList() {
-		if tok.SrcStr() != name {
-			continue
-		}
+	return line, col
+}
 
-		p := tok.Position()
-		if p.Filename != w.abs {
-			return 0, 0
+// macroHasParam reports whether name is one of the macro's parameter names.
+func macroHasParam(m *cc.Macro, name string) bool {
+	for _, p := range m.Params {
+		if p.SrcStr() == name {
+			return true
 		}
-
-		return p.Line, p.Column
 	}
 
-	return line, col
+	return false
 }
 
 // spanFirstLine returns the first line a node occupies, counting only tokens in

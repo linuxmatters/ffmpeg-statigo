@@ -513,7 +513,8 @@ func (t *CommentTable) trailingCandidate(nameLine, nameCol int) *Comment {
 // The written positions are still in the raw bytes this table already lexes, so
 // they are recovered from there: read the identifier at the reported position,
 // and when it is not the name being looked for, the position is an invocation
-// site and the name is looked for in the invocation's own argument text.
+// site and the name is resolved back to where it comes from, which for an
+// argument is the invocation's own argument text.
 
 // IdentifierAt returns the identifier written at a 1-based line and byte
 // column, or "" when no identifier starts there.
@@ -531,7 +532,7 @@ func (t *CommentTable) IdentifierAt(line, col int) string {
 //
 // It reports false when the position is not an invocation, when the argument
 // list is unterminated, or when the name is not written in it, which is the
-// case for a name that comes from the macro's replacement list instead.
+// case for a name no source position spells because "##" pasted it together.
 func (t *CommentTable) MacroArgumentSite(name string, line, col int) (int, int, bool) {
 	off := t.Offset(line, col)
 
