@@ -12,6 +12,7 @@
 - **Build FFmpeg only:** `just build-static ffmpeg --clean`
 - **Build static libraries:** `just build-static` (uses current GOOS/GOARCH)
 - **Regenerate bindings:** `just generate` or `go run ./internal/generator`
+- **Regenerate IR goldens:** `go run ./internal/generator -dump-ir` (additive flag; still emits the five `*.gen.go` files)
 - **Build examples:** `just build-examples`
 - **Run tests:** `just test`
 - **Download libraries:** `go run ./cmd/download-lib`
@@ -73,6 +74,10 @@
 - **Libraries:** `lib/<os>_<arch>/` contains platform-specific static libraries (gitignored)
 - **Builder:** `internal/builder/` compiles FFmpeg + 20 dependencies from source
 - **Generator:** `internal/generator/` parses headers using libclang, outputs Go bindings; parsing sits behind the `HeaderParser` interface (`headerparser.go`), whose only implementation is `clangParser` in `parser.go`
+  - **IR goldens:** `-dump-ir` writes three committed files to `internal/generator/testdata/ir/` so a parser change can be read as a `diff` with the emitter out of the loop; `TestIRGoldensMatchFreshRun` (`dump_test.go`) reparses the headers in a temp directory and fails on any byte difference, naming the first differing line
+  - `structure.txt`: the parsed `Module` snapshotted at the `HeaderParser` boundary, before `applyManualFixups`; a diff means the parsed form moved (order slices, expanded type trees, `CTypeName`, `BitWidth`, `Variadic`, `Typedefd`, `ByValue`, param names)
+  - `comments.txt`: post-`processComment` text per symbol; a diff means comment extraction moved
+  - `skips.txt`: sorted, deduplicated `(Symbol, Reason)` pairs with a header line carrying the marker, symbol and pair counts; a diff means a skip decision or its reason text moved, and reason text is emitted verbatim into the generated files
 - **Downloader:** `cmd/download-lib/` fetches pre-built libraries from GitHub Releases
 - **Pipeline layer:** `av/` optional high-level layer over the root bindings — owned `io.Closer` resource wrappers (Input/Decoder/Encoder/FilterGraph/Output/HWDevice); not generated
 

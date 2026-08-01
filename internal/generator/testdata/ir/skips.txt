@@ -1,0 +1,247 @@
+# generator skip dump (WW-139)
+# markers=245 symbols=245 pairs=245
+AVBlowfish.s: multi dim const array
+AVChannelLayout.u: union type
+AVClass.child_class_iterate: func ptr
+AVClass.child_next: func ptr
+AVClass.get_category: func ptr
+AVClass.item_name: func ptr
+AVClass.query_ranges: func ptr
+AVCodec.supported_framerates: struct value ptr
+AVCodec.supported_samplerates: prim ptr
+AVCodecContext.chroma_intra_matrix: manually wrapped in fields.go
+AVCodecContext.draw_horiz_band: func ptr
+AVCodecContext.execute: func ptr
+AVCodecContext.execute2: func ptr
+AVCodecContext.get_buffer2: func ptr
+AVCodecContext.get_encode_buffer: func ptr
+AVCodecContext.get_format: func ptr
+AVCodecContext.inter_matrix: manually wrapped in fields.go
+AVCodecContext.internal: ptr to ignored type
+AVCodecContext.intra_matrix: manually wrapped in fields.go
+AVCodecContext.side_data_prefer_packet: prim ptr
+AVCodecDescriptor.mime_types: unknown pointer pair
+AVCodecParser.parser_close: func ptr
+AVCodecParser.parser_init: func ptr
+AVCodecParser.parser_parse: func ptr
+AVCodecParser.split: func ptr
+AVDCT.fdct: func ptr
+AVDCT.get_pixels: func ptr
+AVDCT.get_pixels_unaligned: func ptr
+AVDCT.idct: func ptr
+AVDES.round_keys: multi dim const array
+AVDOVIDataMapping.curves: const array of struct pointers
+AVDOVIDataMapping.nlq: const array of struct pointers
+AVDOVIReshapingCurve.mmr_coef: multi dim const array
+AVDOVIReshapingCurve.poly_coef: multi dim const array
+AVDRMFrameDescriptor.layers: const array of struct pointers
+AVDRMFrameDescriptor.objects: const array of struct pointers
+AVDRMLayerDescriptor.planes: const array of struct pointers
+AVDVProfile.audio_shuffle: unhandled pointer inner type *main.ConstArray
+AVDetectionBBox.classify_labels: multi dim const array
+AVDynamicHDRPlus.mastering_display_actual_peak_luminance: multi dim const array
+AVDynamicHDRPlus.params: const array of struct pointers
+AVDynamicHDRPlus.targeted_system_display_actual_peak_luminance: multi dim const array
+AVDynamicHDRVivid.params: const array of struct pointers
+AVEncryptionInitInfo.key_ids: unknown pointer pair
+AVExifEntry.value: union type
+AVFilmGrainAOMParams.ar_coeffs_uv: multi dim const array
+AVFilmGrainAOMParams.uv_points: multi dim const array
+AVFilmGrainAOMParams.y_points: multi dim const array
+AVFilmGrainH274Params.comp_model_value: multi dim const array
+AVFilmGrainH274Params.intensity_interval_lower_bound: multi dim const array
+AVFilmGrainH274Params.intensity_interval_upper_bound: multi dim const array
+AVFilmGrainParams.codec: union type
+AVFilterContext.command_queue: ptr to ignored type
+AVFilterContext.var_values: prim ptr
+AVFilterGraph.execute: callback ptr
+AVFormatContext.control_message_cb: ident callback
+AVFormatContext.io_close2: func ptr
+AVFormatContext.io_open: func ptr
+AVFrame.extended_data: manually wrapped in fields.go
+AVHDRPlusColorTransformParams.distribution_maxrgb: const array of struct pointers
+AVHDRVividColorToneMappingParams.three_spline: const array of struct pointers
+AVHDRVividColorTransformParams.tm_params: const array of struct pointers
+AVHWDeviceContext.free: func ptr
+AVHWFramesContext.free: func ptr
+AVIAMFLayer.demixing_matrix: struct value ptr
+AVIAMFReconGain.recon_gain: multi dim const array
+AVIOContext.buf_end: prim ptr
+AVIOContext.buf_ptr: prim ptr
+AVIOContext.buf_ptr_max: prim ptr
+AVIOContext.buffer: prim ptr
+AVIOContext.checksum_ptr: prim ptr
+AVIOContext.read_packet: func ptr
+AVIOContext.read_pause: func ptr
+AVIOContext.read_seek: func ptr
+AVIOContext.seek: func ptr
+AVIOContext.update_checksum: func ptr
+AVIOContext.write_data_type: func ptr
+AVIOContext.write_packet: func ptr
+AVIOInterruptCB.callback: func ptr
+AVIndexEntry.flags: bitfield
+AVIndexEntry.size: bitfield
+AVMasteringDisplayMetadata.display_primaries: manually wrapped in fields.go
+AVOption.default_val: union type
+AVPanScan.position: manually wrapped in fields.go
+AVPixFmtDescriptor.comp: manually wrapped in fields.go
+AVProbeData.buf: prim ptr
+AVProgram.stream_index: prim ptr
+AVRTSPResponse.body: prim ptr
+AVStreamGroup.params: union type
+AVTaskCallbacks.priority_higher: func ptr
+AVTaskCallbacks.ready: func ptr
+AVTaskCallbacks.run: func ptr
+AVVideoEncParams.delta_qp: multi dim const array
+SwsVector.coeff: prim ptr
+av_ac3_parse_header: frameSize (non-output primitive pointer)
+av_adts_header_parse: samples (non-output primitive pointer)
+av_asprintf: variadic arg
+av_audio_fifo_peek: data
+av_audio_fifo_peek_at: data
+av_audio_fifo_read: data
+av_audio_fifo_write: data
+av_blowfish_crypt_ecb: xl (non-output primitive pointer)
+av_bmg_get: const array param out
+av_bprint_finalize: retStr
+av_bprint_get_buffer: mem
+av_bprint_strftime: arg tm
+av_bprintf: variadic arg
+av_bsf_iterate: opaque
+av_buffer_create: arg free
+av_buffer_pool_init: arg alloc
+av_buffer_pool_init2: arg alloc
+av_buffersink_get_side_data: pointer-to-pointer return type
+av_channel_layout_standard: opaque
+av_chroma_location_enum_to_pos: xpos (non-output primitive pointer)
+av_codec_get_tag2: tag (non-output primitive pointer)
+av_codec_iterate: opaque
+av_container_fifo_alloc: arg container_alloc
+av_container_fifo_peek: pobj
+av_demuxer_iterate: opaque
+av_dict_get_string: buffer
+av_display_matrix_flip: const array param matrix
+av_display_rotation_get: const array param matrix
+av_display_rotation_set: const array param matrix
+av_dynamic_hdr_plus_to_t35: data
+av_dynarray2_add: tabPtr
+av_escape: dst
+av_exif_matrix_to_orientation: matrix (non-output primitive pointer)
+av_exif_orientation_to_matrix: matrix (non-output primitive pointer)
+av_expr_eval: constValues (non-output primitive pointer)
+av_expr_parse: constNames
+av_expr_parse_and_eval: constNames
+av_fifo_peek_to_cb: writeCb (callback by value)
+av_fifo_read_to_cb: writeCb (callback by value)
+av_fifo_write_from_cb: readCb (callback by value)
+av_file_map: bufptr
+av_filter_iterate: opaque
+av_find_nearest_q_idx: qList
+av_frame_side_data_add: sd
+av_frame_side_data_clone: sd
+av_frame_side_data_free: sd
+av_frame_side_data_new: sd
+av_frame_side_data_remove: sd
+av_frame_side_data_remove_by_props: sd
+av_get_known_color_name: rgb
+av_get_token: buf
+av_hex_dump: arg f
+av_hwframe_transfer_get_formats: formats
+av_image_alloc: const array param pointers
+av_image_copy: const array param dstData
+av_image_copy2: const array param dstData
+av_image_copy_to_buffer: const array param srcData
+av_image_copy_uc_from: const array param dstData
+av_image_fill_arrays: const array param dstData
+av_image_fill_black: const array param dstData
+av_image_fill_color: const array param dstData
+av_image_fill_linesizes: const array param linesizes
+av_image_fill_max_pixsteps: const array param maxPixsteps
+av_image_fill_plane_sizes: const array param size
+av_image_fill_pointers: const array param data
+av_log: variadic arg
+av_log_default_callback: arg vl
+av_log_format_line: arg vl
+av_log_format_line2: arg vl
+av_log_once: variadic arg
+av_log_set_callback: arg callback
+av_lzo1x_decode: inlen (non-output primitive pointer)
+av_murmur3_final: const array param dst
+av_muxer_iterate: opaque
+av_opt_child_class_iterate: iter
+av_opt_eval_q: qOut
+av_opt_find2: targetObj
+av_opt_get: outVal
+av_opt_get_key_value: ropts
+av_opt_get_q: outVal
+av_opt_get_video_rate: outVal
+av_opt_serialize: buffer
+av_opt_set_from_string: shorthand
+av_packet_side_data_to_frame: sd
+av_parse_cpu_caps: flags (non-output primitive pointer)
+av_parse_ratio: q
+av_parse_video_rate: rate
+av_parser_iterate: opaque
+av_parser_parse2: poutbuf
+av_pkt_dump2: arg f
+av_probe_input_format2: scoreMax (non-output primitive pointer)
+av_read_image_line: dst (non-output primitive pointer)
+av_read_image_line2: const array param data
+av_rescale_delta: last (non-output primitive pointer)
+av_samples_alloc: audioData
+av_samples_alloc_array_and_samples: audioData
+av_samples_copy: dst
+av_samples_fill_arrays: audioData
+av_samples_set_silence: audioData
+av_sdp_create: ac
+av_size_mult: r (non-output primitive pointer)
+av_small_strptime: arg dt
+av_spherical_tile_bounds: left (non-output primitive pointer)
+av_sscanf: variadic arg
+av_stristart: ptr
+av_strlcatf: variadic arg
+av_strstart: ptr
+av_strtod: tail
+av_strtok: saveptr
+av_tea_init: const array param key
+av_thread_message_queue_set_free_func: arg free_func
+av_timegm: arg tm
+av_tree_enumerate: arg cmp
+av_tree_find: arg cmp
+av_tree_insert: arg cmp
+av_ts_make_time_string: tb
+av_utf8_decode: codep (non-output primitive pointer)
+av_uuid_copy: array typedef (manually wrapped in uuid.go)
+av_uuid_equal: array typedef (manually wrapped in uuid.go)
+av_uuid_nil: array typedef (manually wrapped in uuid.go)
+av_uuid_parse: array typedef (manually wrapped in uuid.go)
+av_uuid_parse_range: array typedef (manually wrapped in uuid.go)
+av_uuid_unparse: array typedef (manually wrapped in uuid.go)
+av_uuid_urn_parse: array typedef (manually wrapped in uuid.go)
+av_vbprintf: arg vl_arg
+av_vlog: arg vl
+av_vorbis_parse_frame_flags: flags (non-output primitive pointer)
+av_write_image_line: src (non-output primitive pointer)
+av_write_image_line2: const array param data
+av_xtea_init: const array param key
+av_xtea_le_init: const array param key
+avcodec_align_dimensions2: const array param linesizeAlign
+avcodec_default_execute: arg func
+avcodec_default_execute2: arg func
+avcodec_get_supported_config: outConfigs
+avformat_receive_command_reply: dataOut
+avio_alloc_context: arg read_packet
+avio_close_dyn_buf: pbuffer
+avio_enum_protocols: opaque
+avio_get_dyn_buf: pbuffer
+avio_print_string_array: strings
+avio_printf: variadic arg
+avio_vprintf: arg ap
+swr_build_matrix2: matrix (non-output primitive pointer)
+swr_convert: out
+swr_set_matrix: matrix (non-output primitive pointer)
+sws_getCachedContext: param (non-output primitive pointer)
+sws_getColorspaceDetails: invTable
+sws_getContext: param (non-output primitive pointer)
+sws_scale: srcSlice
+sws_setColorspaceDetails: const array param invTable

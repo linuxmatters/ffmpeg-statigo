@@ -9,6 +9,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 )
 
 // skipCeiling caps the total skip-marker count a clean generator run is
@@ -67,6 +68,7 @@ func enforceSkipCeiling(total, ceiling int) error {
 func run(args []string) (*SkipCollector, error) {
 	fs := flag.NewFlagSet("generator", flag.ContinueOnError)
 	verbose := fs.Bool("v", false, "verbose trace logging")
+	dumpIR := fs.Bool("dump-ir", false, "also write the IR goldens under "+irDumpDir)
 	if err := fs.Parse(args); err != nil {
 		return nil, err
 	}
@@ -86,11 +88,37 @@ func run(args []string) (*SkipCollector, error) {
 
 	m := parser.Parse(skips)
 
+	// Snapshot the Module here, before applyManualFixups, because this is the
+	// HeaderParser boundary a second parser backend gets compared against. A
+	// post-fixup snapshot would bake the two in-tree corrections
+	// (AVRational.ByValue, the cleared AVOptionType comment) into the parser's
+	// fingerprint, so a real backend difference in either one would be hidden.
+	if *dumpIR {
+		if err := writeIRDump(irDumpDir, m); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := applyManualFixups(m); err != nil {
 		return nil, err
 	}
 
-	return Gen(m, skips), nil
+	// Gen returns its argument collector when that argument is non-nil, and the
+	// one here always is, so this reassignment keeps returning the same
+	// collector run has populated all along.
+	skips = Gen(m, skips)
+
+	// Snapshot the skip set after Gen, not at the parser boundary, because the
+	// codegen layer records its own skips and their reason text lands in the
+	// generated files exactly as parse-layer reason text does. A parser-boundary
+	// snapshot would cover only part of that reason surface.
+	if *dumpIR {
+		if err := writeSkipDump(irDumpDir, skips); err != nil {
+			return nil, err
+		}
+	}
+
+	return skips, nil
 }
 
 // applyManualFixups is the single home for per-type corrections that libclang
@@ -181,6 +209,41 @@ func sortedUniqueSymbols(c *SkipCollector) []string {
 	}
 
 	return slices.Sorted(maps.Keys(seen))
+}
+
+// sortedSkipPairs returns the unique (Symbol, Reason) pairs in lexical order by
+// symbol then reason, with exact duplicate pairs collapsed. sortedUniqueSymbols
+// drops the reason, which is what the run summary wants but not what the skip
+// golden wants: the acceptance criterion there is that a changed reason string
+// shows as a diff even when the symbol set and the marker count are unchanged.
+// A nil collector returns nil, matching sortedUniqueSymbols.
+//
+// The returned entries carry no Manual value. Manual is derived by
+// enrichManualBindings scanning the repo root, not produced by the parser, so
+// including it would make the golden depend on the working directory and would
+// fail the temp-directory regeneration test.
+func sortedSkipPairs(c *SkipCollector) []SkipEntry {
+	if c == nil {
+		return nil
+	}
+
+	seen := make(map[SkipEntry]bool, len(c.Entries))
+
+	for _, e := range c.Entries {
+		seen[SkipEntry{Symbol: e.Symbol, Reason: e.Reason}] = true
+	}
+
+	out := slices.Collect(maps.Keys(seen))
+
+	slices.SortFunc(out, func(a, b SkipEntry) int {
+		if n := strings.Compare(a.Symbol, b.Symbol); n != 0 {
+			return n
+		}
+
+		return strings.Compare(a.Reason, b.Reason)
+	})
+
+	return out
 }
 
 // uniqueSymbolCount reports the number of distinct symbol names skipped,
