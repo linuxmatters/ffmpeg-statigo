@@ -584,6 +584,24 @@ func TestMatchTrailingNeedsTrailingForm(t *testing.T) {
 	wantComment(t, matches, "enum E.B", "  not a trailing comment")
 }
 
+// TestMatchTrailingAbutsName pins the exclusive end of the name column. A
+// comment cannot begin inside the name, so a comment starting exactly at that
+// column sits immediately after the name and is that name's trailing comment.
+// Rejecting the column dropped such a comment while the identical comment one
+// space further along was claimed, which is a difference the writer never
+// intended. No FFmpeg header writes the abutting form today, so only a test
+// holds the rule.
+func TestMatchTrailingAbutsName(t *testing.T) {
+	matches := matchSource(t, "abut.h", `struct S {
+    int abutting/**< doc for abutting */;
+    int spaced /**< doc for spaced */;
+};
+`)
+
+	wantComment(t, matches, "struct S.abutting", "   doc for abutting")
+	wantComment(t, matches, "struct S.spaced", "   doc for spaced")
+}
+
 // TestMatchStructFieldLeadingBlock checks a leading block goes to the field
 // below it and not to the next field down.
 func TestMatchStructFieldLeadingBlock(t *testing.T) {

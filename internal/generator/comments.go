@@ -474,7 +474,12 @@ func (t *CommentTable) claim(nameLine, nameCol int) (*Comment, string) {
 }
 
 // trailingCandidate returns the leftmost trailing-form comment starting on
-// nameLine past column nameCol.
+// nameLine at or past column nameCol.
+//
+// nameCol is one byte past the name, and a comment cannot begin inside a name,
+// so column nameCol itself is a valid start: it is the comment written with no
+// space after the name. Only a column before it is impossible, which is what
+// the test rejects.
 //
 // Adjacency is not required: an Enumerator's token span excludes the separating
 // comma, so a comment after "A = 1," starts past the name but not next to it.
@@ -490,7 +495,7 @@ func (t *CommentTable) trailingCandidate(nameLine, nameCol int) *Comment {
 	var best *Comment
 
 	for _, c := range t.byStart[nameLine] {
-		if !c.Trailing || c.StartCol <= nameCol {
+		if !c.Trailing || c.StartCol < nameCol {
 			continue
 		}
 
