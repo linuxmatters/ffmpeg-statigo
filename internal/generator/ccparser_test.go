@@ -87,6 +87,136 @@ func TestRecordFunctionDuplicateAborts(t *testing.T) {
 	w.walkAST(ast)
 }
 
+// TestUnnamedStructWithoutSpecifierAborts pins the second invariant panic in
+// the walk: unnamedStructType is reached with no tagless specifier on it.
+//
+// Only a field declaration puts a specifier on the walk, so a tagless struct
+// written directly as a function's return type or parameter reaches the type
+// walk with none. C allows that shape and cc/v4 accepts it, so the abort is
+// reachable in principle; it is unreachable on the pinned headers, because
+// every tagless record under include/ is a struct field or a typedef.
+//
+// The abort is deliberate and this test exists to keep it that way. Recording a
+// skip instead would return nil, which is the parser's encoding of C void, and
+// classifyReturnShape maps a nil result to returnShapeVoid: the binding would
+// compile and silently drop the returned struct. The parameter position happens
+// to fail loudly (classifyArgShape sends a nil type to argShapeUnhandledSkip),
+// but the return position does not, so a uniform "skip it" is not a safe swap
+// for the panic.
+//
+// The message assertion is part of the pin. The indent breadcrumb has to carry
+// the symbol and the slot, or an abort during an FFmpeg upgrade tells a
+// maintainer nothing about which declaration to look at.
+//
+// The tagless union case is included to fix the boundary: parseUnionType
+// expands a union in place and never needs a name, so a union return type
+// parses rather than aborting.
+func TestUnnamedStructWithoutSpecifierAborts(t *testing.T) {
+	cfg, err := newCCConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("cc/v4 configuration: %v", err)
+	}
+
+	dir := t.TempDir()
+
+	tests := []struct {
+		name string
+		src  string
+		// want is the breadcrumb the panic message must carry, or "" where the
+		// header must parse without aborting.
+		want string
+	}{
+		{
+			name: "tagless struct return type",
+			src:  "struct { int x; } ffg_anon_ret(void);\n",
+			want: "[ffg_anon_ret][return]",
+		},
+		{
+			name: "tagless struct parameter",
+			src:  "void ffg_anon_param(struct { int y; } p);\n",
+			want: "[ffg_anon_param][p]",
+		},
+		{
+			name: "pointer to tagless struct return type",
+			src:  "struct { int x; } *ffg_anon_pret(void);\n",
+			want: "[ffg_anon_pret][return]",
+		},
+		{
+			name: "tagless struct in a callback typedef",
+			src:  "typedef int (*ffg_anon_cb)(struct { int y; } a);\n",
+			want: "[ffg_anon_cb][a]",
+		},
+		{
+			name: "tagless union return type parses",
+			src:  "union { int a; float b; } ffg_anon_uret(void);\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := writeTestHeader(t, dir, strings.ReplaceAll(tt.name, " ", "-"), tt.src)
+
+			ast, err := ccTranslate(cfg, path)
+			if err != nil {
+				t.Fatalf("translate: %v", err)
+			}
+
+			table, err := BuildCommentTable(path)
+			if err != nil {
+				t.Fatalf("comment table: %v", err)
+			}
+
+			w := &ccWalk{
+				mod: &Module{
+					functions: map[string]*Function{},
+					structs:   map[string]*Struct{},
+					enums:     map[string]*Enum{},
+					callbacks: map[string]*Function{},
+					constants: map[string]*Constant{},
+				},
+				abs:   path,
+				skips: &SkipCollector{},
+				tags:  map[string]bool{},
+				table: table,
+			}
+
+			// log.Panicln writes the message to the default logger before
+			// panicking. Suppress that to keep test output clean.
+			origOut := log.Writer()
+			log.SetOutput(io.Discard)
+
+			defer log.SetOutput(origOut)
+
+			defer func() {
+				r := recover()
+
+				if tt.want == "" {
+					if r != nil {
+						t.Fatalf("the walk aborted with %v; this shape needs no synthetic name and must parse", r)
+					}
+
+					return
+				}
+
+				if r == nil {
+					t.Fatalf("the walk did not abort on a tagless record with no specifier; a skip here emits a silently wrong binding")
+				}
+
+				msg := fmt.Sprintf("%v", r)
+				if !strings.Contains(msg, "tagless record type with no specifier") {
+					t.Fatalf("panic message %q is not the tagless-record abort", msg)
+				}
+
+				if !strings.Contains(msg, tt.want) {
+					t.Fatalf("panic message %q does not carry the breadcrumb %q, so it does not say which declaration aborted the run", msg, tt.want)
+				}
+			}()
+
+			w.walkAST(ast)
+		})
+	}
+}
+
 // writeTestHeader writes src to a uniquely named header in dir and returns the
 // absolute path.
 func writeTestHeader(t *testing.T, dir, name, src string) string {

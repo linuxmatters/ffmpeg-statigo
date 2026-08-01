@@ -361,10 +361,25 @@ func (w *ccWalk) parseUnionType(indent string, t cc.Type) Type {
 // route to a name.
 func (w *ccWalk) unnamedStructType(indent string) Type {
 	if w.anon == nil {
-		// Every tagless record reaches parseType through a field declaration,
-		// which always supplies the specifier. Panic rather than record a skip:
-		// the parse layer records none, and a silently unnamed record would
-		// reach the emitter as an identifier nothing declares.
+		// Only a field declaration puts a specifier on the walk, so a tagless
+		// struct written directly as a function's return type or parameter
+		// reaches here with none. C allows that shape and cc/v4 accepts it, but
+		// the record has no compatible type any other declaration can name, so
+		// no caller can pass or receive one. FFmpeg's public headers hold none;
+		// every tagless record in include/ is a struct field or a typedef. A
+		// tagless union is not affected either way, because parseUnionType
+		// expands it in place and never asks for a name.
+		//
+		// Abort rather than record a skip. skipType returns nil, which is the
+		// parser's encoding of C void: a skipped return type would emit a Go
+		// function that silently drops its result, and the IR would spell it
+		// "void". A skipped parameter does reach the emitter as a loud
+		// "unhandled arg type" skip, but the return type does not, so stopping
+		// is the one answer that is safe in both positions.
+		//
+		// The indent breadcrumb names the symbol and the slot, so the abort
+		// reads as "[av_thing][return] ..." and points straight at the
+		// declaration. TestUnnamedStructWithoutSpecifierAborts pins that.
 		log.Panicln(indent, "tagless record type with no specifier on the walk")
 	}
 
