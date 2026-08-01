@@ -803,8 +803,8 @@ func ccMacroSkipped(name string) bool {
 
 // declaredHere reports whether a token sits in the header being translated. It
 // is the location filter: every header is preprocessed with its includes, so
-// without it glibc's __mbstate_t and atomic_wide_counter are recorded ahead of
-// the FFmpeg types.
+// without it the types from an included FFmpeg header or sysinclude stub, such
+// as AVRational, are recorded again for each header that pulls them in.
 func (w *ccWalk) declaredHere(tok cc.Token) bool {
 	if tok.Seq() == 0 {
 		return false
