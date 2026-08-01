@@ -44,7 +44,7 @@ build:
     set -euo pipefail
     just build-static ffmpeg --clean
     just build-static
-    go run ./internal/generator 2>&1 | grep -v "cgo-gcc-prolog\|deprecated" || true
+    go run ./internal/generator
     go build -a -v ./...
     just build-examples
     ./introspect
