@@ -46,6 +46,9 @@ struct Probe {
     enum AVPixelFormat (*get_format)(struct AVCodecContext *, const enum AVPixelFormat *);
     int (*execute2)(struct AVCodecContext *, int (*)(struct AVCodecContext *, void *, int, int), void *, int *, int);
     int (*printf_like)(const char *, ...);
+    int (*const callback)(int);
+    int (*const table)[4];
+    int *const *(*levels)[4];
     union { int i; double dbl; } default_val;
     struct { unsigned idx; int horizontal; } *offsets;
 };
@@ -82,8 +85,9 @@ func ctypeUnnamedAt(t *testing.T, path, kw string, nth int) string {
 // TestCCCTypeName pins one string of every ctype form the golden holds: bare,
 // two-word, typedef-sugared, elaborated, pointer, double pointer, pointer-level
 // const, fixed and multidimensional arrays, incomplete array, pointer to array,
-// function pointers from one to five parameters including a nested one, and the
-// unnamed struct and union spellings that carry a path and a line:col.
+// function pointers from one to five parameters including a nested one, a const
+// written on a '*' inside parentheses, and the unnamed struct and union
+// spellings that carry a path and a line:col.
 func TestCCCTypeName(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "probe.h")
@@ -124,6 +128,9 @@ func TestCCCTypeName(t *testing.T) {
 				"int (*)(struct AVCodecContext *, void *, int, int), void *, int *, int)",
 		},
 		{field: "printf_like", want: "int (*)(const char *, ...)"},
+		{field: "callback", want: "int (*const)(int)"},
+		{field: "table", want: "int (*const)[4]"},
+		{field: "levels", want: "int *const *(*)[4]"},
 		{field: "default_val", want: ctypeUnnamedAt(t, path, "union", 0)},
 		{field: "offsets", want: ctypeUnnamedAt(t, path, "struct", 0) + " *"},
 	}
