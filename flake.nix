@@ -16,7 +16,8 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        basePkgs = import nixpkgs { inherit system; };
+        pkgs = basePkgs // { go = basePkgs.go_1_26; };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -64,10 +65,11 @@
               vulkan-loader # Required for Vulkan accelerated encoders
               intel-media-driver # VA-API driver for Intel GPUs (iHD_drv_video.so)
               vpl-gpu-rt # oneVPL runtime for 11th gen+ Intel (Tiger Lake+) QSV
-            ];
+            ]
+            ++ import ./nix/loader.nix { inherit pkgs; };
 
           # Environment for hardware acceleration and the FFmpeg dependency build
-          shellHook = ''
+          shellHook = import ./nix/hooks.nix { inherit pkgs; } + ''
             # Ensure vpx build finds yasm
             export PATH="${pkgs.yasm}/bin:${pkgs.nasm}/bin:$PATH"
           ''

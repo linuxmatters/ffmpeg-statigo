@@ -188,16 +188,23 @@ Set `GOOS` and `GOARCH` before downloading: `GOOS=darwin GOARCH=arm64 go run ./c
 
 1. Clone the repository.
 2. `go run ./cmd/download-lib` - downloads pre-built libraries.
-3. `just build` - full rebuild from source and regenerate bindings.
+3. `just build` - compile Go packages against compatible existing headers and libraries, with executables in `bin/`.
+
+Use `just build-ffmpeg` instead for a full rebuild from source, binding generation, example builds and introspection.
+Neither the managed build nor the quality commands download libraries or regenerate bindings.
 
 ## Build System
 
-All builds go through `just`. Never use `go build` directly - the justfile handles CGO flags and build sequencing.
+All builds go through `just`. Use `just build-ffmpeg` for native build sequencing and `just build` for Go compilation with CGO enabled.
+Before managed build, test or lint commands, provide compatible headers and archives with an explicit `just build-ffmpeg` or `just download-lib`.
 
 | Command | Purpose |
 |---------|---------|
-| `just build` | Build static library from source, regenerate bindings, compile |
-| `just test` | Run tests |
+| `just build-ffmpeg` | Build static libraries, regenerate bindings, compile packages and examples, run introspection |
+| `just build` | Compile Go packages and put executables in `bin/` using existing native libraries |
+| `just test` | Run vet and tests with console coverage, including hardware tests |
+| `just lint` | Check source and workflows without changes |
+| `just lint correct` | Tidy modules and format source, then run checks |
 | `just generate` | Regenerate Go bindings from headers |
 | `just download-lib` | Download pre-built libraries |
 

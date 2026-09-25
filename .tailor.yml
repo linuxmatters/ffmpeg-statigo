@@ -1,6 +1,11 @@
 # Initially fitted by tailor on 2026-03-12
 license: GPL-3.0
 
+languages:
+  go:
+    enabled: true
+    cgo: true
+
 repository:
   description: Real FFmpeg bindings for Go. Not a wrapper. Not a CLI tool. The actual libraries 📚
   homepage: https://linuxmatters.sh
@@ -78,9 +83,6 @@ labels:
     description: Hacktoberfest contribution
 
 swatches:
-  - path: .github/workflows/tailor.yml
-    alteration: never
-
   - path: .github/dependabot.yml
     alteration: first-fit
 
@@ -128,6 +130,3 @@ swatches:
 
   - path: .tailor.yml
     alteration: always
-
-  - path: .github/workflows/tailor-automerge.yml
-    alteration: never

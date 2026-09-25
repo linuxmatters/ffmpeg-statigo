@@ -8,13 +8,16 @@
 
 ## Build and test commands
 
-- **Full build:** `just build` — builds FFmpeg from source, regenerates bindings, compiles all
+- **Full native build:** `just build-ffmpeg` builds FFmpeg from source, regenerates bindings, compiles packages and examples, then runs introspection
+- **Go build:** `just build` compiles Go packages with existing compatible headers and archives, with executables in `bin/`
+- **Prerequisites:** Run `just build-ffmpeg` or `just download-lib` explicitly before managed build, test or lint commands
+- **Lint:** Use `just lint` or `just lint check` for checks, and `just lint correct` explicitly for module tidying and formatting
 - **Build FFmpeg only:** `just build-static ffmpeg --clean`
 - **Build static libraries:** `just build-static` (uses current GOOS/GOARCH)
 - **Regenerate bindings:** `just generate` or `go run ./internal/generator`
 - **Regenerate IR goldens:** `go run ./internal/generator -dump-ir` (additive flag; still emits the five `*.gen.go` files)
-- **Build examples:** `just build-examples`
-- **Run tests:** `just test`
+- **Build examples:** `just build` writes executables to `bin/`
+- **Run tests:** `just test` runs vet and tests with console coverage, including tests that access real hardware
 - **Download libraries:** `go run ./cmd/download-lib`
 
 ## Code style
@@ -40,7 +43,11 @@
 
 ## Development workflow
 
-- **Never run `go build` directly** — always use `just build` for proper CGO flags and build sequencing
+- **Never run `go build` directly**. Use `just build` for Go compilation with CGO enabled, or `just build-ffmpeg` for native build sequencing
+- Keep native prerequisites explicit. Do not add archive downloads, native builds or binding generation to managed quality hooks
+- Keep `languages.go.ffmpeg-statigo` absent. This repository provides FFmpeg rather than consuming the Tailor component
+- Keep `.golangci.yml` unchanged during Tailor updates. The generator owns formatting of generated source
+- Review and stage new Nix fragments through normal approval before a fresh shell. Direnv requires an explicit reload after review
 - **Cross-compilation:** Set `GOOS` and `GOARCH` before downloading: `GOOS=darwin GOARCH=arm64 go run ./cmd/download-lib`
 - **Platform-specific builds:** Justfile auto-detects current platform, outputs to `lib/<os>_<arch>/`
 - **Binding regeneration:** Required after FFmpeg header changes — run `just generate`

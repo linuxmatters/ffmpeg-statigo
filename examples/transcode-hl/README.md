@@ -28,7 +28,7 @@ transcode-hl <input> <output>
 The output container format is inferred from the file extension of `<output>`.
 
 ```bash
-./transcode-hl input.mp4 output.mkv
+./bin/transcode-hl input.mp4 output.mkv
 ```
 
 ## Build
@@ -36,10 +36,10 @@ The output container format is inferred from the file extension of `<output>`.
 From the repo root, inside `nix develop`:
 
 ```bash
-just build-examples
+just build
 ```
 
-The binary is written to `examples/transcode-hl/transcode-hl`.
+The binary is written to `bin/transcode-hl`.
 
 > The static libraries must be present first. Run `go run ./cmd/download-lib` if you have not done so already.
 

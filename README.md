@@ -139,6 +139,22 @@ Details of codecs, muxers and parsers available to enable in the static FFmpeg l
 
 **See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for CI/CD integration, cross-compilation, and troubleshooting, and [docs/API-COVERAGE.md](docs/API-COVERAGE.md) for the full FFmpeg API coverage breakdown.**
 
+### Tailor integration
+
+Tailor manages `just build`, `just test` and `just lint` with Go and CGO enabled. This repository does not enable the `ffmpeg-statigo` consumer component.
+Before these commands, provide compatible headers and static archives with an explicit `just build-ffmpeg` or `just download-lib`.
+`just build-ffmpeg` builds FFmpeg, regenerates bindings, compiles packages and examples, then runs introspection.
+`just build` only compiles Go packages and puts executables in `bin/`. It does not build or download FFmpeg or regenerate bindings.
+`just test` runs vet and tests with console coverage. Some tests access hardware.
+Use `just lint` or `just lint check` for checks. Use `just lint correct` explicitly to tidy modules and format source with the existing `.golangci.yml`.
+The project lint hook retains the filtered complexity report and `ineffassign` after the managed checks pass.
+Use `just ffmpeg-release lib-X.Y.Z.N` or `just go-release X.Y.Z.N` for releases, not the generic three-part `just release` recipe.
+
+The Nix shell imports the managed packages and hooks before the existing custom hooks. Nix flakes exclude untracked files.
+Review the new Nix files and stage them through the normal approval process before entering a fresh shell.
+Direnv watches the Nix fragments but requires manual reload. After approval, use `direnv reload` or `nix develop` to load the reviewed environment.
+If direnv blocks the changed `.envrc`, review the file before approving it with `direnv allow`.
+
 ### Memory and lifetimes
 
 > [!WARNING]

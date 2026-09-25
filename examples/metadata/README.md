@@ -25,17 +25,17 @@ metadata <file>
 From the repo root, inside `nix develop`:
 
 ```bash
-just build-examples
+just build
 ```
 
-The binary is written to `examples/metadata/metadata`.
+The binary is written to `bin/metadata`.
 
 > The static libraries must be present first. Run `go run ./cmd/download-lib` if you have not done so already.
 
 ## Running
 
 ```bash
-./examples/metadata/metadata /path/to/video.mp4
+./bin/metadata /path/to/video.mp4
 ```
 
 ## Expected output

@@ -1,3 +1,5 @@
+import 'just/loader.just'
+
 # Default recipe (shows available commands)
 default:
     @just --list
@@ -19,6 +21,7 @@ clean:
     @rm transcode-hl 2>/dev/null || true
     @rm generator 2>/dev/null || true
     @rm builder 2>/dev/null || true
+    @if [ -d bin ] && [ ! -L bin ]; then for name in asciiplayer hwdecode introspect metadata transcode transcode-hl download-lib builder generator; do rm -f "bin/$name" "bin/$name.exe" 2>/dev/null || true; done; fi
 
 # Build FFmpeg static library
 build-static +args='':
@@ -29,33 +32,20 @@ build-static +args='':
     mkdir -p "lib/${GOOS}_${GOARCH}"
     go run ./internal/builder {{args}}
 
-# Build example programs
-build-examples:
-    go build -v ./examples/asciiplayer/
-    go build -v ./examples/hwdecode/
-    go build -v ./examples/introspect/
-    go build -v ./examples/metadata/
-    go build -v ./examples/transcode/
-    go build -v ./examples/transcode-hl/
-
-# Build everything
-build:
+# Build FFmpeg, regenerate bindings, build examples and inspect capabilities
+build-ffmpeg:
     #!/usr/bin/env bash
     set -euo pipefail
     just build-static ffmpeg --clean
     just build-static
     go run ./internal/generator
     go build -a -v ./...
-    just build-examples
-    ./introspect
+    just build
+    ./bin/introspect
 
 # Generate Go bindings
 generate:
     go run ./internal/generator
-
-# Run tests
-test:
-    go test -v ./...
 
 # Download FFmpeg static libraries
 download-lib:
@@ -96,15 +86,3 @@ _check-lib:
         echo "Error: static library missing. Run 'just download-lib' first."
         exit 1
     fi
-
-# Run linters
-lint: _check-lib
-    @go vet ./...
-    @gocyclo -top 20 -avg -ignore '_test\.go$|\.gen\.go$|/\.build/' .
-    @ineffassign ./...
-    @golangci-lint run
-    @actionlint
-
-# Apply formatting
-fmt:
-    @golangci-lint fmt

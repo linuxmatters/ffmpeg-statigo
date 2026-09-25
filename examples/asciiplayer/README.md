@@ -28,17 +28,17 @@ asciiplayer <file>
 From the repo root, inside `nix develop`:
 
 ```bash
-just build-examples
+just build
 ```
 
-The binary is written to `examples/asciiplayer/asciiplayer`.
+The binary is written to `bin/asciiplayer`.
 
 > The static libraries must be present first. Run `go run ./cmd/download-lib` if you have not done so already.
 
 ## Running
 
 ```bash
-./examples/asciiplayer/asciiplayer /path/to/video.mp4
+./bin/asciiplayer /path/to/video.mp4
 ```
 
 Resize the terminal before launching. The player queries `tcell` for the screen dimensions at startup and scales the video to fit.

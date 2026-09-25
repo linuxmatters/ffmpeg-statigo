@@ -48,10 +48,10 @@ Matching is multi-strategy: exact name, variant (`h264_nvenc`), library prefix (
 From the repo root, inside `nix develop`:
 
 ```bash
-just build-examples
+just build
 ```
 
-The binary is written to `examples/introspect/introspect`.
+The binary is written to `bin/introspect`.
 
 > The static libraries must be present first. Run `go run ./cmd/download-lib` if you have not done so already.
 
@@ -59,13 +59,13 @@ The binary is written to `examples/introspect/introspect`.
 
 ```bash
 # Full listing
-./examples/introspect/introspect
+./bin/introspect
 
 # Generate configure flags for AV1
-./examples/introspect/introspect --enable av1
+./bin/introspect --enable av1
 
 # Generate disable flags for VP7
-./examples/introspect/introspect --disable vp7
+./bin/introspect --disable vp7
 ```
 
 ## Expected output
