@@ -34,6 +34,8 @@ import (
 //   - libiconv 1.19: verified against the GNU-published GPG signature (good
 //     signature from maintainer Bruno Haible) and cross-checked against the
 //     Homebrew formula digest and a second GNU mirror. Treat as authoritative.
+//   - openh264 2.6.0: archive SHA-512 matches the independently published
+//     Gentoo media-libs/openh264 Manifest. SHA-256 pins the same archive bytes.
 //   - All other entries: TOFU-seeded by `--update-digests` in an automated
 //     environment. A maintainer should independently re-verify each before
 //     relying on it. Several upstreams (gnome, videolan/gitlab on-demand
@@ -52,6 +54,7 @@ var archiveDigests = map[string]string{
 	"https://github.com/Haivision/srt/archive/refs/tags/v1.5.5.tar.gz":                                                                                 "c3518bc43a71b5289032395b2db4c3e09e73d78b54247d56c14553a503b491cf",
 	"https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.356.tar.gz":                                                                 "f0aac83f32b2895a15fb0686defc16755810e2705a3fd917cb9535ca79c71d4f",
 	"https://github.com/KhronosGroup/glslang/archive/refs/tags/16.3.0.tar.gz":                                                                          "efff5a15258dce1ca2d323bf64c974f5fca03778174615dbc30c8d36db645bf5",
+	"https://github.com/cisco/openh264/archive/refs/tags/v2.6.0.tar.gz":                                                                                "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69",
 	"https://github.com/intel/libva/releases/download/2.24.0/libva-2.24.0.tar.bz2":                                                                     "56fab4e482dca2c9e8280d5057294b9faa789d637f97cc394a0c6ec08159060c",
 	"https://github.com/intel/libvpl/archive/refs/tags/v2.17.0.tar.gz":                                                                                 "4de3e2faf1e8307fb282e4a43f443191810f6a6b0a484fffa7995ba1c814c6ec",
 	"https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz":                                                                        "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",

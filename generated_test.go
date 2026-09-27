@@ -735,12 +735,12 @@ func TestGeneratorCStrHandling(t *testing.T) {
 	})
 
 	t.Run("cstr_as_parameter", func(t *testing.T) {
-		codecName := ToCStr("libx264")
+		codecName := ToCStr("pcm_s16le")
 		defer codecName.Free()
 
 		codec := AVCodecFindEncoderByName(codecName)
 		if codec == nil {
-			t.Error("AVCodecFindEncoderByName should find libx264 codec")
+			t.Error("AVCodecFindEncoderByName should find pcm_s16le codec")
 		} else {
 			name := codec.Name()
 			t.Logf("Found codec: %s", name)

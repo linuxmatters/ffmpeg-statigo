@@ -352,13 +352,44 @@ var darwinFFmpegFeatureSets = []ffmpegFeatureSet{
 	{HWAccels: []string{"mpeg1_videotoolbox"}},
 }
 
+func embeddedFeatures(features []string) []string {
+	var kept []string
+	for _, feature := range features {
+		if strings.HasPrefix(feature, "av1_") || strings.HasSuffix(feature, "_vulkan") {
+			continue
+		}
+		switch feature {
+		case "av1", "avif", "obu", "libdav1d", "librav1e", "libx264", "libx264rgb", "libx265":
+			continue
+		}
+		kept = append(kept, feature)
+	}
+	return kept
+}
+
+func embeddedFeatureSet(set ffmpegFeatureSet) ffmpegFeatureSet {
+	return ffmpegFeatureSet{
+		Encoders:         embeddedFeatures(set.Encoders),
+		Decoders:         embeddedFeatures(set.Decoders),
+		Parsers:          embeddedFeatures(set.Parsers),
+		Demuxers:         embeddedFeatures(set.Demuxers),
+		Muxers:           embeddedFeatures(set.Muxers),
+		BitstreamFilters: embeddedFeatures(set.BitstreamFilters),
+	}
+}
+
 // FFmpegArgsCommon returns common FFmpeg configure arguments for all platforms.
 // The os parameter selects platform-specific hardware acceleration; valid values are "linux" and "darwin".
 func FFmpegArgsCommon(os string) []string {
-	args := []string{
-		"--enable-pic",
-		"--enable-gpl",
-		"--enable-version3",
+	return ffmpegArgsCommon(os, false)
+}
+
+func ffmpegArgsCommon(os string, embedded bool) []string {
+	args := []string{"--enable-pic"}
+	if !embedded {
+		args = append(args, "--enable-gpl", "--enable-version3")
+	}
+	args = append(args,
 		"--enable-static",
 		"--disable-autodetect",
 		"--disable-debug",
@@ -371,11 +402,26 @@ func FFmpegArgsCommon(os string) []string {
 		"--disable-everything",
 		"--enable-filters",
 		"--enable-protocols",
-	}
+	)
 
-	args = appendFeatureSets(args, commonFFmpegFeatureSets)
+	for _, set := range commonFFmpegFeatureSets {
+		if embedded {
+			set = embeddedFeatureSet(set)
+		}
+		args = set.appendArgs(args)
+	}
 	args = append(args, "--disable-encoder=h263")
 
+	if embedded {
+		return append(args,
+			"--disable-gpl", "--disable-version3", "--disable-nonfree", "--disable-shared",
+			"--disable-hwaccels", "--disable-vulkan", "--disable-vaapi", "--disable-vdpau",
+			"--disable-cuda", "--disable-cuda-llvm", "--disable-cuvid", "--disable-ffnvcodec",
+			"--disable-nvdec", "--disable-nvenc", "--disable-v4l2-m2m",
+			"--disable-videotoolbox", "--disable-audiotoolbox", "--disable-avfoundation",
+			"--enable-encoder=libopenh264",
+		)
+	}
 	if os == "linux" {
 		args = appendFeatureSets(args, linuxFFmpegFeatureSets)
 	}

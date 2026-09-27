@@ -208,6 +208,21 @@ Before managed build, test or lint commands, provide compatible headers and arch
 | `just generate` | Regenerate Go bindings from headers |
 | `just download-lib` | Download pre-built libraries |
 
+### Embedded variant
+
+Use the embedded variant when the application does not need AV1 or hardware acceleration. Select its archive and linker path with the same Go build tag:
+
+```sh
+GOFLAGS=-tags=embedded go run ./cmd/download-lib
+GOFLAGS=-tags=embedded just build
+```
+
+The embedded asset on a `lib-` release is `ffmpeg-embedded-<os>-<arch>.tar.gz`. The static library goes to `lib/embedded/<os>_<arch>/libffmpeg.a`; the untagged build continues to use `lib/<os>_<arch>/libffmpeg.a`.
+
+To build the embedded library from source, run `just build-embedded` from the repository root. The recipe runs `go run ./internal/builder --embedded`. The variant adds OpenH264 without GPL flags and omits x264, x265, dav1d, glslang, libdrm, libva, libvpl, OpenSSL, libsrt, rav1e, AV1 and hardware acceleration. Do not use the default codec and hardware lists in the README as an embedded capability list.
+
+OpenH264 uses a two-clause BSD licence and needs its copyright notice. A self-built static OpenH264 archive does not get the AVC patent royalty coverage for Cisco's separately downloaded binary ([OpenH264 FAQ](https://www.openh264.org/faq.html)). FFmpeg's LGPL requirements still apply, including the ability to relink a distributed static binary with a modified FFmpeg library ([FFmpeg licence](https://www.ffmpeg.org/legal.html)).
+
 ### Pinned build dependencies
 
 The from-source builder downloads ~20 third-party archives (x264, x265, dav1d, openssl, zlib, libvpx, rav1e, and more), compiles them, and links them into the shipped `libffmpeg.a`. Each archive is SHA-256 pinned in `internal/builder/digests.go`, keyed by download URL, closing the supply-chain hole of trusting unverified downloads (CWE-494).

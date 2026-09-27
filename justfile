@@ -32,6 +32,15 @@ build-static +args='':
     mkdir -p "lib/${GOOS}_${GOARCH}"
     go run ./internal/builder {{args}}
 
+# Build embedded FFmpeg static library (then use GOFLAGS=-tags=embedded with just build or just test)
+build-embedded +args='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    GOOS=$(go env GOOS)
+    GOARCH=$(go env GOARCH)
+    mkdir -p "lib/embedded/${GOOS}_${GOARCH}"
+    go run ./internal/builder --embedded {{args}}
+
 # Build FFmpeg, regenerate bindings, build examples and inspect capabilities
 build-ffmpeg:
     #!/usr/bin/env bash

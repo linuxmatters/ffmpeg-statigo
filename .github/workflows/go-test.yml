@@ -12,10 +12,16 @@ permissions:
 
 jobs:
   build:
-    name: Build and test on ${{ matrix.os }} ${{ matrix.arch }}
+    name: Test ${{ matrix.variant }} on ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
+    env:
+      CGO_ENABLED: "1"
+      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
     strategy:
       matrix:
+        os: [linux, darwin]
+        arch: [amd64, arm64]
+        variant: [default, embedded]
         include:
           - os: linux
             arch: amd64
@@ -39,33 +45,89 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Check embedded release assets
+        if: matrix.variant == 'embedded'
+        id: embedded-release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(sed -n 's/^const Version = "\([^"]*\)"$/\1/p' lib/fetch.go)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          # Match findViaAPI's page size, prefix filter and lexical tag order.
+          api=https://api.github.com/repos/linuxmatters/ffmpeg-statigo
+          release=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$api/releases?per_page=100" |
+            jq -ce --arg prefix "lib-$version" '
+              [.[] | select(.tag_name | startswith($prefix))] |
+              sort_by(.tag_name) | last //
+              error("No compatible FFmpeg release")')
+          tag=$(jq -er '.tag_name' <<< "$release")
+          revision=${tag#"lib-$version."}
+          if [[ ! "$revision" =~ ^[0-9]+$ ]]; then
+            echo "::error::Release $tag is incompatible with $version"
+            exit 1
+          fi
+          available=$(jq -r '
+            if (.assets | type) != "array" then
+              error("Missing release asset metadata")
+            else [.assets[].name |
+              select(startswith("ffmpeg-embedded-") and endswith(".tar.gz"))] |
+              length > 0
+            end' <<< "$release")
+          echo "available=$available" >> "$GITHUB_OUTPUT"
+          if [[ "$available" == false ]]; then
+            echo "::notice::Release $tag has no embedded archives." \
+              "Skipping embedded download, build, test and lint." \
+              "ffmpeg-test.yml tests source builds."
+          fi
+
       - name: Download FFmpeg libraries
+        if: >-
+          matrix.variant == 'default' ||
+          steps.embedded-release.outputs.available == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
       - name: Build
+        if: >-
+          matrix.variant == 'default' ||
+          steps.embedded-release.outputs.available == 'true'
         run: go build -v ./...
 
-      # Note: macOS may show linker warnings about version mismatches if the static
-      # libraries were built on a newer macOS version than the runner.
-      # These warnings are harmless - the libraries have MACOSX_DEPLOYMENT_TARGET=13.0
+      # macOS can warn about a version mismatch when newer macOS built the
+      # static libraries. The libraries target MACOSX_DEPLOYMENT_TARGET=13.0.
       - name: Test
+        if: >-
+          matrix.variant == 'default' ||
+          steps.embedded-release.outputs.available == 'true'
         run: go test -v ./...
 
       # Race detector on one leg. The global callback registries and cgo
       # bridges are platform-independent, so one platform suffices.
       - name: Test (race)
-        if: matrix.os == 'linux' && matrix.arch == 'amd64'
+        if: >-
+          matrix.os == 'linux' && matrix.arch == 'amd64' &&
+          (matrix.variant == 'default' ||
+          steps.embedded-release.outputs.available == 'true')
         run: go test -race -count=1 ./...
 
       # Lint on one leg, over every package including internal/generator.
       - name: Lint
-        if: matrix.os == 'linux' && matrix.arch == 'amd64'
+        if: >-
+          matrix.os == 'linux' && matrix.arch == 'amd64' &&
+          (matrix.variant == 'default' ||
+          steps.embedded-release.outputs.available == 'true')
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
-          args: ./...
+          args: >-
+            ${{ matrix.variant == 'embedded' &&
+            '--build-tags=embedded ./...' || './...' }}
 
       # Regenerate the Go bindings from the FFmpeg headers. The parser is pure
       # Go (modernc.org/cc/v4), so there is nothing to install, and the parse is
@@ -78,14 +140,21 @@ jobs:
       # one of them fails the build. Output is not filtered: a warning that only
       # appears on one platform is exactly what this step exists to surface.
       - name: Run generator
+        if: matrix.variant == 'default'
         run: go run ./internal/generator
 
       - name: Check for generated code differences
+        if: matrix.variant == 'default'
         run: |
           if git diff --quiet -- ./*.gen.go; then
-            echo "::notice title=Generated Code Match on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings match committed version."
+            echo "::notice title=Generated Code Match on" \
+              "${{ matrix.os }}/${{ matrix.arch }}::Generated bindings" \
+              "match committed version."
           else
-            echo "::error title=Generated Code Drift on ${{ matrix.os }}/${{ matrix.arch }}::Generated bindings differ from committed version. Run 'just generate' and commit the updated *.gen.go."
+            echo "::error title=Generated Code Drift on" \
+              "${{ matrix.os }}/${{ matrix.arch }}::Generated bindings" \
+              "differ from committed version. Run 'just generate' and commit" \
+              "the updated *.gen.go."
             git diff -- ./*.gen.go
             exit 1
           fi

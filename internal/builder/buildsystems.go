@@ -249,8 +249,12 @@ func (m *MakefileBuild) Build(ctx context.Context, lib *Library, srcPath, buildD
 	installDir := stagingDir(buildDir)
 
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
-		args := append([]string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}, m.Targets...)
-		if err := runCommand(ctx, srcPath, output, installDir, "make", args...); err != nil {
+		args := []string{"-j", fmt.Sprintf("%d", runtime.NumCPU())}
+		if lib.ConfigureArgs != nil {
+			args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
+		}
+		args = append(args, m.Targets...)
+		if err := runCommandEnv(ctx, srcPath, output, installDir, lib.extraEnv(), "make", args...); err != nil {
 			return err
 		}
 

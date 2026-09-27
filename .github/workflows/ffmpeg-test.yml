@@ -6,7 +6,12 @@ on:
     paths:
       - ".github/workflows/ffmpeg-test.yml"
       - "internal/builder/**"
-      - "*.gen.go"
+      - "*.go"
+      - "av/**"
+      - "lib/**"
+      - "include/**"
+      - "go.mod"
+      - "go.sum"
   workflow_dispatch:
 
 permissions:
@@ -14,10 +19,20 @@ permissions:
 
 jobs:
   ffmpeg-test:
-    name: Build FFmpeg library for ${{ matrix.os }} ${{ matrix.arch }}
+    name: Test ${{ matrix.variant }} for ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
+    env:
+      CGO_ENABLED: "1"
+      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
+      BUILDER_FLAGS: ${{ matrix.variant == 'embedded' && '--embedded' || '' }}
+      LIB_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded/' || '' }}
+      BUILD_ROOT: >-
+        ${{ matrix.variant == 'embedded' && '.build/embedded' || '.build' }}
     strategy:
       matrix:
+        os: [linux, darwin]
+        arch: [amd64, arm64]
+        variant: [default, embedded]
         include:
           - os: linux
             arch: amd64
@@ -39,7 +54,7 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -55,42 +70,52 @@ jobs:
 
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y yasm nasm meson gperf python3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yasm nasm meson gperf python3
 
       - name: Install macOS dependencies
         if: matrix.os == 'darwin'
-        run: brew update && brew install yasm autoconf ragel meson nasm automake libtool python3
+        run: |
+          brew update
+          brew install yasm autoconf ragel meson nasm automake libtool python3
 
-      - name: Calculate file hashes
+      - name: Calculate builder hash
         id: file-hashes
         run: |
-          echo "libraries-hash=$(sha256sum internal/builder/libraries.go | cut -d' ' -f1 | head -c 8)" >> "$GITHUB_OUTPUT"
-          echo "buildsystems-hash=$(sha256sum internal/builder/buildsystems.go | cut -d' ' -f1 | head -c 8)" >> "$GITHUB_OUTPUT"
+          hash=$(shasum -a 256 internal/builder/*.go | shasum -a 256)
+          echo "builder-hash=${hash%% *}" >> "$GITHUB_OUTPUT"
 
       - name: Cache FFmpeg source downloads
         uses: actions/cache@v6
         with:
-          path: .build/downloads
-          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
-          # hashFiles() broken on macOS runners as of 2024-11-23, using calculated hash instead
-          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-${{ matrix.os == 'darwin' && steps.file-hashes.outputs.libraries-hash || hashFiles('internal/builder/libraries.go') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-downloads-
+          path: ${{ env.BUILD_ROOT }}/downloads
+          key: >-
+            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-${{
+            matrix.variant }}-downloads-${{
+            steps.file-hashes.outputs.builder-hash }}
+          restore-keys: >-
+            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-${{
+            matrix.variant }}-downloads-
 
       - name: Cache compiled dependencies
         uses: actions/cache@v6
         with:
           path: |
-            .build/staging
-            .build/build
-          # Workaround for GitHub Actions bug: https://github.com/actions/runner-images/issues/13341
-          # hashFiles() broken on macOS runners as of 2024-11-23, using calculated hash instead
-          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-${{ matrix.os == 'darwin' && format('{0}-{1}', steps.file-hashes.outputs.libraries-hash, steps.file-hashes.outputs.buildsystems-hash) || hashFiles('internal/builder/libraries.go', 'internal/builder/buildsystems.go') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-deps-
+            ${{ env.BUILD_ROOT }}/staging
+            ${{ env.BUILD_ROOT }}/build
+          key: >-
+            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-${{
+            matrix.variant }}-deps-${{ steps.file-hashes.outputs.builder-hash }}
 
       - name: Build FFmpeg library
-        run: go run ./internal/builder/
+        run: go run ./internal/builder/ ${BUILDER_FLAGS:+"$BUILDER_FLAGS"}
 
       - name: List built files
-        run: ls -lh lib/${{ matrix.os }}_${{ matrix.arch }}/
+        run: ls -lh "lib/${LIB_PREFIX}${{ matrix.os }}_${{ matrix.arch }}/"
+
+      - name: Build Go packages
+        run: go build -v ./...
+
+      - name: Test Go packages
+        run: go test -v ./...

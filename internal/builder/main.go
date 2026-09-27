@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"syscall"
 )
@@ -26,23 +27,16 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Initialize FFmpeg library enables after AllLibraries is fully defined
-	CollectFFmpegEnables()
-
-	arch := runtime.GOARCH
-	targetOutput := filepath.Join("lib", runtime.GOOS+"_"+arch, "libffmpeg.a")
-	targetOutput, err := filepath.Abs(targetOutput)
-	if err != nil {
-		return fmt.Errorf("get absolute path for output: %w", err)
-	}
-
 	selectedLibs := make(map[string]bool)
 	cleanBuild := false
 	listMode := false
 	updateDigests := false
+	embedded := false
 
 	for _, arg := range os.Args[1:] {
 		switch arg {
+		case "--embedded":
+			embedded = true
 		case "--clean":
 			cleanBuild = true
 		case "--list":
@@ -54,9 +48,16 @@ func run() error {
 		}
 	}
 
+	buildRoot, targetOutput, err := profilePaths(embedded, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return err
+	}
+	stagingDir := filepath.Join(buildRoot, "staging")
+	profileLibs := librariesForProfile(embedded, stagingDir)
+
 	// Handle --list mode: display library information and exit
 	if listMode {
-		printLibraryList(AllLibraries)
+		printLibraryList(profileLibs)
 		return nil
 	}
 
@@ -65,18 +66,8 @@ func run() error {
 	// entries for review. Run once in a trusted environment, then verify each
 	// digest against upstream-published checksums and commit digests.go.
 	if updateDigests {
-		buildRoot, err := filepath.Abs(".build")
-		if err != nil {
-			return fmt.Errorf("get absolute path for build root: %w", err)
-		}
-		return updateDigestsMode(ctx, buildRoot, AllLibraries)
+		return updateDigestsMode(ctx, buildRoot, profileLibs)
 	}
-
-	buildRoot, err := filepath.Abs(".build")
-	if err != nil {
-		return fmt.Errorf("get absolute path for build root: %w", err)
-	}
-	stagingDir := filepath.Join(buildRoot, "staging")
 
 	// Create directories (do NOT delete - incremental builds!)
 	dirs := []string{
@@ -92,13 +83,16 @@ func run() error {
 		}
 	}
 
-	libs := AllLibraries
+	libs := profileLibs
 	if len(selectedLibs) > 0 {
 		filtered := []*Library{}
-		for _, lib := range AllLibraries {
+		for _, lib := range profileLibs {
 			if selectedLibs[lib.Name] {
 				filtered = append(filtered, lib)
 			}
+		}
+		if len(filtered) != len(selectedLibs) {
+			return fmt.Errorf("unknown or excluded library selection; use --list with the same profile")
 		}
 		libs = filtered
 	}
@@ -264,7 +258,7 @@ func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output s
 		}
 
 		for _, entry := range entries {
-			if !strings.HasSuffix(entry.Name(), ".a") {
+			if !entry.Type().IsRegular() || !strings.HasSuffix(entry.Name(), ".a") {
 				continue
 			}
 			// Check if this .a file matches one of our LinkLibs
@@ -276,6 +270,17 @@ func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output s
 		}
 	}
 
+	for _, libFile := range libFiles {
+		delete(linkLibsMap, strings.TrimSuffix(filepath.Base(libFile), ".a"))
+	}
+	if len(linkLibsMap) != 0 {
+		var missing []string
+		for name := range linkLibsMap {
+			missing = append(missing, name+".a")
+		}
+		slices.Sort(missing)
+		return fmt.Errorf("missing expected static libraries in %s: %s", stagingDir, strings.Join(missing, ", "))
+	}
 	if len(libFiles) == 0 {
 		return fmt.Errorf("no static libraries found in %s", stagingDir)
 	}

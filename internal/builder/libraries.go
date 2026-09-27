@@ -811,31 +811,8 @@ var ffmpeg = &Library{
 		return nil
 	},
 	ConfigureArgs: func(targetOS string) []string {
-		// FFmpeg needs explicit paths to headers and libraries
 		stagingDir, _ := filepath.Abs(".build/staging")
-		incDir := filepath.Join(stagingDir, "include")
-		libDir := filepath.Join(stagingDir, "lib")
-
-		extraCflags := fmt.Sprintf("-I%s", incDir)
-		extraLdflags := fmt.Sprintf("-L%s", libDir)
-
-		args := []string{
-			"--pkg-config-flags=--static",
-			fmt.Sprintf("--extra-cflags=%s", extraCflags),
-			fmt.Sprintf("--extra-ldflags=%s", extraLdflags),
-		}
-
-		// On macOS, force clang as the compiler
-		// The Nix dev shell includes both gcc and clang, but our CFLAGS include
-		// paths to Clang's builtin headers (stddef.h, stdarg.h) which use Clang-specific
-		// features like __has_feature and __building_module that gcc doesn't understand
-		if targetOS == "darwin" {
-			args = append(args, "--cc=clang", "--cxx=clang++")
-		}
-
-		args = append(args, FFmpegArgsCommon(targetOS)...)
-
-		return args
+		return ffmpegConfigureArgs(targetOS, stagingDir, false)
 	},
 	LinkLibs: []string{
 		"libavcodec",
@@ -846,36 +823,6 @@ var ffmpeg = &Library{
 		"libswresample",
 		"libswscale",
 	},
-}
-
-// CollectFFmpegEnables collects --enable-* flags from all enabled external libraries
-// This must be called AFTER AllLibraries is initialized to inject the enables into ffmpeg's ConfigureArgs
-func CollectFFmpegEnables() {
-	originalConfigureArgs := ffmpeg.ConfigureArgs
-	ffmpeg.ConfigureArgs = func(os string) []string {
-		args := originalConfigureArgs(os)
-
-		for _, lib := range AllLibraries {
-			// Skip ffmpeg itself and libraries that are disabled or shouldn't build on current platform
-			if lib == ffmpeg || !lib.ShouldBuild() {
-				continue
-			}
-			for _, flag := range lib.FFmpegEnables {
-				args = append(args, "--enable-"+flag)
-			}
-		}
-
-		// Add platform-specific built-in FFmpeg features (not external libraries)
-		if os == "darwin" {
-			args = append(args,
-				"--enable-avfoundation",
-				"--enable-audiotoolbox",
-				"--enable-videotoolbox",
-			)
-		}
-
-		return args
-	}
 }
 
 // touchAutomakeFiles touches all automake-related files to prevent regeneration
