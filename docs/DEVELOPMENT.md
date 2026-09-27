@@ -221,7 +221,7 @@ The embedded asset on a `lib-` release is `ffmpeg-embedded-<os>-<arch>.tar.gz`. 
 
 To build the embedded library from source, run `just build-embedded` from the repository root. The recipe runs `go run ./internal/builder --embedded`. The variant adds OpenH264 without GPL flags and omits x264, x265, dav1d, glslang, libdrm, libva, libvpl, OpenSSL, libsrt, rav1e, AV1 and hardware acceleration. Do not use the default codec and hardware lists in the README as an embedded capability list.
 
-The embedded profile also excludes CFHD, Dirac, DNxHD, OpenEXR (`exr`), HEVC decoding, PBM, ProRes (including `prores_aw`, `prores_ks` and `prores_raw`), TIFF, VC-1 and VVC decoding. It removes their exclusive parsers, formats and metadata bitstream filters, including `dovi_rpu`. It removes RealMedia (`rm`) and the RTP, RTSP, SAP and SDP demuxers, but retains the corresponding streaming muxers.
+The embedded profile also excludes CFHD, Dirac, DNxHD, OpenEXR (`exr`), HEVC encoding and decoding, PBM, ProRes (including `prores_aw`, `prores_ks` and `prores_raw`), TIFF, VC-1 and VVC decoding. It removes their exclusive parsers, formats and metadata bitstream filters, including `dovi_rpu`. It removes RealMedia (`rm`) and the RTP, RTSP, SAP and SDP demuxers, but retains the corresponding streaming muxers.
 
 Shared dependencies remain: MPEG-4 Part 2 requires the H.263 decoder, and Theora requires the VP3 decoder. H.263 encoding is disabled. The `dts2pts` filter requires the HEVC parser. MPEG-TS output requires `hevc_mp4toannexb` and `vvc_mp4toannexb`. OpenH264 encoding, H.264 decoding, AAC encoding and decoding, and MP4 input and output remain available. The default profile is unchanged.
 
