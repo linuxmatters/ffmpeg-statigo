@@ -4,6 +4,19 @@ package ffmpeg
 #include <stdint.h>
 #include <libavutil/pixfmt.h>
 #include <libswscale/swscale.h>
+
+// Win32 callers can use a 4-byte stack, but FFmpeg needs 16-byte alignment.
+// Keep this boundary out of line so that the alignment attribute takes effect.
+#if defined(_WIN32) && defined(__i386__)
+__attribute__((force_align_arg_pointer, noinline))
+#endif
+static SwsContext *ffg_sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
+                                    int dstW, int dstH, enum AVPixelFormat dstFormat,
+                                    int flags, SwsFilter *srcFilter,
+                                    SwsFilter *dstFilter, const double *param) {
+    return sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat,
+                          flags, srcFilter, dstFilter, param);
+}
 */
 import "C"
 
@@ -28,7 +41,7 @@ func SwsGetContext(srcW, srcH int, srcFormat AVPixelFormat, dstW, dstH int, dstF
 		cParam = &cParamBuf[0]
 	}
 
-	ret := C.sws_getContext(
+	ret := C.ffg_sws_getContext(
 		C.int(srcW), C.int(srcH), C.enum_AVPixelFormat(srcFormat),
 		C.int(dstW), C.int(dstH), C.enum_AVPixelFormat(dstFormat),
 		C.int(flags),
