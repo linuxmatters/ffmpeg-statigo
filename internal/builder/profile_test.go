@@ -70,8 +70,12 @@ func TestEmbeddedLibrarySelection(t *testing.T) {
 }
 
 func featureEnabled(args []string, kind, name string) bool {
+	return featureConfigured(args, "enable", kind, name)
+}
+
+func featureConfigured(args []string, action, kind, name string) bool {
 	for _, arg := range args {
-		if value, ok := strings.CutPrefix(arg, "--enable-"+kind+"="); ok && slices.Contains(strings.Split(value, ","), name) {
+		if value, ok := strings.CutPrefix(arg, "--"+action+"-"+kind+"="); ok && slices.Contains(strings.Split(value, ","), name) {
 			return true
 		}
 	}
@@ -114,7 +118,7 @@ func TestProfileConfigureArgs(t *testing.T) {
 					}
 				}
 			}
-			for _, required := range [][2]string{{"encoder", "libopenh264"}, {"encoder", "aac"}, {"muxer", "mp4"}, {"decoder", "hevc"}, {"encoder", "libvpx_vp9"}, {"encoder", "libopus"}, {"bsf", "extract_extradata"}} {
+			for _, required := range [][2]string{{"encoder", "libopenh264"}, {"encoder", "aac"}, {"muxer", "mp4"}, {"decoder", "h264"}, {"encoder", "libvpx_vp9"}, {"encoder", "libopus"}, {"bsf", "extract_extradata"}} {
 				if !featureEnabled(args, required[0], required[1]) {
 					t.Errorf("missing %s %s", required[0], required[1])
 				}

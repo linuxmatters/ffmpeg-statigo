@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 type ffmpegFeatureSet struct {
 	Encoders         []string
@@ -15,23 +18,27 @@ type ffmpegFeatureSet struct {
 }
 
 func (set ffmpegFeatureSet) appendArgs(args []string) []string {
-	args = appendEnableArg(args, "encoder", set.Encoders)
-	args = appendEnableArg(args, "decoder", set.Decoders)
-	args = appendEnableArg(args, "parser", set.Parsers)
-	args = appendEnableArg(args, "demuxer", set.Demuxers)
-	args = appendEnableArg(args, "muxer", set.Muxers)
-	args = appendEnableArg(args, "bsf", set.BitstreamFilters)
-	args = appendEnableArg(args, "indev", set.InputDevices)
-	args = appendEnableArg(args, "outdev", set.OutputDevices)
-	args = appendEnableArg(args, "hwaccel", set.HWAccels)
+	return set.appendComponentArgs(args, "enable")
+}
+
+func (set ffmpegFeatureSet) appendComponentArgs(args []string, action string) []string {
+	args = appendFeatureArg(args, action, "encoder", set.Encoders)
+	args = appendFeatureArg(args, action, "decoder", set.Decoders)
+	args = appendFeatureArg(args, action, "parser", set.Parsers)
+	args = appendFeatureArg(args, action, "demuxer", set.Demuxers)
+	args = appendFeatureArg(args, action, "muxer", set.Muxers)
+	args = appendFeatureArg(args, action, "bsf", set.BitstreamFilters)
+	args = appendFeatureArg(args, action, "indev", set.InputDevices)
+	args = appendFeatureArg(args, action, "outdev", set.OutputDevices)
+	args = appendFeatureArg(args, action, "hwaccel", set.HWAccels)
 	return args
 }
 
-func appendEnableArg(args []string, kind string, values []string) []string {
+func appendFeatureArg(args []string, action, kind string, values []string) []string {
 	if len(values) == 0 {
 		return args
 	}
-	return append(args, "--enable-"+kind+"="+strings.Join(values, ","))
+	return append(args, "--"+action+"-"+kind+"="+strings.Join(values, ","))
 }
 
 func appendFeatureSets(args []string, sets []ffmpegFeatureSet) []string {
@@ -352,29 +359,37 @@ var darwinFFmpegFeatureSets = []ffmpegFeatureSet{
 	{HWAccels: []string{"mpeg1_videotoolbox"}},
 }
 
-func embeddedFeatures(features []string) []string {
+var embeddedFFmpegExclusions = ffmpegFeatureSet{
+	Encoders: []string{"av1_vulkan", "librav1e", "libx264", "libx264rgb", "libx265", "ffv1_vulkan", "h264_vulkan", "hevc_vulkan", "cfhd", "dnxhd", "exr", "h263", "pbm", "prores", "prores_aw", "prores_ks", "tiff"},
+	// MPEG-4 Part 2 requires h263_decoder. Theora requires vp3_decoder.
+	Decoders: []string{"av1", "libdav1d", "cfhd", "dirac", "dnxhd", "exr", "hevc", "pbm", "prores", "prores_raw", "tiff", "vc1", "vvc"},
+	// dts2pts requires hevc_parser.
+	Parsers: []string{"av1", "dirac", "dnxhd", "h263", "prores", "prores_raw", "vc1", "vp3", "vvc"},
+	// RTP, RTSP, SAP and SDP input select rtpdec, which requires rm_demuxer.
+	Demuxers: []string{"avif", "obu", "dirac", "dnxhd", "h263", "hevc", "rm", "vc1", "vvc", "rtp", "rtsp", "sap", "sdp"},
+	Muxers:   []string{"avif", "obu", "dirac", "dnxhd", "h263", "hevc", "rm", "vc1", "vvc"},
+	// MPEG-TS output requires hevc_mp4toannexb and vvc_mp4toannexb.
+	BitstreamFilters: []string{"av1_frame_merge", "av1_frame_split", "av1_metadata", "dovi_rpu", "hevc_metadata", "prores_metadata", "vvc_metadata"},
+}
+
+func embeddedFeatures(features, excluded []string) []string {
 	var kept []string
 	for _, feature := range features {
-		if strings.HasPrefix(feature, "av1_") || strings.HasSuffix(feature, "_vulkan") {
-			continue
+		if !slices.Contains(excluded, feature) {
+			kept = append(kept, feature)
 		}
-		switch feature {
-		case "av1", "avif", "obu", "libdav1d", "librav1e", "libx264", "libx264rgb", "libx265":
-			continue
-		}
-		kept = append(kept, feature)
 	}
 	return kept
 }
 
 func embeddedFeatureSet(set ffmpegFeatureSet) ffmpegFeatureSet {
 	return ffmpegFeatureSet{
-		Encoders:         embeddedFeatures(set.Encoders),
-		Decoders:         embeddedFeatures(set.Decoders),
-		Parsers:          embeddedFeatures(set.Parsers),
-		Demuxers:         embeddedFeatures(set.Demuxers),
-		Muxers:           embeddedFeatures(set.Muxers),
-		BitstreamFilters: embeddedFeatures(set.BitstreamFilters),
+		Encoders:         embeddedFeatures(set.Encoders, embeddedFFmpegExclusions.Encoders),
+		Decoders:         embeddedFeatures(set.Decoders, embeddedFFmpegExclusions.Decoders),
+		Parsers:          embeddedFeatures(set.Parsers, embeddedFFmpegExclusions.Parsers),
+		Demuxers:         embeddedFeatures(set.Demuxers, embeddedFFmpegExclusions.Demuxers),
+		Muxers:           embeddedFeatures(set.Muxers, embeddedFFmpegExclusions.Muxers),
+		BitstreamFilters: embeddedFeatures(set.BitstreamFilters, embeddedFFmpegExclusions.BitstreamFilters),
 	}
 }
 
@@ -413,6 +428,7 @@ func ffmpegArgsCommon(os string, embedded bool) []string {
 	args = append(args, "--disable-encoder=h263")
 
 	if embedded {
+		args = embeddedFFmpegExclusions.appendComponentArgs(args, "disable")
 		return append(args,
 			"--disable-gpl", "--disable-version3", "--disable-nonfree", "--disable-shared",
 			"--disable-hwaccels", "--disable-vulkan", "--disable-vaapi", "--disable-vdpau",
