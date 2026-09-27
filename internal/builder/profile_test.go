@@ -38,34 +38,51 @@ func TestProfilePaths(t *testing.T) {
 
 func TestEmbeddedLibrarySelection(t *testing.T) {
 	excluded := []string{"dav1d", "glslang", "libdrm", "libsrt", "libva", "libvpl", "openssl", "rav1e", "x264", "x265", "nv-codec-headers", "Vulkan-Headers"}
-	libs := librariesForProfile(true, filepath.Join(t.TempDir(), "staging"))
-	seen := make(map[*Library]bool)
-	for _, lib := range libs {
-		if slices.Contains(excluded, lib.Name) {
-			t.Errorf("excluded library %s remains", lib.Name)
-		}
-		for _, dep := range lib.Dependencies {
-			if !seen[dep] {
-				t.Errorf("%s depends on missing or later library %s", lib.Name, dep.Name)
-			}
-		}
-		seen[lib] = true
-		if lib.Enabled == nil || *lib.Enabled {
-			if _, ok := expectedDigest(lib.URL); !ok {
-				t.Errorf("missing digest for %s", lib.Name)
-			}
-		}
-	}
+	originals := map[string]*Library{"openh264": openh264}
+	var want []string
 	for _, lib := range AllLibraries {
-		if lib != ffmpeg && !slices.Contains(excluded, lib.Name) && !seen[lib] {
-			t.Errorf("remaining library %s was removed", lib.Name)
+		originals[lib.Name] = lib
+		if lib != ffmpeg && !slices.Contains(excluded, lib.Name) {
+			want = append(want, lib.Name)
 		}
 	}
-	if !seen[openh264] || libs[len(libs)-1].Name != "ffmpeg" {
-		t.Fatal("OpenH264 must precede FFmpeg")
-	}
-	if vvenc.ShouldBuild() {
-		t.Error("disabled vvenc was enabled")
+	want = append(want, "openh264", "ffmpeg")
+
+	for _, targetOS := range []string{"linux", "windows"} {
+		t.Run(targetOS+"/amd64", func(t *testing.T) {
+			libs := librariesForPlatform(true, filepath.Join(t.TempDir(), "staging"), targetOS, "amd64")
+			seen := make(map[string]bool)
+			var names []string
+			for _, lib := range libs {
+				if slices.Contains(excluded, lib.Name) {
+					t.Errorf("excluded library %s remains", lib.Name)
+				}
+				for _, dep := range lib.Dependencies {
+					if !seen[dep.Name] {
+						t.Errorf("%s depends on missing or later library %s", lib.Name, dep.Name)
+					}
+				}
+				if seen[lib.Name] {
+					t.Errorf("duplicate library %s", lib.Name)
+				}
+				seen[lib.Name] = true
+				names = append(names, lib.Name)
+				if targetOS == "linux" && lib.Name != "ffmpeg" && lib != originals[lib.Name] {
+					t.Errorf("default library %s lost its identity", lib.Name)
+				}
+				if lib.Enabled == nil || *lib.Enabled {
+					if _, ok := expectedDigest(lib.URL); !ok {
+						t.Errorf("missing digest for %s", lib.Name)
+					}
+				}
+			}
+			if !slices.Equal(names, want) {
+				t.Errorf("embedded libraries = %v, want %v", names, want)
+			}
+			if vvenc.ShouldBuild() {
+				t.Error("disabled vvenc was enabled")
+			}
+		})
 	}
 }
 

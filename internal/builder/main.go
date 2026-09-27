@@ -291,6 +291,9 @@ func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output s
 	if runtime.GOOS == "darwin" {
 		return combineMac(ctx, libFiles, output)
 	}
+	if runtime.GOOS == "windows" {
+		return combineWindows(ctx, libFiles, output)
+	}
 	return combineLinux(ctx, libFiles, output)
 }
 
@@ -327,6 +330,86 @@ func combineMac(ctx context.Context, libFiles []string, output string) error {
 		return fmt.Errorf("strip failed: %w", err)
 	}
 
+	return nil
+}
+
+func configuredArchiveTool(key, fallback string) string {
+	if tool := os.Getenv(key); tool != "" {
+		return tool
+	}
+	return fallback
+}
+
+// prepareArchiveMerge copies archives to safe relative names for GNU ar's MRI parser.
+// Copying normal archives also avoids MSYS path conversion and thin-archive references.
+func prepareArchiveMerge(libFiles []string, workDir string) (string, error) {
+	var script strings.Builder
+	script.WriteString("create combined.a\n")
+	for i, path := range libFiles {
+		name := fmt.Sprintf("input-%06d.a", i)
+		if err := copyMergeArchive(path, filepath.Join(workDir, name)); err != nil {
+			return "", err
+		}
+		fmt.Fprintf(&script, "addlib %s\n", name)
+	}
+	script.WriteString("save\nend\n")
+	return script.String(), nil
+}
+
+func copyMergeArchive(source, destination string) error {
+	input, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+	var magic [8]byte
+	if _, err := io.ReadFull(input, magic[:]); err != nil {
+		return fmt.Errorf("read archive %s: %w", source, err)
+	}
+	if string(magic[:]) != "!<arch>\n" {
+		return fmt.Errorf("expected normal archive: %s", source)
+	}
+	output, err := os.Create(destination)
+	if err != nil {
+		return err
+	}
+	_, copyErr := io.Copy(output, io.MultiReader(bytes.NewReader(magic[:]), input))
+	closeErr := output.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	return closeErr
+}
+
+func combineWindows(ctx context.Context, libFiles []string, output string) error {
+	outputDir := filepath.Dir(output)
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return fmt.Errorf("create output directory: %w", err)
+	}
+	workDir, err := os.MkdirTemp(outputDir, ".ffmpeg-merge-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(workDir)
+
+	script, err := prepareArchiveMerge(libFiles, workDir)
+	if err != nil {
+		return fmt.Errorf("prepare archive merge: %w", err)
+	}
+	ar := exec.CommandContext(ctx, configuredArchiveTool("AR", "ar"), "-M") //nolint:gosec // G204: AR selects a trusted local build tool, with fixed arguments and no shell.
+	ar.Dir = workDir
+	ar.Stdin = strings.NewReader(script)
+	if diagnostic, err := ar.CombinedOutput(); err != nil {
+		return fmt.Errorf("archive merge failed: %w: %s", err, diagnostic)
+	}
+	strip := exec.CommandContext(ctx, configuredArchiveTool("STRIP", "strip"), "--strip-unneeded", "combined.a") //nolint:gosec // G204: STRIP selects a trusted local build tool, with fixed arguments and no shell.
+	strip.Dir = workDir
+	if diagnostic, err := strip.CombinedOutput(); err != nil {
+		return fmt.Errorf("strip failed: %w: %s", err, diagnostic)
+	}
+	if err := os.Rename(filepath.Join(workDir, "combined.a"), output); err != nil {
+		return fmt.Errorf("replace combined archive: %w", err)
+	}
 	return nil
 }
 

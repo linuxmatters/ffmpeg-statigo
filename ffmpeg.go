@@ -87,7 +87,7 @@ type CStr struct {
 
 // AllocCStr allocates an empty string with the given length. The buffer will be initialised to 0.
 func AllocCStr(len uint) *CStr {
-	ptr := (*C.char)(C.calloc(C.ulong(len), C.sizeof_char))
+	ptr := (*C.char)(C.calloc(C.size_t(len), C.sizeof_char))
 
 	return &CStr{
 		ptr: ptr,

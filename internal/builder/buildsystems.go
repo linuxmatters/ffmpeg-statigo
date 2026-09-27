@@ -44,10 +44,18 @@ func withBuildLog(buildDir string, append bool, fn func(output io.Writer) error)
 	return fn(output)
 }
 
+func configureCommand(targetOS, interpreter, script string, args []string) (string, []string) {
+	if targetOS == "windows" {
+		return interpreter, append([]string{script}, args...)
+	}
+	return script, args
+}
+
 // AutoconfBuild implements the BuildSystem interface for autoconf-based builds
 type AutoconfBuild struct{}
 
 func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
+	installDir = buildToolPath(installDir, runtime.GOOS)
 	args := []string{
 		fmt.Sprintf("--prefix=%s", installDir),
 	}
@@ -59,8 +67,8 @@ func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, bu
 	// Add standard compiler and linker flags (unless library opts out)
 	// Some libraries like zlib have non-standard configure scripts that reject these
 	if !lib.SkipAutoFlags {
-		incDir := filepath.Join(installDir, "include")
-		libDir := filepath.Join(installDir, "lib")
+		incDir := buildToolPath(filepath.Join(installDir, "include"), runtime.GOOS)
+		libDir := buildToolPath(filepath.Join(installDir, "lib"), runtime.GOOS)
 
 		cflags := fmt.Sprintf("-O3 -I%s", incDir)
 		cppflags := fmt.Sprintf("-I%s", incDir)
@@ -107,7 +115,7 @@ func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, bu
 		)
 	}
 
-	configurePath := "./configure"
+	configurePath, args := configureCommand(runtime.GOOS, "sh", "./configure", args)
 	absConfigurePath := filepath.Join(srcPath, "configure")
 	if !fileExists(absConfigurePath) {
 		return fmt.Errorf("configure script not found at %s", absConfigurePath)
@@ -151,10 +159,13 @@ func (c *CMakeBuild) Configure(ctx context.Context, lib *Library, srcPath, build
 	}
 
 	args := []string{
-		actualSrcPath,
-		fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%s", installDir),
+		buildToolPath(actualSrcPath, runtime.GOOS),
+		fmt.Sprintf("-DCMAKE_INSTALL_PREFIX=%s", buildToolPath(installDir, runtime.GOOS)),
 		"-DCMAKE_BUILD_TYPE=Release",
 		"-DCMAKE_INSTALL_LIBDIR=lib",
+	}
+	if runtime.GOOS == "windows" {
+		args = append(args, "-G", "Ninja")
 	}
 
 	if lib.ConfigureArgs != nil {
@@ -269,10 +280,11 @@ func (m *MakefileBuild) Build(ctx context.Context, lib *Library, srcPath, buildD
 type OpenSSLBuild struct{}
 
 func (o *OpenSSLBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
+	installDir = buildToolPath(installDir, runtime.GOOS)
 	// OpenSSL uses 'Configure' (capital C) Perl script, not autoconf
 	args := []string{
 		fmt.Sprintf("--prefix=%s", installDir),
-		fmt.Sprintf("--openssldir=%s", filepath.Join(installDir, "ssl")),
+		fmt.Sprintf("--openssldir=%s", buildToolPath(filepath.Join(installDir, "ssl"), runtime.GOOS)),
 		"--libdir=lib",
 		fmt.Sprintf("--with-zlib-include=%s/include", installDir),
 		fmt.Sprintf("--with-zlib-lib=%s/lib", installDir),
@@ -283,7 +295,7 @@ func (o *OpenSSLBuild) Configure(ctx context.Context, lib *Library, srcPath, bui
 		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
 	}
 
-	configurePath := "./Configure"
+	configurePath, args := configureCommand(runtime.GOOS, "perl", "./Configure", args)
 	absConfigurePath := filepath.Join(srcPath, "Configure")
 	if !fileExists(absConfigurePath) {
 		return fmt.Errorf("Configure script not found at %s", absConfigurePath)
