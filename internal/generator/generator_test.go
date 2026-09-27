@@ -258,15 +258,13 @@ func render(c jen.Code) string {
 	return (&jen.Statement{}).Add(c).GoString()
 }
 
-// TestMarshalArgSizeTOutputParams pins the size_t rewrite to the explicit
-// outputParams lookup. marshalArg rewrites a
-// pointer-to-int output parameter to size_t only when the (function, parameter)
-// pair is present in outputParams with sizeT: true; the former strings.Contains(fn.Name,
-// "_alloc") substring heuristic is gone. The positive case proves the lookup
-// drives the rewrite (param becomes *uint64, C cast uses C.size_t). The
-// regression case proves an _alloc function name alone no longer triggers the
-// rewrite when the pair is absent from the table (param stays *int, cast uses
-// C.int), so a reintroduced substring heuristic fails here.
+// TestMarshalArgSizeTOutputParams checks that marshalArg restores size_t only
+// when the (function, parameter) pair has sizeT: true in outputParams.
+// The positive case checks that the Go parameter becomes *uint64 and that the
+// call passes ptrsize, the pointer to a C.size_t temporary when size is not nil.
+// The regression case checks that an _alloc function name with sizeT: false
+// leaves the Go parameter as *int and casts the pointer to *C.int.
+// A reintroduced substring heuristic fails the regression case.
 func TestMarshalArgSizeTOutputParams(t *testing.T) {
 	g := skipGen()
 

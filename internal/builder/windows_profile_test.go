@@ -20,9 +20,6 @@ func TestWindowsEmbeddedLibraries(t *testing.T) {
 	} {
 		t.Run(tc.arch, func(t *testing.T) {
 			libs := librariesForPlatform(true, t.TempDir(), "windows", tc.arch)
-			for _, arch := range []string{"amd64", "386"} {
-				_ = librariesForPlatform(true, t.TempDir(), "windows", arch)
-			}
 			want := []string{"ffmpeg", "lame", "libvpx", "libwebp", "libxml2", "openh264", "opus", "zimg", "zlib"}
 			var names []string
 			seen := make(map[*Library]bool)

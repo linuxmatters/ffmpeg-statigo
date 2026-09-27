@@ -2,6 +2,7 @@ package ffmpeg_test
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/linuxmatters/ffmpeg-statigo"
@@ -46,8 +47,10 @@ func TestGeneratedSizeInputWidth(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			defer func() {
-				if recover() == nil {
+				if r := recover(); r == nil {
 					t.Error("out-of-range size did not panic")
+				} else if message, ok := r.(string); !ok || !strings.Contains(message, "overflows C.size_t") {
+					t.Errorf("unexpected panic: %v, want overflows C.size_t", r)
 				}
 			}()
 			call()
