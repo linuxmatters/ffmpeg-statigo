@@ -826,11 +826,43 @@ func TestEnsureLibrary_ChecksumFatalByDefault(t *testing.T) {
 // =============================================================================
 
 func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
+	validArchive := createValidTarball(t, map[string][]byte{"file.txt": []byte("content")})
+	t.Cleanup(func() { _ = os.Remove(validArchive) })
+	validPayload, err := os.ReadFile(validArchive)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A valid gzip stream with a tar entry that ends before its declared size.
+	// Extraction creates partial.txt, then must remove it after the read fails.
+	var truncatedArchive bytes.Buffer
+	gzipWriter := gzip.NewWriter(&truncatedArchive)
+	tarWriter := tar.NewWriter(gzipWriter)
+	if err := tarWriter.WriteHeader(&tar.Header{Name: "partial.txt", Mode: 0o644, Size: 1024}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tarWriter.Write([]byte("partial")); err != nil {
+		t.Fatal(err)
+	}
+	// Do not close tarWriter: closing it would pad the incomplete entry.
+	if err := gzipWriter.Close(); err != nil {
+		t.Fatal(err)
+	}
+
 	mockHTTP(t, func(req *http.Request) (*http.Response, error) {
 		if req.URL.Scheme == "" {
 			return nil, fmt.Errorf("unsupported URL: %s", req.URL)
 		}
-		return testHTTPResponse(http.StatusNotFound, []byte("not found")), nil
+		switch req.URL.Path {
+		case "/linuxmatters/ffmpeg-statigo/releases/download/nonexistent/file.tar.gz":
+			return testHTTPResponse(http.StatusNotFound, []byte("not found")), nil
+		case "/linuxmatters/ffmpeg-statigo/archive/refs/heads/main.zip":
+			return testHTTPResponse(http.StatusOK, validPayload), nil
+		case "/nonexistent/repo/releases/download/v1.0.0/file.tar.gz":
+			return testHTTPResponse(http.StatusOK, truncatedArchive.Bytes()), nil
+		default:
+			return nil, fmt.Errorf("unexpected request: %s", req.URL)
+		}
 	})
 	t.Run("handles_404_not_found", func(t *testing.T) {
 		// Use a URL that returns 404
@@ -838,13 +870,8 @@ func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 		destDir := t.TempDir()
 
 		_, err := streamDownloadAndExtract(url, destDir)
-		if err == nil {
-			t.Error("Expected error for 404 response, got nil")
-		}
-
-		// Should get HTTP 404 error
-		if err != nil && !strings.Contains(err.Error(), "404") {
-			t.Logf("Note: Error message format: %v", err)
+		if err == nil || !strings.Contains(err.Error(), "HTTP 404") {
+			t.Fatalf("streamDownloadAndExtract() error = %v, want HTTP 404", err)
 		}
 	})
 
@@ -854,40 +881,38 @@ func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 		destDir := t.TempDir()
 
 		_, err := streamDownloadAndExtract(url, destDir)
-		if err == nil {
-			t.Error("Expected error for invalid URL, got nil")
+		if err == nil || !strings.Contains(err.Error(), "unsupported URL") {
+			t.Fatalf("streamDownloadAndExtract() error = %v, want unsupported URL", err)
 		}
-
-		t.Logf("Invalid URL error: %v", err)
 	})
 
 	t.Run("handles_invalid_destination", func(t *testing.T) {
-		// Use an invalid destination path that cannot be resolved
+		// A NUL byte makes the destination invalid when extraction creates a directory.
 		url := "https://github.com/linuxmatters/ffmpeg-statigo/archive/refs/heads/main.zip"
 		destDir := string([]byte{0}) // Invalid path with null byte
 
-		_, err := streamDownloadAndExtract(url, destDir)
-		if err == nil {
-			t.Error("Expected error for invalid destination, got nil")
+		checksum, err := streamDownloadAndExtract(url, destDir)
+		if err == nil || !strings.Contains(err.Error(), "creating parent directory") {
+			t.Fatalf("streamDownloadAndExtract() error = %v, want invalid destination error", err)
 		}
-
-		t.Logf("Invalid destination error: %v", err)
+		if checksum != "" {
+			t.Errorf("checksum = %q, want empty on destination failure", checksum)
+		}
 	})
 
 	t.Run("cleans_up_on_extraction_failure", func(t *testing.T) {
-		// The streaming approach doesn't create temp files, so cleanup is handled
-		// differently - extracted files are cleaned up on checksum failure
-		// This test verifies that errors are properly returned
 		url := "https://github.com/nonexistent/repo/releases/download/v1.0.0/file.tar.gz"
 		destDir := t.TempDir()
 
-		_, err := streamDownloadAndExtract(url, destDir)
-		if err == nil {
-			t.Error("Expected download to fail")
+		checksum, err := streamDownloadAndExtract(url, destDir)
+		if err == nil || !strings.Contains(err.Error(), "writing file") || !strings.Contains(err.Error(), "unexpected EOF") {
+			t.Fatalf("streamDownloadAndExtract() error = %v, want truncated tar entry error", err)
 		}
-
-		if err != nil {
-			t.Logf("Download failed as expected: %v", err)
+		if checksum != "" {
+			t.Errorf("checksum = %q, want empty on extraction failure", checksum)
+		}
+		if _, err := os.Stat(filepath.Join(destDir, "partial.txt")); !os.IsNotExist(err) {
+			t.Errorf("partial.txt remains after extraction failure: %v", err)
 		}
 	})
 }
