@@ -892,7 +892,7 @@ func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 		destDir := string([]byte{0}) // Invalid path with null byte
 
 		checksum, err := streamDownloadAndExtract(url, destDir)
-		if err == nil || !strings.Contains(err.Error(), "creating parent directory") {
+		if err == nil || (!strings.Contains(err.Error(), "creating parent directory") && !strings.Contains(err.Error(), "resolving destination directory")) {
 			t.Fatalf("streamDownloadAndExtract() error = %v, want invalid destination error", err)
 		}
 		if checksum != "" {

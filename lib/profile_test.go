@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -181,7 +182,7 @@ func TestProfileBuildSelection(t *testing.T) {
 					}
 					var want []string
 					if profile == "embedded" {
-						want = []string{filepath.Join(root, "lib", "embedded", platform+"_"+arch, "libffmpeg.a"), "-lm"}
+						want = []string{path.Join(filepath.ToSlash(root), "lib", "embedded", platform+"_"+arch, "libffmpeg.a"), "-lm"}
 						if platform == "linux" {
 							want = append(want, "-ldl", "-lstdc++")
 						} else {
@@ -189,7 +190,7 @@ func TestProfileBuildSelection(t *testing.T) {
 						}
 						want = append(want, "-lpthread")
 					} else {
-						want = []string{"-L" + filepath.Join(root, "lib", platform+"_"+arch), "-lffmpeg"}
+						want = []string{"-L" + path.Join(filepath.ToSlash(root), "lib", platform+"_"+arch), "-lffmpeg"}
 						if platform == "linux" {
 							want = append(want, "-lm", "-ldl", "-lstdc++", "-lpthread")
 						} else {
