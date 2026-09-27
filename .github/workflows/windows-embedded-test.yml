@@ -8,15 +8,30 @@ permissions:
 
 jobs:
   windows-embedded-test:
-    name: Test embedded for Windows amd64
+    name: Test embedded for Windows ${{ matrix.goarch }}
     runs-on: windows-2025
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            msystem: UCRT64
+            bin: /ucrt64/bin
+            package-prefix: mingw-w64-ucrt-x86_64
+            yasm-package: mingw-w64-ucrt-x86_64-yasm
+          - goarch: '386'
+            msystem: MINGW32
+            bin: /mingw32/bin
+            package-prefix: mingw-w64-i686
+            yasm-package: yasm
     defaults:
       run:
         shell: msys2 {0}
     env:
       GOOS: windows
-      GOARCH: amd64
+      GOARCH: ${{ matrix.goarch }}
+      MINGW_BIN: ${{ matrix.bin }}
       CGO_ENABLED: "1"
       GOFLAGS: -tags=embedded
       CMAKE_GENERATOR: Ninja
@@ -44,7 +59,7 @@ jobs:
       # msys2/setup-msys2 v2.33.0
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
         with:
-          msystem: UCRT64
+          msystem: ${{ matrix.msystem }}
           update: true
           cache: false
           path-type: minimal
@@ -57,26 +72,29 @@ jobs:
             make
             patch
             perl
-            mingw-w64-ucrt-x86_64-binutils
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-nasm
-            mingw-w64-ucrt-x86_64-ninja
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-python
-            mingw-w64-ucrt-x86_64-yasm
+            ${{ matrix.package-prefix }}-binutils
+            ${{ matrix.package-prefix }}-cmake
+            ${{ matrix.package-prefix }}-gcc
+            ${{ matrix.package-prefix }}-nasm
+            ${{ matrix.package-prefix }}-ninja
+            ${{ matrix.package-prefix }}-pkgconf
+            ${{ matrix.package-prefix }}-python
+            ${{ matrix.yasm-package }}
 
       - name: Record toolchain
         run: |
           set -euo pipefail
-          export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
-          export CC="$(cygpath -m /ucrt64/bin/gcc.exe)"
-          export CXX="$(cygpath -m /ucrt64/bin/g++.exe)"
+          export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          export CC="$(cygpath -m "$MINGW_BIN/gcc.exe")"
+          export CXX="$(cygpath -m "$MINGW_BIN/g++.exe")"
           printf 'CC=%s\nCXX=%s\n' "$CC" "$CXX" >> "$GITHUB_ENV"
           go version
           go env GOOS GOARCH CGO_ENABLED CC CXX GOFLAGS
           "$CC" --version
           "$CC" -dumpmachine
+          if [ "$GOARCH" = 386 ]; then
+            test "$("$CC" -dumpmachine)" = i686-w64-mingw32
+          fi
           "$CXX" --version
           cmake --version
           ninja --version
@@ -89,13 +107,13 @@ jobs:
           MSYS2_ENV_CONV_EXCL: ACLOCAL_PATH
         run: |
           set -euo pipefail
-          export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
+          export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
           go run ./internal/builder/ --embedded
 
       - name: Check embedded archive
         run: |
           set -euo pipefail
-          archive=lib/embedded/windows_amd64/libffmpeg.a
+          archive="lib/embedded/windows_${GOARCH}/libffmpeg.a"
           test -s "$archive"
           ls -lh "$archive"
           sha256sum "$archive"
@@ -103,24 +121,36 @@ jobs:
             NR <= 20 { print }
             END { print "Archive members:", NR; if (NR == 0) exit 1 }
           '
+          if [ "$GOARCH" = 386 ] && command -v objdump >/dev/null 2>&1; then
+            objdump -f "$archive" | awk '
+              /^architecture:/ {
+                if (++members <= 20) print
+                if ($2 != "i386,") invalid = 1
+              }
+              END {
+                print "Archive object headers:", members
+                if (members == 0 || invalid) exit 1
+              }
+            '
+          fi
           df -h .
 
       - name: Build Go packages
         run: |
           set -euo pipefail
-          export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
+          export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
           go build ./...
 
       - name: Test Go packages on Windows
         run: |
           set -euo pipefail
-          export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
+          export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
           go test -v ./...
 
       - name: Record test executable DLL imports
         run: |
           set -euo pipefail
-          export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
+          export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
           if command -v objdump >/dev/null 2>&1; then
             go test -c -o ffmpeg.test.exe .
             objdump -p ffmpeg.test.exe | awk '/DLL Name:/ { print }'
