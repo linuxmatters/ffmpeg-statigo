@@ -7,6 +7,24 @@ import (
 	"testing"
 )
 
+func TestExtractSizeLimits(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		got  any
+		want int64
+	}{
+		{"file", MaxExtractFileSize, 2147483648},
+		{"total", MaxExtractTotalSize, 8589934592},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := tt.got.(int64)
+			if !ok || got != tt.want {
+				t.Fatalf("limit = %v (%T), want int64(%d)", tt.got, tt.got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSanitizePath(t *testing.T) {
 	tests := []struct {
 		name      string

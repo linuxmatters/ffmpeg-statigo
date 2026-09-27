@@ -10,13 +10,13 @@ import (
 
 // MaxExtractFileSize caps a single extracted file to guard against decompression
 // bombs. FFmpeg sources and prebuilt static libraries stay well below this.
-const MaxExtractFileSize = 2 << 30 // 2 GiB
+const MaxExtractFileSize int64 = 2 << 30 // 2 GiB
 
 // MaxExtractTotalSize caps the combined size of every file in one archive.
 // The largest input is an FFmpeg-dependency source tree, well under a gigabyte
 // uncompressed; 8 GiB leaves generous headroom while still bounding a malicious
 // archive that stays under the per-file cap but inflates in aggregate.
-const MaxExtractTotalSize = 8 << 30 // 8 GiB
+const MaxExtractTotalSize int64 = 8 << 30 // 8 GiB
 
 // MaxExtractEntries caps the number of entries in one archive, bounding a
 // zip/tar bomb made of many tiny files. Real source trees hold a few tens of

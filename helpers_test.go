@@ -1,7 +1,6 @@
 package ffmpeg_test
 
 import (
-	"math"
 	"testing"
 
 	ffmpeg "github.com/linuxmatters/ffmpeg-statigo"
@@ -45,20 +44,28 @@ func TestAVRescaleDelta(t *testing.T) {
 
 // TestAVSizeMult covers the success path and the overflow guard.
 func TestAVSizeMult(t *testing.T) {
+	const maxUint = ^uint(0)
+
 	t.Run("success", func(t *testing.T) {
 		r, err := ffmpeg.AVSizeMult(6, 7)
 		assert.NoError(t, err)
 		assert.Equal(t, uint(42), r)
 	})
 
+	t.Run("max", func(t *testing.T) {
+		r, err := ffmpeg.AVSizeMult(maxUint, 1)
+		assert.NoError(t, err)
+		assert.Equal(t, maxUint, r)
+	})
+
 	t.Run("zero", func(t *testing.T) {
-		r, err := ffmpeg.AVSizeMult(0, math.MaxUint64)
+		r, err := ffmpeg.AVSizeMult(0, maxUint)
 		assert.NoError(t, err)
 		assert.Equal(t, uint(0), r)
 	})
 
 	t.Run("overflow", func(t *testing.T) {
-		_, err := ffmpeg.AVSizeMult(math.MaxUint64, 2)
+		_, err := ffmpeg.AVSizeMult(maxUint, 2)
 		assert.Error(t, err)
 	})
 }
