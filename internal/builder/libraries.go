@@ -410,11 +410,28 @@ var zimg = &Library{
 	URL:           "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.6.tar.gz",
 	FFmpegEnables: []string{"libzimg"},
 	BuildSystem:   &AutoconfBuild{},
-	PostExtract: func(ctx context.Context, srcPath string) error {
+	PostExtract:   zimgPostExtract(false),
+	ConfigureArgs: func(os string) []string {
+		return []string{
+			"--disable-shared",
+			"--enable-static",
+			"--disable-testapp",   // Don't build test application
+			"--disable-example",   // Don't build example programs
+			"--disable-unit-test", // Don't build unit tests
+		}
+	},
+	LinkLibs: []string{"libzimg"},
+}
+
+func zimgPostExtract(relativeScript bool) func(context.Context, string) error {
+	return func(ctx context.Context, srcPath string) error {
 		// Run autogen.sh to generate configure script
 		autogenScript := filepath.Join(srcPath, "autogen.sh")
 		if _, err := os.Stat(autogenScript); err == nil {
 			fmt.Fprintf(os.Stderr, "Running autogen.sh to generate configure script...\n")
+			if relativeScript {
+				autogenScript = "./autogen.sh"
+			}
 			cmd := exec.CommandContext(ctx, "sh", autogenScript)
 			cmd.Dir = srcPath
 			cmd.Stdout = os.Stdout
@@ -434,23 +451,39 @@ var zimg = &Library{
 		// Add -lm after @STL_LIBS@ in Libs.private
 		patched := strings.ReplaceAll(string(content), "Libs.private: @STL_LIBS@", "Libs.private: @STL_LIBS@ -lm")
 
-		if err := os.WriteFile(zimgPcIn, []byte(patched), 0o644); err != nil {
+		if err := os.WriteFile(zimgPcIn, []byte(patched), 0o644); err != nil { //nolint:gosec // G703: fixed filename under the local source directory extracted from a SHA-256-pinned archive.
 			return fmt.Errorf("failed to write patched zimg.pc.in: %w", err)
 		}
 
 		fmt.Fprintf(os.Stderr, "Patched zimg.pc.in to include -lm for math library\n")
 		return nil
-	},
-	ConfigureArgs: func(os string) []string {
-		return []string{
-			"--disable-shared",
-			"--enable-static",
-			"--disable-testapp",   // Don't build test application
-			"--disable-example",   // Don't build example programs
-			"--disable-unit-test", // Don't build unit tests
+	}
+}
+
+func windowsEmbeddedLibrary(lib *Library) *Library {
+	var extraArgs []string
+	switch lib.Name {
+	case "libxml2":
+		// Keep the pinned eight-library profile independent of system libiconv.
+		extraArgs = []string{"--without-iconv"}
+	case "libvpx":
+		extraArgs = []string{"--target=x86_64-win64-gcc"}
+	case "zimg":
+		configured := *lib
+		configured.PostExtract = zimgPostExtract(true)
+		return &configured
+	default:
+		return lib
+	}
+	configured := *lib
+	configured.ConfigureArgs = func(targetOS string) []string {
+		args := lib.ConfigureArgs(targetOS)
+		if targetOS == "windows" {
+			args = append(args, extraArgs...)
 		}
-	},
-	LinkLibs: []string{"libzimg"},
+		return args
+	}
+	return &configured
 }
 
 // libwebp - WebP image format encoder

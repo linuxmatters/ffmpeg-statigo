@@ -180,6 +180,7 @@ func (lib *Library) ConfigHash() string {
 
 // runCommandEnv runs a command with extra KEY=value entries appended to the build env.
 func runCommandEnv(ctx context.Context, dir string, logger io.Writer, installDir string, extraEnv []string, name string, args ...string) error {
+	args = buildPathArgs(args, installDir, runtime.GOOS)
 	// name and args come from internal build definitions, not user input.
 	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // G702: build commands are project-defined, not external
 	cmd.Dir = dir
@@ -226,16 +227,48 @@ func upsertEnv(env []string, key, value, sep string, prepend bool) []string {
 	return append(env, prefix+value)
 }
 
+// buildToolPath uses paths that both native Windows tools and MSYS scripts accept.
+func buildToolPath(path, targetOS string) string {
+	if targetOS == "windows" {
+		return strings.ReplaceAll(path, `\`, "/")
+	}
+	return path
+}
+
+func buildPathArgs(args []string, installDir, targetOS string) []string {
+	if targetOS != "windows" || installDir == "" {
+		return args
+	}
+	args = slices.Clone(args)
+	nativePath := strings.ReplaceAll(installDir, "/", `\`)
+	mixedPath := buildToolPath(installDir, targetOS)
+	for i, arg := range args {
+		if strings.Contains(arg, nativePath) || strings.Contains(arg, mixedPath) {
+			args[i] = buildToolPath(arg, targetOS)
+		}
+	}
+	return args
+}
+
+func buildPathEnv(env []string, installDir, targetOS string) []string {
+	sep := ":"
+	if targetOS == "windows" {
+		// UCRT64 pkgconf is native, so both lists use the Windows separator.
+		sep = ";"
+		for i, entry := range env {
+			key, value, ok := strings.Cut(entry, "=")
+			if ok && (strings.EqualFold(key, "PATH") || strings.EqualFold(key, "PKG_CONFIG_PATH")) {
+				env[i] = strings.ToUpper(key) + "=" + value
+			}
+		}
+	}
+	env = upsertEnv(env, "PKG_CONFIG_PATH", buildToolPath(pkgConfigPath(installDir), targetOS), sep, true)
+	return upsertEnv(env, "PATH", buildToolPath(filepath.Join(installDir, "bin"), targetOS), sep, true)
+}
+
 // buildEnv returns environment variables for building
 func buildEnv(installDir string) []string {
-	env := os.Environ()
-	pkgConfigPath := pkgConfigPath(installDir)
-
-	env = upsertEnv(env, "PKG_CONFIG_PATH", pkgConfigPath, ":", true)
-
-	// Update or add PATH to include staging/bin for tools like glslang, spirv-*
-	binPath := filepath.Join(installDir, "bin")
-	env = upsertEnv(env, "PATH", binPath, ":", true)
+	env := buildPathEnv(os.Environ(), installDir, runtime.GOOS)
 
 	// On macOS, remove NIX_CFLAGS_COMPILE which interferes with C++ header search order
 	// The Nix clang wrapper injects -isystem paths that cause libc++ headers to be

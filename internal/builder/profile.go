@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"slices"
 )
 
@@ -24,6 +25,11 @@ func profilePaths(embedded bool, targetOS, arch string) (buildRoot, output strin
 }
 
 func librariesForProfile(embedded bool, stagingDir string) []*Library {
+	return librariesForPlatform(embedded, stagingDir, runtime.GOOS, runtime.GOARCH)
+}
+
+func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*Library {
+	windowsEmbedded := embedded && targetOS == "windows" && arch == "amd64"
 	var libs []*Library
 	for _, lib := range AllLibraries {
 		if lib == ffmpeg {
@@ -35,16 +41,23 @@ func librariesForProfile(embedded bool, stagingDir string) []*Library {
 				continue
 			}
 		}
+		if windowsEmbedded {
+			lib = windowsEmbeddedLibrary(lib)
+		}
 		libs = append(libs, lib)
 	}
 	if embedded {
-		libs = append(libs, openh264)
+		lib := openh264
+		if windowsEmbedded {
+			lib = windowsOpenH264()
+		}
+		libs = append(libs, lib)
 	}
 
 	configuredFFmpeg := *ffmpeg
 	configuredFFmpeg.Dependencies = slices.Clone(libs)
 	configuredFFmpeg.ConfigureArgs = func(targetOS string) []string {
-		args := ffmpegConfigureArgs(targetOS, stagingDir, embedded)
+		args := ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir, embedded)
 		for _, lib := range configuredFFmpeg.Dependencies {
 			if lib.Enabled != nil && !*lib.Enabled {
 				continue
@@ -65,13 +78,24 @@ func librariesForProfile(embedded bool, stagingDir string) []*Library {
 }
 
 func ffmpegConfigureArgs(targetOS, stagingDir string, embedded bool) []string {
+	return ffmpegConfigureArgsForPlatform(targetOS, runtime.GOARCH, stagingDir, embedded)
+}
+
+func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded bool) []string {
+	incDir, libDir := filepath.Join(stagingDir, "include"), filepath.Join(stagingDir, "lib")
+	if embedded && targetOS == "windows" && arch == "amd64" {
+		incDir, libDir = buildToolPath(incDir, targetOS), buildToolPath(libDir, targetOS)
+	}
 	args := []string{
 		"--pkg-config-flags=--static",
-		"--extra-cflags=-I" + filepath.Join(stagingDir, "include"),
-		"--extra-ldflags=-L" + filepath.Join(stagingDir, "lib"),
+		"--extra-cflags=-I" + incDir,
+		"--extra-ldflags=-L" + libDir,
 	}
 	if targetOS == "darwin" {
 		args = append(args, "--cc=clang", "--cxx=clang++")
+	}
+	if embedded && targetOS == "windows" && arch == "amd64" {
+		args = append(args, "--target-os=mingw32", "--arch=x86_64")
 	}
 	return append(args, ffmpegArgsCommon(targetOS, embedded)...)
 }
