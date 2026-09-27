@@ -79,6 +79,19 @@ func TestWindowsFFmpegPaths(t *testing.T) {
 				t.Errorf("%s missing %s", arch, want)
 			}
 		}
+		var cflags []string
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "--extra-cflags=") {
+				cflags = append(cflags, arg)
+			}
+		}
+		want := []string{"--extra-cflags=-IC:/work/staging/include"}
+		if arch == "386" {
+			want = append(want, "--extra-cflags=-mpreferred-stack-boundary=4")
+		}
+		if !slices.Equal(cflags, want) {
+			t.Errorf("%s extra C flags = %v, want %v", arch, cflags, want)
+		}
 	}
 }
 
@@ -105,7 +118,7 @@ func TestWindowsProfileIsolation(t *testing.T) {
 							continue
 						}
 						for _, arg := range lib.ConfigureArgs(targetOS) {
-							if slices.Contains([]string{"--without-iconv", "--target=x86_64-win64-gcc", "--target=x86-win32-gcc", "--target-os=mingw32", "--arch=x86_64", "--arch=x86", "OS=mingw_nt", "ARCH=x86_64", "ARCH=i386"}, arg) {
+							if slices.Contains([]string{"--without-iconv", "--target=x86_64-win64-gcc", "--target=x86-win32-gcc", "--target-os=mingw32", "--arch=x86_64", "--arch=x86", "--extra-cflags=-mpreferred-stack-boundary=4", "OS=mingw_nt", "ARCH=x86_64", "ARCH=i386"}, arg) {
 								t.Errorf("%s %s embedded=%v gained %s", targetOS, arch, embedded, arg)
 							}
 						}
