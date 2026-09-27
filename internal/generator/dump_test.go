@@ -17,6 +17,87 @@ import (
 // diff does not have to go looking for it.
 const regenerateCmd = "nix develop -c go run ./internal/generator -dump-ir"
 
+func TestNormalizeCTypeName(t *testing.T) {
+	originalLibPath := AVLibPath
+	t.Cleanup(func() { AVLibPath = originalLibPath })
+
+	tests := []struct {
+		name string
+		root string
+		path string
+		want string
+	}{
+		{"Unix checkout", "/checkout/include", "/checkout/include/libavcodec/exif.h", "include/libavcodec/exif.h"},
+		{"Windows checkout", `C:\checkout\include`, `C:\checkout\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"Windows slash root", "C:/checkout/include", `C:\checkout\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"Windows slash path", `C:\checkout\include`, "C:/checkout/include/libavcodec/exif.h", "include/libavcodec/exif.h"},
+		{"Windows mixed path", `C:\checkout\include`, `C:/checkout\include/libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"relative Windows path", "/checkout/include", `include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"relative Unix path", "/checkout/include", "include/libavcodec/exif.h", "include/libavcodec/exif.h"},
+		{"Unix resolved root", "/checkout/include", "/resolved/include/libavcodec/exif.h", "include/libavcodec/exif.h"},
+		{"Windows resolved drive", `C:\checkout\include`, `D:\resolved\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"Windows rooted path", `C:\checkout\include`, `\resolved\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"Windows UNC path", `C:\checkout\include`, `\\server\share\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"root with spaces", `C:\work tree\headers`, `C:\work tree\headers\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"fallback with spaces", "/checkout/include", `d:\work tree\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"root with parentheses", `C:\work (copy)\include`, `C:\work (copy)\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"fallback with parentheses", "/checkout/include", `D:\work (copy)\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"last include segment", "/checkout/include", `D:\include\repo\include\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"drive root", `C:\`, `C:\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"Unix root", "/", "/libavcodec/exif.h", "include/libavcodec/exif.h"},
+		{"root with trailing separator", `C:\headers\`, `C:\headers\libavcodec\exif.h`, "include/libavcodec/exif.h"},
+		{"drive relative path", "/checkout/include", `C:repo\include\libavcodec\exif.h`, "C:repo/include/libavcodec/exif.h"},
+		{"relative parent path", "/checkout/include", `repo\include\libavcodec\exif.h`, "repo/include/libavcodec/exif.h"},
+		{"include boundary", "/checkout/include", `D:\notinclude\libavcodec\exif.h`, "D:/notinclude/libavcodec/exif.h"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			AVLibPath = tt.root
+			in := "union (unnamed union at " + tt.path + ":12:3)"
+			want := "union (unnamed union at " + tt.want + ":12:3)"
+			if got := normalizeCTypeName(in); got != want {
+				t.Errorf("normalizeCTypeName(%q) = %q, want %q", in, got, want)
+			}
+		})
+	}
+}
+
+func TestNormalizeCTypeNamePreservesNonPathText(t *testing.T) {
+	for _, in := range []string{"int", "struct AVFrame *", `type\name`, `union (unnamed union at include\x.h:12:3`} {
+		if got := normalizeCTypeName(in); got != in {
+			t.Errorf("normalizeCTypeName(%q) = %q, want unchanged", in, got)
+		}
+	}
+
+	in := `prefix\text union (unnamed union at include\libavcodec\exif.h:12:3) suffix\text`
+	want := `prefix\text union (unnamed union at include/libavcodec/exif.h:12:3) suffix\text`
+	if got := normalizeCTypeName(in); got != want {
+		t.Errorf("normalizeCTypeName(%q) = %q, want %q", in, got, want)
+	}
+}
+
+func TestDumpPathNormalizationPreservesFieldsAndComments(t *testing.T) {
+	m := fabricatedModule()
+	field := m.structs["AVRational"].Fields[0]
+	field.CTypeName = `union (unnamed union at include\libavcodec\exif.h:12:3)`
+	field.Comment = `Keep include\libavcodec\exif.h unchanged.`
+	original := *field
+	structure, comments := renderBoth(t, m)
+	if *field != original {
+		t.Fatal("dump changed the source field")
+	}
+
+	field.CTypeName = "union (unnamed union at include/libavcodec/exif.h:12:3)"
+	wantStructure, wantComments := renderBoth(t, m)
+	if structure != wantStructure {
+		t.Error("Windows and Unix paths produced different structural dumps")
+	}
+	if comments != wantComments || !strings.Contains(comments, original.Comment) {
+		t.Error("path normalisation changed the comment dump")
+	}
+}
+
 // TestRenderTypeExpandsLossyForms pins the D6 rendering table across every Type
 // implementation in type.go, plus nil and the nested forms that matter.
 //

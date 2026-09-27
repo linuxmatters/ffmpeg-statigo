@@ -27,7 +27,7 @@ const (
 
 // includeSegment is the checkout-relative form the dump substitutes for the
 // absolute header directory, and the anchor normalizeCTypeName cuts back to.
-const includeSegment = "include" + string(filepath.Separator)
+const includeSegment = "include/"
 
 // normalizeCTypeName rewrites the absolute header path a C type spelling
 // embeds into a checkout-relative one.
@@ -45,21 +45,32 @@ const includeSegment = "include" + string(filepath.Separator)
 // directory, so it is cut back to the last "include/" segment,
 // which is stable wherever the checkout lives.
 func normalizeCTypeName(s string) string {
-	s = strings.ReplaceAll(s, AVLibPath+string(filepath.Separator), includeSegment)
-
-	i := strings.LastIndex(s, includeSegment)
-	if i < 0 {
+	prefix, location, ok := strings.Cut(s, " at ")
+	if !ok {
 		return s
 	}
 
-	// The spelling puts the path after a space ("... at /abs/path/x.h:1:1)"), so
-	// the path token starts at the first byte after the preceding space.
-	start := strings.LastIndexByte(s[:i], ' ') + 1
-	if s[start] != filepath.Separator {
+	end := strings.LastIndexByte(location, ')')
+	if end < 0 {
 		return s
 	}
 
-	return s[:start] + s[i:]
+	// Convert only the embedded path, including Windows paths on non-Windows hosts.
+	path := strings.ReplaceAll(location[:end], `\`, "/")
+	root := strings.TrimRight(strings.ReplaceAll(AVLibPath, `\`, "/"), "/") + "/"
+
+	if relative, ok := strings.CutPrefix(path, root); ok {
+		path = includeSegment + relative
+	} else {
+		absolute := strings.HasPrefix(path, "/") || (len(path) >= 3 &&
+			((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) &&
+			path[1:3] == ":/")
+		if i := strings.LastIndex(path, "/"+includeSegment); absolute && i >= 0 {
+			path = path[i+1:]
+		}
+	}
+
+	return prefix + " at " + path + location[end:]
 }
 
 // renderType expands a parsed Type into a single-line textual form for the IR
