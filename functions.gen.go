@@ -15874,7 +15874,7 @@ func AVStrdup(s *CStr) *CStr {
 		tmps = s.ptr
 	}
 	ret := C.av_strdup(tmps)
-	return wrapCStr(ret)
+	return wrapAVCStr(ret)
 }
 
 // --- Function av_strndup ---
@@ -15895,7 +15895,7 @@ func AVStrndup(s *CStr, len uint64) *CStr {
 		tmps = s.ptr
 	}
 	ret := C.av_strndup(tmps, C.size_t(len))
-	return wrapCStr(ret)
+	return wrapAVCStr(ret)
 }
 
 // --- Function av_memdup ---
