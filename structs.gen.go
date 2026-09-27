@@ -7914,6 +7914,9 @@ func (s *AVPacketSideData) Size() uint64 {
 
 // SetSize sets the size field.
 func (s *AVPacketSideData) SetSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVPacketSideData.size overflows C.size_t")
+	}
 	s.ptr.size = (C.size_t)(value)
 }
 
@@ -10715,6 +10718,9 @@ func (s *AVFilterChain) NbFilters() uint64 {
 
 // SetNbFilters sets the nb_filters field.
 func (s *AVFilterChain) SetNbFilters(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFilterChain.nb_filters overflows C.size_t")
+	}
 	s.ptr.nb_filters = (C.size_t)(value)
 }
 
@@ -10824,6 +10830,9 @@ func (s *AVFilterGraphSegment) NbChains() uint64 {
 
 // SetNbChains sets the nb_chains field.
 func (s *AVFilterGraphSegment) SetNbChains(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFilterGraphSegment.nb_chains overflows C.size_t")
+	}
 	s.ptr.nb_chains = (C.size_t)(value)
 }
 
@@ -15071,6 +15080,9 @@ func (s *AVRTSPCommandRequest) BodyLen() uint64 {
 //
 //	Body payload size
 func (s *AVRTSPCommandRequest) SetBodyLen(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVRTSPCommandRequest.body_len overflows C.size_t")
+	}
 	s.ptr.body_len = (C.size_t)(value)
 }
 
@@ -15174,6 +15186,9 @@ func (s *AVRTSPResponse) BodyLen() uint64 {
 //
 //	Body payload size
 func (s *AVRTSPResponse) SetBodyLen(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVRTSPResponse.body_len overflows C.size_t")
+	}
 	s.ptr.body_len = (C.size_t)(value)
 }
 
@@ -15730,6 +15745,9 @@ func (s *AVIOContext) Checksum() uint64 {
 
 // SetChecksum sets the checksum field.
 func (s *AVIOContext) SetChecksum(value uint64) {
+	if uint64(C.ulong(value)) != value {
+		panic("AVIOContext.checksum overflows C.ulong")
+	}
 	s.ptr.checksum = (C.ulong)(value)
 }
 
@@ -16595,6 +16613,9 @@ func (s *AVBufferRef) Size() uint64 {
 //
 //	Size of data in bytes.
 func (s *AVBufferRef) SetSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVBufferRef.size overflows C.size_t")
+	}
 	s.ptr.size = (C.size_t)(value)
 }
 
@@ -17467,6 +17488,9 @@ func (s *AVDetectionBBoxHeader) BboxesOffset() uint64 {
   the array of bounding boxes starts.
 */
 func (s *AVDetectionBBoxHeader) SetBboxesOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDetectionBBoxHeader.bboxes_offset overflows C.size_t")
+	}
 	s.ptr.bboxes_offset = (C.size_t)(value)
 }
 
@@ -17482,6 +17506,9 @@ func (s *AVDetectionBBoxHeader) BboxSize() uint64 {
 //
 //	Size of each bounding box in bytes.
 func (s *AVDetectionBBoxHeader) SetBboxSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDetectionBBoxHeader.bbox_size overflows C.size_t")
+	}
 	s.ptr.bbox_size = (C.size_t)(value)
 }
 
@@ -19728,6 +19755,9 @@ func (s *AVDOVIMetadata) HeaderOffset() uint64 {
 //
 //	AVDOVIRpuDataHeader
 func (s *AVDOVIMetadata) SetHeaderOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDOVIMetadata.header_offset overflows C.size_t")
+	}
 	s.ptr.header_offset = (C.size_t)(value)
 }
 
@@ -19743,6 +19773,9 @@ func (s *AVDOVIMetadata) MappingOffset() uint64 {
 //
 //	AVDOVIDataMapping
 func (s *AVDOVIMetadata) SetMappingOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDOVIMetadata.mapping_offset overflows C.size_t")
+	}
 	s.ptr.mapping_offset = (C.size_t)(value)
 }
 
@@ -19758,6 +19791,9 @@ func (s *AVDOVIMetadata) ColorOffset() uint64 {
 //
 //	AVDOVIColorMetadata
 func (s *AVDOVIMetadata) SetColorOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDOVIMetadata.color_offset overflows C.size_t")
+	}
 	s.ptr.color_offset = (C.size_t)(value)
 }
 
@@ -19773,6 +19809,9 @@ func (s *AVDOVIMetadata) ExtBlockOffset() uint64 {
 //
 //	offset to start of ext blocks array
 func (s *AVDOVIMetadata) SetExtBlockOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDOVIMetadata.ext_block_offset overflows C.size_t")
+	}
 	s.ptr.ext_block_offset = (C.size_t)(value)
 }
 
@@ -19788,6 +19827,9 @@ func (s *AVDOVIMetadata) ExtBlockSize() uint64 {
 //
 //	size per element
 func (s *AVDOVIMetadata) SetExtBlockSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDOVIMetadata.ext_block_size overflows C.size_t")
+	}
 	s.ptr.ext_block_size = (C.size_t)(value)
 }
 
@@ -21319,6 +21361,9 @@ func (s *AVFrameSideData) Size() uint64 {
 
 // SetSize sets the size field.
 func (s *AVFrameSideData) SetSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFrameSideData.size overflows C.size_t")
+	}
 	s.ptr.size = (C.size_t)(value)
 }
 
@@ -22352,6 +22397,9 @@ func (s *AVFrame) CropTop() uint64 {
 
 // SetCropTop sets the crop_top field.
 func (s *AVFrame) SetCropTop(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFrame.crop_top overflows C.size_t")
+	}
 	s.ptr.crop_top = (C.size_t)(value)
 }
 
@@ -22363,6 +22411,9 @@ func (s *AVFrame) CropBottom() uint64 {
 
 // SetCropBottom sets the crop_bottom field.
 func (s *AVFrame) SetCropBottom(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFrame.crop_bottom overflows C.size_t")
+	}
 	s.ptr.crop_bottom = (C.size_t)(value)
 }
 
@@ -22374,6 +22425,9 @@ func (s *AVFrame) CropLeft() uint64 {
 
 // SetCropLeft sets the crop_left field.
 func (s *AVFrame) SetCropLeft(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFrame.crop_left overflows C.size_t")
+	}
 	s.ptr.crop_left = (C.size_t)(value)
 }
 
@@ -22385,6 +22439,9 @@ func (s *AVFrame) CropRight() uint64 {
 
 // SetCropRight sets the crop_right field.
 func (s *AVFrame) SetCropRight(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVFrame.crop_right overflows C.size_t")
+	}
 	s.ptr.crop_right = (C.size_t)(value)
 }
 
@@ -24913,6 +24970,9 @@ func (s *AVDRMObjectDescriptor) Size() uint64 {
   (This includes any parts not which do not contain image data.)
 */
 func (s *AVDRMObjectDescriptor) SetSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVDRMObjectDescriptor.size overflows C.size_t")
+	}
 	s.ptr.size = (C.size_t)(value)
 }
 
@@ -25015,6 +25075,9 @@ func (s *AVDRMPlaneDescriptor) Offset() int64 {
 //
 //	Offset within that object of this plane.
 func (s *AVDRMPlaneDescriptor) SetOffset(value int64) {
+	if int64(C.ptrdiff_t(value)) != value {
+		panic("AVDRMPlaneDescriptor.offset overflows C.ptrdiff_t")
+	}
 	s.ptr.offset = (C.ptrdiff_t)(value)
 }
 
@@ -25030,6 +25093,9 @@ func (s *AVDRMPlaneDescriptor) Pitch() int64 {
 //
 //	Pitch (linesize) of this plane.
 func (s *AVDRMPlaneDescriptor) SetPitch(value int64) {
+	if int64(C.ptrdiff_t(value)) != value {
+		panic("AVDRMPlaneDescriptor.pitch overflows C.ptrdiff_t")
+	}
 	s.ptr.pitch = (C.ptrdiff_t)(value)
 }
 
@@ -25745,6 +25811,9 @@ func (s *AVIAMFParamDefinition) SubblocksOffset() uint64 {
   array is located.
 */
 func (s *AVIAMFParamDefinition) SetSubblocksOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVIAMFParamDefinition.subblocks_offset overflows C.size_t")
+	}
 	s.ptr.subblocks_offset = (C.size_t)(value)
 }
 
@@ -25760,6 +25829,9 @@ func (s *AVIAMFParamDefinition) SubblockSize() uint64 {
 //
 //	Size in bytes of each element in the subblocks array.
 func (s *AVIAMFParamDefinition) SetSubblockSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVIAMFParamDefinition.subblock_size overflows C.size_t")
+	}
 	s.ptr.subblock_size = (C.size_t)(value)
 }
 
@@ -29520,6 +29592,9 @@ func (s *AV3DReferenceDisplaysInfo) EntriesOffset() uint64 {
   of reference displays starts.
 */
 func (s *AV3DReferenceDisplaysInfo) SetEntriesOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AV3DReferenceDisplaysInfo.entries_offset overflows C.size_t")
+	}
 	s.ptr.entries_offset = (C.size_t)(value)
 }
 
@@ -29535,6 +29610,9 @@ func (s *AV3DReferenceDisplaysInfo) EntrySize() uint64 {
 //
 //	Size of each entry in bytes. May not match sizeof(AV3DReferenceDisplay).
 func (s *AV3DReferenceDisplaysInfo) SetEntrySize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AV3DReferenceDisplaysInfo.entry_size overflows C.size_t")
+	}
 	s.ptr.entry_size = (C.size_t)(value)
 }
 
@@ -30275,6 +30353,9 @@ func (s *AVVideoEncParams) BlocksOffset() uint64 {
   of blocks starts.
 */
 func (s *AVVideoEncParams) SetBlocksOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVVideoEncParams.blocks_offset overflows C.size_t")
+	}
 	s.ptr.blocks_offset = (C.size_t)(value)
 }
 
@@ -30290,6 +30371,9 @@ func (s *AVVideoEncParams) BlockSize() uint64 {
 //
 //	Size of each block in bytes. May not match sizeof(AVVideoBlockParams).
 func (s *AVVideoEncParams) SetBlockSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVVideoEncParams.block_size overflows C.size_t")
+	}
 	s.ptr.block_size = (C.size_t)(value)
 }
 
@@ -30615,6 +30699,9 @@ func (s *AVVideoHint) NbRects() uint64 {
   not be accessed.
 */
 func (s *AVVideoHint) SetNbRects(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVVideoHint.nb_rects overflows C.size_t")
+	}
 	s.ptr.nb_rects = (C.size_t)(value)
 }
 
@@ -30634,6 +30721,9 @@ func (s *AVVideoHint) RectOffset() uint64 {
   of AVVideoRect starts.
 */
 func (s *AVVideoHint) SetRectOffset(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVVideoHint.rect_offset overflows C.size_t")
+	}
 	s.ptr.rect_offset = (C.size_t)(value)
 }
 
@@ -30649,6 +30739,9 @@ func (s *AVVideoHint) RectSize() uint64 {
 //
 //	Size in bytes of AVVideoRect.
 func (s *AVVideoHint) SetRectSize(value uint64) {
+	if uint64(C.size_t(value)) != value {
+		panic("AVVideoHint.rect_size overflows C.size_t")
+	}
 	s.ptr.rect_size = (C.size_t)(value)
 }
 

@@ -12,7 +12,6 @@ import (
 	"log"
 	"math"
 	"path/filepath"
-	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -59,7 +58,9 @@ func ccModuleVersion() string {
 // #include is filtered out by the location test in declaredHere and recorded
 // only when its own header is parsed.
 func (ccParser) Parse(skips *SkipCollector) *Module {
-	cfg, err := newCCConfig(runtime.GOOS, runtime.GOARCH)
+	// The embedded typedefs and predefined macros describe LP64. Parse with
+	// that ABI on every host; cgo supplies the actual widths in emitted code.
+	cfg, err := newCCConfig("linux", "amd64")
 	if err != nil {
 		failLog.Fatalf("cc/v4 configuration failed: %v", err)
 	}

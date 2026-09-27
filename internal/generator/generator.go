@@ -109,9 +109,9 @@ var manuallyWrappedFields = map[string]map[string]bool{
 
 // outputParam describes how marshalPointerArg and marshalArg treat an
 // output-pointer parameter. Membership in outputParams marks the parameter as
-// an output pointer that marshalPointerArg must emit as
-// (*C.<type>)(unsafe.Pointer(p)). sizeT marks the size_t-width subset, which
-// correctPointerArgTypeName rewrites to size_t if the parser reported int.
+// an output pointer. Variable-width C primitives use a temporary and copy-back;
+// other primitives use (*C.<type>)(unsafe.Pointer(p)). sizeT marks the subset
+// that correctPointerArgTypeName restores to size_t if the parser reported int.
 //
 // The sizeT flag has no effect today. WW-141 phase 5.2 measured all 16 entries
 // as *size_t already, under libclang and under cc/v4 alike, because parseType

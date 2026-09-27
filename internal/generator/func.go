@@ -298,6 +298,7 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 	switch shape.kind {
 	case argShapeIdentPrimitive:
 		params = append(params, jen.Id(shape.name).Id(shape.goType))
+		body = append(body, primitiveWidthCheck(shape.cType, shape.goType, jen.Id(shape.name), fn.Name+"."+arg.Name)...)
 		args = append(args, jen.Qual("C", shape.cType).Params(jen.Id(shape.name)))
 
 	case argShapeIdentEnum:
@@ -363,7 +364,25 @@ func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *
 
 	case pointerArgShapeOutputPrimitive:
 		params = append(params, jen.Id(pName).Op("*").Id(shape.goType))
-		args = append(args, jen.Params(jen.Op("*").Qual("C", shape.cType)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))))
+		if variableWidthPrimitive(shape.cType) {
+			tmpName := "tmp" + pName
+			ptrName := "ptr" + pName
+			body = append(body,
+				jen.Var().Id(tmpName).Qual("C", shape.cType),
+				jen.Var().Id(ptrName).Op("*").Qual("C", shape.cType),
+				jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+					jen.Id(ptrName).Op("=").Op("&").Id(tmpName),
+				),
+			)
+			args = append(args, jen.Id(ptrName))
+			postCall = append(postCall,
+				jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+					jen.Op("*").Id(pName).Op("=").Id(shape.goType).Params(jen.Id(tmpName)),
+				),
+			)
+		} else {
+			args = append(args, jen.Params(jen.Op("*").Qual("C", shape.cType)).Params(jen.Qual("unsafe", "Pointer").Params(jen.Id(pName))))
+		}
 
 	case pointerArgShapeNonOutputPrimitiveSkip, pointerArgShapeByValueStructSkip, pointerArgShapePointerToPointerSkip, pointerArgShapeUnhandledSkip:
 		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)

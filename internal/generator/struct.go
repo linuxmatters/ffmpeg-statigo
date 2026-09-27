@@ -237,6 +237,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 			)
 		} else {
 			cType := normalizedFieldCType(st, field, shape.typeName, shape.goType)
+			setBody = append(setBody, primitiveWidthCheck(cType, shape.goType, jen.Id("value"), st.Name+"."+field.Name)...)
 			setBody = append(
 				setBody,
 				tgt.Op("=").Params(jen.Qual("C", cType)).Params(jen.Id("value")),

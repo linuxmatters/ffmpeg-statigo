@@ -283,8 +283,8 @@ func TestMarshalArgSizeTOutputParams(t *testing.T) {
 		if got := render(params[0]); got != "size * uint64" {
 			t.Errorf("param = %q, want %q", got, "size * uint64")
 		}
-		if got := render(args[0]); got != "(*C.size_t)(unsafe.Pointer(size))" {
-			t.Errorf("arg = %q, want %q", got, "(*C.size_t)(unsafe.Pointer(size))")
+		if got := render(args[0]); got != "ptrsize" {
+			t.Errorf("arg = %q, want %q", got, "ptrsize")
 		}
 	})
 

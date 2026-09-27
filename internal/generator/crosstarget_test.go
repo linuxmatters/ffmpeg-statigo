@@ -18,7 +18,7 @@ var crossTargets = []struct{ goos, goarch string }{
 	{"darwin", "arm64"},
 }
 
-// crossTargetsToRun returns every target except the host pair itself, which
+// crossTargetsToRun omits the canonical Linux/amd64 target, which
 // TestIRGoldensMatchFreshRun already runs against the same goldens.
 //
 // It used to return only the pairs sharing the host's operating system, because
@@ -30,7 +30,7 @@ func crossTargetsToRun() []struct{ goos, goarch string } {
 	var out []struct{ goos, goarch string }
 
 	for _, tgt := range crossTargets {
-		if tgt.goos == runtime.GOOS && tgt.goarch == runtime.GOARCH {
+		if tgt.goos == "linux" && tgt.goarch == "amd64" {
 			continue
 		}
 
@@ -45,15 +45,15 @@ func crossTargetsToRun() []struct{ goos, goarch string } {
 // linux/amd64, linux/arm64, darwin/amd64 and darwin/arm64.
 //
 // The measurement lives in a test because the binary cannot be pointed at a
-// target. ccParser.Parse calls newCCConfig(runtime.GOOS, runtime.GOARCH), both
-// compile-time constants, and the flag set carries no target flag, so
+// target. ccParser.Parse always calls newCCConfig("linux", "amd64"), and
+// the flag set carries no target flag, so
 // `GOOS=darwin GOARCH=arm64 go run ./internal/generator` only cross-compiles the
 // generator and then fails to execute it. newCCConfig does take the target
 // explicitly, so the test calls it per target and renders the three IR streams
 // dump.go writes.
 //
-// The comparison is against the committed goldens, which are the host target's
-// own output: TestIRGoldensMatchFreshRun pins host output to them, so a
+// The comparison is against the committed goldens for the canonical target.
+// TestIRGoldensMatchFreshRun pins production output to them, so a
 // cross-target run that also matches them puts both targets on the same bytes
 // without parsing the host target twice.
 //
@@ -79,7 +79,7 @@ func crossTargetsToRun() []struct{ goos, goarch string } {
 // FF_PAD_STRUCTURE sizes AVBPrint.reserved_padding from sizeof expressions, so
 // pointing the target at linux/386 fails this test on exactly that line,
 // char[1004] against char[1000]. All four claimed targets are LP64, which is why
-// they agree, and arch_guard.go rejects a 32-bit build anyway.
+// they agree. Production parsing uses linux/amd64 even on a 32-bit host.
 //
 // It is not parallel: it mutates AVLibPath and log output, and t.Chdir is
 // process-wide.
@@ -157,8 +157,8 @@ func renderTargetIR(t *testing.T, goos, goarch string) targetIR {
 
 // parseForTarget parses every pinned header for one target.
 //
-// ccParser.Parse cannot be called here: it hardcodes runtime.GOOS and
-// runtime.GOARCH, so its loop is repeated with a config built for the requested
+// ccParser.Parse cannot be called here: it fixes the ABI to linux/amd64,
+// so its loop is repeated with a config built for the requested
 // pair. That loop is the only part of Parse this file duplicates, and a drift
 // between the two shows up as a failed comparison against the goldens, which
 // TestIRGoldensMatchFreshRun holds to Parse's own output.
