@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-// writeArchive creates an empty <installDir>/lib/<name>.a file for CanSkip's
-// output-existence check.
 func writeArchive(t *testing.T, installDir, name string) {
 	t.Helper()
 	libDir := filepath.Join(installDir, "lib")
@@ -15,7 +13,7 @@ func writeArchive(t *testing.T, installDir, name string) {
 		t.Fatalf("failed to create lib dir: %v", err)
 	}
 	path := filepath.Join(libDir, name+".a")
-	if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("!<arch>\n"), 0o644); err != nil {
 		t.Fatalf("failed to write archive %s: %v", path, err)
 	}
 }
@@ -110,6 +108,54 @@ func TestCanSkip(t *testing.T) {
 	}
 }
 
+func TestCanSkipInvalidArchives(t *testing.T) {
+	tests := []struct {
+		name   string
+		create func(string) error
+	}{
+		{
+			name: "empty archive",
+			create: func(path string) error {
+				return os.WriteFile(path, nil, 0o644)
+			},
+		},
+		{
+			name: "directory instead of archive",
+			create: func(path string) error {
+				return os.Mkdir(path, 0o755)
+			},
+		},
+		{
+			name: "broken symlink",
+			create: func(path string) error {
+				return os.Symlink(path+".missing", path)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lib := &Library{
+				Name:     "foo",
+				URL:      "https://example.com/foo-1.0.tar.gz",
+				LinkLibs: []string{"libfoo", "libbar"},
+			}
+			buildRoot := t.TempDir()
+			if err := NewBuildState(lib, buildRoot).Save(); err != nil {
+				t.Fatalf("failed to save build state: %v", err)
+			}
+			installDir := t.TempDir()
+			writeArchive(t, installDir, "libfoo")
+			if err := tt.create(filepath.Join(installDir, "lib", "libbar.a")); err != nil {
+				t.Fatalf("failed to create invalid archive: %v", err)
+			}
+			if NewBuildState(lib, buildRoot).CanSkip(installDir) {
+				t.Error("CanSkip() = true, want false for invalid archive")
+			}
+		})
+	}
+}
+
 // TestConfigHashBuildEnv verifies that changing BuildEnv busts the config hash,
 // so a maintainer edit to build env values forces a rebuild.
 func TestConfigHashBuildEnv(t *testing.T) {
@@ -131,7 +177,6 @@ func TestConfigHashBuildEnv(t *testing.T) {
 	}
 }
 
-// TestFileExists verifies the helper CanSkip relies on for output detection.
 func TestFileExists(t *testing.T) {
 	dir := t.TempDir()
 	present := filepath.Join(dir, "present")

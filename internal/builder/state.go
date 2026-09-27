@@ -85,11 +85,12 @@ func (s *BuildState) CanSkip(installDir string) bool {
 		return true
 	}
 
-	// For libraries with LinkLibs, check that all expected .a files exist
+	// For libraries with LinkLibs, require non-empty regular .a files
 	libDir := filepath.Join(installDir, "lib")
 	for _, libName := range s.lib.LinkLibs {
 		libPath := filepath.Join(libDir, libName+".a")
-		if !fileExists(libPath) {
+		info, err := os.Stat(libPath)
+		if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
 			return false
 		}
 	}
