@@ -55,7 +55,7 @@
 
 ## Key architecture
 
-- **Core:** `ffmpeg.go` contains CGO directives, platform linker flags, and base types (`AVError`/`WrapErr`, `CStr`); `array.go` holds the generic `Array[T]` type and its typed constructors; `arch_guard.go` enforces 64-bit-only at compile time
+- **Core:** `ffmpeg.go` contains CGO CFLAGS and base types (`AVError`/`WrapErr`, `CStr`); `ffmpeg_link_default.go` and `ffmpeg_link_embedded.go` contain platform LDFLAGS for their build tags; `array.go` holds the generic `Array[T]` type and its typed constructors; `arch_guard.go` enforces 64-bit-only at compile time
 - **Generated bindings:** `*.gen.go` files in root directory — constants, enums, struct wrappers, function wrappers, callback typedefs; emitted by `internal/generator/` from FFmpeg headers; never hand-edit
 - **Hand-written bindings:** topic files in the root package for symbols the generator skips (variadics, fixed-size array params, anonymous structs, function-pointer bridges); each skip is recorded with a reason, the skip summary notes when a skipped symbol has a hand-written binding, and the total is capped by `skipCeiling` in `internal/generator/main.go`
   - `iterate.go` — registry iterators (codec/muxer/demuxer/parser/filter/bsf) + protocol enumeration + `AVChannelLayoutStandard` standard channel-layout iterator
