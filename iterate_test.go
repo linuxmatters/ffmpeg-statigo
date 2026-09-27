@@ -48,6 +48,12 @@ func TestAVCodecIterate_FindsExpectedCodecs(t *testing.T) {
 				t.Errorf("Critical video decoder %q not found in codec list", codec)
 			}
 		}
+		// These names identify components that the embedded profile excludes.
+		for _, name := range []string{"libdav1d", "librav1e", "av1_vulkan", "ffv1_vulkan", "h264_vulkan", "hevc_vulkan"} {
+			if got := codecNames[name]; got != !embeddedBuild {
+				t.Errorf("codec %q present = %t, want %t (embedded = %t)", name, got, !embeddedBuild, embeddedBuild)
+			}
+		}
 		if embeddedBuild {
 			for _, name := range []string{"av1", "cfhd", "dirac", "dnxhd", "exr", "hevc", "pbm", "prores", "prores_aw", "prores_ks", "prores_raw", "tiff", "vc1", "vvc"} {
 				if codecNames[name] {
@@ -167,6 +173,11 @@ func TestAVMuxerIterate_FindsExpectedFormats(t *testing.T) {
 	}
 
 	t.Logf("Found %d muxers", len(muxerNames))
+	for _, name := range []string{"avif", "obu"} {
+		if got := muxerNames[name]; got != !embeddedBuild {
+			t.Errorf("muxer %q present = %t, want %t (embedded = %t)", name, got, !embeddedBuild, embeddedBuild)
+		}
+	}
 	if embeddedBuild {
 		for _, name := range []string{"dirac", "dnxhd", "h263", "hevc", "rm", "vc1", "vvc"} {
 			if muxerNames[name] {
@@ -253,6 +264,13 @@ func TestAVDemuxerIterate_FindsExpectedFormats(t *testing.T) {
 	}
 
 	t.Logf("Found %d demuxers", len(demuxerNames))
+	// The default archive uses the MOV demuxer for AVIF and has no separate "avif" entry.
+	if embeddedBuild && demuxerNames["avif"] {
+		t.Error("embedded build unexpectedly includes AVIF demuxer")
+	}
+	if got := demuxerNames["obu"]; got != !embeddedBuild {
+		t.Errorf("demuxer %q present = %t, want %t (embedded = %t)", "obu", got, !embeddedBuild, embeddedBuild)
+	}
 	if embeddedBuild {
 		for _, name := range []string{"dirac", "dnxhd", "h263", "hevc", "rm", "vc1", "vvc", "rtp", "rtsp", "sap", "sdp"} {
 			if demuxerNames[name] {
@@ -382,6 +400,11 @@ func TestAVBSFIterate_FindsBitstreamFilters(t *testing.T) {
 	}
 
 	t.Logf("Found %d bitstream filters", len(bsfNames))
+	for _, name := range []string{"av1_frame_merge", "av1_frame_split", "av1_metadata"} {
+		if got := bsfNames[name]; got != !embeddedBuild {
+			t.Errorf("bitstream filter %q present = %t, want %t (embedded = %t)", name, got, !embeddedBuild, embeddedBuild)
+		}
+	}
 	if embeddedBuild {
 		for _, name := range []string{"hevc_metadata", "prores_metadata", "vvc_metadata", "dovi_rpu"} {
 			if bsfNames[name] {
@@ -416,7 +439,7 @@ func TestAVBSFIterate_FindsBitstreamFilters(t *testing.T) {
 }
 
 func TestAVParserProfileSelection(t *testing.T) {
-	for _, id := range []AVCodecID{AVCodecIdH264, AVCodecIdHevc, AVCodecIdDirac, AVCodecIdDnxhd, AVCodecIdProresRaw, AVCodecIdVc1, AVCodecIdVvc} {
+	for _, id := range []AVCodecID{AVCodecIdAV1, AVCodecIdH264, AVCodecIdHevc, AVCodecIdDirac, AVCodecIdDnxhd, AVCodecIdProresRaw, AVCodecIdVc1, AVCodecIdVvc} {
 		parser := AVParserInit(int(id))
 		present := parser != nil
 		if present {
