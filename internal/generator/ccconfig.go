@@ -77,8 +77,8 @@ const ccStd = "gnu11"
 // that produced the committed IR goldens.
 //
 // The __*_TYPE__ names are required by cc.Builtin, which ccTranslate passes to
-// every translation unit, and by sysinclude/stddef.h. The widths are LP64;
-// arch_guard.go rejects every other build.
+// every translation unit, and by sysinclude/stddef.h. The widths are LP64,
+// matching the canonical linux/amd64 ABI used by ccParser.Parse.
 const ccPredefined = `#define __STDC__ 1
 #define __STDC_HOSTED__ 1
 #define __STDC_VERSION__ 201112L
@@ -121,11 +121,9 @@ const ccPredefined = `#define __STDC__ 1
 
 // newCCConfig builds the parse configuration for one target.
 //
-// goos and goarch select the cc/v4 ABI table and nothing else. The four targets
-// this module supports differ in it - char is unsigned on linux/arm64, and long
-// double is 8 bytes rather than 16 on darwin/arm64 - but the generator asks for
-// no size and no offset, so TestGeneratorIRIsIdenticalAcrossTargets holds all
-// four to the same bytes.
+// goos and goarch select only the cc/v4 ABI table. Production uses linux/amd64
+// to match the LP64 stubs. Tests also compare Linux and Darwin ABI tables;
+// other tables do not make the fixed stubs a model of that target's C library.
 func newCCConfig(goos, goarch string) (*cc.Config, error) {
 	abi, err := cc.NewABI(goos, goarch)
 	if err != nil {

@@ -1078,6 +1078,9 @@ func AVGetAudioFrameDuration(avctx *AVCodecContext, frameBytes int) (int, error)
   be 0-initialized so that no uninitialized data will ever appear.
 */
 func AVFastPaddedMalloc(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	if uint64(C.size_t(minSize)) != minSize {
+		panic("av_fast_padded_malloc.min_size overflows C.size_t")
+	}
 	C.av_fast_padded_malloc(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
 }
 
@@ -1089,6 +1092,9 @@ func AVFastPaddedMalloc(ptr unsafe.Pointer, size *uint, minSize uint64) {
   be 0-initialized after call.
 */
 func AVFastPaddedMallocz(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	if uint64(C.size_t(minSize)) != minSize {
+		panic("av_fast_padded_mallocz.min_size overflows C.size_t")
+	}
 	C.av_fast_padded_mallocz(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
 }
 
@@ -2021,7 +2027,15 @@ func AVGetAudioFrameDuration2(par *AVCodecParameters, frameBytes int) (int, erro
   @return the newly allocated struct or NULL on failure
 */
 func AVCpbPropertiesAlloc(size *uint64) *AVCPBProperties {
-	ret := C.av_cpb_properties_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_cpb_properties_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVCPBProperties
 	if ret != nil {
 		retMapped = &AVCPBProperties{ptr: ret}
@@ -2069,6 +2083,9 @@ func AVDiracParseSequenceHeader(dsh **AVDiracSeqHeader, buf unsafe.Pointer, bufS
 			oldTmpdsh = tmpdsh
 		}
 		ptrdsh = &tmpdsh
+	}
+	if uint64(C.size_t(bufSize)) != bufSize {
+		panic("av_dirac_parse_sequence_header.buf_size overflows C.size_t")
 	}
 	ret := C.av_dirac_parse_sequence_header(ptrdsh, (*C.uint8_t)(buf), C.size_t(bufSize), logCtx)
 	if tmpdsh != oldTmpdsh && dsh != nil {
@@ -2256,6 +2273,9 @@ func AVExifRemoveEntry(logctx unsafe.Pointer, ifd *AVExifMetadata, id uint16, fl
   returning.
 */
 func AVExifParseBuffer(logctx unsafe.Pointer, data unsafe.Pointer, size uint64, ifd *AVExifMetadata, headerMode AVExifHeaderMode) (int, error) {
+	if uint64(C.size_t(size)) != size {
+		panic("av_exif_parse_buffer.size overflows C.size_t")
+	}
 	var tmpifd *C.AVExifMetadata
 	if ifd != nil {
 		tmpifd = ifd.ptr
@@ -2410,6 +2430,9 @@ func AVPacketSideDataNew(psd **AVPacketSideData, pnbSd *int, _type AVPacketSideD
 		}
 		ptrpsd = &tmppsd
 	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_packet_side_data_new.size overflows C.size_t")
+	}
 	ret := C.av_packet_side_data_new(ptrpsd, (*C.int)(unsafe.Pointer(pnbSd)), C.enum_AVPacketSideDataType(_type), C.size_t(size), C.int(flags))
 	if tmppsd != oldTmppsd && psd != nil {
 		if tmppsd != nil {
@@ -2458,6 +2481,9 @@ func AVPacketSideDataAdd(sd **AVPacketSideData, nbSd *int, _type AVPacketSideDat
 			oldTmpsd = tmpsd
 		}
 		ptrsd = &tmpsd
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_packet_side_data_add.size overflows C.size_t")
 	}
 	ret := C.av_packet_side_data_add(ptrsd, (*C.int)(unsafe.Pointer(nbSd)), C.enum_AVPacketSideDataType(_type), data, C.size_t(size), C.int(flags))
 	if tmpsd != oldTmpsd && sd != nil {
@@ -2808,6 +2834,9 @@ func AVPacketNewSideData(pkt *AVPacket, _type AVPacketSideDataType, size uint64)
 	if pkt != nil {
 		tmppkt = pkt.ptr
 	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_packet_new_side_data.size overflows C.size_t")
+	}
 	ret := C.av_packet_new_side_data(tmppkt, C.enum_AVPacketSideDataType(_type), C.size_t(size))
 	return unsafe.Pointer(ret)
 }
@@ -2833,6 +2862,9 @@ func AVPacketAddSideData(pkt *AVPacket, _type AVPacketSideDataType, data unsafe.
 	if pkt != nil {
 		tmppkt = pkt.ptr
 	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_packet_add_side_data.size overflows C.size_t")
+	}
 	ret := C.av_packet_add_side_data(tmppkt, C.enum_AVPacketSideDataType(_type), (*C.uint8_t)(data), C.size_t(size))
 	return int(ret), WrapErr(int(ret))
 }
@@ -2852,6 +2884,9 @@ func AVPacketShrinkSideData(pkt *AVPacket, _type AVPacketSideDataType, size uint
 	var tmppkt *C.AVPacket
 	if pkt != nil {
 		tmppkt = pkt.ptr
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_packet_shrink_side_data.size overflows C.size_t")
 	}
 	ret := C.av_packet_shrink_side_data(tmppkt, C.enum_AVPacketSideDataType(_type), C.size_t(size))
 	return int(ret), WrapErr(int(ret))
@@ -2874,7 +2909,15 @@ func AVPacketGetSideData(pkt *AVPacket, _type AVPacketSideDataType, size *uint64
 	if pkt != nil {
 		tmppkt = pkt.ptr
 	}
-	ret := C.av_packet_get_side_data(tmppkt, C.enum_AVPacketSideDataType(_type), (*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_packet_get_side_data(tmppkt, C.enum_AVPacketSideDataType(_type), ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	return unsafe.Pointer(ret)
 }
 
@@ -2893,7 +2936,15 @@ func AVPacketPackDictionary(dict *AVDictionary, size *uint64) unsafe.Pointer {
 	if dict != nil {
 		tmpdict = dict.ptr
 	}
-	ret := C.av_packet_pack_dictionary(tmpdict, (*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_packet_pack_dictionary(tmpdict, ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	return unsafe.Pointer(ret)
 }
 
@@ -2909,6 +2960,9 @@ func AVPacketPackDictionary(dict *AVDictionary, size *uint64) unsafe.Pointer {
   @return 0 on success, < 0 on failure
 */
 func AVPacketUnpackDictionary(data unsafe.Pointer, size uint64, dict **AVDictionary) (int, error) {
+	if uint64(C.size_t(size)) != size {
+		panic("av_packet_unpack_dictionary.size overflows C.size_t")
+	}
 	var ptrdict **C.AVDictionary
 	var tmpdict *C.AVDictionary
 	var oldTmpdict *C.AVDictionary
@@ -3360,6 +3414,9 @@ func AVDeviceAppToDevControlMessage(s *AVFormatContext, _type AVAppToDevMessageT
 	if s != nil {
 		tmps = s.ptr
 	}
+	if uint64(C.size_t(dataSize)) != dataSize {
+		panic("avdevice_app_to_dev_control_message.data_size overflows C.size_t")
+	}
 	ret := C.avdevice_app_to_dev_control_message(tmps, C.enum_AVAppToDevMessageType(_type), data, C.size_t(dataSize))
 	return int(ret), WrapErr(int(ret))
 }
@@ -3381,6 +3438,9 @@ func AVDeviceDevToAppControlMessage(s *AVFormatContext, _type AVDevToAppMessageT
 	var tmps *C.AVFormatContext
 	if s != nil {
 		tmps = s.ptr
+	}
+	if uint64(C.size_t(dataSize)) != dataSize {
+		panic("avdevice_dev_to_app_control_message.data_size overflows C.size_t")
 	}
 	ret := C.avdevice_dev_to_app_control_message(tmps, C.enum_AVDevToAppMessageType(_type), data, C.size_t(dataSize))
 	return int(ret), WrapErr(int(ret))
@@ -8512,6 +8572,9 @@ func AVIOReadToBprint(h *AVIOContext, pb *AVBPrint, maxSize uint64) (int, error)
 	if pb != nil {
 		tmppb = pb.ptr
 	}
+	if uint64(C.size_t(maxSize)) != maxSize {
+		panic("avio_read_to_bprint.max_size overflows C.size_t")
+	}
 	ret := C.avio_read_to_bprint(tmph, tmppb, C.size_t(maxSize))
 	return int(ret), WrapErr(int(ret))
 }
@@ -8600,6 +8663,9 @@ func AVIOHandshake(c *AVIOContext) (int, error) {
   @return      updated checksum
 */
 func AVAdler32Update(adler AVAdler, buf unsafe.Pointer, len uint64) AVAdler {
+	if uint64(C.size_t(len)) != len {
+		panic("av_adler32_update.len overflows C.size_t")
+	}
 	ret := C.av_adler32_update(C.AVAdler(adler), (*C.uint8_t)(buf), C.size_t(len))
 	return AVAdler(ret)
 }
@@ -8801,7 +8867,15 @@ func AVAesCtrIncrementIv(a *AVAESCTR) {
   @return the newly allocated struct or NULL on failure
 */
 func AVAmbientViewingEnvironmentAlloc(size *uint64) *AVAmbientViewingEnvironment {
-	ret := C.av_ambient_viewing_environment_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_ambient_viewing_environment_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVAmbientViewingEnvironment
 	if ret != nil {
 		retMapped = &AVAmbientViewingEnvironment{ptr: ret}
@@ -9051,6 +9125,9 @@ func AVStrnstr(haystack *CStr, needle *CStr, hayLength uint64) *CStr {
 	if needle != nil {
 		tmpneedle = needle.ptr
 	}
+	if uint64(C.size_t(hayLength)) != hayLength {
+		panic("av_strnstr.hay_length overflows C.size_t")
+	}
 	ret := C.av_strnstr(tmphaystack, tmpneedle, C.size_t(hayLength))
 	return wrapCStr(ret)
 }
@@ -9081,6 +9158,9 @@ func AVStrlcpy(dst *CStr, src *CStr, size uint64) uint64 {
 	var tmpsrc *C.char
 	if src != nil {
 		tmpsrc = src.ptr
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_strlcpy.size overflows C.size_t")
 	}
 	ret := C.av_strlcpy(tmpdst, tmpsrc, C.size_t(size))
 	return uint64(ret)
@@ -9114,6 +9194,9 @@ func AVStrlcat(dst *CStr, src *CStr, size uint64) uint64 {
 	if src != nil {
 		tmpsrc = src.ptr
 	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_strlcat.size overflows C.size_t")
+	}
 	ret := C.av_strlcat(tmpdst, tmpsrc, C.size_t(size))
 	return uint64(ret)
 }
@@ -9136,6 +9219,9 @@ func AVStrnlen(s *CStr, len uint64) uint64 {
 	var tmps *C.char
 	if s != nil {
 		tmps = s.ptr
+	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_strnlen.len overflows C.size_t")
 	}
 	ret := C.av_strnlen(tmps, C.size_t(len))
 	return uint64(ret)
@@ -9248,6 +9334,9 @@ func AVStrncasecmp(a *CStr, b *CStr, n uint64) (int, error) {
 	var tmpb *C.char
 	if b != nil {
 		tmpb = b.ptr
+	}
+	if uint64(C.size_t(n)) != n {
+		panic("av_strncasecmp.n overflows C.size_t")
 	}
 	ret := C.av_strncasecmp(tmpa, tmpb, C.size_t(n))
 	return int(ret), WrapErr(int(ret))
@@ -9830,6 +9919,9 @@ func AVBswap64(x uint64) uint64 {
   @return an AVBufferRef of given size or NULL when out of memory
 */
 func AVBufferAlloc(size uint64) *AVBufferRef {
+	if uint64(C.size_t(size)) != size {
+		panic("av_buffer_alloc.size overflows C.size_t")
+	}
 	ret := C.av_buffer_alloc(C.size_t(size))
 	var retMapped *AVBufferRef
 	if ret != nil {
@@ -9846,6 +9938,9 @@ func AVBufferAlloc(size uint64) *AVBufferRef {
   to zero.
 */
 func AVBufferAllocz(size uint64) *AVBufferRef {
+	if uint64(C.size_t(size)) != size {
+		panic("av_buffer_allocz.size overflows C.size_t")
+	}
 	ret := C.av_buffer_allocz(C.size_t(size))
 	var retMapped *AVBufferRef
 	if ret != nil {
@@ -10031,6 +10126,9 @@ func AVBufferRealloc(buf **AVBufferRef, size uint64) (int, error) {
 			oldTmpbuf = tmpbuf
 		}
 		ptrbuf = &tmpbuf
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_buffer_realloc.size overflows C.size_t")
 	}
 	ret := C.av_buffer_realloc(ptrbuf, C.size_t(size))
 	if tmpbuf != oldTmpbuf && buf != nil {
@@ -10325,6 +10423,9 @@ func AVChannelName(buf *CStr, bufSize uint64, channel AVChannel) (int, error) {
 	if buf != nil {
 		tmpbuf = buf.ptr
 	}
+	if uint64(C.size_t(bufSize)) != bufSize {
+		panic("av_channel_name.buf_size overflows C.size_t")
+	}
 	ret := C.av_channel_name(tmpbuf, C.size_t(bufSize), C.enum_AVChannel(channel))
 	return int(ret), WrapErr(int(ret))
 }
@@ -10362,6 +10463,9 @@ func AVChannelDescription(buf *CStr, bufSize uint64, channel AVChannel) (int, er
 	var tmpbuf *C.char
 	if buf != nil {
 		tmpbuf = buf.ptr
+	}
+	if uint64(C.size_t(bufSize)) != bufSize {
+		panic("av_channel_description.buf_size overflows C.size_t")
 	}
 	ret := C.av_channel_description(tmpbuf, C.size_t(bufSize), C.enum_AVChannel(channel))
 	return int(ret), WrapErr(int(ret))
@@ -10575,6 +10679,9 @@ func AVChannelLayoutDescribe(channelLayout *AVChannelLayout, buf *CStr, bufSize 
 	var tmpbuf *C.char
 	if buf != nil {
 		tmpbuf = buf.ptr
+	}
+	if uint64(C.size_t(bufSize)) != bufSize {
+		panic("av_channel_layout_describe.buf_size overflows C.size_t")
 	}
 	ret := C.av_channel_layout_describe(tmpchannelLayout, tmpbuf, C.size_t(bufSize))
 	return int(ret), WrapErr(int(ret))
@@ -11268,6 +11375,9 @@ func AVContainerFifoDrain(cf *AVContainerFifo, nbElems uint64) {
 	if cf != nil {
 		tmpcf = cf.ptr
 	}
+	if uint64(C.size_t(nbElems)) != nbElems {
+		panic("av_container_fifo_drain.nb_elems overflows C.size_t")
+	}
 	C.av_container_fifo_drain(tmpcf, C.size_t(nbElems))
 }
 
@@ -11410,6 +11520,9 @@ func AVCrc(ctx *AVCRC, crc uint32, buffer unsafe.Pointer, length uint64) uint32 
 	var tmpctx *C.AVCRC
 	if ctx != nil {
 		tmpctx = (*C.AVCRC)(unsafe.Pointer(ctx))
+	}
+	if uint64(C.size_t(length)) != length {
+		panic("av_crc.length overflows C.size_t")
 	}
 	ret := C.av_crc(tmpctx, C.uint32_t(crc), (*C.uint8_t)(buffer), C.size_t(length))
 	return uint32(ret)
@@ -11688,7 +11801,15 @@ func AVGetDetectionBbox(header *AVDetectionBBoxHeader, idx uint) *AVDetectionBBo
   written here.
 */
 func AVDetectionBboxAlloc(nbBboxes uint32, outSize *uint64) *AVDetectionBBoxHeader {
-	ret := C.av_detection_bbox_alloc(C.uint32_t(nbBboxes), (*C.size_t)(unsafe.Pointer(outSize)))
+	var tmpoutSize C.size_t
+	var ptroutSize *C.size_t
+	if outSize != nil {
+		ptroutSize = &tmpoutSize
+	}
+	ret := C.av_detection_bbox_alloc(C.uint32_t(nbBboxes), ptroutSize)
+	if outSize != nil {
+		*outSize = uint64(tmpoutSize)
+	}
 	var retMapped *AVDetectionBBoxHeader
 	if ret != nil {
 		retMapped = &AVDetectionBBoxHeader{ptr: ret}
@@ -12057,7 +12178,15 @@ func AVDictFree(m **AVDictionary) {
   @return the newly allocated struct or NULL on failure
 */
 func AVDoviAlloc(size *uint64) *AVDOVIDecoderConfigurationRecord {
-	ret := C.av_dovi_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_dovi_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVDOVIDecoderConfigurationRecord
 	if ret != nil {
 		retMapped = &AVDOVIDecoderConfigurationRecord{ptr: ret}
@@ -12166,7 +12295,15 @@ func AVDoviFindLevel(data *AVDOVIMetadata, level uint8) *AVDOVIDmData {
   @return the newly allocated struct or NULL on failure
 */
 func AVDoviMetadataAlloc(size *uint64) *AVDOVIMetadata {
-	ret := C.av_dovi_metadata_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_dovi_metadata_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVDOVIMetadata
 	if ret != nil {
 		retMapped = &AVDOVIMetadata{ptr: ret}
@@ -12269,6 +12406,9 @@ func AVEncryptionInfoFree(info *AVEncryptionInfo) {
   @return The new AVEncryptionInfo structure, or NULL on error.
 */
 func AVEncryptionInfoGetSideData(sideData unsafe.Pointer, sideDataSize uint64) *AVEncryptionInfo {
+	if uint64(C.size_t(sideDataSize)) != sideDataSize {
+		panic("av_encryption_info_get_side_data.side_data_size overflows C.size_t")
+	}
 	ret := C.av_encryption_info_get_side_data((*C.uint8_t)(sideData), C.size_t(sideDataSize))
 	var retMapped *AVEncryptionInfo
 	if ret != nil {
@@ -12292,7 +12432,15 @@ func AVEncryptionInfoAddSideData(info *AVEncryptionInfo, sideDataSize *uint64) u
 	if info != nil {
 		tmpinfo = info.ptr
 	}
-	ret := C.av_encryption_info_add_side_data(tmpinfo, (*C.size_t)(unsafe.Pointer(sideDataSize)))
+	var tmpsideDataSize C.size_t
+	var ptrsideDataSize *C.size_t
+	if sideDataSize != nil {
+		ptrsideDataSize = &tmpsideDataSize
+	}
+	ret := C.av_encryption_info_add_side_data(tmpinfo, ptrsideDataSize)
+	if sideDataSize != nil {
+		*sideDataSize = uint64(tmpsideDataSize)
+	}
 	return unsafe.Pointer(ret)
 }
 
@@ -12340,6 +12488,9 @@ func AVEncryptionInitInfoFree(info *AVEncryptionInitInfo) {
   @return The new AVEncryptionInitInfo structure, or NULL on error.
 */
 func AVEncryptionInitInfoGetSideData(sideData unsafe.Pointer, sideDataSize uint64) *AVEncryptionInitInfo {
+	if uint64(C.size_t(sideDataSize)) != sideDataSize {
+		panic("av_encryption_init_info_get_side_data.side_data_size overflows C.size_t")
+	}
 	ret := C.av_encryption_init_info_get_side_data((*C.uint8_t)(sideData), C.size_t(sideDataSize))
 	var retMapped *AVEncryptionInitInfo
 	if ret != nil {
@@ -12363,7 +12514,15 @@ func AVEncryptionInitInfoAddSideData(info *AVEncryptionInitInfo, sideDataSize *u
 	if info != nil {
 		tmpinfo = info.ptr
 	}
-	ret := C.av_encryption_init_info_add_side_data(tmpinfo, (*C.size_t)(unsafe.Pointer(sideDataSize)))
+	var tmpsideDataSize C.size_t
+	var ptrsideDataSize *C.size_t
+	if sideDataSize != nil {
+		ptrsideDataSize = &tmpsideDataSize
+	}
+	ret := C.av_encryption_init_info_add_side_data(tmpinfo, ptrsideDataSize)
+	if sideDataSize != nil {
+		*sideDataSize = uint64(tmpsideDataSize)
+	}
 	return unsafe.Pointer(ret)
 }
 
@@ -12387,6 +12546,9 @@ func AVStrerror(errnum int, errbuf *CStr, errbufSize uint64) (int, error) {
 	if errbuf != nil {
 		tmperrbuf = errbuf.ptr
 	}
+	if uint64(C.size_t(errbufSize)) != errbufSize {
+		panic("av_strerror.errbuf_size overflows C.size_t")
+	}
 	ret := C.av_strerror(C.int(errnum), tmperrbuf, C.size_t(errbufSize))
 	return int(ret), WrapErr(int(ret))
 }
@@ -12408,6 +12570,9 @@ func AVMakeErrorString(errbuf *CStr, errbufSize uint64, errnum int) *CStr {
 	var tmperrbuf *C.char
 	if errbuf != nil {
 		tmperrbuf = errbuf.ptr
+	}
+	if uint64(C.size_t(errbufSize)) != errbufSize {
+		panic("av_make_error_string.errbuf_size overflows C.size_t")
 	}
 	ret := C.av_make_error_string(tmperrbuf, C.size_t(errbufSize), C.int(errnum))
 	return wrapCStr(ret)
@@ -12573,6 +12738,12 @@ func AVExecutorExecute(e *AVExecutor, t *AVTask) {
   @return newly-allocated AVFifo on success, a negative error code on failure
 */
 func AVFifoAlloc2(elems uint64, elemSize uint64, flags uint) *AVFifo {
+	if uint64(C.size_t(elems)) != elems {
+		panic("av_fifo_alloc2.elems overflows C.size_t")
+	}
+	if uint64(C.size_t(elemSize)) != elemSize {
+		panic("av_fifo_alloc2.elem_size overflows C.size_t")
+	}
 	ret := C.av_fifo_alloc2(C.size_t(elems), C.size_t(elemSize), C.uint(flags))
 	var retMapped *AVFifo
 	if ret != nil {
@@ -12608,6 +12779,9 @@ func AVFifoAutoGrowLimit(f *AVFifo, maxElems uint64) {
 	var tmpf *C.AVFifo
 	if f != nil {
 		tmpf = f.ptr
+	}
+	if uint64(C.size_t(maxElems)) != maxElems {
+		panic("av_fifo_auto_grow_limit.max_elems overflows C.size_t")
 	}
 	C.av_fifo_auto_grow_limit(tmpf, C.size_t(maxElems))
 }
@@ -12667,6 +12841,9 @@ func AVFifoGrow2(f *AVFifo, inc uint64) (int, error) {
 	if f != nil {
 		tmpf = f.ptr
 	}
+	if uint64(C.size_t(inc)) != inc {
+		panic("av_fifo_grow2.inc overflows C.size_t")
+	}
 	ret := C.av_fifo_grow2(tmpf, C.size_t(inc))
 	return int(ret), WrapErr(int(ret))
 }
@@ -12694,6 +12871,9 @@ func AVFifoWrite(f *AVFifo, buf unsafe.Pointer, nbElems uint64) (int, error) {
 	var tmpf *C.AVFifo
 	if f != nil {
 		tmpf = f.ptr
+	}
+	if uint64(C.size_t(nbElems)) != nbElems {
+		panic("av_fifo_write.nb_elems overflows C.size_t")
 	}
 	ret := C.av_fifo_write(tmpf, buf, C.size_t(nbElems))
 	return int(ret), WrapErr(int(ret))
@@ -12723,6 +12903,9 @@ func AVFifoRead(f *AVFifo, buf unsafe.Pointer, nbElems uint64) (int, error) {
 	var tmpf *C.AVFifo
 	if f != nil {
 		tmpf = f.ptr
+	}
+	if uint64(C.size_t(nbElems)) != nbElems {
+		panic("av_fifo_read.nb_elems overflows C.size_t")
 	}
 	ret := C.av_fifo_read(tmpf, buf, C.size_t(nbElems))
 	return int(ret), WrapErr(int(ret))
@@ -12754,6 +12937,12 @@ func AVFifoPeek(f *AVFifo, buf unsafe.Pointer, nbElems uint64, offset uint64) (i
 	if f != nil {
 		tmpf = f.ptr
 	}
+	if uint64(C.size_t(nbElems)) != nbElems {
+		panic("av_fifo_peek.nb_elems overflows C.size_t")
+	}
+	if uint64(C.size_t(offset)) != offset {
+		panic("av_fifo_peek.offset overflows C.size_t")
+	}
 	ret := C.av_fifo_peek(tmpf, buf, C.size_t(nbElems), C.size_t(offset))
 	return int(ret), WrapErr(int(ret))
 }
@@ -12774,6 +12963,9 @@ func AVFifoDrain2(f *AVFifo, size uint64) {
 	var tmpf *C.AVFifo
 	if f != nil {
 		tmpf = f.ptr
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_fifo_drain2.size overflows C.size_t")
 	}
 	C.av_fifo_drain2(tmpf, C.size_t(size))
 }
@@ -12837,6 +13029,9 @@ func AVFifoFreep2(f **AVFifo) {
   by av_file_map()
 */
 func AVFileUnmap(bufptr unsafe.Pointer, size uint64) {
+	if uint64(C.size_t(size)) != size {
+		panic("av_file_unmap.size overflows C.size_t")
+	}
 	C.av_file_unmap((*C.uint8_t)(bufptr), C.size_t(size))
 }
 
@@ -12852,7 +13047,15 @@ func AVFileUnmap(bufptr unsafe.Pointer, size uint64) {
           on failure.
 */
 func AVFilmGrainParamsAlloc(size *uint64) *AVFilmGrainParams {
-	ret := C.av_film_grain_params_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_film_grain_params_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVFilmGrainParams
 	if ret != nil {
 		retMapped = &AVFilmGrainParams{ptr: ret}
@@ -13255,6 +13458,9 @@ func AVFrameNewSideData(frame *AVFrame, _type AVFrameSideDataType, size uint64) 
 	if frame != nil {
 		tmpframe = frame.ptr
 	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_frame_new_side_data.size overflows C.size_t")
+	}
 	ret := C.av_frame_new_side_data(tmpframe, C.enum_AVFrameSideDataType(_type), C.size_t(size))
 	var retMapped *AVFrameSideData
 	if ret != nil {
@@ -13602,6 +13808,9 @@ func AVHashUpdate(ctx *AVHashContext, src unsafe.Pointer, len uint64) {
 	if ctx != nil {
 		tmpctx = ctx.ptr
 	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_hash_update.len overflows C.size_t")
+	}
 	C.av_hash_update(tmpctx, (*C.uint8_t)(src), C.size_t(len))
 }
 
@@ -13749,7 +13958,15 @@ func AVHashFreep(ctx **AVHashContext) {
           on failure.
 */
 func AVDynamicHdrPlusAlloc(size *uint64) *AVDynamicHDRPlus {
-	ret := C.av_dynamic_hdr_plus_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_dynamic_hdr_plus_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVDynamicHDRPlus
 	if ret != nil {
 		retMapped = &AVDynamicHDRPlus{ptr: ret}
@@ -13798,6 +14015,9 @@ func AVDynamicHdrPlusFromT35(s *AVDynamicHDRPlus, data unsafe.Pointer, size uint
 	if s != nil {
 		tmps = s.ptr
 	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_dynamic_hdr_plus_from_t35.size overflows C.size_t")
+	}
 	ret := C.av_dynamic_hdr_plus_from_t35(tmps, (*C.uint8_t)(data), C.size_t(size))
 	return int(ret), WrapErr(int(ret))
 }
@@ -13817,7 +14037,15 @@ func AVDynamicHdrPlusFromT35(s *AVDynamicHDRPlus, data unsafe.Pointer, size uint
           on failure.
 */
 func AVDynamicHdrVividAlloc(size *uint64) *AVDynamicHDRVivid {
-	ret := C.av_dynamic_hdr_vivid_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_dynamic_hdr_vivid_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVDynamicHDRVivid
 	if ret != nil {
 		retMapped = &AVDynamicHDRVivid{ptr: ret}
@@ -14534,7 +14762,15 @@ func AVIamfParamDefinitionGetClass() *AVClass {
   @param size if non-NULL, the size in bytes of the resulting data array is written here.
 */
 func AVIamfParamDefinitionAlloc(_type AVIAMFParamDefinitionType, nbSubblocks uint, size *uint64) *AVIAMFParamDefinition {
-	ret := C.av_iamf_param_definition_alloc(C.enum_AVIAMFParamDefinitionType(_type), C.uint(nbSubblocks), (*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_iamf_param_definition_alloc(C.enum_AVIAMFParamDefinitionType(_type), C.uint(nbSubblocks), ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVIAMFParamDefinition
 	if ret != nil {
 		retMapped = &AVIAMFParamDefinition{ptr: ret}
@@ -14849,6 +15085,15 @@ func AVImageCopyPlane(dst unsafe.Pointer, dstLinesize int, src unsafe.Pointer, s
         size (i.e. 64) to get improved performance.
 */
 func AVImageCopyPlaneUcFrom(dst unsafe.Pointer, dstLinesize int64, src unsafe.Pointer, srcLinesize int64, bytewidth int64, height int) {
+	if int64(C.ptrdiff_t(dstLinesize)) != dstLinesize {
+		panic("av_image_copy_plane_uc_from.dst_linesize overflows C.ptrdiff_t")
+	}
+	if int64(C.ptrdiff_t(srcLinesize)) != srcLinesize {
+		panic("av_image_copy_plane_uc_from.src_linesize overflows C.ptrdiff_t")
+	}
+	if int64(C.ptrdiff_t(bytewidth)) != bytewidth {
+		panic("av_image_copy_plane_uc_from.bytewidth overflows C.ptrdiff_t")
+	}
 	C.av_image_copy_plane_uc_from((*C.uint8_t)(dst), C.ptrdiff_t(dstLinesize), (*C.uint8_t)(src), C.ptrdiff_t(srcLinesize), C.ptrdiff_t(bytewidth), C.int(height))
 }
 
@@ -15193,7 +15438,15 @@ func AVMasteringDisplayMetadataAlloc() *AVMasteringDisplayMetadata {
           on failure.
 */
 func AVMasteringDisplayMetadataAllocSize(size *uint64) *AVMasteringDisplayMetadata {
-	ret := C.av_mastering_display_metadata_alloc_size((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_mastering_display_metadata_alloc_size(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVMasteringDisplayMetadata
 	if ret != nil {
 		retMapped = &AVMasteringDisplayMetadata{ptr: ret}
@@ -15235,7 +15488,15 @@ func AVMasteringDisplayMetadataCreateSideData(frame *AVFrame) *AVMasteringDispla
           on failure.
 */
 func AVContentLightMetadataAlloc(size *uint64) *AVContentLightMetadata {
-	ret := C.av_content_light_metadata_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_content_light_metadata_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVContentLightMetadata
 	if ret != nil {
 		retMapped = &AVContentLightMetadata{ptr: ret}
@@ -15474,6 +15735,9 @@ func AVMd5Update(ctx *AVMD5, src unsafe.Pointer, len uint64) {
 	if ctx != nil {
 		tmpctx = ctx.ptr
 	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_md5_update.len overflows C.size_t")
+	}
 	C.av_md5_update(tmpctx, (*C.uint8_t)(src), C.size_t(len))
 }
 
@@ -15505,6 +15769,9 @@ func AVMd5Final(ctx *AVMD5, dst unsafe.Pointer) {
   @param len The length of the data, in bytes
 */
 func AVMd5Sum(dst unsafe.Pointer, src unsafe.Pointer, len uint64) {
+	if uint64(C.size_t(len)) != len {
+		panic("av_md5_sum.len overflows C.size_t")
+	}
 	C.av_md5_sum((*C.uint8_t)(dst), (*C.uint8_t)(src), C.size_t(len))
 }
 
@@ -15521,6 +15788,9 @@ func AVMd5Sum(dst unsafe.Pointer, src unsafe.Pointer, len uint64) {
   @see av_mallocz()
 */
 func AVMalloc(size uint64) unsafe.Pointer {
+	if uint64(C.size_t(size)) != size {
+		panic("av_malloc.size overflows C.size_t")
+	}
 	ret := C.av_malloc(C.size_t(size))
 	return ret
 }
@@ -15538,6 +15808,9 @@ func AVMalloc(size uint64) unsafe.Pointer {
   @see av_malloc()
 */
 func AVMallocz(size uint64) unsafe.Pointer {
+	if uint64(C.size_t(size)) != size {
+		panic("av_mallocz.size overflows C.size_t")
+	}
 	ret := C.av_mallocz(C.size_t(size))
 	return ret
 }
@@ -15557,6 +15830,12 @@ func AVMallocz(size uint64) unsafe.Pointer {
   @see av_malloc()
 */
 func AVMallocArray(nmemb uint64, size uint64) unsafe.Pointer {
+	if uint64(C.size_t(nmemb)) != nmemb {
+		panic("av_malloc_array.nmemb overflows C.size_t")
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_malloc_array.size overflows C.size_t")
+	}
 	ret := C.av_malloc_array(C.size_t(nmemb), C.size_t(size))
 	return ret
 }
@@ -15578,6 +15857,12 @@ func AVMallocArray(nmemb uint64, size uint64) unsafe.Pointer {
   @see av_malloc_array()
 */
 func AVCalloc(nmemb uint64, size uint64) unsafe.Pointer {
+	if uint64(C.size_t(nmemb)) != nmemb {
+		panic("av_calloc.nmemb overflows C.size_t")
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_calloc.size overflows C.size_t")
+	}
 	ret := C.av_calloc(C.size_t(nmemb), C.size_t(size))
 	return ret
 }
@@ -15606,6 +15891,9 @@ func AVCalloc(nmemb uint64, size uint64) unsafe.Pointer {
   @see av_reallocp()
 */
 func AVRealloc(ptr unsafe.Pointer, size uint64) unsafe.Pointer {
+	if uint64(C.size_t(size)) != size {
+		panic("av_realloc.size overflows C.size_t")
+	}
 	ret := C.av_realloc(ptr, C.size_t(size))
 	return ret
 }
@@ -15633,6 +15921,9 @@ func AVRealloc(ptr unsafe.Pointer, size uint64) unsafe.Pointer {
            correctly aligned.
 */
 func AVReallocp(ptr unsafe.Pointer, size uint64) (int, error) {
+	if uint64(C.size_t(size)) != size {
+		panic("av_reallocp.size overflows C.size_t")
+	}
 	ret := C.av_reallocp(ptr, C.size_t(size))
 	return int(ret), WrapErr(int(ret))
 }
@@ -15656,6 +15947,12 @@ func AVReallocp(ptr unsafe.Pointer, size uint64) (int, error) {
     pattern.
 */
 func AVReallocF(ptr unsafe.Pointer, nelem uint64, elsize uint64) unsafe.Pointer {
+	if uint64(C.size_t(nelem)) != nelem {
+		panic("av_realloc_f.nelem overflows C.size_t")
+	}
+	if uint64(C.size_t(elsize)) != elsize {
+		panic("av_realloc_f.elsize overflows C.size_t")
+	}
 	ret := C.av_realloc_f(ptr, C.size_t(nelem), C.size_t(elsize))
 	return ret
 }
@@ -15682,6 +15979,12 @@ func AVReallocF(ptr unsafe.Pointer, nelem uint64, elsize uint64) unsafe.Pointer 
   @see av_reallocp_array()
 */
 func AVReallocArray(ptr unsafe.Pointer, nmemb uint64, size uint64) unsafe.Pointer {
+	if uint64(C.size_t(nmemb)) != nmemb {
+		panic("av_realloc_array.nmemb overflows C.size_t")
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_realloc_array.size overflows C.size_t")
+	}
 	ret := C.av_realloc_array(ptr, C.size_t(nmemb), C.size_t(size))
 	return ret
 }
@@ -15706,6 +16009,12 @@ func AVReallocArray(ptr unsafe.Pointer, nmemb uint64, size uint64) unsafe.Pointe
            correctly aligned. *ptr must be freed after even if nmemb is zero.
 */
 func AVReallocpArray(ptr unsafe.Pointer, nmemb uint64, size uint64) (int, error) {
+	if uint64(C.size_t(nmemb)) != nmemb {
+		panic("av_reallocp_array.nmemb overflows C.size_t")
+	}
+	if uint64(C.size_t(size)) != size {
+		panic("av_reallocp_array.size overflows C.size_t")
+	}
 	ret := C.av_reallocp_array(ptr, C.size_t(nmemb), C.size_t(size))
 	return int(ret), WrapErr(int(ret))
 }
@@ -15746,6 +16055,9 @@ func AVReallocpArray(ptr unsafe.Pointer, nmemb uint64, size uint64) (int, error)
   @see av_fast_malloc()
 */
 func AVFastRealloc(ptr unsafe.Pointer, size *uint, minSize uint64) unsafe.Pointer {
+	if uint64(C.size_t(minSize)) != minSize {
+		panic("av_fast_realloc.min_size overflows C.size_t")
+	}
 	ret := C.av_fast_realloc(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
 	return ret
 }
@@ -15783,6 +16095,9 @@ func AVFastRealloc(ptr unsafe.Pointer, size *uint, minSize uint64) unsafe.Pointe
   @see av_fast_mallocz()
 */
 func AVFastMalloc(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	if uint64(C.size_t(minSize)) != minSize {
+		panic("av_fast_malloc.min_size overflows C.size_t")
+	}
 	C.av_fast_malloc(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
 }
 
@@ -15808,6 +16123,9 @@ func AVFastMalloc(ptr unsafe.Pointer, size *uint, minSize uint64) {
   @see av_fast_malloc()
 */
 func AVFastMallocz(ptr unsafe.Pointer, size *uint, minSize uint64) {
+	if uint64(C.size_t(minSize)) != minSize {
+		panic("av_fast_mallocz.min_size overflows C.size_t")
+	}
 	C.av_fast_mallocz(ptr, (*C.uint)(unsafe.Pointer(size)), C.size_t(minSize))
 }
 
@@ -15894,6 +16212,9 @@ func AVStrndup(s *CStr, len uint64) *CStr {
 	if s != nil {
 		tmps = s.ptr
 	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_strndup.len overflows C.size_t")
+	}
 	ret := C.av_strndup(tmps, C.size_t(len))
 	return wrapAVCStr(ret)
 }
@@ -15910,6 +16231,9 @@ func AVStrndup(s *CStr, len uint64) *CStr {
           copy of `p` or `NULL` if the buffer cannot be allocated
 */
 func AVMemdup(p unsafe.Pointer, size uint64) unsafe.Pointer {
+	if uint64(C.size_t(size)) != size {
+		panic("av_memdup.size overflows C.size_t")
+	}
 	ret := C.av_memdup(p, C.size_t(size))
 	return ret
 }
@@ -16003,6 +16327,9 @@ func AVDynarrayAddNofree(tabPtr unsafe.Pointer, nbPtr *int, elem unsafe.Pointer)
            this if you do not understand the full consequence of doing so.
 */
 func AVMaxAlloc(max uint64) {
+	if uint64(C.size_t(max)) != max {
+		panic("av_max_alloc.max overflows C.size_t")
+	}
 	C.av_max_alloc(C.size_t(max))
 }
 
@@ -16080,6 +16407,9 @@ func AVMurmur3Update(c *AVMurMur3, src unsafe.Pointer, len uint64) {
 	var tmpc *C.struct_AVMurMur3
 	if c != nil {
 		tmpc = c.ptr
+	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_murmur3_update.len overflows C.size_t")
 	}
 	C.av_murmur3_update(tmpc, (*C.uint8_t)(src), C.size_t(len))
 }
@@ -17768,6 +18098,9 @@ func AVGetRandomSeed() uint32 {
   @retval "a negative AVERROR code" random data could not be generated
 */
 func AVRandomBytes(buf unsafe.Pointer, len uint64) (int, error) {
+	if uint64(C.size_t(len)) != len {
+		panic("av_random_bytes.len overflows C.size_t")
+	}
 	ret := C.av_random_bytes((*C.uint8_t)(buf), C.size_t(len))
 	return int(ret), WrapErr(int(ret))
 }
@@ -18090,6 +18423,9 @@ func AVRipemdUpdate(context *AVRIPEMD, data unsafe.Pointer, len uint64) {
 	if context != nil {
 		tmpcontext = context.ptr
 	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_ripemd_update.len overflows C.size_t")
+	}
 	C.av_ripemd_update(tmpcontext, (*C.uint8_t)(data), C.size_t(len))
 }
 
@@ -18324,6 +18660,9 @@ func AVShaUpdate(ctx *AVSHA, data unsafe.Pointer, len uint64) {
 	if ctx != nil {
 		tmpctx = ctx.ptr
 	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_sha_update.len overflows C.size_t")
+	}
 	C.av_sha_update(tmpctx, (*C.uint8_t)(data), C.size_t(len))
 }
 
@@ -18392,6 +18731,9 @@ func AVSha512Update(context *AVSHA512, data unsafe.Pointer, len uint64) {
 	if context != nil {
 		tmpcontext = context.ptr
 	}
+	if uint64(C.size_t(len)) != len {
+		panic("av_sha512_update.len overflows C.size_t")
+	}
 	C.av_sha512_update(tmpcontext, (*C.uint8_t)(data), C.size_t(len))
 }
 
@@ -18422,7 +18764,15 @@ func AVSha512Final(context *AVSHA512, digest unsafe.Pointer) {
   @return the newly allocated struct or NULL on failure
 */
 func AVSphericalAlloc(size *uint64) *AVSphericalMapping {
-	ret := C.av_spherical_alloc((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_spherical_alloc(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVSphericalMapping
 	if ret != nil {
 		retMapped = &AVSphericalMapping{ptr: ret}
@@ -18496,7 +18846,15 @@ func AVStereo3DAlloc() *AVStereo3D {
   @return An AVStereo3D filled with default values or NULL on failure.
 */
 func AVStereo3DAllocSize(size *uint64) *AVStereo3D {
-	ret := C.av_stereo3d_alloc_size((*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_stereo3d_alloc_size(ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AVStereo3D
 	if ret != nil {
 		retMapped = &AVStereo3D{ptr: ret}
@@ -18655,7 +19013,15 @@ func AVTdrdiGetDisplay(tdrdi *AV3DReferenceDisplaysInfo, idx uint) *AV3DReferenc
   @return the newly allocated struct or NULL on failure
 */
 func AVTdrdiAlloc(nbDisplays uint, size *uint64) *AV3DReferenceDisplaysInfo {
-	ret := C.av_tdrdi_alloc(C.uint(nbDisplays), (*C.size_t)(unsafe.Pointer(size)))
+	var tmpsize C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize
+	}
+	ret := C.av_tdrdi_alloc(C.uint(nbDisplays), ptrsize)
+	if size != nil {
+		*size = uint64(tmpsize)
+	}
 	var retMapped *AV3DReferenceDisplaysInfo
 	if ret != nil {
 		retMapped = &AV3DReferenceDisplaysInfo{ptr: ret}
@@ -19452,7 +19818,15 @@ func AVVideoEncParamsBlock(par *AVVideoEncParams, idx uint) *AVVideoBlockParams 
   written here.
 */
 func AVVideoEncParamsAlloc(_type AVVideoEncParamsType, nbBlocks uint, outSize *uint64) *AVVideoEncParams {
-	ret := C.av_video_enc_params_alloc(C.enum_AVVideoEncParamsType(_type), C.uint(nbBlocks), (*C.size_t)(unsafe.Pointer(outSize)))
+	var tmpoutSize C.size_t
+	var ptroutSize *C.size_t
+	if outSize != nil {
+		ptroutSize = &tmpoutSize
+	}
+	ret := C.av_video_enc_params_alloc(C.enum_AVVideoEncParamsType(_type), C.uint(nbBlocks), ptroutSize)
+	if outSize != nil {
+		*outSize = uint64(tmpoutSize)
+	}
 	var retMapped *AVVideoEncParams
 	if ret != nil {
 		retMapped = &AVVideoEncParams{ptr: ret}
@@ -19506,6 +19880,9 @@ func AVVideoHintGetRect(hints *AVVideoHint, idx uint64) *AVVideoRect {
 	if hints != nil {
 		tmphints = hints.ptr
 	}
+	if uint64(C.size_t(idx)) != idx {
+		panic("av_video_hint_get_rect.idx overflows C.size_t")
+	}
 	ret := C.av_video_hint_get_rect(tmphints, C.size_t(idx))
 	var retMapped *AVVideoRect
 	if ret != nil {
@@ -19538,7 +19915,18 @@ func AVVideoHintGetRect(hints *AVVideoHint, idx uint64) *AVVideoRect {
           av_free()) on success, NULL on memory allocation failure
 */
 func AVVideoHintAlloc(nbRects uint64, outSize *uint64) *AVVideoHint {
-	ret := C.av_video_hint_alloc(C.size_t(nbRects), (*C.size_t)(unsafe.Pointer(outSize)))
+	if uint64(C.size_t(nbRects)) != nbRects {
+		panic("av_video_hint_alloc.nb_rects overflows C.size_t")
+	}
+	var tmpoutSize C.size_t
+	var ptroutSize *C.size_t
+	if outSize != nil {
+		ptroutSize = &tmpoutSize
+	}
+	ret := C.av_video_hint_alloc(C.size_t(nbRects), ptroutSize)
+	if outSize != nil {
+		*outSize = uint64(tmpoutSize)
+	}
 	var retMapped *AVVideoHint
 	if ret != nil {
 		retMapped = &AVVideoHint{ptr: ret}
@@ -19557,6 +19945,9 @@ func AVVideoHintCreateSideData(frame *AVFrame, nbRects uint64) *AVVideoHint {
 	var tmpframe *C.AVFrame
 	if frame != nil {
 		tmpframe = frame.ptr
+	}
+	if uint64(C.size_t(nbRects)) != nbRects {
+		panic("av_video_hint_create_side_data.nb_rects overflows C.size_t")
 	}
 	ret := C.av_video_hint_create_side_data(tmpframe, C.size_t(nbRects))
 	var retMapped *AVVideoHint
