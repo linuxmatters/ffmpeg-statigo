@@ -105,10 +105,6 @@ func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded 
 			args = append(args, "--extra-cflags=-mpreferred-stack-boundary=4")
 		}
 		args = append(args, "--target-os=mingw32", "--arch="+ffmpegArch)
-		if arch == "386" {
-			// Isolate the Windows 386 swscale crash from FFmpeg's assembly paths.
-			args = append(args, "--disable-asm")
-		}
 	}
 	return append(args, ffmpegArgsCommon(targetOS, embedded)...)
 }
