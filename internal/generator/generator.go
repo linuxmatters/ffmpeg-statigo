@@ -27,6 +27,7 @@ var primTypes = map[string]string{
 	"uint":      "uint",
 	"char":      "uint8",
 	"uchar":     "uint8",
+	"long":      "int64",
 	"ulong":     "uint64",
 	"int8_t":    "int8",
 	"int16_t":   "int16",

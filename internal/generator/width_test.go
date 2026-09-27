@@ -14,7 +14,7 @@ import (
 func TestVariableWidthChecks(t *testing.T) {
 	g := skipGen()
 	for _, tt := range []struct{ cType, goType string }{
-		{"size_t", "uint64"}, {"ulong", "uint64"}, {"ptrdiff_t", "int64"},
+		{"size_t", "uint64"}, {"ulong", "uint64"}, {"long", "int64"}, {"ptrdiff_t", "int64"},
 	} {
 		t.Run(tt.cType, func(t *testing.T) {
 			_, _, body, _, skip := g.marshalArg(newFile(), &Function{Name: "consume"}, &Param{Name: "value", Type: ident(tt.cType)})
@@ -60,7 +60,7 @@ func TestVariableWidthConversions(t *testing.T) {
 
 	var checks strings.Builder
 	for _, tt := range []struct{ cType, goType string }{
-		{"size_t", "uint64"}, {"ulong", "uint64"}, {"ptrdiff_t", "int64"},
+		{"size_t", "uint64"}, {"ulong", "uint64"}, {"long", "int64"}, {"ptrdiff_t", "int64"},
 	} {
 		params, args, body, _, skip := g.marshalArg(newFile(), &Function{Name: "consume"}, &Param{Name: "value", Type: ident(tt.cType)})
 		if skip {
@@ -75,7 +75,7 @@ func TestVariableWidthConversions(t *testing.T) {
 		t.Run(fmt.Sprint(bits), func(t *testing.T) {
 			dir := t.TempDir()
 			source := "package fixture\n" + output + "\n" + checks.String()
-			source = strings.NewReplacer("C.size_t", fmt.Sprintf("uint%d", bits), "C.ulong", "uint32", "C.ptrdiff_t", fmt.Sprintf("int%d", bits)).Replace(source)
+			source = strings.NewReplacer("C.size_t", fmt.Sprintf("uint%d", bits), "C.ulong", "uint32", "C.long", "int32", "C.ptrdiff_t", fmt.Sprintf("int%d", bits)).Replace(source)
 			source += fmt.Sprintf(`
 var noWrite bool
 var nilSeen bool
@@ -104,6 +104,9 @@ func TestBounds(t *testing.T) {
 	if check_ptrdiff_t(signedMin) != signedMin || check_ptrdiff_t(signedMax) != signedMax { t.Fatal("signed boundary") }
 	if check_ulong(1<<32-1) != 1<<32-1 { t.Fatal("long boundary") }
 	panics(t, func() { check_ulong(1<<32) })
+	if check_long(-1<<31) != -1<<31 || check_long(1<<31-1) != 1<<31-1 { t.Fatal("signed long boundary") }
+	panics(t, func() { check_long(-1<<31-1) })
+	panics(t, func() { check_long(1<<31) })
 	if %d == 32 {
 		panics(t, func() { check_size_t(unsignedMax+1) })
 		panics(t, func() { check_ptrdiff_t(signedMin-1) })
