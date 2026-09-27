@@ -175,7 +175,7 @@ func findViaAPI(prefix string) (string, error) {
 
 	var matchingReleases []string
 	for _, rel := range releases {
-		if strings.HasPrefix(rel.TagName, prefix) {
+		if strings.HasPrefix(rel.TagName, prefix+".") {
 			matchingReleases = append(matchingReleases, rel.TagName)
 		}
 	}
