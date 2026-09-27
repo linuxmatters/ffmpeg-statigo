@@ -50,6 +50,8 @@ jobs:
         id: embedded-release
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          EMBEDDED_ARCHIVE: >-
+            ffmpeg-embedded-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
         shell: bash
         run: |
           version=$(sed -n 's/^const Version = "\([^"]*\)"$/\1/p' lib/fetch.go)
@@ -71,16 +73,16 @@ jobs:
             echo "::error::Release $tag is incompatible with $version"
             exit 1
           fi
-          available=$(jq -r '
+          available=$(jq -r --arg archive "$EMBEDDED_ARCHIVE" '
             if (.assets | type) != "array" then
               error("Missing release asset metadata")
             else [.assets[].name |
-              select(startswith("ffmpeg-embedded-") and endswith(".tar.gz"))] |
+              select(. == $archive)] |
               length > 0
             end' <<< "$release")
           echo "available=$available" >> "$GITHUB_OUTPUT"
           if [[ "$available" == false ]]; then
-            echo "::notice::Release $tag has no embedded archives." \
+            echo "::notice::Release $tag has no $EMBEDDED_ARCHIVE." \
               "Skipping embedded download, build, test and lint." \
               "ffmpeg-test.yml tests source builds."
           fi
