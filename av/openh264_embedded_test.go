@@ -20,6 +20,7 @@ func TestEmbeddedOpenH264MP4(t *testing.T) {
 		ctx.SetPixFmt(ffmpeg.AVPixFmtYuv420P)
 		ctx.SetTimeBase(ffmpeg.AVMakeQ(fixtureRateDen, fixtureRateNum))
 		ctx.SetFramerate(ffmpeg.AVMakeQ(fixtureRateNum, fixtureRateDen))
+		ctx.SetFlags(ctx.Flags() | ffmpeg.AVCodecFlagGlobalHeader)
 	})
 	require.NoError(t, err)
 	defer enc.Close()
@@ -53,4 +54,10 @@ func TestEmbeddedOpenH264MP4(t *testing.T) {
 	video, err := in.BestStream(ffmpeg.AVMediaTypeVideo)
 	require.NoError(t, err)
 	require.Equal(t, ffmpeg.AVCodecIdH264, video.Codecpar().CodecId())
+	require.Positive(t, video.Codecpar().ExtradataSize(), "MP4 must contain H.264 codec configuration")
+
+	frames, width, height := videoStats(t, path)
+	require.Positive(t, frames, "MP4 video must decode")
+	require.Equal(t, fixtureWidth, width)
+	require.Equal(t, fixtureHeight, height)
 }
