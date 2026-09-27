@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
@@ -155,7 +156,7 @@ func symlinkTargetSafe(destDir, linkPath, linkname string) error {
 		return fmt.Errorf("symlink %s: empty link target", linkPath)
 	}
 	slashLinkname := strings.ReplaceAll(linkname, `\`, "/")
-	driveDesignator := len(slashLinkname) >= 2 && slashLinkname[1] == ':'
+	driveDesignator := hasDriveDesignator(slashLinkname, runtime.GOOS)
 	if filepath.IsAbs(linkname) || strings.HasPrefix(slashLinkname, "/") || driveDesignator {
 		return fmt.Errorf("symlink %s: absolute target %q not allowed", linkPath, linkname)
 	}
@@ -166,6 +167,15 @@ func symlinkTargetSafe(destDir, linkPath, linkname string) error {
 		return fmt.Errorf("symlink %s: target %q escapes destination directory", linkPath, linkname)
 	}
 	return nil
+}
+
+func hasDriveDesignator(linkname, targetOS string) bool {
+	if len(linkname) < 2 || linkname[1] != ':' {
+		return false
+	}
+	return targetOS == "windows" ||
+		(linkname[0] >= 'A' && linkname[0] <= 'Z') ||
+		(linkname[0] >= 'a' && linkname[0] <= 'z')
 }
 
 func extractionError(opts TarOptions, err error) error {

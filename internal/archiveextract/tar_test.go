@@ -176,6 +176,12 @@ func TestExtractTar(t *testing.T) {
 func TestSymlinkTargetSafe(t *testing.T) {
 	destDir := filepath.Join(t.TempDir(), "dest")
 	linkPath := filepath.Join(destDir, "subdir", "link")
+	numericColonErr := ""
+	numericEscapeErr := "escapes destination directory"
+	if runtime.GOOS == "windows" {
+		numericColonErr = "absolute target"
+		numericEscapeErr = "absolute target"
+	}
 
 	tests := []struct {
 		name     string
@@ -189,6 +195,8 @@ func TestSymlinkTargetSafe(t *testing.T) {
 		{name: "drive_relative", linkname: "C:outside.txt", wantErr: "absolute target"},
 		{name: "drive_relative_parent", linkname: `C:..\outside.txt`, wantErr: "absolute target"},
 		{name: "drive_only", linkname: "C:", wantErr: "absolute target"},
+		{name: "numeric_colon", linkname: "1:target", wantErr: numericColonErr},
+		{name: "numeric_colon_escape", linkname: "1:target/../../../outside", wantErr: numericEscapeErr},
 		{name: "unc_forward_slash", linkname: "//server/share/file", wantErr: "absolute target"},
 		{name: "unc_backslash", linkname: `\\server\share\file`, wantErr: "absolute target"},
 		{name: "empty", wantErr: "empty link target"},
@@ -214,6 +222,41 @@ func TestSymlinkTargetSafe(t *testing.T) {
 				t.Fatalf("symlinkTargetSafe() error = %v, want %q", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestHasDriveDesignator(t *testing.T) {
+	tests := []struct {
+		linkname string
+		posix    bool
+		windows  bool
+	}{
+		{linkname: "1:target", windows: true},
+		{linkname: "1:", windows: true},
+		{linkname: "!:target", windows: true},
+		{linkname: "C:outside", posix: true, windows: true},
+		{linkname: "c:outside", posix: true, windows: true},
+		{linkname: "C:/outside", posix: true, windows: true},
+		{linkname: `C:\outside`, posix: true, windows: true},
+		{linkname: "C:", posix: true, windows: true},
+		{linkname: "target"},
+		{linkname: "nested/1:target"},
+		{linkname: "long:target"},
+		{linkname: ":"},
+		{linkname: ""},
+	}
+	for _, targetOS := range []string{"linux", "darwin", "windows"} {
+		for _, tt := range tests {
+			t.Run(targetOS+"/"+tt.linkname, func(t *testing.T) {
+				want := tt.posix
+				if targetOS == "windows" {
+					want = tt.windows
+				}
+				if got := hasDriveDesignator(tt.linkname, targetOS); got != want {
+					t.Fatalf("hasDriveDesignator(%q, %q) = %v, want %v", tt.linkname, targetOS, got, want)
+				}
+			})
+		}
 	}
 }
 
