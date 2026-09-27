@@ -102,7 +102,8 @@ func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded 
 		ffmpegArch := "x86_64"
 		if arch == "386" {
 			ffmpegArch = "x86"
-			args = append(args, "--extra-cflags=-mpreferred-stack-boundary=4")
+			// GCC 16 on Win32 can enter with a 4-byte stack; swscale needs 16-byte alignment.
+			args = append(args, "--extra-cflags=-mpreferred-stack-boundary=4", "--extra-cflags=-mstackrealign")
 		}
 		args = append(args, "--target-os=mingw32", "--arch="+ffmpegArch)
 	}
