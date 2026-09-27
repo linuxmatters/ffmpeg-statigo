@@ -154,7 +154,9 @@ func symlinkTargetSafe(destDir, linkPath, linkname string) error {
 	if linkname == "" {
 		return fmt.Errorf("symlink %s: empty link target", linkPath)
 	}
-	if filepath.IsAbs(linkname) {
+	slashLinkname := strings.ReplaceAll(linkname, `\`, "/")
+	driveDesignator := len(slashLinkname) >= 2 && slashLinkname[1] == ':'
+	if filepath.IsAbs(linkname) || strings.HasPrefix(slashLinkname, "/") || driveDesignator {
 		return fmt.Errorf("symlink %s: absolute target %q not allowed", linkPath, linkname)
 	}
 

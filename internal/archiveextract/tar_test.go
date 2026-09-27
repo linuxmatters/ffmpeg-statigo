@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -35,8 +36,19 @@ func TestExtractTar(t *testing.T) {
 		if err != nil {
 			t.Fatalf("stat extracted file: %v", err)
 		}
-		if got := info.Mode().Perm(); got != 0o755 {
-			t.Fatalf("mode = %o, want 755", got)
+		wantMode := os.FileMode(0o755)
+		if runtime.GOOS == "windows" {
+			wantMode = 0o666 // Windows reports writable files without POSIX executable bits.
+		}
+		if got := info.Mode().Perm(); got != wantMode {
+			t.Fatalf("mode = %o, want %o", got, wantMode)
+		}
+		data, err := os.ReadFile(filepath.Join(destDir, "bin", "tool"))
+		if err != nil {
+			t.Fatalf("read extracted file: %v", err)
+		}
+		if string(data) != "tool" {
+			t.Fatalf("contents = %q, want %q", data, "tool")
 		}
 	})
 
@@ -159,6 +171,50 @@ func TestExtractTar(t *testing.T) {
 			t.Fatalf("file stat error = %v, want not exist", statErr)
 		}
 	})
+}
+
+func TestSymlinkTargetSafe(t *testing.T) {
+	destDir := filepath.Join(t.TempDir(), "dest")
+	linkPath := filepath.Join(destDir, "subdir", "link")
+
+	tests := []struct {
+		name     string
+		linkname string
+		wantErr  string
+	}{
+		{name: "posix_root", linkname: "/etc/passwd", wantErr: "absolute target"},
+		{name: "windows_root", linkname: `\Windows\system.ini`, wantErr: "absolute target"},
+		{name: "drive_forward_slash", linkname: "C:/Windows/system.ini", wantErr: "absolute target"},
+		{name: "drive_backslash", linkname: `C:\Windows\system.ini`, wantErr: "absolute target"},
+		{name: "drive_relative", linkname: "C:outside.txt", wantErr: "absolute target"},
+		{name: "drive_relative_parent", linkname: `C:..\outside.txt`, wantErr: "absolute target"},
+		{name: "drive_only", linkname: "C:", wantErr: "absolute target"},
+		{name: "unc_forward_slash", linkname: "//server/share/file", wantErr: "absolute target"},
+		{name: "unc_backslash", linkname: `\\server\share\file`, wantErr: "absolute target"},
+		{name: "empty", wantErr: "empty link target"},
+		{name: "escaping", linkname: "../../outside", wantErr: "escapes destination directory"},
+		{name: "escaping_native_separator", linkname: filepath.Join("..", "..", "outside"), wantErr: "escapes destination directory"},
+		{name: "sibling_prefix", linkname: "../../dest-other/file", wantErr: "escapes destination directory"},
+		{name: "relative", linkname: "target"},
+		{name: "relative_forward_slash", linkname: "nested/target"},
+		{name: "relative_backslash", linkname: `nested\target`},
+		{name: "relative_parent_inside", linkname: "../target"},
+		{name: "destination_itself", linkname: ".."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := symlinkTargetSafe(destDir, linkPath, tt.linkname)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("symlinkTargetSafe() error = %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("symlinkTargetSafe() error = %v, want %q", err, tt.wantErr)
+			}
+		})
+	}
 }
 
 type tarEntry struct {
