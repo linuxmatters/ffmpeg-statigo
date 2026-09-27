@@ -170,7 +170,7 @@ func run() error {
 
 	// Only combine libraries on a full build (no library filters)
 	if len(selectedLibs) == 0 {
-		if err := combineLibraries(ctx, libs, stagingDir, targetOutput); err != nil {
+		if err := combineLibrariesForProfile(ctx, libs, stagingDir, targetOutput, embedded); err != nil {
 			return fmt.Errorf("combine libraries: %w", err)
 		}
 		fmt.Printf("\n✓ Success! Output: %s\n", targetOutput)
@@ -229,6 +229,10 @@ func updateDigestsMode(ctx context.Context, buildRoot string, libs []*Library) e
 
 // combineLibraries combines all built libraries into a single static library
 func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output string) error {
+	return combineLibrariesForProfile(ctx, libs, stagingDir, output, false)
+}
+
+func combineLibrariesForProfile(ctx context.Context, libs []*Library, stagingDir, output string, embedded bool) error {
 	// Collect library files from LinkLibs of all built libraries
 	var libFiles []string
 	linkLibsMap := make(map[string]bool) // Track which libs we need
@@ -292,7 +296,7 @@ func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output s
 		return combineMac(ctx, libFiles, output)
 	}
 	if runtime.GOOS == "windows" {
-		return combineWindows(ctx, libFiles, output)
+		return combineWindows(ctx, libFiles, output, runtime.GOARCH, embedded)
 	}
 	return combineLinux(ctx, libFiles, output)
 }
@@ -381,7 +385,7 @@ func copyMergeArchive(source, destination string) error {
 	return closeErr
 }
 
-func combineWindows(ctx context.Context, libFiles []string, output string) error {
+func combineWindows(ctx context.Context, libFiles []string, output, goarch string, embedded bool) error {
 	outputDir := filepath.Dir(output)
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
@@ -402,10 +406,13 @@ func combineWindows(ctx context.Context, libFiles []string, output string) error
 	if diagnostic, err := ar.CombinedOutput(); err != nil {
 		return fmt.Errorf("archive merge failed: %w: %s", err, diagnostic)
 	}
-	strip := exec.CommandContext(ctx, configuredArchiveTool("STRIP", "strip"), "--strip-unneeded", "combined.a") //nolint:gosec // G204: STRIP selects a trusted local build tool, with fixed arguments and no shell.
-	strip.Dir = workDir
-	if diagnostic, err := strip.CombinedOutput(); err != nil {
-		return fmt.Errorf("strip failed: %w: %s", err, diagnostic)
+	// MinGW32 strip rejects FFmpeg objects without sections in the embedded archive.
+	if !embedded || goarch != "386" {
+		strip := exec.CommandContext(ctx, configuredArchiveTool("STRIP", "strip"), "--strip-unneeded", "combined.a") //nolint:gosec // G204: STRIP selects a trusted local build tool, with fixed arguments and no shell.
+		strip.Dir = workDir
+		if diagnostic, err := strip.CombinedOutput(); err != nil {
+			return fmt.Errorf("strip failed: %w: %s", err, diagnostic)
+		}
 	}
 	if err := os.Rename(filepath.Join(workDir, "combined.a"), output); err != nil {
 		return fmt.Errorf("replace combined archive: %w", err)

@@ -2,12 +2,95 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	if os.Getenv("FFMPEG_BUILDER_ARCHIVE_FIXTURE") != "1" {
+		os.Exit(m.Run())
+	}
+	if slices.Equal(os.Args[1:], []string{"-M"}) {
+		script, err := io.ReadAll(os.Stdin)
+		if err != nil || string(script) != "create combined.a\naddlib input-000000.a\nsave\nend\n" {
+			os.Exit(2)
+		}
+		if err := copyMergeArchive("input-000000.a", "combined.a"); err != nil {
+			os.Exit(2)
+		}
+		os.Exit(0)
+	}
+	if slices.Equal(os.Args[1:], []string{"--strip-unneeded", "combined.a"}) {
+		if err := os.WriteFile(filepath.Join("..", "strip-called"), []byte("called"), 0o644); err != nil {
+			os.Exit(2)
+		}
+		if os.Getenv("FFMPEG_BUILDER_STRIP_FAIL") == "1" {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+	os.Exit(2)
+}
+
+func TestPortabilityWindowsMergeStrip(t *testing.T) {
+	tool, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, arch                      string
+		embedded, stripFails, wantStrip bool
+	}{
+		{"embedded-386", "386", true, true, false},
+		{"embedded-amd64", "amd64", true, false, true},
+		{"default-386", "386", false, false, true},
+		{"default-amd64", "amd64", false, false, true},
+		{"strip-failure", "amd64", true, true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			input, output := filepath.Join(root, "input.a"), filepath.Join(root, "output.a")
+			marker := filepath.Join(root, "strip-called")
+			for path, data := range map[string]string{input: "!<arch>\n", output: "original archive"} {
+				if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("AR", tool)
+			t.Setenv("STRIP", tool)
+			t.Setenv("FFMPEG_BUILDER_ARCHIVE_FIXTURE", "1")
+			t.Setenv("FFMPEG_BUILDER_STRIP_FAIL", "0")
+			if tc.stripFails {
+				t.Setenv("FFMPEG_BUILDER_STRIP_FAIL", "1")
+			}
+			err := combineWindows(context.Background(), []string{input}, output, tc.arch, tc.embedded)
+			wantOutput := "!<arch>\n"
+			if tc.wantStrip && tc.stripFails {
+				if err == nil || !strings.Contains(err.Error(), "strip failed") {
+					t.Fatalf("merge error = %v, want strip failure", err)
+				}
+				wantOutput = "original archive"
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if got := fileExists(marker); got != tc.wantStrip {
+				t.Fatalf("strip invoked = %v, want %v", got, tc.wantStrip)
+			}
+			got, err := os.ReadFile(output)
+			if err != nil || string(got) != wantOutput {
+				t.Fatalf("output = %q, %v, want %q", got, err, wantOutput)
+			}
+			entries, err := filepath.Glob(filepath.Join(root, ".ffmpeg-merge-*"))
+			if err != nil || len(entries) != 0 {
+				t.Fatalf("temporary merge directory remains: %v, %v", entries, err)
+			}
+		})
+	}
+}
 
 func TestPortabilityConfigureCommand(t *testing.T) {
 	for _, targetOS := range []string{"linux", "darwin", "windows"} {
@@ -160,7 +243,7 @@ func TestPortabilityMergeRejectsInvalidInputWithoutReplacingOutput(t *testing.T)
 					t.Fatal(err)
 				}
 			}
-			if err := combineWindows(context.Background(), []string{input}, output); err == nil {
+			if err := combineWindows(context.Background(), []string{input}, output, "386", true); err == nil {
 				t.Fatal("invalid archive was accepted")
 			}
 			got, err := os.ReadFile(output)
