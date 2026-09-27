@@ -141,36 +141,6 @@ jobs:
           export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
           go build ./...
 
-      - name: Diagnose Windows 386 swscale
-        if: matrix.goarch == '386'
-        run: |
-          set -euo pipefail
-          export PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
-          go test -c -o ffmpeg.test.exe .
-          set +e
-          ./ffmpeg.test.exe -test.run '^TestSwsScale$' -test.count=1 -test.v \
-            > swscale-test.log 2>&1
-          test_status=$?
-          cat swscale-test.log
-          printf 'Isolated TestSwsScale exit status: %s\n' "$test_status"
-          if [ "$test_status" -ne 0 ]; then
-            pacman -S --noconfirm --needed mingw-w64-i686-gdb
-            install_status=$?
-            printf 'GDB installation exit status: %s\n' "$install_status"
-            if [ "$install_status" -eq 0 ]; then
-              gdb --batch -ex 'set pagination off' -ex run \
-                -ex 'bt full' -ex 'info registers' \
-                -ex 'info symbol $pc' -ex 'x/12i $pc' \
-                --args ./ffmpeg.test.exe \
-                -test.run '^TestSwsScale$' -test.count=1 -test.v \
-                > swscale-gdb.log 2>&1
-              gdb_status=$?
-              cat swscale-gdb.log
-              printf 'GDB exit status: %s\n' "$gdb_status"
-            fi
-          fi
-          exit "$test_status"
-
       - name: Test Go packages on Windows
         run: |
           set -euo pipefail
