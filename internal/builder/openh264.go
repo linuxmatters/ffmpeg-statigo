@@ -25,12 +25,16 @@ func openh264BuildSystem(makeArgs func(string) []string, targetOS string) *Makef
 	}
 }
 
-func windowsOpenH264() *Library {
+func windowsOpenH264(arch string) *Library {
+	makeArch := "x86_64"
+	if arch == "386" {
+		makeArch = "i386"
+	}
 	configured := *openh264
 	configured.ConfigureArgs = func(targetOS string) []string {
 		args := openh264MakeArgs(targetOS)
 		if targetOS == "windows" {
-			args = append(args, "OS=mingw_nt", "ARCH=x86_64")
+			args = append(args, "OS=mingw_nt", "ARCH="+makeArch)
 		}
 		return args
 	}

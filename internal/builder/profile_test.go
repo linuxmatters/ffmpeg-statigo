@@ -12,8 +12,8 @@ import (
 
 func TestProfilePaths(t *testing.T) {
 	for _, embedded := range []bool{false, true} {
-		for _, targetOS := range []string{"linux", "darwin"} {
-			for _, arch := range []string{"amd64", "arm64"} {
+		for _, targetOS := range []string{"linux", "darwin", "windows"} {
+			for _, arch := range []string{"amd64", "arm64", "386"} {
 				root, output, err := profilePaths(embedded, targetOS, arch)
 				if err != nil {
 					t.Fatal(err)
@@ -22,6 +22,9 @@ func TestProfilePaths(t *testing.T) {
 				if embedded {
 					rootSuffix = filepath.Join(rootSuffix, "embedded")
 					outputSuffix = filepath.Join(outputSuffix, "embedded")
+					if targetOS == "windows" && arch == "386" {
+						rootSuffix = filepath.Join(rootSuffix, "windows_386_msvcrt")
+					}
 				}
 				wantRoot, _ := filepath.Abs(rootSuffix)
 				wantOutput, _ := filepath.Abs(filepath.Join(outputSuffix, targetOS+"_"+arch, "libffmpeg.a"))
@@ -154,9 +157,15 @@ func TestProfileConfigureArgs(t *testing.T) {
 
 func TestEmbeddedCleanIsolation(t *testing.T) {
 	t.Chdir(t.TempDir())
+	embeddedRoot, _, err := profilePaths(true, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatal(err)
+	}
 	paths := []string{
 		".build/src/ffmpeg/sentinel", ".build/build/ffmpeg/sentinel", ".build/staging/lib/libavcodec.a",
-		".build/embedded/src/ffmpeg/sentinel", ".build/embedded/build/ffmpeg/sentinel", ".build/embedded/staging/lib/libavcodec.a",
+		filepath.Join(embeddedRoot, "src/ffmpeg/sentinel"),
+		filepath.Join(embeddedRoot, "build/ffmpeg/sentinel"),
+		filepath.Join(embeddedRoot, "staging/lib/libavcodec.a"),
 	}
 	for _, path := range paths {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -172,8 +181,8 @@ func TestEmbeddedCleanIsolation(t *testing.T) {
 	if err := run(); err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range paths {
-		wantExists := !strings.Contains(path, "/embedded/")
+	for i, path := range paths {
+		wantExists := i < 3
 		if fileExists(path) != wantExists {
 			t.Errorf("%s existence differs from %v", path, wantExists)
 		}
