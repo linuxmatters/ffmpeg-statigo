@@ -209,7 +209,11 @@ func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen
 		retType = []jen.Code{
 			jen.Op("*").Id("CStr"),
 		}
-		body = append(body, jen.Return(jen.Id("wrapCStr").Params(jen.Id("ret"))))
+		wrapper := "wrapCStr"
+		if fn.Name == "av_strdup" || fn.Name == "av_strndup" {
+			wrapper = "wrapAVCStr"
+		}
+		body = append(body, jen.Return(jen.Id(wrapper).Params(jen.Id("ret"))))
 
 	case returnShapeUint8Pointer:
 		body = append(

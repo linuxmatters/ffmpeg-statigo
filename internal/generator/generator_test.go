@@ -138,6 +138,31 @@ func TestMarshalReturnSkip(t *testing.T) {
 	}
 }
 
+func TestMarshalReturnCStrAllocator(t *testing.T) {
+	g := skipGen()
+	for _, tt := range []struct {
+		name string
+		want string
+	}{
+		{"av_strdup", "wrapAVCStr"},
+		{"av_strndup", "wrapAVCStr"},
+		{"av_version_info", "wrapCStr"},
+		{"av_stristr", "wrapCStr"},
+		{"av_strdup_other", "wrapCStr"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			fn := &Function{Name: tt.name}
+			_, body, skip := g.marshalReturn(newFile(), fn, ptr(ident("char")), jen.Qual("C", tt.name).Call(), nil, nil)
+			if skip {
+				t.Fatal("string return unexpectedly skipped")
+			}
+			if got, want := render(body[len(body)-1]), "return "+tt.want+"(ret)"; got != want {
+				t.Errorf("return = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 // TestMarshalArgOutputPointerAllowlist pins the (function, parameter) allowlist
 // decision in marshalPointerArg. The allowlist is the only output-pointer
 // routing signal: a substring match like `width`, `size`, or
