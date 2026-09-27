@@ -60,7 +60,7 @@ func (s *AVStreamGroupTileGridOffset) Idx() uint {
 
 // SetIdx sets the idx field.
 func (s *AVStreamGroupTileGridOffset) SetIdx(value uint) {
-	s.ptr.idx = (C.uint)(value)
+	s.ptr.idx = C.uint(value)
 }
 
 // Horizontal gets the horizontal field.
@@ -71,7 +71,7 @@ func (s *AVStreamGroupTileGridOffset) Horizontal() int {
 
 // SetHorizontal sets the horizontal field.
 func (s *AVStreamGroupTileGridOffset) SetHorizontal(value int) {
-	s.ptr.horizontal = (C.int)(value)
+	s.ptr.horizontal = C.int(value)
 }
 
 // Vertical gets the vertical field.
@@ -82,7 +82,7 @@ func (s *AVStreamGroupTileGridOffset) Vertical() int {
 
 // SetVertical sets the vertical field.
 func (s *AVStreamGroupTileGridOffset) SetVertical(value int) {
-	s.ptr.vertical = (C.int)(value)
+	s.ptr.vertical = C.int(value)
 }
 
 // Offsets gets the offsets field from AVStreamGroupTileGrid.

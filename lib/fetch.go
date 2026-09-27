@@ -47,10 +47,8 @@ func ensureLibrary() error {
 		return fmt.Errorf("unsupported arch: %s", arch)
 	}
 
-	// Use working directory for libraries (writable)
-	// Libraries will be downloaded to lib/<platform>_<arch>/
 	libDir := "lib"
-	platArch := platform + "_" + arch
+	platArch := filepath.Join(libraryProfile, platform+"_"+arch)
 	libPath := filepath.Join(libDir, platArch, "libffmpeg.a")
 
 	// Library already exists
@@ -64,7 +62,11 @@ func ensureLibrary() error {
 		return fmt.Errorf("finding release: %w", err)
 	}
 
-	tarballName := fmt.Sprintf("ffmpeg-%s-%s.tar.gz", platform, arch)
+	assetPrefix := "ffmpeg-"
+	if libraryProfile != "" {
+		assetPrefix += libraryProfile + "-"
+	}
+	tarballName := fmt.Sprintf("%s%s-%s.tar.gz", assetPrefix, platform, arch)
 	downloadURL := fmt.Sprintf(
 		"https://github.com/linuxmatters/ffmpeg-statigo/releases/download/%s/%s",
 		release, tarballName,
@@ -79,19 +81,37 @@ func ensureLibrary() error {
 		expectedChecksum = ""
 	}
 
-	// Stream download directly to extraction with concurrent checksum verification
-	actualChecksum, err := streamDownloadAndExtract(downloadURL, libDir)
+	// Stage the payload so a wrong-profile archive cannot overwrite another profile.
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		return fmt.Errorf("creating library directory: %w", err)
+	}
+	stagingDir, err := os.MkdirTemp(libDir, ".download-*")
 	if err != nil {
-		// Clean up any partially extracted files so the next run re-downloads.
-		_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
+		return fmt.Errorf("creating download directory: %w", err)
+	}
+	defer os.RemoveAll(stagingDir)
+
+	actualChecksum, err := streamDownloadAndExtract(downloadURL, stagingDir)
+	if err != nil {
 		return fmt.Errorf("download/extract: %w", err)
 	}
 
-	// Verify checksum, refusing to install unverified or mismatched libraries.
 	if err := checksumError(expectedChecksum, actualChecksum, tarballName); err != nil {
-		// Clean up extracted files: the library is unverified or mismatched.
-		_ = os.RemoveAll(filepath.Join(libDir, platArch)) //nolint:gosec // G703: platform and arch validated against allowlist above
 		return err
+	}
+	stagedLibrary := filepath.Join(stagingDir, platArch, "libffmpeg.a")
+	info, err := os.Stat(stagedLibrary) //nolint:gosec // G703: profile is a build-time constant; platform and arch use allowlists.
+	if err != nil {
+		return fmt.Errorf("missing library in %s: %w", tarballName, err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("invalid library in %s: not a regular file", tarballName)
+	}
+	if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil { //nolint:gosec // G703: libPath uses only validated platform, arch, and profile.
+		return fmt.Errorf("creating library directory: %w", err)
+	}
+	if err := os.Rename(stagedLibrary, libPath); err != nil { //nolint:gosec // G703: both paths use only validated platform, arch, and profile.
+		return fmt.Errorf("installing library: %w", err)
 	}
 	fmt.Printf("Checksum verified: %s\n", actualChecksum[:8])
 
@@ -382,11 +402,9 @@ func fetchChecksumFromFile(assets []GitHubAsset, tarballName string) (string, er
 	}
 
 	for line := range strings.SplitSeq(string(content), "\n") {
-		if strings.Contains(line, tarballName) {
-			parts := strings.Fields(line)
-			if len(parts) >= 2 {
-				return parts[0], nil
-			}
+		parts := strings.Fields(line)
+		if len(parts) == 2 && strings.TrimPrefix(parts[1], "*") == tarballName {
+			return parts[0], nil
 		}
 	}
 

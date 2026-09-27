@@ -41,6 +41,19 @@ Static libraries are gitignored; only the submodule reference is committed.
 
 `download-lib` verifies each downloaded tarball against the SHA256 checksum published with the GitHub release. If no checksum is available (the digest and `SHA256SUMS` are both missing, or the metadata fetch fails) or the checksum mismatches, the download is rejected and the extracted files are removed. There is no override.
 
+### Embedded build
+
+For an application that does not need AV1 or hardware acceleration, the embedded variant uses OpenH264 instead of the default GPL-enabled codec set. It has no GPL build flags. Select it for both the library download and the Go build:
+
+```sh
+cd third_party/ffmpeg-statigo
+GOFLAGS=-tags=embedded go run ./cmd/download-lib
+cd ../..
+GOFLAGS=-tags=embedded go build ./...
+```
+
+The tagged build uses `lib/embedded/<os>_<arch>/libffmpeg.a`, from `ffmpeg-embedded-<os>-<arch>.tar.gz` on a `lib-` release. Without the tag, the existing library and codec set remain the default. See [embedded build details](docs/DEVELOPMENT.md#embedded-variant) for the source build and exclusions.
+
 ## Codec Inclusion Policy 🎬
 
 ffmpeg-statigo ships a curated FFmpeg static library focused on the core strengths of FFmpeg: decoding, processing, and encoding audio and video streams. It targets Go developers building modern streaming applications. The pattern is:
@@ -219,7 +232,6 @@ Shipping something with FFmpeg Statigo? Open a PR and add it here.
 
 ## Licensing
 
-The Go binding code is MIT licensed. However, the bundled FFmpeg libraries are compiled with GPL-licensed components like `x264` and `x265`.
+The Go binding code is MIT licensed. The default FFmpeg library includes GPL-licensed `x264` and `x265`. Projects that link the default static library must meet the resulting GPL requirements.
 
-> [!IMPORTANT]
-> Any project using ffmpeg-statigo inherits the GPL requirements from FFmpeg through this linking, making the combined work subject to GPLv3 licensing obligations.
+The embedded variant omits GPL build flags and uses BSD-licensed OpenH264, but it does not remove FFmpeg's LGPL obligations. Static distribution requires a way for recipients to relink with a modified FFmpeg library. This project's self-built OpenH264 archive does **not** qualify for the AVC patent royalty coverage that Cisco offers for its separately downloaded binary. Check the licence and patent terms for your distribution.

@@ -140,6 +140,17 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		return fmt.Errorf("build failed: %w", err)
 	}
 
+	for _, name := range lib.LinkLibs {
+		path := filepath.Join(installDir, "lib", name+".a")
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("expected installed archive %s: %w", path, err)
+		}
+		if !info.Mode().IsRegular() || info.Size() == 0 {
+			return fmt.Errorf("expected non-empty installed archive %s", path)
+		}
+	}
+
 	if err := state.Save(); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}

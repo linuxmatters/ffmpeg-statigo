@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -825,6 +826,12 @@ func TestEnsureLibrary_ChecksumFatalByDefault(t *testing.T) {
 // =============================================================================
 
 func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
+	mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+		if req.URL.Scheme == "" {
+			return nil, fmt.Errorf("unsupported URL: %s", req.URL)
+		}
+		return testHTTPResponse(http.StatusNotFound, []byte("not found")), nil
+	})
 	t.Run("handles_404_not_found", func(t *testing.T) {
 		// Use a URL that returns 404
 		url := "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/nonexistent/file.tar.gz"

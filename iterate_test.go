@@ -36,15 +36,28 @@ func TestAVCodecIterate_FindsExpectedCodecs(t *testing.T) {
 			"h264",
 			"hevc",
 			"vp9",
-			"av1",
 			"mpeg2video",
 			"mjpeg",
 			"png",
 		}
 
+		if !embeddedBuild {
+			criticalDecoders = append(criticalDecoders, "av1")
+		}
 		for _, codec := range criticalDecoders {
 			if !codecNames[codec] {
 				t.Errorf("Critical video decoder %q not found in codec list", codec)
+			}
+		}
+		if embeddedBuild {
+			if codecNames["av1"] {
+				t.Error("embedded build unexpectedly includes AV1 decoding")
+			}
+			if !codecNames["libopenh264"] {
+				t.Error("embedded build is missing OpenH264 encoding")
+			}
+			if codecNames["libx264"] || codecNames["libx265"] {
+				t.Error("embedded build unexpectedly includes GPL encoders")
 			}
 		}
 	})
