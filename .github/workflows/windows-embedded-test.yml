@@ -85,6 +85,8 @@ jobs:
           df -h .
 
       - name: Build FFmpeg from source
+        env:
+          MSYS2_ENV_CONV_EXCL: ACLOCAL_PATH
         run: |
           set -euo pipefail
           export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
