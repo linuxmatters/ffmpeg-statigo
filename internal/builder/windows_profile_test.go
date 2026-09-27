@@ -95,6 +95,26 @@ func TestWindowsFFmpegPaths(t *testing.T) {
 	}
 }
 
+func TestWindowsFFmpegAssembly(t *testing.T) {
+	stage := t.TempDir()
+	for _, targetOS := range []string{"windows", "linux", "darwin"} {
+		for _, arch := range []string{"386", "amd64", "arm64"} {
+			for _, embedded := range []bool{false, true} {
+				libs := librariesForPlatform(embedded, stage, targetOS, arch)
+				args := libs[len(libs)-1].ConfigureArgs(targetOS)
+				want := embedded && targetOS == "windows" && arch == "386"
+				index := slices.Index(args, "--disable-asm")
+				if got := index >= 0; got != want {
+					t.Errorf("%s %s embedded=%v --disable-asm = %v, want %v", targetOS, arch, embedded, got, want)
+				}
+				if want && (index <= 0 || args[index-1] != "--arch=x86") {
+					t.Errorf("%s %s embedded=%v --disable-asm must follow --arch=x86", targetOS, arch, embedded)
+				}
+			}
+		}
+	}
+}
+
 func TestWindowsProfileIsolation(t *testing.T) {
 	stage := t.TempDir()
 	originals := make(map[string]*Library)
