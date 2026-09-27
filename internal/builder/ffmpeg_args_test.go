@@ -36,6 +36,84 @@ func TestFFmpegFeatureSetAppendArgs(t *testing.T) {
 	}
 }
 
+func TestEmbeddedComponentSelection(t *testing.T) {
+	removed := map[string][]string{
+		"encoder": {"cfhd", "dnxhd", "exr", "h263", "pbm", "prores", "prores_aw", "prores_ks", "tiff"},
+		"decoder": {"cfhd", "dirac", "dnxhd", "exr", "hevc", "pbm", "prores", "prores_raw", "tiff", "vc1", "vvc"},
+		"parser":  {"dirac", "dnxhd", "h263", "prores", "prores_raw", "vc1", "vp3", "vvc"},
+		"demuxer": {"dirac", "dnxhd", "h263", "hevc", "rm", "vc1", "vvc", "rtp", "rtsp", "sap", "sdp"},
+		"muxer":   {"dirac", "dnxhd", "h263", "hevc", "rm", "vc1", "vvc"},
+		"bsf":     {"hevc_metadata", "prores_metadata", "vvc_metadata", "dovi_rpu"},
+	}
+	retained := map[string][]string{
+		"encoder": {"libopenh264", "aac", "ppm", "ffv1", "libvpx_vp9", "libopus"},
+		"decoder": {"h264", "aac", "mpeg4", "theora", "ppm"},
+		"parser":  {"h264", "hevc"},
+		"demuxer": {"mov", "mp4", "mpegts", "ogg"},
+		"muxer":   {"mov", "mp4", "mpegts", "rtp", "rtsp", "sap", "rtp_mpegts"},
+		"bsf":     {"dts2pts", "hevc_mp4toannexb", "vvc_mp4toannexb", "extract_extradata", "filter_units", "trace_headers"},
+	}
+	for _, targetOS := range []string{"linux", "darwin"} {
+		t.Run(targetOS, func(t *testing.T) {
+			defaults := FFmpegArgsCommon(targetOS)
+			args := ffmpegArgsCommon(targetOS, true)
+			disabled := func(kind, name string) bool {
+				return featureConfigured(args, "disable", kind, name)
+			}
+			for kind, names := range removed {
+				for _, name := range names {
+					if featureEnabled(args, kind, name) || !disabled(kind, name) {
+						t.Errorf("embedded %s %s must be explicitly disabled and not enabled", kind, name)
+					}
+					if (kind != "encoder" || name != "h263") && featureConfigured(defaults, "disable", kind, name) {
+						t.Errorf("embedded exclusion affected default %s %s", kind, name)
+					}
+				}
+			}
+			for kind, names := range retained {
+				for _, name := range names {
+					if !featureEnabled(args, kind, name) || disabled(kind, name) {
+						t.Errorf("embedded %s %s must remain enabled", kind, name)
+					}
+				}
+			}
+			for _, name := range []string{"h263", "vp3"} {
+				if disabled("decoder", name) {
+					t.Errorf("shared decoder %s must remain available for dependency selection", name)
+				}
+			}
+			for _, set := range commonFFmpegFeatureSets {
+				for _, arg := range set.appendArgs(nil) {
+					if !slices.Contains(defaults, arg) {
+						t.Errorf("default profile lost %s", arg)
+					}
+				}
+			}
+			if !slices.Equal(defaults, FFmpegArgsCommon(targetOS)) {
+				t.Error("embedded configuration mutated the default profile")
+			}
+		})
+	}
+}
+
+func TestEmbeddedFeatureSetMatchesExactComponents(t *testing.T) {
+	got := embeddedFeatureSet(ffmpegFeatureSet{
+		Encoders:         []string{"pbm", "ppm"},
+		Decoders:         []string{"hevc", "h263", "vp3"},
+		Parsers:          []string{"hevc", "h263"},
+		Demuxers:         []string{"rtp", "rm"},
+		Muxers:           []string{"rtp", "rtsp", "sap"},
+		BitstreamFilters: []string{"hevc_metadata", "hevc_mp4toannexb", "vvc_mp4toannexb"},
+	}).appendArgs(nil)
+	want := []string{
+		"--enable-encoder=ppm", "--enable-decoder=h263,vp3", "--enable-parser=hevc",
+		"--enable-muxer=rtp,rtsp,sap", "--enable-bsf=hevc_mp4toannexb,vvc_mp4toannexb",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("embedded components = %v, want %v", got, want)
+	}
+}
+
 func TestFFmpegArgsCommonPlatformOrdering(t *testing.T) {
 	common := FFmpegArgsCommon("freebsd")
 	linux := FFmpegArgsCommon("linux")

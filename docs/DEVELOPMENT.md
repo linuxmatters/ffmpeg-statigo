@@ -210,7 +210,7 @@ Before managed build, test or lint commands, provide compatible headers and arch
 
 ### Embedded variant
 
-Use the embedded variant when the application does not need AV1 or hardware acceleration. Select its archive and linker path with the same Go build tag:
+Use the embedded variant for software-only playback and export with the reduced component set below. Select its archive and linker path with the same Go build tag:
 
 ```sh
 GOFLAGS=-tags=embedded go run ./cmd/download-lib
@@ -220,6 +220,10 @@ GOFLAGS=-tags=embedded just build
 The embedded asset on a `lib-` release is `ffmpeg-embedded-<os>-<arch>.tar.gz`. The static library goes to `lib/embedded/<os>_<arch>/libffmpeg.a`; the untagged build continues to use `lib/<os>_<arch>/libffmpeg.a`.
 
 To build the embedded library from source, run `just build-embedded` from the repository root. The recipe runs `go run ./internal/builder --embedded`. The variant adds OpenH264 without GPL flags and omits x264, x265, dav1d, glslang, libdrm, libva, libvpl, OpenSSL, libsrt, rav1e, AV1 and hardware acceleration. Do not use the default codec and hardware lists in the README as an embedded capability list.
+
+The embedded profile also excludes CFHD, Dirac, DNxHD, OpenEXR (`exr`), HEVC decoding, PBM, ProRes (including `prores_aw`, `prores_ks` and `prores_raw`), TIFF, VC-1 and VVC decoding. It removes their exclusive parsers, formats and metadata bitstream filters, including `dovi_rpu`. It removes RealMedia (`rm`) and the RTP, RTSP, SAP and SDP demuxers, but retains the corresponding streaming muxers.
+
+Shared dependencies remain: MPEG-4 Part 2 requires the H.263 decoder, and Theora requires the VP3 decoder. H.263 encoding is disabled. The `dts2pts` filter requires the HEVC parser. MPEG-TS output requires `hevc_mp4toannexb` and `vvc_mp4toannexb`. OpenH264 encoding, H.264 decoding, AAC encoding and decoding, and MP4 input and output remain available. The default profile is unchanged.
 
 OpenH264 uses a two-clause BSD licence and needs its copyright notice. A self-built static OpenH264 archive does not get the AVC patent royalty coverage for Cisco's separately downloaded binary ([OpenH264 FAQ](https://www.openh264.org/faq.html)). FFmpeg's LGPL requirements still apply, including the ability to relink a distributed static binary with a modified FFmpeg library ([FFmpeg licence](https://www.ffmpeg.org/legal.html)).
 
