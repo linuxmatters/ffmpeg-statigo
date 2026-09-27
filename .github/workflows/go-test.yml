@@ -54,14 +54,14 @@ jobs:
         run: |
           version=$(sed -n 's/^const Version = "\([^"]*\)"$/\1/p' lib/fetch.go)
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          # Match findViaAPI's page size, prefix filter and lexical tag order.
+          # Match findViaAPI's page size and lexical tag order.
           api=https://api.github.com/repos/linuxmatters/ffmpeg-statigo
           release=$(curl --fail --silent --show-error \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             "$api/releases?per_page=100" |
-            jq -ce --arg prefix "lib-$version" '
+            jq -ce --arg prefix "lib-$version." '
               [.[] | select(.tag_name | startswith($prefix))] |
               sort_by(.tag_name) | last //
               error("No compatible FFmpeg release")')
