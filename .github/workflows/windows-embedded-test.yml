@@ -115,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="/ucrt64/bin:$(cygpath -u "$GO_BIN"):$PATH"
-          go test ./...
+          go test -v ./...
 
       - name: Record test executable DLL imports
         run: |
