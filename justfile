@@ -4,9 +4,9 @@ import 'just/loader.just'
 default:
     @just --list
 
-# Clean build artifacts and downloads
+# Clean build artifacts, preserving downloads and library archives
 clean:
-    @rm -rf .build/{build,src,staging} 2>/dev/null || true
+    @if [ ! -L .build ]; then for root in .build .build/embedded; do if [ ! -L "$root" ]; then rm -rf "$root/build" "$root/src" "$root/staging" 2>/dev/null || true; fi; done; fi
     @rm examples/asciiplayer/asciiplayer 2>/dev/null || true
     @rm examples/hwdecode/hwdecode 2>/dev/null || true
     @rm examples/introspect/introspect 2>/dev/null || true
