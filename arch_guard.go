@@ -9,7 +9,8 @@ import "unsafe"
 //   - the size_t -> uint64 entry in the generator's type map (generator.go)
 //   - the C.ulong(len) runtime cast in AllocCStr (ffmpeg.go)
 //
-// The supported target list lives in the per-platform #cgo ... LDFLAGS block in ffmpeg.go.
+// The supported target list lives in the per-platform #cgo LDFLAGS blocks
+// in ffmpeg_link_default.go and ffmpeg_link_embedded.go.
 //
 // On a 32-bit target sizeof(uintptr) == 4, so the subtraction underflows
 // the unsigned domain and the compiler rejects the constant expression.

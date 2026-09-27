@@ -263,7 +263,8 @@ The root package has three source tiers. The generator skips C symbols it cannot
 
 | File | Purpose |
 |------|---------|
-| `ffmpeg.go` | CGO directives, platform linker flags, `AVError`/`WrapErr`, `CStr`, common type aliases |
+| `ffmpeg.go` | CGO CFLAGS, `AVError`/`WrapErr`, `CStr`, common type aliases |
+| `ffmpeg_link_default.go`, `ffmpeg_link_embedded.go` | Platform LDFLAGS for the default and embedded build tags |
 | `array.go` | Generic `Array[T]` type, typed `To*Array` constructors, element-size constants |
 | `arch_guard.go` | Compile-time 64-bit-only invariant (unsigned-underflow guard) |
 | `doc.go` | Package documentation |
