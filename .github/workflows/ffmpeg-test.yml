@@ -6,7 +6,7 @@ on:
     paths:
       - ".github/workflows/ffmpeg-test.yml"
       - "internal/builder/**"
-      - "*.go"
+      - "**/*.go"
       - "av/**"
       - "lib/**"
       - "include/**"
