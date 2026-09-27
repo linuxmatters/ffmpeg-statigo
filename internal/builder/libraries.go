@@ -460,14 +460,18 @@ func zimgPostExtract(relativeScript bool) func(context.Context, string) error {
 	}
 }
 
-func windowsEmbeddedLibrary(lib *Library) *Library {
+func windowsEmbeddedLibrary(lib *Library, arch string) *Library {
 	var extraArgs []string
 	switch lib.Name {
 	case "libxml2":
 		// Keep the pinned eight-library profile independent of system libiconv.
 		extraArgs = []string{"--without-iconv"}
 	case "libvpx":
-		extraArgs = []string{"--target=x86_64-win64-gcc"}
+		target := "x86_64-win64-gcc"
+		if arch == "386" {
+			target = "x86-win32-gcc"
+		}
+		extraArgs = []string{"--target=" + target}
 	case "zimg":
 		configured := *lib
 		configured.PostExtract = zimgPostExtract(true)

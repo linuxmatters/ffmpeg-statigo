@@ -12,6 +12,9 @@ func profilePaths(embedded bool, targetOS, arch string) (buildRoot, output strin
 	if embedded {
 		buildRoot = filepath.Join(buildRoot, "embedded")
 		output = filepath.Join(output, "embedded")
+		if targetOS == "windows" && arch == "386" {
+			buildRoot = filepath.Join(buildRoot, "windows_386_msvcrt")
+		}
 	}
 	buildRoot, err = filepath.Abs(buildRoot)
 	if err != nil {
@@ -29,7 +32,7 @@ func librariesForProfile(embedded bool, stagingDir string) []*Library {
 }
 
 func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*Library {
-	windowsEmbedded := embedded && targetOS == "windows" && arch == "amd64"
+	windowsEmbedded := embedded && targetOS == "windows" && (arch == "amd64" || arch == "386")
 	var libs []*Library
 	for _, lib := range AllLibraries {
 		if lib == ffmpeg {
@@ -42,14 +45,14 @@ func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*L
 			}
 		}
 		if windowsEmbedded {
-			lib = windowsEmbeddedLibrary(lib)
+			lib = windowsEmbeddedLibrary(lib, arch)
 		}
 		libs = append(libs, lib)
 	}
 	if embedded {
 		lib := openh264
 		if windowsEmbedded {
-			lib = windowsOpenH264()
+			lib = windowsOpenH264(arch)
 		}
 		libs = append(libs, lib)
 	}
@@ -83,7 +86,8 @@ func ffmpegConfigureArgs(targetOS, stagingDir string, embedded bool) []string {
 
 func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded bool) []string {
 	incDir, libDir := filepath.Join(stagingDir, "include"), filepath.Join(stagingDir, "lib")
-	if embedded && targetOS == "windows" && arch == "amd64" {
+	windowsEmbedded := embedded && targetOS == "windows" && (arch == "amd64" || arch == "386")
+	if windowsEmbedded {
 		incDir, libDir = buildToolPath(incDir, targetOS), buildToolPath(libDir, targetOS)
 	}
 	args := []string{
@@ -94,8 +98,12 @@ func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded 
 	if targetOS == "darwin" {
 		args = append(args, "--cc=clang", "--cxx=clang++")
 	}
-	if embedded && targetOS == "windows" && arch == "amd64" {
-		args = append(args, "--target-os=mingw32", "--arch=x86_64")
+	if windowsEmbedded {
+		ffmpegArch := "x86_64"
+		if arch == "386" {
+			ffmpegArch = "x86"
+		}
+		args = append(args, "--target-os=mingw32", "--arch="+ffmpegArch)
 	}
 	return append(args, ffmpegArgsCommon(targetOS, embedded)...)
 }
