@@ -298,10 +298,6 @@ var commonFFmpegFeatureSets = []ffmpegFeatureSet{
 		Demuxers: []string{"hls", "webvtt"},
 		Muxers:   []string{"hls", "webm", "webvtt"},
 	},
-	{
-		InputDevices:  []string{"v4l2"},
-		OutputDevices: []string{"v4l2"},
-	},
 }
 
 var linuxFFmpegFeatureSets = []ffmpegFeatureSet{
@@ -336,6 +332,10 @@ var linuxFFmpegFeatureSets = []ffmpegFeatureSet{
 		Decoders: []string{"vp9_cuvid", "vp9_qsv"},
 	},
 	{Decoders: []string{"vvc_qsv"}},
+	{
+		InputDevices:  []string{"v4l2"},
+		OutputDevices: []string{"v4l2"},
+	},
 }
 
 var darwinFFmpegFeatureSets = []ffmpegFeatureSet{
@@ -394,7 +394,7 @@ func embeddedFeatureSet(set ffmpegFeatureSet) ffmpegFeatureSet {
 }
 
 // FFmpegArgsCommon returns common FFmpeg configure arguments for all platforms.
-// The os parameter selects platform-specific hardware acceleration; valid values are "linux" and "darwin".
+// The os parameter selects platform-specific hardware acceleration and devices.
 func FFmpegArgsCommon(os string) []string {
 	return ffmpegArgsCommon(os, false)
 }

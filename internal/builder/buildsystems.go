@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // stagingDir derives the staging/install directory from a build directory path.
@@ -52,7 +53,9 @@ func configureCommand(targetOS, interpreter, script string, args []string) (stri
 }
 
 // AutoconfBuild implements the BuildSystem interface for autoconf-based builds
-type AutoconfBuild struct{}
+type AutoconfBuild struct {
+	Shell string // Optional Windows interpreter for non-POSIX configure scripts.
+}
 
 func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
 	installDir = buildToolPath(installDir, runtime.GOOS)
@@ -115,7 +118,11 @@ func (a *AutoconfBuild) Configure(ctx context.Context, lib *Library, srcPath, bu
 		)
 	}
 
-	configurePath, args := configureCommand(runtime.GOOS, "sh", "./configure", args)
+	shell := a.Shell
+	if shell == "" {
+		shell = "sh"
+	}
+	configurePath, args := configureCommand(runtime.GOOS, shell, "./configure", args)
 	absConfigurePath := filepath.Join(srcPath, "configure")
 	if !fileExists(absConfigurePath) {
 		return fmt.Errorf("configure script not found at %s", absConfigurePath)
@@ -192,21 +199,25 @@ func (c *CMakeBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 // MesonBuild implements the BuildSystem interface for Meson-based builds
 type MesonBuild struct{}
 
-func (m *MesonBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
+func mesonConfigureArgs(lib *Library, srcPath, buildDir, installDir, targetOS string) []string {
 	args := []string{
 		"setup",
-		buildDir,
-		srcPath,
-		fmt.Sprintf("--prefix=%s", installDir),
+		buildToolPath(buildDir, targetOS),
+		buildToolPath(srcPath, targetOS),
+		fmt.Sprintf("--prefix=%s", buildToolPath(installDir, targetOS)),
 		"--buildtype=release",
 		"--default-library=static",
 		"--libdir=lib",
 	}
 
 	if lib.ConfigureArgs != nil {
-		args = append(args, lib.ConfigureArgs(runtime.GOOS)...)
+		args = append(args, lib.ConfigureArgs(targetOS)...)
 	}
+	return args
+}
 
+func (m *MesonBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
+	args := mesonConfigureArgs(lib, srcPath, buildDir, installDir, runtime.GOOS)
 	return withBuildLog(buildDir, false, func(output io.Writer) error {
 		return runCommandEnv(ctx, ".", output, installDir, lib.extraEnv(), "meson", args...)
 	})
@@ -243,6 +254,50 @@ func (c *CargoBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 		return c.InstallFunc(ctx, srcPath, installDir)
 	}
 	return nil
+}
+
+func rav1eInstall(targetOS, arch string) func(context.Context, string, string) error {
+	return func(ctx context.Context, srcPath, installDir string) error {
+		args, env := rav1eInstallCommand(targetOS, arch, installDir, os.Getenv("CGO_CFLAGS"))
+		return runCommandEnv(ctx, srcPath, os.Stdout, installDir, env, "cargo", args...)
+	}
+}
+
+func rav1eInstallCommand(targetOS, arch, installDir, cgoCflags string) (args, env []string) {
+	var rustflags string
+	if arch == "amd64" {
+		rustflags = "-C target-cpu=x86-64-v3"
+	}
+	if targetOS == "darwin" {
+		if sdkPath := extractSDKPath(cgoCflags); sdkPath != "" {
+			rustflags += " -C link-arg=-L" + filepath.Join(sdkPath, "usr", "lib")
+		}
+	}
+
+	args = []string{
+		"cinstall",
+		"--prefix=" + buildToolPath(installDir, targetOS),
+		"--libdir=lib",
+		"--library-type=staticlib",
+		"--crt-static",
+		"--release",
+		"--no-default-features",
+		"--features=asm,threading",
+	}
+	if targetOS == "windows" {
+		target := "x86_64-pc-windows-gnu"
+		if arch == "386" {
+			target = "i686-pc-windows-gnu"
+		}
+		args = append(args, "--target="+target)
+		// Use the active UCRT64 or MINGW32 runtime, not Rust's bundled MinGW objects.
+		rustflags = strings.TrimSpace(rustflags + " -C link-self-contained=no")
+		env = append(env,
+			"CARGO_TARGET_"+strings.ToUpper(strings.ReplaceAll(target, "-", "_"))+"_LINKER="+windowsGNUHost(arch)+"-gcc",
+			"WINAPI_NO_BUNDLED_LIBRARIES=1",
+		)
+	}
+	return args, append(env, "RUSTFLAGS="+rustflags, "CARGO_PROFILE_RELEASE_DEBUG=false")
 }
 
 // MakefileBuild implements the BuildSystem interface for Makefile-based builds
