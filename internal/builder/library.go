@@ -227,6 +227,13 @@ func upsertEnv(env []string, key, value, sep string, prepend bool) []string {
 	return append(env, prefix+value)
 }
 
+func windowsGNUHost(arch string) string {
+	if arch == "386" {
+		return "i686-w64-mingw32"
+	}
+	return "x86_64-w64-mingw32"
+}
+
 // buildToolPath uses paths that both native Windows tools and MSYS scripts accept.
 func buildToolPath(path, targetOS string) string {
 	if targetOS == "windows" {

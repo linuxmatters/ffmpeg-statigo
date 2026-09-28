@@ -53,7 +53,7 @@ func TestEmbeddedComponentSelection(t *testing.T) {
 		"muxer":   {"mov", "mp4", "mpegts", "rtp", "rtsp", "sap", "rtp_mpegts"},
 		"bsf":     {"dts2pts", "hevc_mp4toannexb", "vvc_mp4toannexb", "extract_extradata", "filter_units", "trace_headers"},
 	}
-	for _, targetOS := range []string{"linux", "darwin"} {
+	for _, targetOS := range []string{"linux", "darwin", "windows"} {
 		t.Run(targetOS, func(t *testing.T) {
 			defaults := FFmpegArgsCommon(targetOS)
 			args := ffmpegArgsCommon(targetOS, true)
@@ -111,6 +111,47 @@ func TestEmbeddedFeatureSetMatchesExactComponents(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("embedded components = %v, want %v", got, want)
+	}
+}
+
+func TestFFmpegProfilePlatformFeatures(t *testing.T) {
+	for _, targetOS := range []string{"linux", "darwin", "windows", "freebsd"} {
+		for _, embedded := range []bool{false, true} {
+			args := ffmpegArgsCommon(targetOS, embedded)
+			for _, kind := range []string{"indev", "outdev"} {
+				want := targetOS == "linux" && !embedded
+				if featureEnabled(args, kind, "v4l2") != want {
+					t.Errorf("%s embedded=%v: v4l2 %s enabled differs from %v", targetOS, embedded, kind, want)
+				}
+			}
+			for _, feature := range [][2]string{
+				{"encoder", "libx264"},
+				{"encoder", "libx264rgb"},
+				{"encoder", "libx265"},
+				{"encoder", "librav1e"},
+				{"decoder", "libdav1d"},
+				{"decoder", "av1"},
+			} {
+				if featureEnabled(args, feature[0], feature[1]) == embedded {
+					t.Errorf("%s embedded=%v: incorrect %s %s selection", targetOS, embedded, feature[0], feature[1])
+				}
+			}
+			if featureEnabled(args, "encoder", "libopenh264") != embedded {
+				t.Errorf("%s embedded=%v: incorrect OpenH264 selection", targetOS, embedded)
+			}
+			for _, feature := range []struct {
+				kind, name, platform string
+			}{
+				{"encoder", "h264_nvenc", "linux"},
+				{"decoder", "av1_qsv", "linux"},
+				{"hwaccel", "h264_videotoolbox", "darwin"},
+			} {
+				want := targetOS == feature.platform && !embedded
+				if featureEnabled(args, feature.kind, feature.name) != want {
+					t.Errorf("%s embedded=%v: %s enabled differs from %v", targetOS, embedded, feature.name, want)
+				}
+			}
+		}
 	}
 }
 

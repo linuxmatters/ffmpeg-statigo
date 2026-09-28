@@ -12,9 +12,9 @@ func profilePaths(embedded bool, targetOS, arch string) (buildRoot, output strin
 	if embedded {
 		buildRoot = filepath.Join(buildRoot, "embedded")
 		output = filepath.Join(output, "embedded")
-		if targetOS == "windows" && arch == "386" {
-			buildRoot = filepath.Join(buildRoot, "windows_386_msvcrt")
-		}
+	}
+	if targetOS == "windows" && arch == "386" {
+		buildRoot = filepath.Join(buildRoot, "windows_386_msvcrt")
 	}
 	buildRoot, err = filepath.Abs(buildRoot)
 	if err != nil {
@@ -32,7 +32,8 @@ func librariesForProfile(embedded bool, stagingDir string) []*Library {
 }
 
 func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*Library {
-	windowsEmbedded := embedded && targetOS == "windows" && (arch == "amd64" || arch == "386")
+	windowsNative := targetOS == "windows" && (arch == "amd64" || arch == "386")
+	configuredLibraries := make(map[*Library]*Library)
 	var libs []*Library
 	for _, lib := range AllLibraries {
 		if lib == ffmpeg {
@@ -44,14 +45,26 @@ func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*L
 				continue
 			}
 		}
-		if windowsEmbedded {
-			lib = windowsEmbeddedLibrary(lib, arch)
+		if windowsNative {
+			original := lib
+			lib = windowsLibrary(lib, arch)
+			if len(lib.Dependencies) != 0 {
+				configured := *lib
+				configured.Dependencies = slices.Clone(lib.Dependencies)
+				for i, dep := range configured.Dependencies {
+					if replacement, ok := configuredLibraries[dep]; ok {
+						configured.Dependencies[i] = replacement
+					}
+				}
+				lib = &configured
+			}
+			configuredLibraries[original] = lib
 		}
 		libs = append(libs, lib)
 	}
 	if embedded {
 		lib := openh264
-		if windowsEmbedded {
+		if windowsNative {
 			lib = windowsOpenH264(arch)
 		}
 		libs = append(libs, lib)
@@ -86,8 +99,8 @@ func ffmpegConfigureArgs(targetOS, stagingDir string, embedded bool) []string {
 
 func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded bool) []string {
 	incDir, libDir := filepath.Join(stagingDir, "include"), filepath.Join(stagingDir, "lib")
-	windowsEmbedded := embedded && targetOS == "windows" && (arch == "amd64" || arch == "386")
-	if windowsEmbedded {
+	windowsNative := targetOS == "windows" && (arch == "amd64" || arch == "386")
+	if windowsNative {
 		incDir, libDir = buildToolPath(incDir, targetOS), buildToolPath(libDir, targetOS)
 	}
 	args := []string{
@@ -98,7 +111,7 @@ func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded 
 	if targetOS == "darwin" {
 		args = append(args, "--cc=clang", "--cxx=clang++")
 	}
-	if windowsEmbedded {
+	if windowsNative {
 		ffmpegArch := "x86_64"
 		if arch == "386" {
 			ffmpegArch = "x86"

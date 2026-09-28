@@ -460,11 +460,11 @@ func zimgPostExtract(relativeScript bool) func(context.Context, string) error {
 	}
 }
 
-func windowsEmbeddedLibrary(lib *Library, arch string) *Library {
+func windowsLibrary(lib *Library, arch string) *Library {
 	var extraArgs []string
+	configured := *lib
 	switch lib.Name {
 	case "libxml2":
-		// Keep the pinned eight-library profile independent of system libiconv.
 		extraArgs = []string{"--without-iconv"}
 	case "libvpx":
 		target := "x86_64-win64-gcc"
@@ -473,13 +473,51 @@ func windowsEmbeddedLibrary(lib *Library, arch string) *Library {
 		}
 		extraArgs = []string{"--target=" + target}
 	case "zimg":
-		configured := *lib
 		configured.PostExtract = zimgPostExtract(true)
+		return &configured
+	case "dav1d":
+		alignment := "16"
+		if arch == "386" {
+			alignment = "4"
+		}
+		extraArgs = []string{"-Dstack_alignment=" + alignment}
+	case "glslang":
+		configured.ConfigureArgs = func(targetOS string) []string {
+			args := lib.ConfigureArgs(targetOS)
+			if targetOS == "windows" {
+				for i, arg := range args {
+					if arg == "-DENABLE_GLSLANG_BINARIES=OFF" {
+						args[i] = "-DENABLE_GLSLANG_BINARIES=ON"
+					}
+				}
+				args = append(args, "-DGLSLANG_ENABLE_INSTALL=ON", "-DCMAKE_INSTALL_BINDIR=bin", "-DENABLE_PCH=OFF", "-DSPIRV_WERROR=OFF")
+			}
+			return args
+		}
+		return &configured
+	case "openssl":
+		target := "mingw64"
+		if arch == "386" {
+			target = "mingw"
+		}
+		extraArgs = []string{target}
+	case "libsrt":
+		// MinGW's winpthreads is not the pthreads-win32 library that SRT probes.
+		extraArgs = []string{"-DENABLE_STDCXX_SYNC=ON"}
+	case "x264":
+		extraArgs = []string{"--host=" + windowsGNUHost(arch)}
+		configured.BuildSystem = &AutoconfBuild{Shell: "bash"}
+	case "x265":
+		if arch != "386" {
+			return lib
+		}
+		extraArgs = []string{"-DENABLE_ASSEMBLY=OFF"}
+	case "rav1e":
+		configured.BuildSystem = &CargoBuild{InstallFunc: rav1eInstall("windows", arch)}
 		return &configured
 	default:
 		return lib
 	}
-	configured := *lib
 	configured.ConfigureArgs = func(targetOS string) []string {
 		args := lib.ConfigureArgs(targetOS)
 		if targetOS == "windows" {
@@ -653,42 +691,7 @@ var rav1e = &Library{
 	URL:           "https://github.com/xiph/rav1e/archive/refs/tags/v0.8.1.tar.gz",
 	FFmpegEnables: []string{"librav1e"},
 	BuildSystem: &CargoBuild{
-		InstallFunc: func(ctx context.Context, srcPath, installDir string) error {
-			// Set RUSTFLAGS CPU baseline; x86-64-v3 (Haswell, AVX2) keeps
-			// distributed static libs portable across older consumer CPUs.
-			var rustflags string
-			if runtime.GOARCH == "amd64" {
-				rustflags = "-C target-cpu=x86-64-v3"
-			}
-
-			// On macOS, add SDK library path for any native dependencies
-			if runtime.GOOS == "darwin" {
-				cgoCflags := os.Getenv("CGO_CFLAGS")
-				sdkPath := extractSDKPath(cgoCflags)
-
-				if sdkPath != "" {
-					sdkLibPath := filepath.Join(sdkPath, "usr", "lib")
-					rustflags += " -C link-arg=-L" + sdkLibPath
-				}
-			}
-
-			env := []string{
-				"RUSTFLAGS=" + rustflags,
-				"CARGO_PROFILE_RELEASE_DEBUG=false",
-			}
-
-			// cargo cinstall for C library installation
-			// Use --no-default-features to avoid git_version which pulls in libgit2
-			// Re-enable asm and threading for performance
-			return runCommandEnv(ctx, srcPath, os.Stdout, installDir, env, "cargo", "cinstall",
-				fmt.Sprintf("--prefix=%s", installDir),
-				"--libdir=lib",
-				"--library-type=staticlib",
-				"--crt-static",
-				"--release",
-				"--no-default-features",
-				"--features=asm,threading")
-		},
+		InstallFunc: rav1eInstall(runtime.GOOS, runtime.GOARCH),
 	},
 	LinkLibs: []string{"librav1e"},
 }

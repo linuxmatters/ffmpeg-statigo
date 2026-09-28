@@ -22,9 +22,9 @@ func TestProfilePaths(t *testing.T) {
 				if embedded {
 					rootSuffix = filepath.Join(rootSuffix, "embedded")
 					outputSuffix = filepath.Join(outputSuffix, "embedded")
-					if targetOS == "windows" && arch == "386" {
-						rootSuffix = filepath.Join(rootSuffix, "windows_386_msvcrt")
-					}
+				}
+				if targetOS == "windows" && arch == "386" {
+					rootSuffix = filepath.Join(rootSuffix, "windows_386_msvcrt")
 				}
 				wantRoot, _ := filepath.Abs(rootSuffix)
 				wantOutput, _ := filepath.Abs(filepath.Join(outputSuffix, targetOS+"_"+arch, "libffmpeg.a"))
