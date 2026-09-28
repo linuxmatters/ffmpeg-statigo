@@ -42,14 +42,14 @@ func TestPortabilityWindowsMergeStrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
-		name, arch                      string
-		embedded, stripFails, wantStrip bool
+		name, arch            string
+		stripFails, wantStrip bool
 	}{
-		{"embedded-386", "386", true, true, false},
-		{"embedded-amd64", "amd64", true, false, true},
-		{"default-386", "386", false, false, true},
-		{"default-amd64", "amd64", false, false, true},
-		{"strip-failure", "amd64", true, true, true},
+		{"embedded-386", "386", true, false},
+		{"embedded-amd64", "amd64", false, true},
+		{"default-386", "386", true, false},
+		{"default-amd64", "amd64", false, true},
+		{"strip-failure", "amd64", true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
@@ -67,7 +67,7 @@ func TestPortabilityWindowsMergeStrip(t *testing.T) {
 			if tc.stripFails {
 				t.Setenv("FFMPEG_BUILDER_STRIP_FAIL", "1")
 			}
-			err := combineWindows(context.Background(), []string{input}, output, tc.arch, tc.embedded)
+			err := combineWindows(context.Background(), []string{input}, output, tc.arch)
 			wantOutput := "!<arch>\n"
 			if tc.wantStrip && tc.stripFails {
 				if err == nil || !strings.Contains(err.Error(), "strip failed") {
@@ -243,7 +243,7 @@ func TestPortabilityMergeRejectsInvalidInputWithoutReplacingOutput(t *testing.T)
 					t.Fatal(err)
 				}
 			}
-			if err := combineWindows(context.Background(), []string{input}, output, "386", true); err == nil {
+			if err := combineWindows(context.Background(), []string{input}, output, "386"); err == nil {
 				t.Fatal("invalid archive was accepted")
 			}
 			got, err := os.ReadFile(output)
