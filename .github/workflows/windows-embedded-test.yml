@@ -157,3 +157,208 @@ jobs:
           else
             echo "objdump is unavailable; DLL imports were not recorded."
           fi
+
+  windows-default-test:
+    name: Test default for Windows ${{ matrix.goarch }}
+    runs-on: windows-2025
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            msystem: UCRT64
+            bin: /ucrt64/bin
+            package-prefix: mingw-w64-ucrt-x86_64
+            yasm-package: mingw-w64-ucrt-x86_64-yasm
+            rust-packages: >-
+              mingw-w64-ucrt-x86_64-rust mingw-w64-ucrt-x86_64-cargo-c
+            cc-target: x86_64-w64-mingw32
+            object-arch: i386:x86-64
+            asm-format: win64
+          - goarch: '386'
+            msystem: MINGW32
+            bin: /mingw32/bin
+            package-prefix: mingw-w64-i686
+            # MSYS2 has no i686 YASM package.
+            # The host assembler emits Win32 objects.
+            yasm-package: yasm
+            rust-packages: ''
+            cc-target: i686-w64-mingw32
+            object-arch: i386
+            asm-format: win32
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      GOOS: windows
+      GOARCH: ${{ matrix.goarch }}
+      MINGW_BIN: ${{ matrix.bin }}
+      CC_TARGET: ${{ matrix.cc-target }}
+      OBJECT_ARCH: ${{ matrix.object-arch }}
+      ASM_FORMAT: ${{ matrix.asm-format }}
+      CGO_ENABLED: "1"
+      GOFLAGS: ""
+      CMAKE_GENERATOR: Ninja
+
+    steps:
+      - name: Set up Rust host tools for Windows 386
+        if: matrix.goarch == '386'
+        shell: pwsh
+        run: |
+          $toolchain = '1.93.1-x86_64-pc-windows-msvc'
+          rustup toolchain install $toolchain --profile minimal `
+            --target i686-pc-windows-gnu
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo "+$toolchain" install cargo-c --version 0.10.20 --locked `
+            --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $rustBin = Split-Path (Get-Command cargo).Source
+          "RUST_BIN=$rustBin" | Out-File -Append $env:GITHUB_ENV -Encoding utf8
+          "RUSTUP_TOOLCHAIN=$toolchain" |
+            Out-File -Append $env:GITHUB_ENV -Encoding utf8
+
+      - name: Preserve LF line endings
+        shell: pwsh
+        run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Capture Go binary directory
+        shell: pwsh
+        run: |
+          $goBin = Split-Path (Get-Command go).Source
+          "GO_BIN=$goBin" | Out-File -Append $env:GITHUB_ENV -Encoding utf8
+
+      # msys2/setup-msys2 v2.33.0
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          cache: false
+          path-type: minimal
+          install: >-
+            autoconf
+            automake
+            diffutils
+            git
+            libtool
+            make
+            patch
+            perl
+            ${{ matrix.package-prefix }}-binutils
+            ${{ matrix.package-prefix }}-cmake
+            ${{ matrix.package-prefix }}-gcc
+            ${{ matrix.package-prefix }}-meson
+            ${{ matrix.package-prefix }}-nasm
+            ${{ matrix.package-prefix }}-ninja
+            ${{ matrix.package-prefix }}-pkgconf
+            ${{ matrix.package-prefix }}-python
+            ${{ matrix.rust-packages }}
+            ${{ matrix.yasm-package }}
+
+      - name: Record and validate toolchain
+        run: |
+          set -euo pipefail
+          PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          if [ "$GOARCH" = 386 ]; then
+            export PATH="$(cygpath -u "$RUST_BIN"):$PATH"
+          fi
+          CC="$(cygpath -m "$MINGW_BIN/gcc.exe")"
+          CXX="$(cygpath -m "$MINGW_BIN/g++.exe")"
+          export CC CXX
+          printf 'CC=%s\nCXX=%s\n' "$CC" "$CXX" >> "$GITHUB_ENV"
+          go version
+          go env GOOS GOARCH CGO_ENABLED CC CXX GOFLAGS
+          test -z "$(go env GOFLAGS)"
+          "$CC" --version
+          "$CC" -dumpmachine
+          test "$("$CC" -dumpmachine)" = "$CC_TARGET"
+          "$CXX" --version
+          cmake --version
+          ninja --version
+          meson --version
+          rustc -vV
+          cargo --version
+          cargo cinstall --version
+          nasm --version
+          yasm --version
+          printf 'section .text\nret\n' > "$RUNNER_TEMP/assembler-check.asm"
+          for assembler in nasm yasm; do
+            "$assembler" -f "$ASM_FORMAT" \
+              "$RUNNER_TEMP/assembler-check.asm" \
+              -o "$RUNNER_TEMP/$assembler-check.o"
+            objdump -f "$RUNNER_TEMP/$assembler-check.o" |
+              awk -v expected="$OBJECT_ARCH," '
+              /^architecture:/ {
+                print
+                found = 1
+                if ($2 != expected) invalid = 1
+              }
+              END { if (!found || invalid) exit 1 }
+            '
+          done
+          ar --version
+          pacman -Q
+          df -h .
+
+      - name: Build default FFmpeg from source
+        env:
+          MSYS2_ENV_CONV_EXCL: ACLOCAL_PATH
+        run: |
+          set -euo pipefail
+          PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          if [ "$GOARCH" = 386 ]; then
+            export PATH="$(cygpath -u "$RUST_BIN"):$PATH"
+          fi
+          go run ./internal/builder/
+
+      - name: Check default archive
+        run: |
+          set -euo pipefail
+          PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          archive="lib/windows_${GOARCH}/libffmpeg.a"
+          test -s "$archive"
+          ls -lh "$archive"
+          sha256sum "$archive"
+          ar t "$archive" | awk '
+            NR <= 20 { print }
+            END { print "Archive members:", NR; if (NR == 0) exit 1 }
+          '
+          objdump -f "$archive" | awk -v expected="$OBJECT_ARCH," '
+            /^architecture:/ {
+              if (++members <= 20) print
+              if ($2 != expected) invalid = 1
+            }
+            END {
+              print "Archive object headers:", members
+              if (members == 0 || invalid) exit 1
+            }
+          '
+          df -h .
+
+      - name: Build default Go packages
+        run: |
+          set -euo pipefail
+          PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          go build ./...
+
+      - name: Test default Go packages on Windows
+        run: |
+          set -euo pipefail
+          PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          go test -v ./...
+
+      - name: Record default test executable DLL imports
+        run: |
+          set -euo pipefail
+          PATH="$MINGW_BIN:$(cygpath -u "$GO_BIN"):$PATH"
+          go test -c -o ffmpeg-default.test.exe .
+          objdump -p ffmpeg-default.test.exe | awk '/DLL Name:/ { print }'
