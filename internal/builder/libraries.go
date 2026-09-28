@@ -513,7 +513,7 @@ func windowsLibrary(lib *Library, arch string) *Library {
 		}
 		extraArgs = []string{"-DENABLE_ASSEMBLY=OFF"}
 	case "rav1e":
-		configured.BuildSystem = &CargoBuild{InstallFunc: rav1eInstall("windows", arch)}
+		configured.BuildSystem = &CargoBuild{InstallLogFunc: rav1eInstallWithLog("windows", arch)}
 		return &configured
 	default:
 		return lib

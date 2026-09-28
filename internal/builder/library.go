@@ -47,6 +47,10 @@ type BuildSystem interface {
 	Build(ctx context.Context, lib *Library, srcPath, buildDir string) error
 }
 
+type buildSystemWithLog interface {
+	BuildWithLog(ctx context.Context, lib *Library, srcPath, buildDir string, logger io.Writer) error
+}
+
 // ShouldBuild checks if this library should be built on the current platform
 func (lib *Library) ShouldBuild() bool {
 	// Check if library is enabled (nil = true, explicitly set to false = disabled)
@@ -136,8 +140,14 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		return fmt.Errorf("configure failed: %w", err)
 	}
 
-	if err := lib.BuildSystem.Build(ctx, lib, srcPath, buildDir); err != nil {
-		return fmt.Errorf("build failed: %w", err)
+	var buildErr error
+	if build, ok := lib.BuildSystem.(buildSystemWithLog); ok {
+		buildErr = build.BuildWithLog(ctx, lib, srcPath, buildDir, logger)
+	} else {
+		buildErr = lib.BuildSystem.Build(ctx, lib, srcPath, buildDir)
+	}
+	if buildErr != nil {
+		return fmt.Errorf("build failed: %w", buildErr)
 	}
 
 	for _, name := range lib.LinkLibs {

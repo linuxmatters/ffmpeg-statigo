@@ -154,7 +154,7 @@ func TestRav1eWindowsInstallCommand(t *testing.T) {
 				t.Fatalf("command = %v, env = %v; want %v, %v", args, env, wantArgs, wantEnv)
 			}
 			lib := windowsLibrary(rav1e, tc.arch)
-			if lib == rav1e || lib.BuildSystem.(*CargoBuild).InstallFunc == nil || lib.URL != rav1e.URL {
+			if lib == rav1e || lib.BuildSystem.(*CargoBuild).InstallLogFunc == nil || lib.URL != rav1e.URL {
 				t.Fatal("missing isolated rav1e build adapter")
 			}
 		})
