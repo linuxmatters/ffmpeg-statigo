@@ -238,7 +238,8 @@ func (m *MesonBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 
 // CargoBuild implements the BuildSystem interface for Cargo/Rust-based builds
 type CargoBuild struct {
-	InstallFunc func(ctx context.Context, srcPath, installDir string) error // Custom install function
+	InstallFunc    func(ctx context.Context, srcPath, installDir string) error // Custom install function
+	InstallLogFunc func(ctx context.Context, srcPath, installDir string, logger io.Writer) error
 }
 
 func (c *CargoBuild) Configure(ctx context.Context, lib *Library, srcPath, buildDir, installDir string) error {
@@ -247,7 +248,14 @@ func (c *CargoBuild) Configure(ctx context.Context, lib *Library, srcPath, build
 }
 
 func (c *CargoBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir string) error {
+	return c.BuildWithLog(ctx, lib, srcPath, buildDir, os.Stdout)
+}
+
+func (c *CargoBuild) BuildWithLog(ctx context.Context, _ *Library, srcPath, buildDir string, logger io.Writer) error {
 	installDir := stagingDir(buildDir)
+	if c.InstallLogFunc != nil {
+		return c.InstallLogFunc(ctx, srcPath, installDir, logger)
+	}
 
 	// Custom install func handles the full cargo build process if provided
 	if c.InstallFunc != nil {
@@ -258,8 +266,14 @@ func (c *CargoBuild) Build(ctx context.Context, lib *Library, srcPath, buildDir 
 
 func rav1eInstall(targetOS, arch string) func(context.Context, string, string) error {
 	return func(ctx context.Context, srcPath, installDir string) error {
+		return rav1eInstallWithLog(targetOS, arch)(ctx, srcPath, installDir, os.Stdout)
+	}
+}
+
+func rav1eInstallWithLog(targetOS, arch string) func(context.Context, string, string, io.Writer) error {
+	return func(ctx context.Context, srcPath, installDir string, logger io.Writer) error {
 		args, env := rav1eInstallCommand(targetOS, arch, installDir, os.Getenv("CGO_CFLAGS"))
-		return runCommandEnv(ctx, srcPath, os.Stdout, installDir, env, "cargo", args...)
+		return runCommandEnv(ctx, srcPath, logger, installDir, env, "cargo", args...)
 	}
 }
 
