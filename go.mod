@@ -8,8 +8,8 @@ require (
 	github.com/gdamore/tcell/v2 v2.13.10
 	github.com/iancoleman/strcase v0.3.0
 	github.com/stretchr/testify v1.12.1
-	github.com/ulikunitz/xz v0.5.16
-	modernc.org/cc/v4 v4.29.2
+	github.com/ulikunitz/xz v0.5.17
+	modernc.org/cc/v4 v4.29.7
 )
 
 require (
