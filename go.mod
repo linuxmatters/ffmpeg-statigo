@@ -9,7 +9,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/stretchr/testify v1.12.1
 	github.com/ulikunitz/xz v0.5.17
-	modernc.org/cc/v4 v4.29.7
+	modernc.org/cc/v4 v4.30.5
 )
 
 require (
