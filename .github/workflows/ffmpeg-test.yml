@@ -59,6 +59,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          components: llvm-tools
+
+      - name: Locate llvm-objcopy
+        if: matrix.os == 'darwin'
+        run: |
+          tool="$(rustc --print sysroot)/lib/rustlib/$(rustc --print host-tuple)/bin/llvm-objcopy"
+          test -x "$tool"
+          echo "LLVM_OBJCOPY=$tool" >> "$GITHUB_ENV"
 
       - uses: Swatinem/rust-cache@v2
         with:

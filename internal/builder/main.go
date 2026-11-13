@@ -325,6 +325,13 @@ func combineMac(ctx context.Context, libFiles []string, output string) error {
 		return fmt.Errorf("libtool failed: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
 	}
 
+	// Remove the Rust sysroot's embedded LLVM bitcode, which Go cgo rejects.
+	// Apple's strip cannot remove sections, so this uses llvm-objcopy.
+	objcopy := exec.CommandContext(ctx, configuredArchiveTool("LLVM_OBJCOPY", "llvm-objcopy"), "--remove-section=__LLVM,__bitcode", "--remove-section=__LLVM,__cmdline", output) //nolint:gosec // G204: LLVM_OBJCOPY selects a trusted local build tool, with fixed arguments and no shell.
+	if diagnostic, err := objcopy.CombinedOutput(); err != nil {
+		return fmt.Errorf("llvm-objcopy failed: %w: %s", err, diagnostic)
+	}
+
 	// Strip the library to reduce size
 	if err := exec.CommandContext(ctx, "strip", "-S", output).Run(); err != nil {
 		return fmt.Errorf("strip failed: %w", err)

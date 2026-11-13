@@ -82,6 +82,8 @@
             export LIBCXX_INCLUDE="${pkgs.llvmPackages.libcxx.dev}/include/c++/v1"
             # Set deployment target to match ffmpeg-statigo build (macOS 13.0+)
             export MACOSX_DEPLOYMENT_TARGET="13.0"
+            # Removes Rust bitcode from libffmpeg.a without shadowing Apple ar and strip
+            export LLVM_OBJCOPY="${pkgs.llvmPackages.bintools-unwrapped}/bin/llvm-objcopy"
           ''
           + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
             # Hardware acceleration: Make GPU drivers visible
