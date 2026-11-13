@@ -465,12 +465,19 @@ func combineLinux(ctx context.Context, libFiles []string, output string) error {
 		return fmt.Errorf("failed to rename converted archive: %w", err)
 	}
 
-	// Strip the library
-	stripCmd := exec.CommandContext(ctx, "strip", "--strip-unneeded", output)
+	// Strip the library and remove LLVM bitcode sections rejected by Go cgo
+	stripCmd := exec.CommandContext(ctx, "strip", "--strip-unneeded", "--remove-section=.llvmbc", "--remove-section=.llvmcmd", output)
 	stripCmd.Stderr = &stderr
 	stderr.Reset()
 	if err := stripCmd.Run(); err != nil {
 		return fmt.Errorf("strip failed: %w (stderr: %s)", err, stderr.String())
+	}
+
+	ranlibCmd := exec.CommandContext(ctx, "ranlib", output)
+	ranlibCmd.Stderr = &stderr
+	stderr.Reset()
+	if err := ranlibCmd.Run(); err != nil {
+		return fmt.Errorf("ranlib failed: %w (stderr: %s)", err, stderr.String())
 	}
 
 	return nil

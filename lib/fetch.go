@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -107,6 +108,9 @@ func ensureLibrary() error {
 	if !info.Mode().IsRegular() {
 		return fmt.Errorf("invalid library in %s: not a regular file", tarballName)
 	}
+	if err := stripBitcodeSections(stagedLibrary, platform, arch); err != nil {
+		return fmt.Errorf("stripping bitcode sections: %w", err)
+	}
 	if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil { //nolint:gosec // G703: libPath uses only validated platform, arch, and profile.
 		return fmt.Errorf("creating library directory: %w", err)
 	}
@@ -116,6 +120,41 @@ func ensureLibrary() error {
 	fmt.Printf("Checksum verified: %s\n", actualChecksum[:8])
 
 	fmt.Printf("Successfully installed FFmpeg library to %s\n", libPath)
+	return nil
+}
+
+// stripBitcodeSections removes Rust .llvmbc and .llvmcmd LTO sections from a
+// native Linux ar archive so Go's cgo linker security check accepts libffmpeg.a.
+func stripBitcodeSections(archivePath, platform, arch string) error {
+	if runtime.GOOS != "linux" || platform != "linux" || arch != runtime.GOARCH {
+		return nil
+	}
+	objcopyBin, err := exec.LookPath("objcopy")
+	if err != nil {
+		return nil //nolint:nilerr // Keep extraction working when binutils objcopy is absent.
+	}
+	arBin, err := exec.LookPath("ar")
+	if err != nil {
+		return nil //nolint:nilerr // Keep extraction working when binutils ar is absent.
+	}
+	file, err := os.Open(archivePath) //nolint:gosec // G304: archivePath is inside the validated staging directory.
+	if err != nil {
+		return err
+	}
+	var magic [8]byte
+	_, readErr := io.ReadFull(file, magic[:])
+	_ = file.Close()
+	if readErr != nil || string(magic[:]) != "!<arch>\n" {
+		return nil
+	}
+	output, err := exec.CommandContext(context.Background(), objcopyBin, "--remove-section=.llvmbc", "--remove-section=.llvmcmd", archivePath).CombinedOutput() //nolint:gosec // G204: objcopyBin is resolved from LookPath and archivePath is validated.
+	if err != nil {
+		return fmt.Errorf("objcopy: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	output, err = exec.CommandContext(context.Background(), arBin, "s", archivePath).CombinedOutput() //nolint:gosec // G204: arBin is resolved from LookPath and archivePath is validated.
+	if err != nil {
+		return fmt.Errorf("ar: %w: %s", err, strings.TrimSpace(string(output)))
+	}
 	return nil
 }
 
