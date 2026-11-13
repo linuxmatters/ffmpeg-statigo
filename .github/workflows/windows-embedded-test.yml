@@ -19,11 +19,13 @@ jobs:
             msystem: UCRT64
             bin: /ucrt64/bin
             package-prefix: mingw-w64-ucrt-x86_64
+            nasm-package: mingw-w64-ucrt-x86_64-nasm
             yasm-package: mingw-w64-ucrt-x86_64-yasm
           - goarch: '386'
             msystem: MINGW32
             bin: /mingw32/bin
             package-prefix: mingw-w64-i686
+            nasm-package: nasm
             yasm-package: yasm
     defaults:
       run:
@@ -75,7 +77,7 @@ jobs:
             ${{ matrix.package-prefix }}-binutils
             ${{ matrix.package-prefix }}-cmake
             ${{ matrix.package-prefix }}-gcc
-            ${{ matrix.package-prefix }}-nasm
+            ${{ matrix.nasm-package }}
             ${{ matrix.package-prefix }}-ninja
             ${{ matrix.package-prefix }}-pkgconf
             ${{ matrix.package-prefix }}-python
@@ -170,6 +172,7 @@ jobs:
             msystem: UCRT64
             bin: /ucrt64/bin
             package-prefix: mingw-w64-ucrt-x86_64
+            nasm-package: mingw-w64-ucrt-x86_64-nasm
             yasm-package: mingw-w64-ucrt-x86_64-yasm
             rust-packages: >-
               mingw-w64-ucrt-x86_64-rust mingw-w64-ucrt-x86_64-cargo-c
@@ -180,8 +183,9 @@ jobs:
             msystem: MINGW32
             bin: /mingw32/bin
             package-prefix: mingw-w64-i686
-            # MSYS2 has no i686 YASM package.
-            # The host assembler emits Win32 objects.
+            # MSYS2 has no i686 NASM or YASM packages.
+            # The host assemblers emit Win32 objects.
+            nasm-package: nasm
             yasm-package: yasm
             rust-packages: ''
             cc-target: i686-w64-mingw32
@@ -257,7 +261,7 @@ jobs:
             ${{ matrix.package-prefix }}-cmake
             ${{ matrix.package-prefix }}-gcc
             ${{ matrix.package-prefix }}-meson
-            ${{ matrix.package-prefix }}-nasm
+            ${{ matrix.nasm-package }}
             ${{ matrix.package-prefix }}-ninja
             ${{ matrix.package-prefix }}-pkgconf
             ${{ matrix.package-prefix }}-python

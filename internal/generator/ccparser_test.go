@@ -240,12 +240,13 @@ func writeTestHeader(t *testing.T, dir, name, src string) string {
 //
 // The two panic cases are real C that any compiler accepts:
 //
-//   - #ifdef __STDC_MB_MIGHT_NEQ_WC__ reaches cpp.go:1369. The name sits in
+//   - #ifdef __STDC_MB_MIGHT_NEQ_WC__ reaches cpp.go:1514. The name sits in
 //     cc/v4's protectedMacros table but has no arm in the switch that follows,
 //     and ccPredefined does not define it, so an ordinary feature test for a C99
 //     standard macro falls straight through to todo().
-//   - A function-like macro invocation whose closing parenthesis never arrives
-//     reaches cpp.go:1497, where parseMacroArgs runs into end of file.
+//   - #if 1uul reaches cpp.go:2980, where intConst strips all [uUlL] characters
+//     before strconv.ParseUint and then panics via todo() on an unrecognized
+//     [uUlL] suffix combination instead of reporting an invalid suffix.
 //
 // Both are asserted to come back as an error naming a recovered panic, not just
 // as some error, so the test cannot pass through the ordinary diagnostic route.
@@ -280,13 +281,17 @@ func TestCCTranslateReturnsErrorsInsteadOfPanicking(t *testing.T) {
 			src:  "#include <ffg_definitely_missing_header.h>\nint f(void);\n",
 		},
 		{
+			name: "unterminated macro invocation",
+			src:  "#define FFG_M(x) x\nFFG_M(1\n",
+		},
+		{
 			name:      "protected macro with no parser arm",
 			src:       "#ifdef __STDC_MB_MIGHT_NEQ_WC__\nint g(void);\n#endif\nint f(void);\n",
 			recovered: true,
 		},
 		{
-			name:      "unterminated macro invocation",
-			src:       "#define FFG_M(x) x\nFFG_M(1\n",
+			name:      "invalid integer suffix in preprocessor condition",
+			src:       "#if 1uul\nint g(void);\n#endif\nint f(void);\n",
 			recovered: true,
 		},
 	}
