@@ -1,6 +1,6 @@
 # API coverage
 
-As of FFmpeg 8.1.2 (measured 2026-07-05), ffmpeg-statigo binds **~90%** of the
+As of FFmpeg 8.1.2 (measured 2026-11-25), ffmpeg-statigo binds **~92%** of the
 public C functions in the parsed FFmpeg headers.
 
 ## Metric definition
@@ -27,22 +27,36 @@ missing.
 
 | Quantity | Value | Source |
 | --- | --- | --- |
-| Generated function wrappers | 857 | `grep -cE '^func AV[A-Za-z0-9_]+\(' functions.gen.go` |
-| Function skips (generator) | 151 | skip summary, symbols without a `.` |
-| Struct-field / other skips | 94 | skip summary, symbols containing a `.` |
-| Total skip markers | 245 | skip summary header (`= skipCeiling`) |
-| Re-bound by hand (covered) | 54 | skipped functions re-exposed in topic files |
-| Genuinely missing functions | 97 | 151 - 54 |
-| **Numerator** (bound) | **911** | 857 + 54 |
-| **Denominator** (parsed public funcs) | **1008** | 857 + 151 |
-| **Coverage** | **90.4%** | 911 / 1008 |
+| Generated function wrappers | 925 | `grep -cE '^func [A-Z][A-Za-z0-9_]*\(' functions.gen.go` |
+| Function skips (generator) | 137 | skip summary, symbols without a `.` |
+| Struct-field / other skips | 66 | skip summary, symbols containing a `.` |
+| Total skip markers | 203 | skip summary header (`= skipCeiling`) |
+| Re-bound by hand (covered) | 53 | skipped functions with a manual binding in topic files |
+| Genuinely missing functions | 84 | 137 - 53 |
+| **Numerator** (bound) | **978** | 925 + 53 |
+| **Denominator** (parsed public funcs) | **1062** | 925 + 137 |
+| **Coverage** | **92.1%** | 978 / 1062 |
 
-The previous README figure of 85% matched the generated-only lower bound
-(857 / 1008 = 85.0%); it ignored the hand-written re-binds, so it understated
-real coverage. The recent header-promotion and hand-binding work added bindings,
-lifting the figure from ~85% to ~90% (906 / 1008 = 89.9%). The five additional
-hand-written bindings for the AVAudioFifo data path and av_tx invocation bring
-the total to 911 / 1008 = 90.4%, still rounding to ~90%.
+The generated-only lower bound is 87.1% (925 / 1062). Hand-written wrappers in
+the topic files re-bind 53 skipped functions, which raises coverage to 92.1%
+(978 / 1062, or ~92%).
+
+Generator support for fixed-size arrays reduced total skips by 42, from 245 to
+203. Struct-field skips fell by 28, from 94 to 66. The generator now emits 11
+inline struct-array fields and 17 multi-dimensional array fields in
+`structs.gen.go`. That change retired 3 manual accessors from `fields.go` and
+reduced struct-field manual re-binds from 8 to 5. Function skips fell by 14,
+from 151 to 137, as 14 unwrapped fixed-size array functions moved into
+`functions.gen.go`.
+
+Earlier counts matched only `^func AV` in `functions.gen.go` (857 generated
+wrappers and 1008 parsed functions). That pattern missed 54 generated `Swr*`
+and `Sws*` wrappers even though the skip total included skipped `swr_*` and
+`sws_*` functions. The table now counts all exported wrappers in
+`functions.gen.go` (`^func [A-Z]`), so the denominator matches the 1062 parsed
+functions in `internal/generator/testdata/ir/structure.txt`. The re-bind count
+also matches the live generator summary (53, not 54), because `AVTxCall`
+invokes the `av_tx_fn` function pointer rather than a skipped C function.
 
 ## Scope
 
@@ -92,6 +106,6 @@ cross-reference required:
 # Count skipped-but-rebound symbols. Function skips have no dot in the symbol;
 # struct-field skips do, so split them to match the counts table.
 go run ./internal/generator 2>/tmp/skips.txt >/dev/null
-grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 54 figure)
-grep '(manual binding:' /tmp/skips.txt | grep -c  '\.'   # struct-field rebinds
+grep '(manual binding:' /tmp/skips.txt | grep -vc '\.'   # function rebinds (matches the 53 figure)
+grep '(manual binding:' /tmp/skips.txt | grep -c  '\.'   # struct-field rebinds (5)
 ```

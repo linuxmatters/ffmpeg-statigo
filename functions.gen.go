@@ -478,7 +478,34 @@ func AVCodecAlignDimensions(s *AVCodecContext, width *int, height *int) {
 
 // --- Function avcodec_align_dimensions2 ---
 
-// avcodec_align_dimensions2 skipped due to const array param linesizeAlign
+// AVCodecAlignDimensions2 wraps avcodec_align_dimensions2.
+/*
+  Modify width and height values so that they will result in a memory
+  buffer that is acceptable for the codec if you also ensure that all
+  line sizes are a multiple of the respective linesize_align[i].
+
+  May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
+*/
+func AVCodecAlignDimensions2(s *AVCodecContext, width *int, height *int, linesizeAlign *[8]int) {
+	var tmps *C.AVCodecContext
+	if s != nil {
+		tmps = s.ptr
+	}
+	var tmplinesizeAlign [8]C.int
+	var ptrlinesizeAlign *C.int
+	if linesizeAlign != nil {
+		for idx := range tmplinesizeAlign {
+			tmplinesizeAlign[idx] = C.int(linesizeAlign[idx])
+		}
+		ptrlinesizeAlign = &tmplinesizeAlign[0]
+	}
+	C.avcodec_align_dimensions2(tmps, (*C.int)(unsafe.Pointer(width)), (*C.int)(unsafe.Pointer(height)), ptrlinesizeAlign)
+	if linesizeAlign != nil {
+		for idx := range tmplinesizeAlign {
+			linesizeAlign[idx] = int(tmplinesizeAlign[idx])
+		}
+	}
+}
 
 // --- Function avcodec_decode_subtitle2 ---
 
@@ -12158,15 +12185,15 @@ func AVDictFree(m **AVDictionary) {
 
 // --- Function av_display_rotation_get ---
 
-// av_display_rotation_get skipped due to const array param matrix
+// av_display_rotation_get skipped due to manually wrapped in display.go
 
 // --- Function av_display_rotation_set ---
 
-// av_display_rotation_set skipped due to const array param matrix
+// av_display_rotation_set skipped due to manually wrapped in display.go
 
 // --- Function av_display_matrix_flip ---
 
-// av_display_matrix_flip skipped due to const array param matrix
+// av_display_matrix_flip skipped due to manually wrapped in display.go
 
 // --- Function av_dovi_alloc ---
 
@@ -15013,7 +15040,57 @@ func AVIamfMixPresentationFree(mixPresentation **AVIAMFMixPresentation) {
 
 // --- Function av_image_fill_max_pixsteps ---
 
-// av_image_fill_max_pixsteps skipped due to const array param maxPixsteps
+// AVImageFillMaxPixsteps wraps av_image_fill_max_pixsteps.
+/*
+  Compute the max pixel step for each plane of an image with a
+  format described by pixdesc.
+
+  The pixel step is the distance in bytes between the first byte of
+  the group of bytes which describe a pixel component and the first
+  byte of the successive group in the same plane for the same
+  component.
+
+  @param max_pixsteps an array which is filled with the max pixel step
+  for each plane. Since a plane may contain different pixel
+  components, the computed max_pixsteps[plane] is relative to the
+  component in the plane with the max pixel step.
+  @param max_pixstep_comps an array which is filled with the component
+  for each plane which has the max pixel step. May be NULL.
+  @param pixdesc the AVPixFmtDescriptor for the image, describing its format
+*/
+func AVImageFillMaxPixsteps(maxPixsteps *[4]int, maxPixstepComps *[4]int, pixdesc *AVPixFmtDescriptor) {
+	var tmpmaxPixsteps [4]C.int
+	var ptrmaxPixsteps *C.int
+	if maxPixsteps != nil {
+		for idx := range tmpmaxPixsteps {
+			tmpmaxPixsteps[idx] = C.int(maxPixsteps[idx])
+		}
+		ptrmaxPixsteps = &tmpmaxPixsteps[0]
+	}
+	var tmpmaxPixstepComps [4]C.int
+	var ptrmaxPixstepComps *C.int
+	if maxPixstepComps != nil {
+		for idx := range tmpmaxPixstepComps {
+			tmpmaxPixstepComps[idx] = C.int(maxPixstepComps[idx])
+		}
+		ptrmaxPixstepComps = &tmpmaxPixstepComps[0]
+	}
+	var tmppixdesc *C.AVPixFmtDescriptor
+	if pixdesc != nil {
+		tmppixdesc = pixdesc.ptr
+	}
+	C.av_image_fill_max_pixsteps(ptrmaxPixsteps, ptrmaxPixstepComps, tmppixdesc)
+	if maxPixsteps != nil {
+		for idx := range tmpmaxPixsteps {
+			maxPixsteps[idx] = int(tmpmaxPixsteps[idx])
+		}
+	}
+	if maxPixstepComps != nil {
+		for idx := range tmpmaxPixstepComps {
+			maxPixstepComps[idx] = int(tmpmaxPixstepComps[idx])
+		}
+	}
+}
 
 // --- Function av_image_get_linesize ---
 
@@ -15031,19 +15108,83 @@ func AVImageGetLinesize(pixFmt AVPixelFormat, width int, plane int) (int, error)
 
 // --- Function av_image_fill_linesizes ---
 
-// av_image_fill_linesizes skipped due to const array param linesizes
+// AVImageFillLinesizes wraps av_image_fill_linesizes.
+/*
+  Fill plane linesizes for an image with pixel format pix_fmt and
+  width width.
+
+  @param linesizes array to be filled with the linesize for each plane
+  @param pix_fmt the AVPixelFormat of the image
+  @param width width of the image in pixels
+  @return >= 0 in case of success, a negative error code otherwise
+*/
+func AVImageFillLinesizes(linesizes *[4]int, pixFmt AVPixelFormat, width int) (int, error) {
+	var tmplinesizes [4]C.int
+	var ptrlinesizes *C.int
+	if linesizes != nil {
+		for idx := range tmplinesizes {
+			tmplinesizes[idx] = C.int(linesizes[idx])
+		}
+		ptrlinesizes = &tmplinesizes[0]
+	}
+	ret := C.av_image_fill_linesizes(ptrlinesizes, C.enum_AVPixelFormat(pixFmt), C.int(width))
+	if linesizes != nil {
+		for idx := range tmplinesizes {
+			linesizes[idx] = int(tmplinesizes[idx])
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_image_fill_plane_sizes ---
 
-// av_image_fill_plane_sizes skipped due to const array param size
+// AVImageFillPlaneSizes wraps av_image_fill_plane_sizes.
+/*
+  Fill plane sizes for an image with pixel format pix_fmt and height height.
+
+  @param size the array to be filled with the size of each image plane
+  @param pix_fmt the AVPixelFormat of the image
+  @param height height of the image in pixels
+  @param linesizes the array containing the linesize for each
+         plane, should be filled by av_image_fill_linesizes()
+  @return >= 0 in case of success, a negative error code otherwise
+
+  @note The linesize parameters have the type ptrdiff_t here, while they are
+        int for av_image_fill_linesizes().
+*/
+func AVImageFillPlaneSizes(size *[4]uint64, pixFmt AVPixelFormat, height int, linesizes *[4]int64) (int, error) {
+	var tmpsize [4]C.size_t
+	var ptrsize *C.size_t
+	if size != nil {
+		ptrsize = &tmpsize[0]
+	}
+	var tmplinesizes [4]C.ptrdiff_t
+	var ptrlinesizes *C.ptrdiff_t
+	if linesizes != nil {
+		for idx := range tmplinesizes {
+			if int64(C.ptrdiff_t(linesizes[idx])) != linesizes[idx] {
+				panic("av_image_fill_plane_sizes.linesizes overflows C.ptrdiff_t")
+			}
+			tmplinesizes[idx] = C.ptrdiff_t(linesizes[idx])
+		}
+		ptrlinesizes = &tmplinesizes[0]
+	}
+	ret := C.av_image_fill_plane_sizes(ptrsize, C.enum_AVPixelFormat(pixFmt), C.int(height), ptrlinesizes)
+	if size != nil {
+		for idx := range tmpsize {
+			size[idx] = uint64(tmpsize[idx])
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_image_fill_pointers ---
 
-// av_image_fill_pointers skipped due to const array param data
+// av_image_fill_pointers skipped due to manually wrapped in image.go
 
 // --- Function av_image_alloc ---
 
-// av_image_alloc skipped due to const array param pointers
+// av_image_alloc skipped due to manually wrapped in image.go
 
 // --- Function av_image_copy_plane ---
 
@@ -15099,19 +15240,84 @@ func AVImageCopyPlaneUcFrom(dst unsafe.Pointer, dstLinesize int64, src unsafe.Po
 
 // --- Function av_image_copy ---
 
-// av_image_copy skipped due to const array param dstData
+// av_image_copy skipped due to manually wrapped in image.go
 
 // --- Function av_image_copy2 ---
 
-// av_image_copy2 skipped due to const array param dstData
+// av_image_copy2 skipped due to manually wrapped in image.go
 
 // --- Function av_image_copy_uc_from ---
 
-// av_image_copy_uc_from skipped due to const array param dstData
+// AVImageCopyUcFrom wraps av_image_copy_uc_from.
+/*
+  Copy image data located in uncacheable (e.g. GPU mapped) memory. Where
+  available, this function will use special functionality for reading from such
+  memory, which may result in greatly improved performance compared to plain
+  av_image_copy().
+
+  The data pointers and the linesizes must be aligned to the maximum required
+  by the CPU architecture.
+
+  @note The linesize parameters have the type ptrdiff_t here, while they are
+        int for av_image_copy().
+  @note On x86, the linesizes currently need to be aligned to the cacheline
+        size (i.e. 64) to get improved performance.
+*/
+func AVImageCopyUcFrom(dstData *[4]unsafe.Pointer, dstLinesizes *[4]int64, srcData *[4]unsafe.Pointer, srcLinesizes *[4]int64, pixFmt AVPixelFormat, width int, height int) {
+	var tmpdstData [4]*C.uint8_t
+	var ptrdstData **C.uint8_t
+	if dstData != nil {
+		for idx := range tmpdstData {
+			tmpdstData[idx] = (*C.uint8_t)(dstData[idx])
+		}
+		ptrdstData = &tmpdstData[0]
+	}
+	var tmpdstLinesizes [4]C.ptrdiff_t
+	var ptrdstLinesizes *C.ptrdiff_t
+	if dstLinesizes != nil {
+		for idx := range tmpdstLinesizes {
+			if int64(C.ptrdiff_t(dstLinesizes[idx])) != dstLinesizes[idx] {
+				panic("av_image_copy_uc_from.dst_linesizes overflows C.ptrdiff_t")
+			}
+			tmpdstLinesizes[idx] = C.ptrdiff_t(dstLinesizes[idx])
+		}
+		ptrdstLinesizes = &tmpdstLinesizes[0]
+	}
+	var tmpsrcData [4]*C.uint8_t
+	var ptrsrcData **C.uint8_t
+	if srcData != nil {
+		for idx := range tmpsrcData {
+			tmpsrcData[idx] = (*C.uint8_t)(srcData[idx])
+		}
+		ptrsrcData = &tmpsrcData[0]
+	}
+	var tmpsrcLinesizes [4]C.ptrdiff_t
+	var ptrsrcLinesizes *C.ptrdiff_t
+	if srcLinesizes != nil {
+		for idx := range tmpsrcLinesizes {
+			if int64(C.ptrdiff_t(srcLinesizes[idx])) != srcLinesizes[idx] {
+				panic("av_image_copy_uc_from.src_linesizes overflows C.ptrdiff_t")
+			}
+			tmpsrcLinesizes[idx] = C.ptrdiff_t(srcLinesizes[idx])
+		}
+		ptrsrcLinesizes = &tmpsrcLinesizes[0]
+	}
+	C.av_image_copy_uc_from(ptrdstData, ptrdstLinesizes, ptrsrcData, ptrsrcLinesizes, C.enum_AVPixelFormat(pixFmt), C.int(width), C.int(height))
+	if dstData != nil {
+		for idx := range tmpdstData {
+			dstData[idx] = unsafe.Pointer(tmpdstData[idx])
+		}
+	}
+	if srcData != nil {
+		for idx := range tmpsrcData {
+			srcData[idx] = unsafe.Pointer(tmpsrcData[idx])
+		}
+	}
+}
 
 // --- Function av_image_fill_arrays ---
 
-// av_image_fill_arrays skipped due to const array param dstData
+// av_image_fill_arrays skipped due to manually wrapped in image.go
 
 // --- Function av_image_get_buffer_size ---
 
@@ -15133,7 +15339,7 @@ func AVImageGetBufferSize(pixFmt AVPixelFormat, width int, height int, align int
 
 // --- Function av_image_copy_to_buffer ---
 
-// av_image_copy_to_buffer skipped due to const array param srcData
+// av_image_copy_to_buffer skipped due to manually wrapped in image.go
 
 // --- Function av_image_check_size ---
 
@@ -15196,11 +15402,120 @@ func AVImageCheckSar(w uint, h uint, sar *AVRational) (int, error) {
 
 // --- Function av_image_fill_black ---
 
-// av_image_fill_black skipped due to const array param dstData
+// AVImageFillBlack wraps av_image_fill_black.
+/*
+  Overwrite the image data with black. This is suitable for filling a
+  sub-rectangle of an image, meaning the padding between the right most pixel
+  and the left most pixel on the next line will not be overwritten. For some
+  formats, the image size might be rounded up due to inherent alignment.
+
+  If the pixel format has alpha, the alpha is cleared to opaque.
+
+  This can return an error if the pixel format is not supported. Normally, all
+  non-hwaccel pixel formats should be supported.
+
+  Passing NULL for dst_data is allowed. Then the function returns whether the
+  operation would have succeeded. (It can return an error if the pix_fmt is
+  not supported.)
+
+  @param dst_data      data pointers to destination image
+  @param dst_linesize  linesizes for the destination image
+  @param pix_fmt       the pixel format of the image
+  @param range         the color range of the image (important for colorspaces such as YUV)
+  @param width         the width of the image in pixels
+  @param height        the height of the image in pixels
+  @return 0 if the image data was cleared, a negative AVERROR code otherwise
+*/
+func AVImageFillBlack(dstData *[4]unsafe.Pointer, dstLinesize *[4]int64, pixFmt AVPixelFormat, _range AVColorRange, width int, height int) (int, error) {
+	var tmpdstData [4]*C.uint8_t
+	var ptrdstData **C.uint8_t
+	if dstData != nil {
+		for idx := range tmpdstData {
+			tmpdstData[idx] = (*C.uint8_t)(dstData[idx])
+		}
+		ptrdstData = &tmpdstData[0]
+	}
+	var tmpdstLinesize [4]C.ptrdiff_t
+	var ptrdstLinesize *C.ptrdiff_t
+	if dstLinesize != nil {
+		for idx := range tmpdstLinesize {
+			if int64(C.ptrdiff_t(dstLinesize[idx])) != dstLinesize[idx] {
+				panic("av_image_fill_black.dst_linesize overflows C.ptrdiff_t")
+			}
+			tmpdstLinesize[idx] = C.ptrdiff_t(dstLinesize[idx])
+		}
+		ptrdstLinesize = &tmpdstLinesize[0]
+	}
+	ret := C.av_image_fill_black(ptrdstData, ptrdstLinesize, C.enum_AVPixelFormat(pixFmt), C.enum_AVColorRange(_range), C.int(width), C.int(height))
+	if dstData != nil {
+		for idx := range tmpdstData {
+			dstData[idx] = unsafe.Pointer(tmpdstData[idx])
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_image_fill_color ---
 
-// av_image_fill_color skipped due to const array param dstData
+// AVImageFillColor wraps av_image_fill_color.
+/*
+  Overwrite the image data with a color. This is suitable for filling a
+  sub-rectangle of an image, meaning the padding between the right most pixel
+  and the left most pixel on the next line will not be overwritten. For some
+  formats, the image size might be rounded up due to inherent alignment.
+
+  If the pixel format has alpha, it is also replaced. Color component values
+  are interpreted as native integers (or intfloats) regardless of actual pixel
+  format endianness.
+
+  This can return an error if the pixel format is not supported. Normally, all
+  non-hwaccel pixel formats should be supported.
+
+  Passing NULL for dst_data is allowed. Then the function returns whether the
+  operation would have succeeded. (It can return an error if the pix_fmt is
+  not supported.)
+
+  @param dst_data      data pointers to destination image
+  @param dst_linesize  linesizes for the destination image
+  @param pix_fmt       the pixel format of the image
+  @param color         the color components to be used for the fill
+  @param width         the width of the image in pixels
+  @param height        the height of the image in pixels
+  @param flags         currently unused
+  @return 0 if the image data was filled, a negative AVERROR code otherwise
+*/
+func AVImageFillColor(dstData *[4]unsafe.Pointer, dstLinesize *[4]int64, pixFmt AVPixelFormat, color *[4]uint32, width int, height int, flags int) (int, error) {
+	var tmpdstData [4]*C.uint8_t
+	var ptrdstData **C.uint8_t
+	if dstData != nil {
+		for idx := range tmpdstData {
+			tmpdstData[idx] = (*C.uint8_t)(dstData[idx])
+		}
+		ptrdstData = &tmpdstData[0]
+	}
+	var tmpdstLinesize [4]C.ptrdiff_t
+	var ptrdstLinesize *C.ptrdiff_t
+	if dstLinesize != nil {
+		for idx := range tmpdstLinesize {
+			if int64(C.ptrdiff_t(dstLinesize[idx])) != dstLinesize[idx] {
+				panic("av_image_fill_color.dst_linesize overflows C.ptrdiff_t")
+			}
+			tmpdstLinesize[idx] = C.ptrdiff_t(dstLinesize[idx])
+		}
+		ptrdstLinesize = &tmpdstLinesize[0]
+	}
+	var tmpcolor *C.uint32_t
+	if color != nil {
+		tmpcolor = (*C.uint32_t)(unsafe.Pointer(&color[0]))
+	}
+	ret := C.av_image_fill_color(ptrdstData, ptrdstLinesize, C.enum_AVPixelFormat(pixFmt), tmpcolor, C.int(width), C.int(height), C.int(flags))
+	if dstData != nil {
+		for idx := range tmpdstData {
+			dstData[idx] = unsafe.Pointer(tmpdstData[idx])
+		}
+	}
+	return int(ret), WrapErr(int(ret))
+}
 
 // --- Function av_int2float ---
 
@@ -15307,7 +15622,25 @@ func AVMlfgGet(c *AVLFG) uint {
 
 // --- Function av_bmg_get ---
 
-// av_bmg_get skipped due to const array param out
+// AVBmgGet wraps av_bmg_get.
+/*
+  Get the next two numbers generated by a Box-Muller Gaussian
+  generator using the random numbers issued by lfg.
+
+  @param lfg pointer to the context structure
+  @param out array where the two generated numbers are placed
+*/
+func AVBmgGet(lfg *AVLFG, out *[2]float64) {
+	var tmplfg *C.AVLFG
+	if lfg != nil {
+		tmplfg = lfg.ptr
+	}
+	var tmpout *C.double
+	if out != nil {
+		tmpout = (*C.double)(unsafe.Pointer(&out[0]))
+	}
+	C.av_bmg_get(tmplfg, tmpout)
+}
 
 // --- Function av_log ---
 
@@ -16416,7 +16749,24 @@ func AVMurmur3Update(c *AVMurMur3, src unsafe.Pointer, len uint64) {
 
 // --- Function av_murmur3_final ---
 
-// av_murmur3_final skipped due to const array param dst
+// AVMurmur3Final wraps av_murmur3_final.
+/*
+  Finish hashing and output digest value.
+
+  @param[in,out] c    Hash context
+  @param[out]    dst  Buffer where output digest value is stored
+*/
+func AVMurmur3Final(c *AVMurMur3, dst *[16]uint8) {
+	var tmpc *C.struct_AVMurMur3
+	if c != nil {
+		tmpc = c.ptr
+	}
+	var tmpdst *C.uint8_t
+	if dst != nil {
+		tmpdst = (*C.uint8_t)(unsafe.Pointer(&dst[0]))
+	}
+	C.av_murmur3_final(tmpc, tmpdst)
+}
 
 // --- Function av_opt_set_defaults ---
 
@@ -17961,7 +18311,52 @@ func AVGetPixFmtString(buf *CStr, bufSize int, pixFmt AVPixelFormat) *CStr {
 
 // --- Function av_read_image_line2 ---
 
-// av_read_image_line2 skipped due to const array param data
+// AVReadImageLine2 wraps av_read_image_line2.
+/*
+  Read a line from an image, and write the values of the
+  pixel format component c to dst.
+
+  @param data the array containing the pointers to the planes of the image
+  @param linesize the array containing the linesizes of the image
+  @param desc the pixel format descriptor for the image
+  @param x the horizontal coordinate of the first pixel to read
+  @param y the vertical coordinate of the first pixel to read
+  @param w the width of the line to read, that is the number of
+  values to write to dst
+  @param read_pal_component if not zero and the format is a paletted
+  format writes the values corresponding to the palette
+  component c in data[1] to dst, rather than the palette indexes in
+  data[0]. The behavior is undefined if the format is not paletted.
+  @param dst_element_size size of elements in dst array (2 or 4 byte)
+*/
+func AVReadImageLine2(dst unsafe.Pointer, data *[4]unsafe.Pointer, linesize *[4]int, desc *AVPixFmtDescriptor, x int, y int, c int, w int, readPalComponent int, dstElementSize int) {
+	var tmpdata [4]*C.uint8_t
+	var ptrdata **C.uint8_t
+	if data != nil {
+		for idx := range tmpdata {
+			tmpdata[idx] = (*C.uint8_t)(data[idx])
+		}
+		ptrdata = &tmpdata[0]
+	}
+	var tmplinesize [4]C.int
+	var ptrlinesize *C.int
+	if linesize != nil {
+		for idx := range tmplinesize {
+			tmplinesize[idx] = C.int(linesize[idx])
+		}
+		ptrlinesize = &tmplinesize[0]
+	}
+	var tmpdesc *C.AVPixFmtDescriptor
+	if desc != nil {
+		tmpdesc = desc.ptr
+	}
+	C.av_read_image_line2(dst, ptrdata, ptrlinesize, tmpdesc, C.int(x), C.int(y), C.int(c), C.int(w), C.int(readPalComponent), C.int(dstElementSize))
+	if data != nil {
+		for idx := range tmpdata {
+			data[idx] = unsafe.Pointer(tmpdata[idx])
+		}
+	}
+}
 
 // --- Function av_read_image_line ---
 
@@ -17969,7 +18364,50 @@ func AVGetPixFmtString(buf *CStr, bufSize int, pixFmt AVPixelFormat) *CStr {
 
 // --- Function av_write_image_line2 ---
 
-// av_write_image_line2 skipped due to const array param data
+// AVWriteImageLine2 wraps av_write_image_line2.
+/*
+  Write the values from src to the pixel format component c of an
+  image line.
+
+  @param src array containing the values to write
+  @param data the array containing the pointers to the planes of the
+  image to write into. It is supposed to be zeroed.
+  @param linesize the array containing the linesizes of the image
+  @param desc the pixel format descriptor for the image
+  @param x the horizontal coordinate of the first pixel to write
+  @param y the vertical coordinate of the first pixel to write
+  @param w the width of the line to write, that is the number of
+  values to write to the image line
+  @param src_element_size size of elements in src array (2 or 4 byte)
+*/
+func AVWriteImageLine2(src unsafe.Pointer, data *[4]unsafe.Pointer, linesize *[4]int, desc *AVPixFmtDescriptor, x int, y int, c int, w int, srcElementSize int) {
+	var tmpdata [4]*C.uint8_t
+	var ptrdata **C.uint8_t
+	if data != nil {
+		for idx := range tmpdata {
+			tmpdata[idx] = (*C.uint8_t)(data[idx])
+		}
+		ptrdata = &tmpdata[0]
+	}
+	var tmplinesize [4]C.int
+	var ptrlinesize *C.int
+	if linesize != nil {
+		for idx := range tmplinesize {
+			tmplinesize[idx] = C.int(linesize[idx])
+		}
+		ptrlinesize = &tmplinesize[0]
+	}
+	var tmpdesc *C.AVPixFmtDescriptor
+	if desc != nil {
+		tmpdesc = desc.ptr
+	}
+	C.av_write_image_line2(src, ptrdata, ptrlinesize, tmpdesc, C.int(x), C.int(y), C.int(c), C.int(w), C.int(srcElementSize))
+	if data != nil {
+		for idx := range tmpdata {
+			data[idx] = unsafe.Pointer(tmpdata[idx])
+		}
+	}
+}
 
 // --- Function av_write_image_line ---
 
@@ -19047,7 +19485,25 @@ func AVTeaAlloc() *AVTEA {
 
 // --- Function av_tea_init ---
 
-// av_tea_init skipped due to const array param key
+// AVTeaInit wraps av_tea_init.
+/*
+  Initialize an AVTEA context.
+
+  @param ctx an AVTEA context
+  @param key a key of 16 bytes used for encryption/decryption
+  @param rounds the number of rounds in TEA (64 is the "standard")
+*/
+func AVTeaInit(ctx *AVTEA, key *[16]uint8, rounds int) {
+	var tmpctx *C.struct_AVTEA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	var tmpkey *C.uint8_t
+	if key != nil {
+		tmpkey = (*C.uint8_t)(unsafe.Pointer(&key[0]))
+	}
+	C.av_tea_init(tmpctx, tmpkey, C.int(rounds))
+}
 
 // --- Function av_tea_crypt ---
 
@@ -19973,11 +20429,47 @@ func AVXteaAlloc() *AVXTEA {
 
 // --- Function av_xtea_init ---
 
-// av_xtea_init skipped due to const array param key
+// AVXteaInit wraps av_xtea_init.
+/*
+  Initialize an AVXTEA context.
+
+  @param ctx an AVXTEA context
+  @param key a key of 16 bytes used for encryption/decryption,
+             interpreted as big endian 32 bit numbers
+*/
+func AVXteaInit(ctx *AVXTEA, key *[16]uint8) {
+	var tmpctx *C.AVXTEA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	var tmpkey *C.uint8_t
+	if key != nil {
+		tmpkey = (*C.uint8_t)(unsafe.Pointer(&key[0]))
+	}
+	C.av_xtea_init(tmpctx, tmpkey)
+}
 
 // --- Function av_xtea_le_init ---
 
-// av_xtea_le_init skipped due to const array param key
+// AVXteaLeInit wraps av_xtea_le_init.
+/*
+  Initialize an AVXTEA context.
+
+  @param ctx an AVXTEA context
+  @param key a key of 16 bytes used for encryption/decryption,
+             interpreted as little endian 32 bit numbers
+*/
+func AVXteaLeInit(ctx *AVXTEA, key *[16]uint8) {
+	var tmpctx *C.AVXTEA
+	if ctx != nil {
+		tmpctx = ctx.ptr
+	}
+	var tmpkey *C.uint8_t
+	if key != nil {
+		tmpkey = (*C.uint8_t)(unsafe.Pointer(&key[0]))
+	}
+	C.av_xtea_le_init(tmpctx, tmpkey)
+}
 
 // --- Function av_xtea_crypt ---
 
@@ -21073,7 +21565,7 @@ func SwsReceiveSliceAlignment(c *SwsContext) uint {
 
 // --- Function sws_setColorspaceDetails ---
 
-// sws_setColorspaceDetails skipped due to const array param invTable
+// sws_setColorspaceDetails skipped due to manually wrapped in swscale.go
 
 // --- Function sws_getColorspaceDetails ---
 

@@ -278,14 +278,14 @@ The root package has three source tiers. The generator skips C symbols it cannot
 | `display.go` | Fixed `int32[9]` matrix params; CGO cannot pass fixed arrays directly | `av_display_rotation_get`, `av_display_rotation_set`, `av_display_matrix_flip`; `av_exif_matrix_to_orientation`, `av_exif_orientation_to_matrix`; `AVDisplayMatrix` type |
 | `streamgroup.go` | Anonymous C struct; CGO cannot reference it by name | `AVStreamGroupTileGridOffset` accessors |
 | `opt.go` | Generic Go-slice parameter; no generator analogue | `AVOptSetSlice` - Go slice → C binary option setter |
-| `image.go` | Fixed `[4]`-plane C arrays; cgo pointer rules prevent direct passing | `av_image_*` plane/linesize wrappers; shared fixed-plane helper |
+| `image.go` | Fixed `[4]`-plane C arrays; cgo pointer rules prevent direct passing | Hybrid: 6 manual `av_image_*` plane/linesize wrappers and shared fixed-plane helpers in `image.go`, 6 unwrapped fixed-size array siblings generated in `functions.gen.go` |
 | `samples.go` | Variable-length `uint8_t **` plane arrays; same shape constraint as `image.go` | `av_samples_*` audio sample-plane wrappers |
 | `swscale.go` | Same fixed-plane constraint as `image.go` | `sws_*` software scaling and pixel-format conversion |
 | `swresample.go` | Same plane-pointer constraint as `samples.go` | `swr_*` audio resampling |
 | `avio.go` + `avio.c` | Function-pointer callbacks; requires `runtime/cgo.Handle` bridge | Custom-I/O `AVIOContext` (`AVIOAllocContext`, `AVBufferCreate`); each context gets its own handle, deleted on teardown |
 | `log.go` + `log.c` | `av_log` callback requires cgo `//export` | `av_log` bridge to Go/`slog` |
 | `log_format.go` | CGO cannot call C variadic functions | `AVLog`, `AVAsprintf`, `AVStrlcatf`, `AVBprintf`; formats on the Go side, passes through a fixed `"%s"` C shim (also neutralises format-string injection) |
-| `fields.go` | Array and pointer-array fields the generator cannot express | Quant matrices (`intra_matrix`/`inter_matrix`/`chroma_intra_matrix`), `AVFrame.extended_data`, `AVPixFmtDescriptor.comp`, `AVMasteringDisplayMetadata.display_primaries`, `AVPanScan.position` |
+| `fields.go` | Array and pointer-array fields the generator cannot express | Quant matrices (`intra_matrix`/`inter_matrix`/`chroma_intra_matrix`), `AVFrame.extended_data` |
 | `helpers.go` | Small helpers with no generator analogue | `AVRational.String`, `ToAVHWFramesContext`, `AVRescaleDelta`, `AVSizeMult` |
 | `parseutils.go` | Single out-params the generator cannot classify as in/out | `av_parse_ratio`, `av_parse_video_rate`, `av_codec_get_tag2` |
 

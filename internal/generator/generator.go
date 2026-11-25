@@ -94,24 +94,43 @@ var manuallyWrappedFields = map[string]map[string]bool{
 	"AVFrame": {
 		"extended_data": true,
 	},
-	"AVPixFmtDescriptor": {
-		"comp": true,
-	},
-	"AVMasteringDisplayMetadata": {
-		"display_primaries": true,
-	},
-	"AVPanScan": {
-		"position": true,
-	},
+}
+
+// manuallyWrappedFuncs maps C function names that have hand-written Go
+// wrappers to the skip reason emitted when the generator skips them. Keeping
+// these skipped avoids symbol collisions with the manual wrappers in
+// display.go, image.go, swscale.go, and uuid.go. Sorted alphabetically by C
+// function name.
+var manuallyWrappedFuncs = map[string]string{
+	"av_display_matrix_flip":   "manually wrapped in display.go",
+	"av_display_rotation_get":  "manually wrapped in display.go",
+	"av_display_rotation_set":  "manually wrapped in display.go",
+	"av_image_alloc":           "manually wrapped in image.go",
+	"av_image_copy":            "manually wrapped in image.go",
+	"av_image_copy2":           "manually wrapped in image.go",
+	"av_image_copy_to_buffer":  "manually wrapped in image.go",
+	"av_image_fill_arrays":     "manually wrapped in image.go",
+	"av_image_fill_pointers":   "manually wrapped in image.go",
+	"av_uuid_copy":             "array typedef (manually wrapped in uuid.go)",
+	"av_uuid_equal":            "array typedef (manually wrapped in uuid.go)",
+	"av_uuid_nil":              "array typedef (manually wrapped in uuid.go)",
+	"av_uuid_parse":            "array typedef (manually wrapped in uuid.go)",
+	"av_uuid_parse_range":      "array typedef (manually wrapped in uuid.go)",
+	"av_uuid_unparse":          "array typedef (manually wrapped in uuid.go)",
+	"av_uuid_urn_parse":        "array typedef (manually wrapped in uuid.go)",
+	"sws_setColorspaceDetails": "manually wrapped in swscale.go",
 }
 
 // outputParams enumerates the (function, parameter) pairs whose
-// primitive-pointer parameter is an output pointer. Membership marks the
-// parameter as an output pointer: variable-width C primitives use a temporary
-// and copy-back, and other primitives use (*C.<type>)(unsafe.Pointer(p)).
+// primitive-pointer or fixed-size primitive-array parameter is output-only.
+// For primitive pointers, membership marks the parameter as an output pointer:
+// variable-width C primitives use a temporary and copy-back, and other
+// primitives use (*C.<type>)(unsafe.Pointer(p)). For bounce-buffered
+// fixed-size primitive arrays, membership skips the pre-call copy-in and width
+// check while still passing the temporary buffer and copying results back.
 // Mirrors the form of skippedFields. Seeded against the pinned FFmpeg headers.
 //
-// 68 entries across 61 functions, sorted by function name then parameter name
+// 69 entries across 62 functions, sorted by function name then parameter name
 // for reviewability.
 var outputParams = map[string]map[string]bool{
 	"av_ambient_viewing_environment_alloc": {
@@ -188,6 +207,9 @@ var outputParams = map[string]map[string]bool{
 		"wall": true,
 	},
 	"av_iamf_param_definition_alloc": {
+		"size": true,
+	},
+	"av_image_fill_plane_sizes": {
 		"size": true,
 	},
 	"av_lzo1x_decode": {

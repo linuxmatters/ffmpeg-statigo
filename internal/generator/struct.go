@@ -200,11 +200,13 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		getBody    []jen.Code
 		getRetType []jen.Code
 		getParams  []jen.Code
+		getDocNote string
 		setBody    []jen.Code
 		setParams  []jen.Code
 		tgt        *jen.Statement
 
-		refField bool
+		refField      bool
+		skipValueInit bool
 	)
 
 	if field.BitWidth != -1 {
@@ -320,7 +322,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	case fieldShapeConstArray:
 		refField = true
 		var aSkip bool
-		getRetType, getBody, aSkip = g.marshalConstArrayField(o, st, field, shape.array)
+		getParams, getRetType, getBody, getDocNote, skipValueInit, aSkip = g.marshalConstArrayField(o, st, field, cName, shape.array)
 		if aSkip {
 			return
 		}
@@ -340,6 +342,8 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		g.skips.Record(goName+"."+field.Name, "ref field of value struct")
 
 		return
+	case skipValueInit:
+		// Guarded accessor reads s.ptr.<cName> directly after its nil-receiver check.
 	case refField:
 		getBody = slices.Insert(
 			getBody, 0,
@@ -358,6 +362,10 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	}
 
 	o.Commentf("%v gets the %v field.", fName, field.Name)
+
+	if getDocNote != "" {
+		o.Comment(getDocNote)
+	}
 
 	if field.Comment != "" {
 		o.Comment(field.Comment)
@@ -410,7 +418,7 @@ func normalizedFieldCType(st *Struct, field *Field, typeName, goType string) str
 	return cType
 }
 
-func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, v *ConstArray) (getRetType, getBody []jen.Code, skip bool) {
+func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, cName string, v *ConstArray) (getParams, getRetType, getBody []jen.Code, getDocNote string, skipValueInit, skip bool) {
 	shape := g.classifyConstArrayFieldShape(v)
 
 	switch shape.kind {
@@ -452,6 +460,29 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 			)),
 		)
 
+	case constArrayFieldShapeByPointerStruct:
+		getParams = []jen.Code{jen.Id("i").Id("int")}
+		getRetType = []jen.Code{
+			jen.Op("*").Id(shape.st.Name),
+		}
+
+		getBody = append(
+			getBody,
+			jen.If(
+				jen.Id("s").Op("==").Nil().
+					Op("||").Id("s").Dot("ptr").Op("==").Nil().
+					Op("||").Id("i").Op("<").Lit(0).
+					Op("||").Id("i").Op(">=").Lit(int(v.Size)),
+			).Block(
+				jen.Return(jen.Nil()),
+			),
+			jen.Return(jen.Op("&").Id(shape.st.Name).Values(jen.Dict{
+				jen.Id("ptr"): jen.Op("&").Id("s").Dot("ptr").Dot(cName).Index(jen.Id("i")),
+			})),
+		)
+
+		return getParams, getRetType, getBody, "The returned pointer aliases struct-owned memory; do not free it.", true, false
+
 	case constArrayFieldShapeUint8PointerArray:
 		getRetType = []jen.Code{
 			jen.Op("*").Id("Array").Types(jen.Qual("unsafe", "Pointer")),
@@ -476,7 +507,11 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 			)),
 		)
 
-	case constArrayFieldShapeStructPointerSkip, constArrayFieldShapeValueIdentPointerSkip,
+	case constArrayFieldShapeMultiDimPrimitive, constArrayFieldShapeMultiDimByValueStruct:
+		getParams, getRetType, getBody = marshalMultiDimConstArrayField(cName, shape)
+		return getParams, getRetType, getBody, "The returned Array aliases struct-owned memory; do not call Free on it.", true, false
+
+	case constArrayFieldShapeValueIdentPointerSkip,
 		constArrayFieldShapeIdentPointerSkip, constArrayFieldShapeMultiDimSkip,
 		constArrayFieldShapeUnknownTypeSkip, constArrayFieldShapeUnhandledPointerInnerSkip,
 		constArrayFieldShapeUnhandledInnerSkip:
@@ -484,10 +519,63 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 		o.Line()
 		g.skips.Record(st.Name+"."+field.Name, shape.reason)
 
-		return getRetType, getBody, true
+		return getParams, getRetType, getBody, "", false, true
 	}
 
-	return getRetType, getBody, false
+	return getParams, getRetType, getBody, "", false, false
+}
+
+func marshalMultiDimConstArrayField(cName string, shape constArrayFieldShape) (getParams, getRetType, getBody []jen.Code) {
+	var (
+		elemType jen.Code
+		ctorName string
+	)
+	switch shape.kind {
+	case constArrayFieldShapeMultiDimPrimitive:
+		elemType = jen.Id(shape.goType)
+		ctorName = fmt.Sprintf("To%vArray", strcase.ToCamel(shape.goType))
+	case constArrayFieldShapeMultiDimByValueStruct:
+		elemType = jen.Op("*").Id(shape.st.Name)
+		ctorName = fmt.Sprintf("To%vArray", shape.st.Name)
+	}
+
+	outerDims := shape.dims[:len(shape.dims)-1]
+	idxNames := []string{"i", "j"}[:len(outerDims)]
+
+	for k, name := range idxNames {
+		if k == len(idxNames)-1 {
+			getParams = append(getParams, jen.Id(name).Id("int"))
+		} else {
+			getParams = append(getParams, jen.Id(name))
+		}
+	}
+
+	getRetType = []jen.Code{
+		jen.Op("*").Id("Array").Types(elemType),
+	}
+
+	cond := jen.Id("s").Op("==").Nil().Op("||").Id("s").Dot("ptr").Op("==").Nil()
+	for k, dim := range outerDims {
+		name := idxNames[k]
+		cond = cond.Op("||").Id(name).Op("<").Lit(0).Op("||").Id(name).Op(">=").Lit(int(dim))
+	}
+
+	elemExpr := jen.Op("&").Id("s").Dot("ptr").Dot(cName)
+	for _, name := range idxNames {
+		elemExpr = elemExpr.Index(jen.Id(name))
+	}
+	elemExpr = elemExpr.Index(jen.Lit(0))
+
+	getBody = []jen.Code{
+		jen.If(cond).Block(
+			jen.Return(jen.Nil()),
+		),
+		jen.Return(jen.Id(ctorName).Params(
+			jen.Qual("unsafe", "Pointer").Params(elemExpr),
+		)),
+	}
+
+	return getParams, getRetType, getBody
 }
 
 func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v *PointerType, tgt *jen.Statement) (getRetType, setParams, getBody, setBody []jen.Code, skip bool) {

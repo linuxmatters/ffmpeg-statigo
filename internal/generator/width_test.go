@@ -40,6 +40,99 @@ func TestVariableWidthChecks(t *testing.T) {
 	}
 }
 
+func TestConstArrayVariableWidthChecks(t *testing.T) {
+	g := skipGen()
+	for _, tt := range []struct{ cType, goType string }{
+		{"ptrdiff_t", "int64"}, {"size_t", "uint64"}, {"long", "int64"}, {"ulong", "uint64"},
+	} {
+		t.Run(tt.cType, func(t *testing.T) {
+			_, _, body, _, skip := g.marshalArg(
+				newFile(),
+				&Function{Name: "consume"},
+				&Param{Name: "vals", Type: &ConstArray{Inner: ident(tt.cType), Size: 4}},
+			)
+			if skip {
+				t.Fatalf("const array arg %s[4] unexpectedly skipped", tt.cType)
+			}
+			code := render(jen.Block(body...))
+			wantCheck := tt.goType + "(C." + tt.cType + "(vals[idx])) != vals[idx]"
+			wantPanic := `"consume.vals overflows C.` + tt.cType + `"`
+			wantWrite := "tmpvals[idx] = C." + tt.cType + "(vals[idx])"
+			checkIdx := strings.Index(code, wantCheck)
+			writeIdx := strings.Index(code, wantWrite)
+			if checkIdx < 0 || !strings.Contains(code, wantPanic) {
+				t.Fatalf("const array %s[4] missing overflow check:\n%s", tt.cType, code)
+			}
+			if writeIdx < 0 || writeIdx < checkIdx {
+				t.Fatalf("const array %s[4] must check before write:\n%s", tt.cType, code)
+			}
+		})
+	}
+
+	t.Run("uint32_t_fixed", func(t *testing.T) {
+		_, _, body, _, skip := g.marshalArg(
+			newFile(),
+			&Function{Name: "consume"},
+			&Param{Name: "color", Type: &ConstArray{Inner: ident("uint32_t"), Size: 4, ElemConst: true}},
+		)
+		if skip {
+			t.Fatal("const array arg uint32_t[4] unexpectedly skipped")
+		}
+		code := render(jen.Block(body...))
+		if strings.Contains(code, "overflows") || strings.Contains(code, "panic(") {
+			t.Fatalf("fixed-width uint32_t[4] unexpectedly emitted an overflow check:\n%s", code)
+		}
+	})
+}
+
+func TestOutputOnlyConstArrayWidthChecks(t *testing.T) {
+	g := skipGen()
+	fn := &Function{Name: "av_image_fill_plane_sizes"}
+
+	t.Run("size_output_only", func(t *testing.T) {
+		_, _, sizeBody, sizePost, skip := g.marshalArg(
+			newFile(),
+			fn,
+			&Param{Name: "size", Type: &ConstArray{Inner: ident("size_t"), Size: 4, ElemConst: false}},
+		)
+		if skip {
+			t.Fatal("av_image_fill_plane_sizes.size unexpectedly skipped")
+		}
+		sizeCode := render(jen.Block(sizeBody...))
+		for _, unwanted := range []string{"for idx", "overflows", "panic(", "C.size_t(size[idx])"} {
+			if strings.Contains(sizeCode, unwanted) {
+				t.Fatalf("output-only size_t[4] unexpectedly emitted %q:\n%s", unwanted, sizeCode)
+			}
+		}
+		if !strings.Contains(sizeCode, "ptrsize = &tmpsize[0]") {
+			t.Fatalf("output-only size_t[4] missing pointer assignment:\n%s", sizeCode)
+		}
+		if postCode := render(jen.Block(sizePost...)); !strings.Contains(postCode, "size[idx] = uint64(tmpsize[idx])") {
+			t.Fatalf("output-only size_t[4] missing post-call copy-back:\n%s", postCode)
+		}
+	})
+
+	t.Run("linesizes_const_checked", func(t *testing.T) {
+		_, _, lineBody, linePost, skip := g.marshalArg(
+			newFile(),
+			fn,
+			&Param{Name: "linesizes", Type: &ConstArray{Inner: ident("ptrdiff_t"), Size: 4, ElemConst: true}},
+		)
+		if skip {
+			t.Fatal("av_image_fill_plane_sizes.linesizes unexpectedly skipped")
+		}
+		lineCode := render(jen.Block(lineBody...))
+		wantCheck := "int64(C.ptrdiff_t(linesizes[idx])) != linesizes[idx]"
+		wantPanic := `"av_image_fill_plane_sizes.linesizes overflows C.ptrdiff_t"`
+		if !strings.Contains(lineCode, wantCheck) || !strings.Contains(lineCode, wantPanic) {
+			t.Fatalf("const ptrdiff_t[4] missing width check:\n%s", lineCode)
+		}
+		if len(linePost) != 0 {
+			t.Fatalf("const ptrdiff_t[4] unexpectedly emitted post-call copy-back:\n%s", render(jen.Block(linePost...)))
+		}
+	})
+}
+
 // Compile the emitted conversions against both C integer widths without cgo.
 // This exercises the generated statements, not a second copy of their logic.
 func TestVariableWidthConversions(t *testing.T) {

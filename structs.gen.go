@@ -6643,7 +6643,19 @@ func (s *AVPanScan) SetHeight(value int) {
 	s.ptr.height = (C.int)(value)
 }
 
-// position skipped due to manually wrapped in fields.go
+// Position gets the position field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+/*
+  position of the top left corner in 1/16 pel for up to 3 fields/frames
+  - encoding: Set by user.
+  - decoding: Set by libavcodec.
+*/
+func (s *AVPanScan) Position(i int) *Array[int16] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToInt16Array(unsafe.Pointer(&s.ptr.position[i][0]))
+}
 
 // --- Struct AVCPBProperties ---
 
@@ -16146,7 +16158,14 @@ func (s *AVBlowfish) P() *Array[uint32] {
 	return ToUint32Array(unsafe.Pointer(value))
 }
 
-// s skipped due to multi dim const array
+// S gets the s field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+func (s *AVBlowfish) S(i int) *Array[uint32] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return ToUint32Array(unsafe.Pointer(&s.ptr.s[i][0]))
+}
 
 // --- Struct ff_pad_helper_AVBPrint ---
 
@@ -17266,7 +17285,14 @@ func ToAVDESArray(ptr unsafe.Pointer) *Array[*AVDES] {
 	}
 }
 
-// round_keys skipped due to multi dim const array
+// RoundKeys gets the round_keys field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+func (s *AVDES) RoundKeys(i int) *Array[uint64] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToUint64Array(unsafe.Pointer(&s.ptr.round_keys[i][0]))
+}
 
 // TripleDes gets the triple_des field.
 func (s *AVDES) TripleDes() int {
@@ -17400,7 +17426,14 @@ func (s *AVDetectionBBox) SetClassifyCount(value uint32) {
 	s.ptr.classify_count = (C.uint32_t)(value)
 }
 
-// classify_labels skipped due to multi dim const array
+// ClassifyLabels gets the classify_labels field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+func (s *AVDetectionBBox) ClassifyLabels(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.classify_labels[i][0]))
+}
 
 // ClassifyConfidences gets the classify_confidences field.
 func (s *AVDetectionBBox) ClassifyConfidences() *Array[*AVRational] {
@@ -18100,7 +18133,16 @@ func (s *AVDOVIReshapingCurve) PolyOrder() *Array[uint8] {
 	return ToUint8Array(unsafe.Pointer(value))
 }
 
-// poly_coef skipped due to multi dim const array
+// PolyCoef gets the poly_coef field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	x^0, x^1, x^2
+func (s *AVDOVIReshapingCurve) PolyCoef(i int) *Array[int64] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 8 {
+		return nil
+	}
+	return ToInt64Array(unsafe.Pointer(&s.ptr.poly_coef[i][0]))
+}
 
 // MmrOrder gets the mmr_order field.
 //
@@ -18116,7 +18158,16 @@ func (s *AVDOVIReshapingCurve) MmrConstant() *Array[int64] {
 	return ToInt64Array(unsafe.Pointer(value))
 }
 
-// mmr_coef skipped due to multi dim const array
+// MmrCoef gets the mmr_coef field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	order - 1
+func (s *AVDOVIReshapingCurve) MmrCoef(i, j int) *Array[int64] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 8 || j < 0 || j >= 3 {
+		return nil
+	}
+	return ToInt64Array(unsafe.Pointer(&s.ptr.mmr_coef[i][j][0]))
+}
 
 // --- Struct AVDOVINLQParams ---
 
@@ -18286,7 +18337,16 @@ func (s *AVDOVIDataMapping) SetMappingChromaFormatIdc(value uint8) {
 	s.ptr.mapping_chroma_format_idc = (C.uint8_t)(value)
 }
 
-// curves skipped due to const array of struct pointers
+// Curves gets the curves field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	per component
+func (s *AVDOVIDataMapping) Curves(i int) *AVDOVIReshapingCurve {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVDOVIReshapingCurve{ptr: &s.ptr.curves[i]}
+}
 
 // NlqMethodIdc gets the nlq_method_idc field.
 //
@@ -18325,7 +18385,16 @@ func (s *AVDOVIDataMapping) SetNumYPartitions(value uint32) {
 	s.ptr.num_y_partitions = (C.uint32_t)(value)
 }
 
-// nlq skipped due to const array of struct pointers
+// Nlq gets the nlq field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	per component
+func (s *AVDOVIDataMapping) Nlq(i int) *AVDOVINLQParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVDOVINLQParams{ptr: &s.ptr.nlq[i]}
+}
 
 // NlqPivots gets the nlq_pivots field.
 func (s *AVDOVIDataMapping) NlqPivots() *Array[uint16] {
@@ -20753,7 +20822,16 @@ func (s *AVFilmGrainAOMParams) SetNumYPoints(value int) {
 	s.ptr.num_y_points = (C.int)(value)
 }
 
-// y_points skipped due to multi dim const array
+// YPoints gets the y_points field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	value, scaling
+func (s *AVFilmGrainAOMParams) YPoints(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 14 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.y_points[i][0]))
+}
 
 // ChromaScalingFromLuma gets the chroma_scaling_from_luma field.
 /*
@@ -20782,7 +20860,16 @@ func (s *AVFilmGrainAOMParams) NumUvPoints() *Array[int] {
 	return ToIntArray(unsafe.Pointer(value))
 }
 
-// uv_points skipped due to multi dim const array
+// UvPoints gets the uv_points field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) UvPoints(i, j int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 || j < 0 || j >= 10 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.uv_points[i][j][0]))
+}
 
 // ScalingShift gets the scaling_shift field.
 /*
@@ -20828,7 +20915,16 @@ func (s *AVFilmGrainAOMParams) ArCoeffsY() *Array[int8] {
 	return ToInt8Array(unsafe.Pointer(value))
 }
 
-// ar_coeffs_uv skipped due to multi dim const array
+// ArCoeffsUv gets the ar_coeffs_uv field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) ArCoeffsUv(i int) *Array[int8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
+		return nil
+	}
+	return ToInt8Array(unsafe.Pointer(&s.ptr.ar_coeffs_uv[i][0]))
+}
 
 // ArCoeffShift gets the ar_coeff_shift field.
 /*
@@ -21051,11 +21147,38 @@ func (s *AVFilmGrainH274Params) NumModelValues() *Array[uint8] {
 	return ToUint8Array(unsafe.Pointer(value))
 }
 
-// intensity_interval_lower_bound skipped due to multi dim const array
+// IntensityIntervalLowerBound gets the intensity_interval_lower_bound field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) IntensityIntervalLowerBound(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.intensity_interval_lower_bound[i][0]))
+}
 
-// intensity_interval_upper_bound skipped due to multi dim const array
+// IntensityIntervalUpperBound gets the intensity_interval_upper_bound field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) IntensityIntervalUpperBound(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.intensity_interval_upper_bound[i][0]))
+}
 
-// comp_model_value skipped due to multi dim const array
+// CompModelValue gets the comp_model_value field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) CompModelValue(i, j int) *Array[int16] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 || j < 0 || j >= 256 {
+		return nil
+	}
+	return ToInt16Array(unsafe.Pointer(&s.ptr.comp_model_value[i][j][0]))
+}
 
 // --- Struct AVFilmGrainParams ---
 
@@ -22998,7 +23121,18 @@ func (s *AVHDRPlusColorTransformParams) SetNumDistributionMaxrgbPercentiles(valu
 	s.ptr.num_distribution_maxrgb_percentiles = (C.uint8_t)(value)
 }
 
-// distribution_maxrgb skipped due to const array of struct pointers
+// DistributionMaxrgb gets the distribution_maxrgb field.
+// The returned pointer aliases struct-owned memory; do not free it.
+/*
+  The linearized maxRGB values at given percentiles in the
+  processing window in the scene.
+*/
+func (s *AVHDRPlusColorTransformParams) DistributionMaxrgb(i int) *AVHDRPlusPercentile {
+	if s == nil || s.ptr == nil || i < 0 || i >= 15 {
+		return nil
+	}
+	return &AVHDRPlusPercentile{ptr: &s.ptr.distribution_maxrgb[i]}
+}
 
 // FractionBrightPixels gets the fraction_bright_pixels field.
 /*
@@ -23255,7 +23389,16 @@ func (s *AVDynamicHDRPlus) SetNumWindows(value uint8) {
 	s.ptr.num_windows = (C.uint8_t)(value)
 }
 
-// params skipped due to const array of struct pointers
+// Params gets the params field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	The color transform parameters for every processing window.
+func (s *AVDynamicHDRPlus) Params(i int) *AVHDRPlusColorTransformParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVHDRPlusColorTransformParams{ptr: &s.ptr.params[i]}
+}
 
 // TargetedSystemDisplayMaximumLuminance gets the targeted_system_display_maximum_luminance field.
 /*
@@ -23337,7 +23480,19 @@ func (s *AVDynamicHDRPlus) SetNumColsTargetedSystemDisplayActualPeakLuminance(va
 	s.ptr.num_cols_targeted_system_display_actual_peak_luminance = (C.uint8_t)(value)
 }
 
-// targeted_system_display_actual_peak_luminance skipped due to multi dim const array
+// TargetedSystemDisplayActualPeakLuminance gets the targeted_system_display_actual_peak_luminance field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+/*
+  The normalized actual peak luminance of the targeted system display. The
+  values should be in the range of 0 to 1, inclusive and in multiples of
+  1/15.
+*/
+func (s *AVDynamicHDRPlus) TargetedSystemDisplayActualPeakLuminance(i int) *Array[*AVRational] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 25 {
+		return nil
+	}
+	return ToAVRationalArray(unsafe.Pointer(&s.ptr.targeted_system_display_actual_peak_luminance[i][0]))
+}
 
 // MasteringDisplayActualPeakLuminanceFlag gets the mastering_display_actual_peak_luminance_flag field.
 /*
@@ -23396,7 +23551,19 @@ func (s *AVDynamicHDRPlus) SetNumColsMasteringDisplayActualPeakLuminance(value u
 	s.ptr.num_cols_mastering_display_actual_peak_luminance = (C.uint8_t)(value)
 }
 
-// mastering_display_actual_peak_luminance skipped due to multi dim const array
+// MasteringDisplayActualPeakLuminance gets the mastering_display_actual_peak_luminance field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+/*
+  The normalized actual peak luminance of the mastering display used for
+  mastering the image essence. The values should be in the range of 0 to 1,
+  inclusive and in multiples of 1/15.
+*/
+func (s *AVDynamicHDRPlus) MasteringDisplayActualPeakLuminance(i int) *Array[*AVRational] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 25 {
+		return nil
+	}
+	return ToAVRationalArray(unsafe.Pointer(&s.ptr.mastering_display_actual_peak_luminance[i][0]))
+}
 
 // --- Struct AVHDRVivid3SplineParams ---
 
@@ -23884,7 +24051,14 @@ func (s *AVHDRVividColorToneMappingParams) SetThreeSplineNum(value int) {
 	s.ptr.three_Spline_num = (C.int)(value)
 }
 
-// three_spline skipped due to const array of struct pointers
+// ThreeSpline gets the three_spline field.
+// The returned pointer aliases struct-owned memory; do not free it.
+func (s *AVHDRVividColorToneMappingParams) ThreeSpline(i int) *AVHDRVivid3SplineParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
+		return nil
+	}
+	return &AVHDRVivid3SplineParams{ptr: &s.ptr.three_spline[i]}
+}
 
 // --- Struct AVHDRVividColorTransformParams ---
 
@@ -24051,7 +24225,16 @@ func (s *AVHDRVividColorTransformParams) SetToneMappingParamNum(value int) {
 	s.ptr.tone_mapping_param_num = (C.int)(value)
 }
 
-// tm_params skipped due to const array of struct pointers
+// TmParams gets the tm_params field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	The color tone mapping parameters.
+func (s *AVHDRVividColorTransformParams) TmParams(i int) *AVHDRVividColorToneMappingParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
+		return nil
+	}
+	return &AVHDRVividColorToneMappingParams{ptr: &s.ptr.tm_params[i]}
+}
 
 // ColorSaturationMappingFlag gets the color_saturation_mapping_flag field.
 /*
@@ -24186,7 +24369,16 @@ func (s *AVDynamicHDRVivid) SetNumWindows(value uint8) {
 	s.ptr.num_windows = (C.uint8_t)(value)
 }
 
-// params skipped due to const array of struct pointers
+// Params gets the params field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	The color transform parameters for every processing window.
+func (s *AVDynamicHDRVivid) Params(i int) *AVHDRVividColorTransformParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVHDRVividColorTransformParams{ptr: &s.ptr.params[i]}
+}
 
 // --- Struct AVHMAC ---
 
@@ -25180,7 +25372,16 @@ func (s *AVDRMLayerDescriptor) SetNbPlanes(value int) {
 	s.ptr.nb_planes = (C.int)(value)
 }
 
-// planes skipped due to const array of struct pointers
+// Planes gets the planes field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	Array of planes in this layer.
+func (s *AVDRMLayerDescriptor) Planes(i int) *AVDRMPlaneDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVDRMPlaneDescriptor{ptr: &s.ptr.planes[i]}
+}
 
 // --- Struct AVDRMFrameDescriptor ---
 
@@ -25256,7 +25457,16 @@ func (s *AVDRMFrameDescriptor) SetNbObjects(value int) {
 	s.ptr.nb_objects = (C.int)(value)
 }
 
-// objects skipped due to const array of struct pointers
+// Objects gets the objects field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	Array of objects making up the frame.
+func (s *AVDRMFrameDescriptor) Objects(i int) *AVDRMObjectDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVDRMObjectDescriptor{ptr: &s.ptr.objects[i]}
+}
 
 // NbLayers gets the nb_layers field.
 //
@@ -25273,7 +25483,16 @@ func (s *AVDRMFrameDescriptor) SetNbLayers(value int) {
 	s.ptr.nb_layers = (C.int)(value)
 }
 
-// layers skipped due to const array of struct pointers
+// Layers gets the layers field.
+// The returned pointer aliases struct-owned memory; do not free it.
+//
+//	Array of layers in the frame.
+func (s *AVDRMFrameDescriptor) Layers(i int) *AVDRMLayerDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVDRMLayerDescriptor{ptr: &s.ptr.layers[i]}
+}
 
 // --- Struct AVDRMDeviceContext ---
 
@@ -25726,7 +25945,22 @@ func (s *AVIAMFReconGain) SetSubblockDuration(value uint) {
 	s.ptr.subblock_duration = (C.uint)(value)
 }
 
-// recon_gain skipped due to multi dim const array
+// ReconGain gets the recon_gain field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+/*
+  Array of gain values to be applied to each channel for each layer
+  defined in the Audio Element referencing the parent Parameter Definition.
+  Values for layers where the AV_IAMF_LAYER_FLAG_RECON_GAIN flag is not set
+  are undefined.
+
+  Channel order is: FL, C, FR, SL, SR, TFL, TFR, BL, BR, TBL, TBR, LFE
+*/
+func (s *AVIAMFReconGain) ReconGain(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 6 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.recon_gain[i][0]))
+}
 
 // --- Struct AVIAMFParamDefinition ---
 
@@ -27418,7 +27652,16 @@ func ToAVMasteringDisplayMetadataArray(ptr unsafe.Pointer) *Array[*AVMasteringDi
 	}
 }
 
-// display_primaries skipped due to manually wrapped in fields.go
+// DisplayPrimaries gets the display_primaries field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+//
+//	CIE 1931 xy chromaticity coords of color primaries (r, g, b order).
+func (s *AVMasteringDisplayMetadata) DisplayPrimaries(i int) *Array[*AVRational] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToAVRationalArray(unsafe.Pointer(&s.ptr.display_primaries[i][0]))
+}
 
 // WhitePoint gets the white_point field.
 //
@@ -28728,7 +28971,23 @@ func (s *AVPixFmtDescriptor) SetFlags(value uint64) {
 	s.ptr.flags = (C.uint64_t)(value)
 }
 
-// comp skipped due to manually wrapped in fields.go
+// Comp gets the comp field.
+// The returned pointer aliases struct-owned memory; do not free it.
+/*
+  Parameters that describe how pixels are packed.
+  If the format has 1 or 2 components, then luma is 0.
+  If the format has 3 or 4 components:
+    if the RGB flag is set then 0 is red, 1 is green and 2 is blue;
+    otherwise 0 is luma, 1 is chroma-U and 2 is chroma-V.
+
+  If present, the Alpha channel is always the last component.
+*/
+func (s *AVPixFmtDescriptor) Comp(i int) *AVComponentDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVComponentDescriptor{ptr: &s.ptr.comp[i]}
+}
 
 // Alias gets the alias field.
 //
@@ -30415,7 +30674,18 @@ func (s *AVVideoEncParams) SetQp(value int32) {
 	s.ptr.qp = (C.int32_t)(value)
 }
 
-// delta_qp skipped due to multi dim const array
+// DeltaQp gets the delta_qp field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
+/*
+  Quantisation parameter offset from the base (per-frame) qp for a given
+  plane (first index) and AC/DC coefficients (second index).
+*/
+func (s *AVVideoEncParams) DeltaQp(i int) *Array[int32] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return ToInt32Array(unsafe.Pointer(&s.ptr.delta_qp[i][0]))
+}
 
 // --- Struct AVVideoBlockParams ---
 

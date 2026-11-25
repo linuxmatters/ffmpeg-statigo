@@ -162,7 +162,7 @@ const (
 	argShapeIdentUnknown
 	argShapePointer
 	argShapeArraySkip
-	argShapeConstArraySkip
+	argShapeConstArray
 	argShapeUnhandledSkip
 )
 
@@ -175,6 +175,7 @@ type argShape struct {
 	enum     *Enum
 	st       *Struct
 	ptr      *PointerType
+	array    *ConstArray
 	reason   string
 }
 
@@ -213,7 +214,7 @@ func (g *Generator) classifyArgShape(arg *Param) argShape {
 	case *Array:
 		return argShape{kind: argShapeArraySkip, name: pName, reason: pName}
 	case *ConstArray:
-		return argShape{kind: argShapeConstArraySkip, name: pName, reason: fmt.Sprintf("const array param %v", pName)}
+		return argShape{kind: argShapeConstArray, name: pName, array: v}
 	default:
 		return argShape{
 			kind:   argShapeUnhandledSkip,
@@ -310,6 +311,65 @@ func (g *Generator) classifyPointerArgShape(fn *Function, arg *Param, ptr *Point
 			name:   pName,
 			reason: fmt.Sprintf("unhandled pointer arg inner type %v (%v)", reflect.TypeOf(ptr.Inner), pName),
 		}
+	}
+}
+
+type constArrayArgShapeKind int
+
+const (
+	constArrayArgShapeFixedPrimitive constArrayArgShapeKind = iota
+	constArrayArgShapeBouncePrimitive
+	constArrayArgShapeUint8Pointer
+	constArrayArgShapeSkip
+)
+
+type constArrayArgShape struct {
+	kind      constArrayArgShapeKind
+	size      int64
+	elemConst bool
+	goType    string
+	cType     string
+	reason    string
+}
+
+func (g *Generator) classifyConstArrayArgShape(array *ConstArray, pName string) constArrayArgShape {
+	skip := constArrayArgShape{
+		kind:   constArrayArgShapeSkip,
+		reason: fmt.Sprintf("const array param %v", pName),
+	}
+	if array == nil || array.Size <= 0 {
+		return skip
+	}
+
+	switch inner := array.Inner.(type) {
+	case *IdentType:
+		shape := g.classifyIdent(inner.Name)
+		if shape.kind != identShapePrimitive {
+			return skip
+		}
+		cType := getCType(inner.Name, shape.goType)
+		kind := constArrayArgShapeFixedPrimitive
+		if needsArrayBounceBuffer(cType) {
+			kind = constArrayArgShapeBouncePrimitive
+		}
+		return constArrayArgShape{
+			kind:      kind,
+			size:      array.Size,
+			elemConst: array.ElemConst,
+			goType:    shape.goType,
+			cType:     cType,
+		}
+	case *PointerType:
+		if innerIdent, ok := inner.Inner.(*IdentType); ok && innerIdent != nil && innerIdent.Name == "uint8_t" {
+			return constArrayArgShape{
+				kind:      constArrayArgShapeUint8Pointer,
+				size:      array.Size,
+				elemConst: array.ElemConst,
+			}
+		}
+		return skip
+	default:
+		return skip
 	}
 }
 
@@ -460,11 +520,13 @@ const (
 	constArrayFieldShapePrimitive constArrayFieldShapeKind = iota
 	constArrayFieldShapeEnum
 	constArrayFieldShapeByValueStruct
-	constArrayFieldShapeStructPointerSkip
+	constArrayFieldShapeByPointerStruct
 	constArrayFieldShapeUint8PointerArray
 	constArrayFieldShapeValueIdentPointerSkip
 	constArrayFieldShapeStructPointerArray
 	constArrayFieldShapeIdentPointerSkip
+	constArrayFieldShapeMultiDimPrimitive
+	constArrayFieldShapeMultiDimByValueStruct
 	constArrayFieldShapeMultiDimSkip
 	constArrayFieldShapeUnknownTypeSkip
 	constArrayFieldShapeUnhandledPointerInnerSkip
@@ -477,6 +539,7 @@ type constArrayFieldShape struct {
 	goType   string
 	enum     *Enum
 	st       *Struct
+	dims     []int64
 	reason   string
 }
 
@@ -492,7 +555,7 @@ func (g *Generator) classifyConstArrayFieldShape(array *ConstArray) constArrayFi
 		case identShapeByValueStruct:
 			return constArrayFieldShape{kind: constArrayFieldShapeByValueStruct, typeName: inner.Name, st: shape.st}
 		case identShapeByPointerStruct:
-			return constArrayFieldShape{kind: constArrayFieldShapeStructPointerSkip, typeName: inner.Name, reason: "const array of struct pointers"}
+			return constArrayFieldShape{kind: constArrayFieldShapeByPointerStruct, typeName: inner.Name, st: shape.st}
 		default:
 			return constArrayFieldShape{
 				kind:     constArrayFieldShapeUnknownTypeSkip,
@@ -522,11 +585,55 @@ func (g *Generator) classifyConstArrayFieldShape(array *ConstArray) constArrayFi
 			}
 		}
 	case *ConstArray:
-		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+		return g.classifyMultiDimConstArrayFieldShape(array.Size, inner)
 	default:
 		return constArrayFieldShape{
 			kind:   constArrayFieldShapeUnhandledInnerSkip,
 			reason: fmt.Sprintf("unhandled const array inner type %v", reflect.TypeOf(array.Inner)),
 		}
+	}
+}
+
+func (g *Generator) classifyMultiDimConstArrayFieldShape(outerSize int64, inner *ConstArray) constArrayFieldShape {
+	dims := []int64{outerSize}
+	cur := Type(inner)
+	for {
+		nested, ok := cur.(*ConstArray)
+		if !ok {
+			break
+		}
+		dims = append(dims, nested.Size)
+		cur = nested.Inner
+	}
+	if len(dims) < 2 || len(dims) > 3 {
+		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+	}
+	for _, d := range dims {
+		if d <= 0 {
+			return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+		}
+	}
+	leaf, ok := cur.(*IdentType)
+	if !ok {
+		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+	}
+	shape := g.classifyIdent(leaf.Name)
+	switch shape.kind {
+	case identShapePrimitive:
+		return constArrayFieldShape{
+			kind:     constArrayFieldShapeMultiDimPrimitive,
+			typeName: leaf.Name,
+			goType:   shape.goType,
+			dims:     dims,
+		}
+	case identShapeByValueStruct:
+		return constArrayFieldShape{
+			kind:     constArrayFieldShapeMultiDimByValueStruct,
+			typeName: leaf.Name,
+			st:       shape.st,
+			dims:     dims,
+		}
+	default:
+		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
 	}
 }
