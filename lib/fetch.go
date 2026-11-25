@@ -54,7 +54,7 @@ func ensureLibrary() error {
 
 	// Library already exists
 	if _, err := os.Stat(libPath); err == nil { //nolint:gosec // G703: platform and arch validated against allowlist above
-		if err := stripBitcodeSections(libPath, platform, arch); err != nil {
+		if err := stripCachedBitcodeSections(libPath, platform, arch); err != nil {
 			return fmt.Errorf("stripping bitcode sections: %w", err)
 		}
 		return nil
@@ -129,16 +129,9 @@ func ensureLibrary() error {
 // stripBitcodeSections removes Rust .llvmbc and .llvmcmd LTO sections from a
 // native Linux ar archive so Go's cgo linker security check accepts libffmpeg.a.
 func stripBitcodeSections(archivePath, platform, arch string) error {
-	if runtime.GOOS != "linux" || platform != "linux" || arch != runtime.GOARCH {
+	objcopyBin, arBin, ok := findBitcodeStripTools(platform, arch)
+	if !ok {
 		return nil
-	}
-	objcopyBin, err := exec.LookPath("objcopy")
-	if err != nil {
-		return nil //nolint:nilerr // Keep extraction working when binutils objcopy is absent.
-	}
-	arBin, err := exec.LookPath("ar")
-	if err != nil {
-		return nil //nolint:nilerr // Keep extraction working when binutils ar is absent.
 	}
 	file, err := os.Open(archivePath) //nolint:gosec // G304: archivePath is a validated staged or existing library path.
 	if err != nil {
@@ -150,6 +143,100 @@ func stripBitcodeSections(archivePath, platform, arch string) error {
 	if readErr != nil || string(magic[:]) != "!<arch>\n" {
 		return nil
 	}
+	return runBitcodeStripTools(archivePath, objcopyBin, arBin)
+}
+
+// stripCachedBitcodeSections strips a cached Linux archive via a staged copy in
+// the same directory and replaces libPath only after objcopy and ar s succeed.
+func stripCachedBitcodeSections(libPath, platform, arch string) error {
+	objcopyBin, arBin, ok := findBitcodeStripTools(platform, arch)
+	if !ok {
+		return nil
+	}
+	tmpPath, mode, isArchive, err := copyArchiveForStrip(libPath)
+	if err != nil || !isArchive {
+		return err
+	}
+	keepTmp := false
+	defer func() {
+		if !keepTmp {
+			_ = os.Remove(tmpPath) //nolint:gosec // G703: tmpPath is created by os.CreateTemp in a validated directory.
+		}
+	}()
+
+	if err := runBitcodeStripTools(tmpPath, objcopyBin, arBin); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpPath, mode); err != nil { //nolint:gosec // G703: tmpPath is created by os.CreateTemp in a validated directory.
+		return err
+	}
+	if err := os.Rename(tmpPath, libPath); err != nil { //nolint:gosec // G703: both paths stay inside the validated library directory.
+		return err
+	}
+	keepTmp = true
+	return nil
+}
+
+func findBitcodeStripTools(platform, arch string) (objcopyBin, arBin string, ok bool) {
+	if runtime.GOOS != "linux" || platform != "linux" || arch != runtime.GOARCH {
+		return "", "", false
+	}
+	objcopyBin, err := exec.LookPath("objcopy")
+	if err != nil {
+		return "", "", false
+	}
+	arBin, err = exec.LookPath("ar")
+	if err != nil {
+		return "", "", false
+	}
+	return objcopyBin, arBin, true
+}
+
+func copyArchiveForStrip(libPath string) (string, os.FileMode, bool, error) {
+	src, err := os.Open(libPath) //nolint:gosec // G304: libPath is a validated library path.
+	if err != nil {
+		return "", 0, false, err
+	}
+	defer src.Close()
+
+	var magic [8]byte
+	if _, err := io.ReadFull(src, magic[:]); err != nil || string(magic[:]) != "!<arch>\n" {
+		return "", 0, false, nil
+	}
+	info, err := src.Stat()
+	if err != nil {
+		return "", 0, false, err
+	}
+
+	tmpFile, err := os.CreateTemp(filepath.Dir(libPath), ".strip-*.a")
+	if err != nil {
+		return "", 0, false, err
+	}
+	tmpPath := tmpFile.Name()
+	keepTmp := false
+	defer func() {
+		if !keepTmp {
+			_ = os.Remove(tmpPath) //nolint:gosec // G703: tmpPath is created by os.CreateTemp in a validated directory.
+		}
+	}()
+
+	if _, err := tmpFile.Write(magic[:]); err != nil {
+		_ = tmpFile.Close()
+		return "", 0, false, err
+	}
+	if _, err := io.Copy(tmpFile, src); err != nil {
+		_ = tmpFile.Close()
+		return "", 0, false, err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return "", 0, false, err
+	}
+
+	keepTmp = true
+	return tmpPath, info.Mode().Perm(), true, nil
+}
+
+func runBitcodeStripTools(archivePath, objcopyBin, arBin string) error {
 	output, err := exec.CommandContext(context.Background(), objcopyBin, "--remove-section=.llvmbc", "--remove-section=.llvmcmd", archivePath).CombinedOutput() //nolint:gosec // G204: objcopyBin is resolved from LookPath and archivePath is validated.
 	if err != nil {
 		return fmt.Errorf("objcopy: %w: %s", err, strings.TrimSpace(string(output)))

@@ -1241,8 +1241,18 @@ func TestStripBitcodeSections_Guards(t *testing.T) {
 			if err := stripBitcodeSections(tc.path, tc.platform, tc.arch); err != nil {
 				t.Fatalf("stripBitcodeSections() error = %v, want nil", err)
 			}
+			if err := stripCachedBitcodeSections(tc.path, tc.platform, tc.arch); err != nil {
+				t.Fatalf("stripCachedBitcodeSections() error = %v, want nil", err)
+			}
 			if _, err := os.Stat(calledPath); !os.IsNotExist(err) {
 				t.Fatalf("guard failed to short-circuit: fake tool was invoked")
+			}
+			leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(tc.path), ".strip-*.a"))
+			if err != nil {
+				t.Fatalf("globbing staged temp files: %v", err)
+			}
+			if len(leftovers) != 0 {
+				t.Fatalf("guard left staged temp files: %v", leftovers)
 			}
 		})
 	}
@@ -1347,12 +1357,36 @@ func TestStripBitcodeSections_FreshAndCachedLinuxArchive(t *testing.T) {
 		}
 
 		lines := readLogLines(t, logPath)
-		want := []string{
-			"objcopy --remove-section=.llvmbc --remove-section=.llvmcmd " + libPath,
-			"ar s " + libPath,
+		if len(lines) != 2 {
+			t.Fatalf("tool calls = %v, want 2 calls", lines)
 		}
-		if len(lines) != len(want) || lines[0] != want[0] || lines[1] != want[1] {
-			t.Fatalf("tool calls = %v, want %v", lines, want)
+		const objcopyPrefix = "objcopy --remove-section=.llvmbc --remove-section=.llvmcmd "
+		if !strings.HasPrefix(lines[0], objcopyPrefix) {
+			t.Fatalf("first call = %q, want prefix %q", lines[0], objcopyPrefix)
+		}
+		stagedPath := strings.TrimPrefix(lines[0], objcopyPrefix)
+		if stagedPath == libPath {
+			t.Fatalf("cached archive stripped in place at %q, want staged copy", stagedPath)
+		}
+		if filepath.Dir(stagedPath) != filepath.Dir(libPath) {
+			t.Fatalf("staged dir = %q, want %q", filepath.Dir(stagedPath), filepath.Dir(libPath))
+		}
+		if !strings.HasPrefix(filepath.Base(stagedPath), ".strip-") || !strings.HasSuffix(stagedPath, ".a") {
+			t.Fatalf("unexpected staged temp path %q", stagedPath)
+		}
+		wantArCall := "ar s " + stagedPath
+		if lines[1] != wantArCall {
+			t.Fatalf("second call = %q, want %q", lines[1], wantArCall)
+		}
+		if _, err := os.Stat(libPath); err != nil {
+			t.Fatalf("installed library missing: %v", err)
+		}
+		leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(libPath), ".strip-*.a"))
+		if err != nil {
+			t.Fatalf("globbing staged temp files: %v", err)
+		}
+		if len(leftovers) != 0 {
+			t.Fatalf("leftover staged temp files: %v", leftovers)
 		}
 	})
 
@@ -1403,12 +1437,13 @@ func TestStripBitcodeSections_FreshAndCachedLinuxArchive(t *testing.T) {
 		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(libPath, []byte("!<arch>\n"), 0o644); err != nil {
+		origBytes := []byte("!<arch>\noriginal-cached-archive")
+		if err := os.WriteFile(libPath, origBytes, 0o644); err != nil {
 			t.Fatal(err)
 		}
 
 		toolDir := t.TempDir()
-		writeFakeTool(t, toolDir, "objcopy", "exit 0\n")
+		writeFakeTool(t, toolDir, "objcopy", "printf 'mutated-by-objcopy' >> \"$3\"\nexit 0\n")
 		writeFakeTool(t, toolDir, "ar", "printf 'simulated ar failure\\n' >&2\nexit 1\n")
 		t.Setenv("PATH", toolDir)
 
@@ -1418,6 +1453,20 @@ func TestStripBitcodeSections_FreshAndCachedLinuxArchive(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "stripping bitcode sections") || !strings.Contains(err.Error(), "simulated ar failure") {
 			t.Fatalf("DownloadLibs() error = %v, want wrapped ar failure", err)
+		}
+		gotBytes, readErr := os.ReadFile(libPath)
+		if readErr != nil {
+			t.Fatalf("reading cached library after failed ar: %v", readErr)
+		}
+		if !bytes.Equal(gotBytes, origBytes) {
+			t.Fatalf("cached library mutated on ar failure: got %q, want %q", gotBytes, origBytes)
+		}
+		leftovers, globErr := filepath.Glob(filepath.Join(filepath.Dir(libPath), ".strip-*.a"))
+		if globErr != nil {
+			t.Fatalf("globbing staged temp files: %v", globErr)
+		}
+		if len(leftovers) != 0 {
+			t.Fatalf("leftover staged temp files after ar failure: %v", leftovers)
 		}
 	})
 
