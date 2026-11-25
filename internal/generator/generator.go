@@ -59,16 +59,13 @@ var fieldCTypeOverrides = map[string]map[string]string{
 // These require manual bindings in streamgroup.go, typically because they are
 // anonymous C structs that CGO cannot directly reference by name.
 var skippedStructs = map[string]bool{
-	// Anonymous struct inside AVStreamGroupTileGrid - CGO generates an internal
-	// name like "struct___12" which is unstable across compilations.
-	//
-	// WW-141 phase 3.3 decision: the hand-written binding in streamgroup.go
-	// stays, and this skip with it. The cc/v4 parser models the anonymous record
-	// natively, so the field could now be generated, but the reason the binding
-	// is hand-written is CGO's unstable naming of the type, not the parser, and
-	// that has not changed. Generating it would also break the byte-identical
-	// *.gen.go the parser swap is measured against, for nothing a caller can
-	// see. Revisit only if CGO gives the type a stable name.
+	// Anonymous struct inside AVStreamGroupTileGrid. CGO itself
+	// (cmd/cgo/gcc.go, verified on Go 1.26.11) assigns untagged C structs
+	// sequential _Ctype_struct___<N> names in DWARF traversal order, and
+	// C.struct_UnnamedStruct_avformat_986_5 does not exist in C.
+	// streamgroup.go provides the stable C typedef
+	// (AVStreamGroupTileGridOffset) and contiguous array stride
+	// (ToAVStreamGroupTileGridOffsetArray).
 	"UnnamedStruct_avformat_986_5": true,
 }
 
