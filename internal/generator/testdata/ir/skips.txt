@@ -1,6 +1,5 @@
 # generator skip dump (WW-139)
-# markers=234 symbols=234 pairs=234
-AVBlowfish.s: multi dim const array
+# markers=217 symbols=217 pairs=217
 AVChannelLayout.u: union type
 AVClass.child_class_iterate: func ptr
 AVClass.child_next: func ptr
@@ -29,21 +28,9 @@ AVDCT.fdct: func ptr
 AVDCT.get_pixels: func ptr
 AVDCT.get_pixels_unaligned: func ptr
 AVDCT.idct: func ptr
-AVDES.round_keys: multi dim const array
-AVDOVIReshapingCurve.mmr_coef: multi dim const array
-AVDOVIReshapingCurve.poly_coef: multi dim const array
 AVDVProfile.audio_shuffle: unhandled pointer inner type *main.ConstArray
-AVDetectionBBox.classify_labels: multi dim const array
-AVDynamicHDRPlus.mastering_display_actual_peak_luminance: multi dim const array
-AVDynamicHDRPlus.targeted_system_display_actual_peak_luminance: multi dim const array
 AVEncryptionInitInfo.key_ids: unknown pointer pair
 AVExifEntry.value: union type
-AVFilmGrainAOMParams.ar_coeffs_uv: multi dim const array
-AVFilmGrainAOMParams.uv_points: multi dim const array
-AVFilmGrainAOMParams.y_points: multi dim const array
-AVFilmGrainH274Params.comp_model_value: multi dim const array
-AVFilmGrainH274Params.intensity_interval_lower_bound: multi dim const array
-AVFilmGrainH274Params.intensity_interval_upper_bound: multi dim const array
 AVFilmGrainParams.codec: union type
 AVFilterContext.command_queue: ptr to ignored type
 AVFilterContext.var_values: prim ptr
@@ -55,7 +42,6 @@ AVFrame.extended_data: manually wrapped in fields.go
 AVHWDeviceContext.free: func ptr
 AVHWFramesContext.free: func ptr
 AVIAMFLayer.demixing_matrix: struct value ptr
-AVIAMFReconGain.recon_gain: multi dim const array
 AVIOContext.buf_end: prim ptr
 AVIOContext.buf_ptr: prim ptr
 AVIOContext.buf_ptr_max: prim ptr
@@ -71,9 +57,7 @@ AVIOContext.write_packet: func ptr
 AVIOInterruptCB.callback: func ptr
 AVIndexEntry.flags: bitfield
 AVIndexEntry.size: bitfield
-AVMasteringDisplayMetadata.display_primaries: manually wrapped in fields.go
 AVOption.default_val: union type
-AVPanScan.position: manually wrapped in fields.go
 AVProbeData.buf: prim ptr
 AVProgram.stream_index: prim ptr
 AVRTSPResponse.body: prim ptr
@@ -81,7 +65,6 @@ AVStreamGroup.params: union type
 AVTaskCallbacks.priority_higher: func ptr
 AVTaskCallbacks.ready: func ptr
 AVTaskCallbacks.run: func ptr
-AVVideoEncParams.delta_qp: multi dim const array
 SwsVector.coeff: prim ptr
 av_ac3_parse_header: frameSize (non-output primitive pointer)
 av_adts_header_parse: samples (non-output primitive pointer)

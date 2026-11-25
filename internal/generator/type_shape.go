@@ -465,6 +465,8 @@ const (
 	constArrayFieldShapeValueIdentPointerSkip
 	constArrayFieldShapeStructPointerArray
 	constArrayFieldShapeIdentPointerSkip
+	constArrayFieldShapeMultiDimPrimitive
+	constArrayFieldShapeMultiDimByValueStruct
 	constArrayFieldShapeMultiDimSkip
 	constArrayFieldShapeUnknownTypeSkip
 	constArrayFieldShapeUnhandledPointerInnerSkip
@@ -477,6 +479,7 @@ type constArrayFieldShape struct {
 	goType   string
 	enum     *Enum
 	st       *Struct
+	dims     []int64
 	reason   string
 }
 
@@ -522,11 +525,55 @@ func (g *Generator) classifyConstArrayFieldShape(array *ConstArray) constArrayFi
 			}
 		}
 	case *ConstArray:
-		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+		return g.classifyMultiDimConstArrayFieldShape(array.Size, inner)
 	default:
 		return constArrayFieldShape{
 			kind:   constArrayFieldShapeUnhandledInnerSkip,
 			reason: fmt.Sprintf("unhandled const array inner type %v", reflect.TypeOf(array.Inner)),
 		}
+	}
+}
+
+func (g *Generator) classifyMultiDimConstArrayFieldShape(outerSize int64, inner *ConstArray) constArrayFieldShape {
+	dims := []int64{outerSize}
+	cur := Type(inner)
+	for {
+		nested, ok := cur.(*ConstArray)
+		if !ok {
+			break
+		}
+		dims = append(dims, nested.Size)
+		cur = nested.Inner
+	}
+	if len(dims) < 2 || len(dims) > 3 {
+		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+	}
+	for _, d := range dims {
+		if d <= 0 {
+			return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+		}
+	}
+	leaf, ok := cur.(*IdentType)
+	if !ok {
+		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
+	}
+	shape := g.classifyIdent(leaf.Name)
+	switch shape.kind {
+	case identShapePrimitive:
+		return constArrayFieldShape{
+			kind:     constArrayFieldShapeMultiDimPrimitive,
+			typeName: leaf.Name,
+			goType:   shape.goType,
+			dims:     dims,
+		}
+	case identShapeByValueStruct:
+		return constArrayFieldShape{
+			kind:     constArrayFieldShapeMultiDimByValueStruct,
+			typeName: leaf.Name,
+			st:       shape.st,
+			dims:     dims,
+		}
+	default:
+		return constArrayFieldShape{kind: constArrayFieldShapeMultiDimSkip, reason: "multi dim const array"}
 	}
 }

@@ -6643,7 +6643,18 @@ func (s *AVPanScan) SetHeight(value int) {
 	s.ptr.height = (C.int)(value)
 }
 
-// position skipped due to manually wrapped in fields.go
+// Position gets the position field.
+/*
+  position of the top left corner in 1/16 pel for up to 3 fields/frames
+  - encoding: Set by user.
+  - decoding: Set by libavcodec.
+*/
+func (s *AVPanScan) Position(i int) *Array[int16] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToInt16Array(unsafe.Pointer(&s.ptr.position[i][0]))
+}
 
 // --- Struct AVCPBProperties ---
 
@@ -16146,7 +16157,13 @@ func (s *AVBlowfish) P() *Array[uint32] {
 	return ToUint32Array(unsafe.Pointer(value))
 }
 
-// s skipped due to multi dim const array
+// S gets the s field.
+func (s *AVBlowfish) S(i int) *Array[uint32] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return ToUint32Array(unsafe.Pointer(&s.ptr.s[i][0]))
+}
 
 // --- Struct ff_pad_helper_AVBPrint ---
 
@@ -17266,7 +17283,13 @@ func ToAVDESArray(ptr unsafe.Pointer) *Array[*AVDES] {
 	}
 }
 
-// round_keys skipped due to multi dim const array
+// RoundKeys gets the round_keys field.
+func (s *AVDES) RoundKeys(i int) *Array[uint64] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToUint64Array(unsafe.Pointer(&s.ptr.round_keys[i][0]))
+}
 
 // TripleDes gets the triple_des field.
 func (s *AVDES) TripleDes() int {
@@ -17400,7 +17423,13 @@ func (s *AVDetectionBBox) SetClassifyCount(value uint32) {
 	s.ptr.classify_count = (C.uint32_t)(value)
 }
 
-// classify_labels skipped due to multi dim const array
+// ClassifyLabels gets the classify_labels field.
+func (s *AVDetectionBBox) ClassifyLabels(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.classify_labels[i][0]))
+}
 
 // ClassifyConfidences gets the classify_confidences field.
 func (s *AVDetectionBBox) ClassifyConfidences() *Array[*AVRational] {
@@ -18100,7 +18129,15 @@ func (s *AVDOVIReshapingCurve) PolyOrder() *Array[uint8] {
 	return ToUint8Array(unsafe.Pointer(value))
 }
 
-// poly_coef skipped due to multi dim const array
+// PolyCoef gets the poly_coef field.
+//
+//	x^0, x^1, x^2
+func (s *AVDOVIReshapingCurve) PolyCoef(i int) *Array[int64] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 8 {
+		return nil
+	}
+	return ToInt64Array(unsafe.Pointer(&s.ptr.poly_coef[i][0]))
+}
 
 // MmrOrder gets the mmr_order field.
 //
@@ -18116,7 +18153,15 @@ func (s *AVDOVIReshapingCurve) MmrConstant() *Array[int64] {
 	return ToInt64Array(unsafe.Pointer(value))
 }
 
-// mmr_coef skipped due to multi dim const array
+// MmrCoef gets the mmr_coef field.
+//
+//	order - 1
+func (s *AVDOVIReshapingCurve) MmrCoef(i, j int) *Array[int64] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 8 || j < 0 || j >= 3 {
+		return nil
+	}
+	return ToInt64Array(unsafe.Pointer(&s.ptr.mmr_coef[i][j][0]))
+}
 
 // --- Struct AVDOVINLQParams ---
 
@@ -20769,7 +20814,15 @@ func (s *AVFilmGrainAOMParams) SetNumYPoints(value int) {
 	s.ptr.num_y_points = (C.int)(value)
 }
 
-// y_points skipped due to multi dim const array
+// YPoints gets the y_points field.
+//
+//	value, scaling
+func (s *AVFilmGrainAOMParams) YPoints(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 14 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.y_points[i][0]))
+}
 
 // ChromaScalingFromLuma gets the chroma_scaling_from_luma field.
 /*
@@ -20798,7 +20851,15 @@ func (s *AVFilmGrainAOMParams) NumUvPoints() *Array[int] {
 	return ToIntArray(unsafe.Pointer(value))
 }
 
-// uv_points skipped due to multi dim const array
+// UvPoints gets the uv_points field.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) UvPoints(i, j int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 || j < 0 || j >= 10 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.uv_points[i][j][0]))
+}
 
 // ScalingShift gets the scaling_shift field.
 /*
@@ -20844,7 +20905,15 @@ func (s *AVFilmGrainAOMParams) ArCoeffsY() *Array[int8] {
 	return ToInt8Array(unsafe.Pointer(value))
 }
 
-// ar_coeffs_uv skipped due to multi dim const array
+// ArCoeffsUv gets the ar_coeffs_uv field.
+//
+//	cb, cr
+func (s *AVFilmGrainAOMParams) ArCoeffsUv(i int) *Array[int8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
+		return nil
+	}
+	return ToInt8Array(unsafe.Pointer(&s.ptr.ar_coeffs_uv[i][0]))
+}
 
 // ArCoeffShift gets the ar_coeff_shift field.
 /*
@@ -21067,11 +21136,35 @@ func (s *AVFilmGrainH274Params) NumModelValues() *Array[uint8] {
 	return ToUint8Array(unsafe.Pointer(value))
 }
 
-// intensity_interval_lower_bound skipped due to multi dim const array
+// IntensityIntervalLowerBound gets the intensity_interval_lower_bound field.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) IntensityIntervalLowerBound(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.intensity_interval_lower_bound[i][0]))
+}
 
-// intensity_interval_upper_bound skipped due to multi dim const array
+// IntensityIntervalUpperBound gets the intensity_interval_upper_bound field.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) IntensityIntervalUpperBound(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.intensity_interval_upper_bound[i][0]))
+}
 
-// comp_model_value skipped due to multi dim const array
+// CompModelValue gets the comp_model_value field.
+//
+//	y, cb, cr
+func (s *AVFilmGrainH274Params) CompModelValue(i, j int) *Array[int16] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 || j < 0 || j >= 256 {
+		return nil
+	}
+	return ToInt16Array(unsafe.Pointer(&s.ptr.comp_model_value[i][j][0]))
+}
 
 // --- Struct AVFilmGrainParams ---
 
@@ -23371,7 +23464,18 @@ func (s *AVDynamicHDRPlus) SetNumColsTargetedSystemDisplayActualPeakLuminance(va
 	s.ptr.num_cols_targeted_system_display_actual_peak_luminance = (C.uint8_t)(value)
 }
 
-// targeted_system_display_actual_peak_luminance skipped due to multi dim const array
+// TargetedSystemDisplayActualPeakLuminance gets the targeted_system_display_actual_peak_luminance field.
+/*
+  The normalized actual peak luminance of the targeted system display. The
+  values should be in the range of 0 to 1, inclusive and in multiples of
+  1/15.
+*/
+func (s *AVDynamicHDRPlus) TargetedSystemDisplayActualPeakLuminance(i int) *Array[*AVRational] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 25 {
+		return nil
+	}
+	return ToAVRationalArray(unsafe.Pointer(&s.ptr.targeted_system_display_actual_peak_luminance[i][0]))
+}
 
 // MasteringDisplayActualPeakLuminanceFlag gets the mastering_display_actual_peak_luminance_flag field.
 /*
@@ -23430,7 +23534,18 @@ func (s *AVDynamicHDRPlus) SetNumColsMasteringDisplayActualPeakLuminance(value u
 	s.ptr.num_cols_mastering_display_actual_peak_luminance = (C.uint8_t)(value)
 }
 
-// mastering_display_actual_peak_luminance skipped due to multi dim const array
+// MasteringDisplayActualPeakLuminance gets the mastering_display_actual_peak_luminance field.
+/*
+  The normalized actual peak luminance of the mastering display used for
+  mastering the image essence. The values should be in the range of 0 to 1,
+  inclusive and in multiples of 1/15.
+*/
+func (s *AVDynamicHDRPlus) MasteringDisplayActualPeakLuminance(i int) *Array[*AVRational] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 25 {
+		return nil
+	}
+	return ToAVRationalArray(unsafe.Pointer(&s.ptr.mastering_display_actual_peak_luminance[i][0]))
+}
 
 // --- Struct AVHDRVivid3SplineParams ---
 
@@ -25806,7 +25921,21 @@ func (s *AVIAMFReconGain) SetSubblockDuration(value uint) {
 	s.ptr.subblock_duration = (C.uint)(value)
 }
 
-// recon_gain skipped due to multi dim const array
+// ReconGain gets the recon_gain field.
+/*
+  Array of gain values to be applied to each channel for each layer
+  defined in the Audio Element referencing the parent Parameter Definition.
+  Values for layers where the AV_IAMF_LAYER_FLAG_RECON_GAIN flag is not set
+  are undefined.
+
+  Channel order is: FL, C, FR, SL, SR, TFL, TFR, BL, BR, TBL, TBR, LFE
+*/
+func (s *AVIAMFReconGain) ReconGain(i int) *Array[uint8] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 6 {
+		return nil
+	}
+	return ToUint8Array(unsafe.Pointer(&s.ptr.recon_gain[i][0]))
+}
 
 // --- Struct AVIAMFParamDefinition ---
 
@@ -27498,7 +27627,15 @@ func ToAVMasteringDisplayMetadataArray(ptr unsafe.Pointer) *Array[*AVMasteringDi
 	}
 }
 
-// display_primaries skipped due to manually wrapped in fields.go
+// DisplayPrimaries gets the display_primaries field.
+//
+//	CIE 1931 xy chromaticity coords of color primaries (r, g, b order).
+func (s *AVMasteringDisplayMetadata) DisplayPrimaries(i int) *Array[*AVRational] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return ToAVRationalArray(unsafe.Pointer(&s.ptr.display_primaries[i][0]))
+}
 
 // WhitePoint gets the white_point field.
 //
@@ -30510,7 +30647,17 @@ func (s *AVVideoEncParams) SetQp(value int32) {
 	s.ptr.qp = (C.int32_t)(value)
 }
 
-// delta_qp skipped due to multi dim const array
+// DeltaQp gets the delta_qp field.
+/*
+  Quantisation parameter offset from the base (per-frame) qp for a given
+  plane (first index) and AC/DC coefficients (second index).
+*/
+func (s *AVVideoEncParams) DeltaQp(i int) *Array[int32] {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return ToInt32Array(unsafe.Pointer(&s.ptr.delta_qp[i][0]))
+}
 
 // --- Struct AVVideoBlockParams ---
 

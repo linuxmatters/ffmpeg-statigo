@@ -94,12 +94,6 @@ var manuallyWrappedFields = map[string]map[string]bool{
 	"AVFrame": {
 		"extended_data": true,
 	},
-	"AVMasteringDisplayMetadata": {
-		"display_primaries": true,
-	},
-	"AVPanScan": {
-		"position": true,
-	},
 }
 
 // outputParams enumerates the (function, parameter) pairs whose

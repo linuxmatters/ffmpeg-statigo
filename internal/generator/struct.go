@@ -502,6 +502,10 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 			)),
 		)
 
+	case constArrayFieldShapeMultiDimPrimitive, constArrayFieldShapeMultiDimByValueStruct:
+		getParams, getRetType, getBody = marshalMultiDimConstArrayField(cName, shape)
+		return getParams, getRetType, getBody, true, false
+
 	case constArrayFieldShapeValueIdentPointerSkip,
 		constArrayFieldShapeIdentPointerSkip, constArrayFieldShapeMultiDimSkip,
 		constArrayFieldShapeUnknownTypeSkip, constArrayFieldShapeUnhandledPointerInnerSkip,
@@ -514,6 +518,59 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 	}
 
 	return getParams, getRetType, getBody, false, false
+}
+
+func marshalMultiDimConstArrayField(cName string, shape constArrayFieldShape) (getParams, getRetType, getBody []jen.Code) {
+	var (
+		elemType jen.Code
+		ctorName string
+	)
+	switch shape.kind {
+	case constArrayFieldShapeMultiDimPrimitive:
+		elemType = jen.Id(shape.goType)
+		ctorName = fmt.Sprintf("To%vArray", strcase.ToCamel(shape.goType))
+	case constArrayFieldShapeMultiDimByValueStruct:
+		elemType = jen.Op("*").Id(shape.st.Name)
+		ctorName = fmt.Sprintf("To%vArray", shape.st.Name)
+	}
+
+	outerDims := shape.dims[:len(shape.dims)-1]
+	idxNames := []string{"i", "j"}[:len(outerDims)]
+
+	for k, name := range idxNames {
+		if k == len(idxNames)-1 {
+			getParams = append(getParams, jen.Id(name).Id("int"))
+		} else {
+			getParams = append(getParams, jen.Id(name))
+		}
+	}
+
+	getRetType = []jen.Code{
+		jen.Op("*").Id("Array").Types(elemType),
+	}
+
+	cond := jen.Id("s").Op("==").Nil().Op("||").Id("s").Dot("ptr").Op("==").Nil()
+	for k, dim := range outerDims {
+		name := idxNames[k]
+		cond = cond.Op("||").Id(name).Op("<").Lit(0).Op("||").Id(name).Op(">=").Lit(int(dim))
+	}
+
+	elemExpr := jen.Op("&").Id("s").Dot("ptr").Dot(cName)
+	for _, name := range idxNames {
+		elemExpr = elemExpr.Index(jen.Id(name))
+	}
+	elemExpr = elemExpr.Index(jen.Lit(0))
+
+	getBody = []jen.Code{
+		jen.If(cond).Block(
+			jen.Return(jen.Nil()),
+		),
+		jen.Return(jen.Id(ctorName).Params(
+			jen.Qual("unsafe", "Pointer").Params(elemExpr),
+		)),
+	}
+
+	return getParams, getRetType, getBody
 }
 
 func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v *PointerType, tgt *jen.Statement) (getRetType, setParams, getBody, setBody []jen.Code, skip bool) {

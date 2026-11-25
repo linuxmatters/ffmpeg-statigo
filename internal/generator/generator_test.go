@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -335,7 +336,8 @@ func TestMarshalArgPreservesParsedSizeT(t *testing.T) {
 }
 
 // TestClassifyConstArrayFieldShape verifies that inline const-array fields
-// classify into the expected shape kind, target struct, and skip reason.
+// classify into the expected shape kind, target struct, Go type, dimensions,
+// and skip reason.
 func TestClassifyConstArrayFieldShape(t *testing.T) {
 	g := skipGen()
 
@@ -344,6 +346,8 @@ func TestClassifyConstArrayFieldShape(t *testing.T) {
 		array          *ConstArray
 		wantKind       constArrayFieldShapeKind
 		wantStructName string
+		wantGoType     string
+		wantDims       []int64
 		wantReason     string
 	}{
 		{
@@ -359,16 +363,68 @@ func TestClassifyConstArrayFieldShape(t *testing.T) {
 			wantStructName: "AVFrame",
 		},
 		{
-			name:       "multi-dimensional const array skipped",
-			array:      &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 2}, Size: 3},
-			wantKind:   constArrayFieldShapeMultiDimSkip,
-			wantReason: "multi dim const array",
-		},
-		{
 			name:           "struct pointer array",
 			array:          &ConstArray{Inner: ptr(ident("AVBuf")), Size: 4},
 			wantKind:       constArrayFieldShapeStructPointerArray,
 			wantStructName: "AVBuf",
+		},
+		{
+			name:       "2D primitive const array",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 2}, Size: 3},
+			wantKind:   constArrayFieldShapeMultiDimPrimitive,
+			wantGoType: "int16",
+			wantDims:   []int64{3, 2},
+		},
+		{
+			name:       "2D char const array",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ident("char"), Size: 64}, Size: 4},
+			wantKind:   constArrayFieldShapeMultiDimPrimitive,
+			wantGoType: "uint8",
+			wantDims:   []int64{4, 64},
+		},
+		{
+			name:           "2D by-value struct const array",
+			array:          &ConstArray{Inner: &ConstArray{Inner: ident("AVFrame"), Size: 2}, Size: 3},
+			wantKind:       constArrayFieldShapeMultiDimByValueStruct,
+			wantStructName: "AVFrame",
+			wantDims:       []int64{3, 2},
+		},
+		{
+			name:       "3D primitive const array",
+			array:      &ConstArray{Inner: &ConstArray{Inner: &ConstArray{Inner: ident("int64_t"), Size: 7}, Size: 3}, Size: 8},
+			wantKind:   constArrayFieldShapeMultiDimPrimitive,
+			wantGoType: "int64",
+			wantDims:   []int64{8, 3, 7},
+		},
+		{
+			name:       "4D primitive const array skipped",
+			array:      &ConstArray{Inner: &ConstArray{Inner: &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 5}, Size: 4}, Size: 3}, Size: 2},
+			wantKind:   constArrayFieldShapeMultiDimSkip,
+			wantReason: "multi dim const array",
+		},
+		{
+			name:       "2D by-pointer struct const array skipped",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ident("AVBuf"), Size: 2}, Size: 3},
+			wantKind:   constArrayFieldShapeMultiDimSkip,
+			wantReason: "multi dim const array",
+		},
+		{
+			name:       "2D pointer leaf const array skipped",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ptr(ident("uint8_t")), Size: 2}, Size: 3},
+			wantKind:   constArrayFieldShapeMultiDimSkip,
+			wantReason: "multi dim const array",
+		},
+		{
+			name:       "2D non-positive inner extent skipped",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 0}, Size: 3},
+			wantKind:   constArrayFieldShapeMultiDimSkip,
+			wantReason: "multi dim const array",
+		},
+		{
+			name:       "2D non-positive outer extent skipped",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 2}, Size: 0},
+			wantKind:   constArrayFieldShapeMultiDimSkip,
+			wantReason: "multi dim const array",
 		},
 	}
 
@@ -387,6 +443,12 @@ func TestClassifyConstArrayFieldShape(t *testing.T) {
 				}
 			} else if got.st != nil {
 				t.Errorf("st = %+v, want nil", got.st)
+			}
+			if got.goType != tt.wantGoType {
+				t.Errorf("goType = %q, want %q", got.goType, tt.wantGoType)
+			}
+			if !slices.Equal(got.dims, tt.wantDims) {
+				t.Errorf("dims = %v, want %v", got.dims, tt.wantDims)
 			}
 			if got.reason != tt.wantReason {
 				t.Errorf("reason = %q, want %q", got.reason, tt.wantReason)
@@ -471,6 +533,136 @@ func TestMarshalFieldInlineStructArray(t *testing.T) {
 		field := &Field{
 			Name:     "items",
 			Type:     &ConstArray{Inner: ident("AVBuf"), Size: 4},
+			BitWidth: -1,
+		}
+
+		g.marshalField(o, parent, field)
+
+		if got := g.skips.Total(); got != 1 {
+			t.Fatalf("skips.Total() = %d, want 1 (entries: %+v)", got, g.skips.Entries)
+		}
+		if got, want := g.skips.Entries[0].Reason, "ref field of value struct"; got != want {
+			t.Errorf("skip reason = %q, want %q", got, want)
+		}
+
+		code := o.GoString()
+		if strings.Contains(code, "func (s *AVParent)") {
+			t.Errorf("emitted code unexpectedly contains a method:\n%s", code)
+		}
+	})
+}
+
+// TestMarshalFieldMultiDimConstArray verifies indexed accessor emission,
+// Go-keyword C field escaping, and by-value parent skips for 2D and 3D
+// fixed-size array fields.
+func TestMarshalFieldMultiDimConstArray(t *testing.T) {
+	emittedTests := []struct {
+		name         string
+		fieldName    string
+		fieldType    *ConstArray
+		wantContains []string
+		wantAbsent   []string
+	}{
+		{
+			name:      "2D primitive emits guarded indexed getter without setter",
+			fieldName: "position",
+			fieldType: &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 2}, Size: 3},
+			wantContains: []string{
+				"func (s *AVParent) Position(i int) *Array[int16]",
+				"if s == nil || s.ptr == nil || i < 0 || i >= 3 {",
+				"return nil",
+				"return ToInt16Array(unsafe.Pointer(&s.ptr.position[i][0]))",
+			},
+			wantAbsent: []string{"SetPosition", "value :="},
+		},
+		{
+			name:      "2D char emits uint8 array getter",
+			fieldName: "classify_labels",
+			fieldType: &ConstArray{Inner: &ConstArray{Inner: ident("char"), Size: 64}, Size: 4},
+			wantContains: []string{
+				"func (s *AVParent) ClassifyLabels(i int) *Array[uint8]",
+				"if s == nil || s.ptr == nil || i < 0 || i >= 4 {",
+				"return nil",
+				"return ToUint8Array(unsafe.Pointer(&s.ptr.classify_labels[i][0]))",
+			},
+			wantAbsent: []string{"SetClassifyLabels", "value :="},
+		},
+		{
+			name:      "2D by-value struct emits struct array getter",
+			fieldName: "display_primaries",
+			fieldType: &ConstArray{Inner: &ConstArray{Inner: ident("AVFrame"), Size: 2}, Size: 3},
+			wantContains: []string{
+				"func (s *AVParent) DisplayPrimaries(i int) *Array[*AVFrame]",
+				"if s == nil || s.ptr == nil || i < 0 || i >= 3 {",
+				"return nil",
+				"return ToAVFrameArray(unsafe.Pointer(&s.ptr.display_primaries[i][0]))",
+			},
+			wantAbsent: []string{"SetDisplayPrimaries", "value :="},
+		},
+		{
+			name:      "3D primitive emits two-index guarded getter without setter",
+			fieldName: "mmr_coef",
+			fieldType: &ConstArray{Inner: &ConstArray{Inner: &ConstArray{Inner: ident("int64_t"), Size: 7}, Size: 3}, Size: 8},
+			wantContains: []string{
+				"func (s *AVParent) MmrCoef(i, j int) *Array[int64]",
+				"if s == nil || s.ptr == nil || i < 0 || i >= 8 || j < 0 || j >= 3 {",
+				"return nil",
+				"return ToInt64Array(unsafe.Pointer(&s.ptr.mmr_coef[i][j][0]))",
+			},
+			wantAbsent: []string{"SetMmrCoef", "value :="},
+		},
+		{
+			name:      "go-keyword field name uses escaped cgo identifier",
+			fieldName: "type",
+			fieldType: &ConstArray{Inner: &ConstArray{Inner: ident("uint8_t"), Size: 4}, Size: 2},
+			wantContains: []string{
+				"func (s *AVParent) Type(i int) *Array[uint8]",
+				"if s == nil || s.ptr == nil || i < 0 || i >= 2 {",
+				"return ToUint8Array(unsafe.Pointer(&s.ptr._type[i][0]))",
+			},
+		},
+	}
+
+	for _, tt := range emittedTests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := skipGen()
+			g.skips = &SkipCollector{}
+			o := jen.NewFile("ffmpeg")
+			parent := &Struct{Name: "AVParent", ByValue: false}
+			field := &Field{
+				Name:     tt.fieldName,
+				Type:     tt.fieldType,
+				BitWidth: -1,
+			}
+
+			g.marshalField(o, parent, field)
+
+			if got := g.skips.Total(); got != 0 {
+				t.Fatalf("skips.Total() = %d, want 0 (entries: %+v)", got, g.skips.Entries)
+			}
+
+			code := o.GoString()
+			for _, want := range tt.wantContains {
+				if !strings.Contains(code, want) {
+					t.Errorf("emitted code missing %q:\n%s", want, code)
+				}
+			}
+			for _, unwanted := range tt.wantAbsent {
+				if strings.Contains(code, unwanted) {
+					t.Errorf("emitted code unexpectedly contains %q:\n%s", unwanted, code)
+				}
+			}
+		})
+	}
+
+	t.Run("by-value parent records skip and emits no method", func(t *testing.T) {
+		g := skipGen()
+		g.skips = &SkipCollector{}
+		o := jen.NewFile("ffmpeg")
+		parent := &Struct{Name: "AVParent", ByValue: true}
+		field := &Field{
+			Name:     "position",
+			Type:     &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 2}, Size: 3},
 			BitWidth: -1,
 		}
 

@@ -64,35 +64,6 @@ func (s *AVFrame) ExtendedData() *Array[unsafe.Pointer] {
 	return ToUint8PtrArray(unsafe.Pointer(s.ptr.extended_data))
 }
 
-// DisplayPrimaries gets row i of the display_primaries field from
-// AVMasteringDisplayMetadata.
-//
-// The field is a fixed AVRational display_primaries[3][2] array holding the CIE
-// 1931 xy chromaticity coordinates of the RGB display primaries: i selects the
-// colour (0=R, 1=G, 2=B), and the returned two-element Array holds the x and y
-// coordinates. Returns nil when i is out of the [0,3) range. The returned Array
-// aliases struct-owned memory; do not free it.
-func (s *AVMasteringDisplayMetadata) DisplayPrimaries(i int) *Array[*AVRational] {
-	if i < 0 || i >= 3 {
-		return nil
-	}
-	return ToAVRationalArray(unsafe.Pointer(&s.ptr.display_primaries[i][0]))
-}
-
-// Position gets row i of the position field from AVPanScan.
-//
-// The field is a fixed int16_t position[3][2] array of top-left corner
-// coordinates in 1/16 pel for up to three frame areas: i selects the area, and
-// the returned two-element Array holds the x and y coordinates. Returns nil when
-// i is out of the [0,3) range. The returned Array aliases struct-owned memory;
-// do not free it.
-func (s *AVPanScan) Position(i int) *Array[int16] {
-	if i < 0 || i >= 3 {
-		return nil
-	}
-	return ToInt16Array(unsafe.Pointer(&s.ptr.position[i][0]))
-}
-
 // allocMasteringDisplayMetadata allocates a zeroed C AVMasteringDisplayMetadata
 // and returns a wrapper over it, or nil on allocation failure. FFmpeg exposes no
 // exported zero-value constructor for this struct; the caller must release it
