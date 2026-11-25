@@ -414,10 +414,10 @@ func combineWindows(ctx context.Context, libFiles []string, output string) error
 	combinedPath := filepath.Join(workDir, "combined.a")
 	pruned, err := pruneZeroSectionCOFFMembers(combinedPath)
 	if err != nil {
-		return fmt.Errorf("prune zero-section COFF members: %w", err)
+		return fmt.Errorf("prune zero-section COFF or .dwo members: %w", err)
 	}
 	if pruned > 0 {
-		log.Printf("Pruned %d zero-section COFF member(s) from combined archive", pruned)
+		log.Printf("Pruned %d zero-section COFF or .dwo member(s) from combined archive", pruned)
 	}
 
 	strip := exec.CommandContext(ctx, configuredArchiveTool("STRIP", "strip"), "--strip-unneeded", "--remove-section=.llvmbc", "--remove-section=.llvmcmd", "combined.a") //nolint:gosec // G204: STRIP selects a trusted local build tool, with fixed arguments and no shell.

@@ -18,7 +18,7 @@ const (
 	arHeaderSize         = 60
 	coffHeaderSize       = 20
 	coffBigObjHeaderSize = 56
-	maxBSDNameProbeSize  = 64
+	maxBSDNameProbeSize  = 4096
 )
 
 // coffBigObjClassID is the Windows GUID {D1BAA1C7-BAEE-4ba9-AF20-FAF66AA4DCB8}
@@ -36,11 +36,12 @@ type arMember struct {
 	keep         bool
 }
 
-// pruneZeroSectionCOFFMembers removes zero-section COFF object members from a
-// standard SVR4/GNU archive in two streaming passes without loading the full
-// archive into memory. When no members are pruned, the archive is left
-// untouched. When one or more members are pruned, symbol table members are
-// omitted so the caller can rebuild the index with "ar s".
+// pruneZeroSectionCOFFMembers removes zero-section COFF object members and
+// split DWARF (.dwo) members from a standard SVR4/GNU archive in two streaming
+// passes without loading the full archive into memory. When no members are
+// pruned, the archive is left untouched. When one or more members are pruned,
+// symbol table members are omitted so the caller can rebuild the index with
+// "ar s".
 func pruneZeroSectionCOFFMembers(archivePath string) (int, error) {
 	src, err := os.Open(archivePath)
 	if err != nil {
@@ -117,6 +118,7 @@ func scanArchiveMembers(src *os.File) ([]arMember, int, error) {
 	var hdr [arHeaderSize]byte
 	var prefix [coffBigObjHeaderSize]byte
 	var members []arMember
+	var longNames []byte
 	pruned := 0
 
 	off := int64(len(arMagic))
@@ -153,32 +155,49 @@ func scanArchiveMembers(src *os.File) ([]arMember, int, error) {
 		case isArchiveSymbolTableName(name):
 			member.keep = false
 		case name == "//":
-			// Preserve GNU long filename table verbatim.
+			// Preserve GNU long filename table verbatim and cache it to
+			// resolve subsequent /<offset> member names.
+			if size > 0 {
+				longNames = make([]byte, size)
+				if _, err := src.ReadAt(longNames, payloadOff); err != nil {
+					return nil, 0, fmt.Errorf("read GNU long filename table at offset %d: %w", off, err)
+				}
+			} else {
+				longNames = nil
+			}
 		default:
 			dataOff := payloadOff
 			payloadSize := size
-			isSymTab := false
+			resolvedName := ""
 
-			if strings.HasPrefix(name, "#1/") {
+			switch {
+			case strings.HasPrefix(name, "#1/"):
 				nameLen, err := strconv.ParseInt(name[3:], 10, 64)
 				if err != nil || nameLen <= 0 || nameLen > size {
 					return nil, 0, fmt.Errorf("malformed BSD archive member %q at offset %d", name, off)
 				}
 				if nameLen <= maxBSDNameProbeSize {
-					var bsdName [maxBSDNameProbeSize]byte
-					if _, err := src.ReadAt(bsdName[:nameLen], payloadOff); err != nil {
+					bsdName := make([]byte, nameLen)
+					if _, err := src.ReadAt(bsdName, payloadOff); err != nil {
 						return nil, 0, fmt.Errorf("read BSD archive member name at offset %d: %w", off, err)
 					}
-					realName := strings.TrimRight(string(bsdName[:nameLen]), "\x00")
-					isSymTab = isArchiveSymbolTableName(realName)
+					resolvedName = strings.TrimRight(string(bsdName), "\x00")
 				}
 				dataOff = payloadOff + nameLen
 				payloadSize = size - nameLen
+			case strings.HasPrefix(name, "/"):
+				resolvedName = resolveGNULongName(name, longNames)
+			default:
+				resolvedName = strings.TrimSuffix(name, "/")
 			}
 
-			if isSymTab {
+			switch {
+			case isArchiveSymbolTableName(resolvedName):
 				member.keep = false
-			} else {
+			case isSplitDWARFName(resolvedName):
+				member.keep = false
+				pruned++
+			default:
 				probeLen := min(payloadSize, int64(len(prefix)))
 				if probeLen > 0 {
 					if _, err := src.ReadAt(prefix[:probeLen], dataOff); err != nil {
@@ -234,6 +253,25 @@ func writeFilteredArchive(src, dst *os.File, members []arMember) error {
 
 func isArchiveSymbolTableName(name string) bool {
 	return name == "/" || name == "/SYM64/" || name == "__.SYMDEF" || name == "__.SYMDEF SORTED"
+}
+
+func resolveGNULongName(name string, longNames []byte) string {
+	if len(name) < 2 || name[0] != '/' || name[1] < '0' || name[1] > '9' {
+		return ""
+	}
+	off, err := strconv.Atoi(name[1:])
+	if err != nil || off < 0 || off >= len(longNames) {
+		return ""
+	}
+	rest := longNames[off:]
+	if end := bytes.IndexAny(rest, "/\r\n\x00"); end >= 0 {
+		rest = rest[:end]
+	}
+	return string(rest)
+}
+
+func isSplitDWARFName(name string) bool {
+	return strings.HasSuffix(strings.ToLower(name), ".dwo")
 }
 
 func isCOFFMachine(mach uint16) bool {

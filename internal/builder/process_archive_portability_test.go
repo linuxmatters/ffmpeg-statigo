@@ -174,9 +174,17 @@ func TestPortabilityWindowsMergeStrip(t *testing.T) {
 			stripMarker := filepath.Join(root, "strip-called")
 			indexMarker := filepath.Join(root, "ar-index-called")
 
-			longNames := []byte("very_long_zero_section_member_name.o/\n")
+			longZeroName := "very_long_zero_section_member_name.o/\n"
+			longDwoName := "compiler_builtins-5694ded896bf8a99.compiler_builtins.3250d56ac9347a8a-cgu.217.rcgu.dwo/\n"
+			longValidName := "valid_long_member_name.o/\n"
+			longNames := []byte(longZeroName + longDwoName + longValidName)
+			longDwoRef := fmt.Sprintf("/%d", len(longZeroName))
+			longValidRef := fmt.Sprintf("/%d", len(longZeroName)+len(longDwoName))
+
 			validObj := makeCOFFObject(tc.machine, 1, 61)
+			validLongObj := makeCOFFObject(tc.machine, 2, 48)
 			zeroObj := makeCOFFObject(tc.machine, 0, coffHeaderSize)
+			dwoPayload := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 40)...)
 			importObj := makePEShortImportObject(tc.machine)
 
 			archiveBytes := buildTestArchive(
@@ -184,6 +192,9 @@ func TestPortabilityWindowsMergeStrip(t *testing.T) {
 				testARMember{name: "//", payload: longNames},
 				testARMember{name: "valid.o/", payload: validObj},
 				testARMember{name: "/0", payload: zeroObj},
+				testARMember{name: "short.dwo/", payload: dwoPayload},
+				testARMember{name: longDwoRef, payload: dwoPayload},
+				testARMember{name: longValidRef, payload: validLongObj},
 				testARMember{name: "imp.o/", payload: importObj},
 			)
 
@@ -235,6 +246,7 @@ func TestPortabilityWindowsMergeStrip(t *testing.T) {
 				wantMembers := []testARMember{
 					{name: "//", payload: longNames},
 					{name: "valid.o/", payload: validObj},
+					{name: longValidRef, payload: validLongObj},
 					{name: "imp.o/", payload: importObj},
 				}
 				if len(members) != len(wantMembers) {
@@ -556,6 +568,65 @@ func TestPruneZeroSectionCOFFMembers(t *testing.T) {
 		members := parseTestArchive(t, gotPruned)
 		if len(members) != 1 || members[0].name != "valid.o/" || !bytes.Equal(members[0].payload, validObj) {
 			t.Fatalf("unexpected remaining members after pruning /SYM64/ archive: %+v", members)
+		}
+	})
+
+	t.Run("split-dwarf-dwo-members", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "dwo.a")
+
+		longDwoSlash := "compiler_builtins-5694ded896bf8a99.compiler_builtins.3250d56ac9347a8a-cgu.217.rcgu.dwo/\n"
+		longDwoNul := "std-3388af8b7e88581a.std.3c24e6189dc2f3dd-cgu.0.rcgu.DWO\x00"
+		longValidObjName := "valid_long_member_name.o/\n"
+		longNames := []byte(longDwoSlash + longDwoNul + longValidObjName)
+		longDwoNulRef := fmt.Sprintf("/%d", len(longDwoSlash))
+		longValidRef := fmt.Sprintf("/%d", len(longDwoSlash)+len(longDwoNul))
+
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 40)
+		validLongObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 2, 52)
+		keepNotDwoObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 44)
+		dwoELF := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 36)...)
+		bsdLongDwoName := "compiler_builtins-5694ded896bf8a99.compiler_builtins.3250d56ac9347a8a-cgu.0.rcgu.dwo\x00\x00\x00\x00"
+		bsdLongDwoPayload := append([]byte(bsdLongDwoName), dwoELF...)
+
+		archive := buildTestArchive(
+			testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+			testARMember{name: "//", payload: longNames},
+			testARMember{name: "valid.o/", payload: validObj},
+			testARMember{name: "short.dwo/", payload: dwoELF},
+			testARMember{name: "UPPER.DWO", payload: validObj},
+			testARMember{name: "/0", payload: dwoELF},
+			testARMember{name: longDwoNulRef, payload: dwoELF},
+			testARMember{name: fmt.Sprintf("#1/%d", len(bsdLongDwoName)), payload: bsdLongDwoPayload},
+			testARMember{name: longValidRef, payload: validLongObj},
+			testARMember{name: "keep.dwo.o/", payload: keepNotDwoObj},
+		)
+		if err := os.WriteFile(path, archive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 5 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (5, nil)", pruned, err)
+		}
+
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, got)
+		wantMembers := []testARMember{
+			{name: "//", payload: longNames},
+			{name: "valid.o/", payload: validObj},
+			{name: longValidRef, payload: validLongObj},
+			{name: "keep.dwo.o/", payload: keepNotDwoObj},
+		}
+		if len(members) != len(wantMembers) {
+			t.Fatalf("member count = %d, want %d: %+v", len(members), len(wantMembers), members)
+		}
+		for i, want := range wantMembers {
+			if members[i].name != want.name || !bytes.Equal(members[i].payload, want.payload) {
+				t.Fatalf("member[%d] = (%q, %d bytes), want (%q, %d bytes)", i, members[i].name, len(members[i].payload), want.name, len(want.payload))
+			}
 		}
 	})
 
