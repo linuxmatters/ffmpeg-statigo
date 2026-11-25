@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"math"
 	"os"
 	"strings"
 	"sync"
@@ -1020,7 +1021,7 @@ func TestGeneratorFixedSizeArrayParams(t *testing.T) {
 			int64(linesizes[2]),
 			int64(linesizes[3]),
 		}
-		var planeSizes [4]uint64
+		planeSizes := [4]uint64{math.MaxUint64, math.MaxUint64, math.MaxUint64, math.MaxUint64}
 		ret, err = AVImageFillPlaneSizes(&planeSizes, AVPixFmtYuv420P, 16, &linesizes64)
 		if err != nil || ret < 0 {
 			t.Fatalf("AVImageFillPlaneSizes failed: ret=%d err=%v", ret, err)

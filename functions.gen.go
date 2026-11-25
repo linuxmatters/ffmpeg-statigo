@@ -15156,12 +15156,6 @@ func AVImageFillPlaneSizes(size *[4]uint64, pixFmt AVPixelFormat, height int, li
 	var tmpsize [4]C.size_t
 	var ptrsize *C.size_t
 	if size != nil {
-		for idx := range tmpsize {
-			if uint64(C.size_t(size[idx])) != size[idx] {
-				panic("av_image_fill_plane_sizes.size overflows C.size_t")
-			}
-			tmpsize[idx] = C.size_t(size[idx])
-		}
 		ptrsize = &tmpsize[0]
 	}
 	var tmplinesizes [4]C.ptrdiff_t

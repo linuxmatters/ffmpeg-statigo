@@ -122,12 +122,15 @@ var manuallyWrappedFuncs = map[string]string{
 }
 
 // outputParams enumerates the (function, parameter) pairs whose
-// primitive-pointer parameter is an output pointer. Membership marks the
-// parameter as an output pointer: variable-width C primitives use a temporary
-// and copy-back, and other primitives use (*C.<type>)(unsafe.Pointer(p)).
+// primitive-pointer or fixed-size primitive-array parameter is output-only.
+// For primitive pointers, membership marks the parameter as an output pointer:
+// variable-width C primitives use a temporary and copy-back, and other
+// primitives use (*C.<type>)(unsafe.Pointer(p)). For bounce-buffered
+// fixed-size primitive arrays, membership skips the pre-call copy-in and width
+// check while still passing the temporary buffer and copying results back.
 // Mirrors the form of skippedFields. Seeded against the pinned FFmpeg headers.
 //
-// 68 entries across 61 functions, sorted by function name then parameter name
+// 69 entries across 62 functions, sorted by function name then parameter name
 // for reviewability.
 var outputParams = map[string]map[string]bool{
 	"av_ambient_viewing_environment_alloc": {
@@ -204,6 +207,9 @@ var outputParams = map[string]map[string]bool{
 		"wall": true,
 	},
 	"av_iamf_param_definition_alloc": {
+		"size": true,
+	},
+	"av_image_fill_plane_sizes": {
 		"size": true,
 	},
 	"av_lzo1x_decode": {

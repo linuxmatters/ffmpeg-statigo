@@ -363,17 +363,20 @@ func (g *Generator) marshalConstArrayArg(o *jen.File, fn *Function, arg *Param, 
 
 	case constArrayArgShapeBouncePrimitive:
 		params = append(params, jen.Id(pName).Op("*").Index(jen.Lit(int(shape.size))).Id(shape.goType))
-		loopBody := append(
-			primitiveWidthCheck(shape.cType, shape.goType, jen.Id(pName).Index(jen.Id("idx")), fn.Name+"."+arg.Name),
-			jen.Id(tmpName).Index(jen.Id("idx")).Op("=").Qual("C", shape.cType).Params(jen.Id(pName).Index(jen.Id("idx"))),
-		)
+		isOutputOnly := !shape.elemConst && outputParams[fn.Name][arg.Name]
+		var ifBody []jen.Code
+		if !isOutputOnly {
+			loopBody := append(
+				primitiveWidthCheck(shape.cType, shape.goType, jen.Id(pName).Index(jen.Id("idx")), fn.Name+"."+arg.Name),
+				jen.Id(tmpName).Index(jen.Id("idx")).Op("=").Qual("C", shape.cType).Params(jen.Id(pName).Index(jen.Id("idx"))),
+			)
+			ifBody = append(ifBody, jen.For(jen.Id("idx").Op(":=").Range().Id(tmpName)).Block(loopBody...))
+		}
+		ifBody = append(ifBody, jen.Id(ptrName).Op("=").Op("&").Id(tmpName).Index(jen.Lit(0)))
 		body = append(body,
 			jen.Var().Id(tmpName).Index(jen.Lit(int(shape.size))).Qual("C", shape.cType),
 			jen.Var().Id(ptrName).Op("*").Qual("C", shape.cType),
-			jen.If(jen.Id(pName).Op("!=").Nil()).Block(
-				jen.For(jen.Id("idx").Op(":=").Range().Id(tmpName)).Block(loopBody...),
-				jen.Id(ptrName).Op("=").Op("&").Id(tmpName).Index(jen.Lit(0)),
-			),
+			jen.If(jen.Id(pName).Op("!=").Nil()).Block(ifBody...),
 		)
 		args = append(args, jen.Id(ptrName))
 		if !shape.elemConst {
