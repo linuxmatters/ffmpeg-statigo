@@ -200,6 +200,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		getBody    []jen.Code
 		getRetType []jen.Code
 		getParams  []jen.Code
+		getDocNote string
 		setBody    []jen.Code
 		setParams  []jen.Code
 		tgt        *jen.Statement
@@ -321,7 +322,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	case fieldShapeConstArray:
 		refField = true
 		var aSkip bool
-		getParams, getRetType, getBody, skipValueInit, aSkip = g.marshalConstArrayField(o, st, field, cName, shape.array)
+		getParams, getRetType, getBody, getDocNote, skipValueInit, aSkip = g.marshalConstArrayField(o, st, field, cName, shape.array)
 		if aSkip {
 			return
 		}
@@ -361,6 +362,10 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	}
 
 	o.Commentf("%v gets the %v field.", fName, field.Name)
+
+	if getDocNote != "" {
+		o.Comment(getDocNote)
+	}
 
 	if field.Comment != "" {
 		o.Comment(field.Comment)
@@ -413,7 +418,7 @@ func normalizedFieldCType(st *Struct, field *Field, typeName, goType string) str
 	return cType
 }
 
-func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, cName string, v *ConstArray) (getParams, getRetType, getBody []jen.Code, skipValueInit, skip bool) {
+func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, cName string, v *ConstArray) (getParams, getRetType, getBody []jen.Code, getDocNote string, skipValueInit, skip bool) {
 	shape := g.classifyConstArrayFieldShape(v)
 
 	switch shape.kind {
@@ -476,7 +481,7 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 			})),
 		)
 
-		return getParams, getRetType, getBody, true, false
+		return getParams, getRetType, getBody, "The returned pointer aliases struct-owned memory; do not free it.", true, false
 
 	case constArrayFieldShapeUint8PointerArray:
 		getRetType = []jen.Code{
@@ -504,7 +509,7 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 
 	case constArrayFieldShapeMultiDimPrimitive, constArrayFieldShapeMultiDimByValueStruct:
 		getParams, getRetType, getBody = marshalMultiDimConstArrayField(cName, shape)
-		return getParams, getRetType, getBody, true, false
+		return getParams, getRetType, getBody, "The returned Array aliases struct-owned memory; do not call Free on it.", true, false
 
 	case constArrayFieldShapeValueIdentPointerSkip,
 		constArrayFieldShapeIdentPointerSkip, constArrayFieldShapeMultiDimSkip,
@@ -514,10 +519,10 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 		o.Line()
 		g.skips.Record(st.Name+"."+field.Name, shape.reason)
 
-		return getParams, getRetType, getBody, false, true
+		return getParams, getRetType, getBody, "", false, true
 	}
 
-	return getParams, getRetType, getBody, false, false
+	return getParams, getRetType, getBody, "", false, false
 }
 
 func marshalMultiDimConstArrayField(cName string, shape constArrayFieldShape) (getParams, getRetType, getBody []jen.Code) {

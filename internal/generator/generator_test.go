@@ -488,6 +488,7 @@ func TestMarshalFieldInlineStructArray(t *testing.T) {
 
 		code := o.GoString()
 		for _, want := range []string{
+			"// The returned pointer aliases struct-owned memory; do not free it.",
 			"func (s *AVParent) Items(i int) *AVBuf",
 			"if s == nil || s.ptr == nil || i < 0 || i >= 4 {",
 			"return nil",
@@ -650,6 +651,10 @@ func TestMarshalFieldMultiDimConstArray(t *testing.T) {
 			}
 
 			code := o.GoString()
+			const wantDoc = "// The returned Array aliases struct-owned memory; do not call Free on it."
+			if !strings.Contains(code, wantDoc) {
+				t.Errorf("emitted code missing %q:\n%s", wantDoc, code)
+			}
 			for _, want := range tt.wantContains {
 				if !strings.Contains(code, want) {
 					t.Errorf("emitted code missing %q:\n%s", want, code)

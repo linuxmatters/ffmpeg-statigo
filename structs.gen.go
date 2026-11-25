@@ -6644,6 +6644,7 @@ func (s *AVPanScan) SetHeight(value int) {
 }
 
 // Position gets the position field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 /*
   position of the top left corner in 1/16 pel for up to 3 fields/frames
   - encoding: Set by user.
@@ -16158,6 +16159,7 @@ func (s *AVBlowfish) P() *Array[uint32] {
 }
 
 // S gets the s field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 func (s *AVBlowfish) S(i int) *Array[uint32] {
 	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
 		return nil
@@ -17284,6 +17286,7 @@ func ToAVDESArray(ptr unsafe.Pointer) *Array[*AVDES] {
 }
 
 // RoundKeys gets the round_keys field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 func (s *AVDES) RoundKeys(i int) *Array[uint64] {
 	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
 		return nil
@@ -17424,6 +17427,7 @@ func (s *AVDetectionBBox) SetClassifyCount(value uint32) {
 }
 
 // ClassifyLabels gets the classify_labels field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 func (s *AVDetectionBBox) ClassifyLabels(i int) *Array[uint8] {
 	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
 		return nil
@@ -18130,6 +18134,7 @@ func (s *AVDOVIReshapingCurve) PolyOrder() *Array[uint8] {
 }
 
 // PolyCoef gets the poly_coef field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	x^0, x^1, x^2
 func (s *AVDOVIReshapingCurve) PolyCoef(i int) *Array[int64] {
@@ -18154,6 +18159,7 @@ func (s *AVDOVIReshapingCurve) MmrConstant() *Array[int64] {
 }
 
 // MmrCoef gets the mmr_coef field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	order - 1
 func (s *AVDOVIReshapingCurve) MmrCoef(i, j int) *Array[int64] {
@@ -18332,6 +18338,7 @@ func (s *AVDOVIDataMapping) SetMappingChromaFormatIdc(value uint8) {
 }
 
 // Curves gets the curves field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	per component
 func (s *AVDOVIDataMapping) Curves(i int) *AVDOVIReshapingCurve {
@@ -18379,6 +18386,7 @@ func (s *AVDOVIDataMapping) SetNumYPartitions(value uint32) {
 }
 
 // Nlq gets the nlq field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	per component
 func (s *AVDOVIDataMapping) Nlq(i int) *AVDOVINLQParams {
@@ -20815,6 +20823,7 @@ func (s *AVFilmGrainAOMParams) SetNumYPoints(value int) {
 }
 
 // YPoints gets the y_points field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	value, scaling
 func (s *AVFilmGrainAOMParams) YPoints(i int) *Array[uint8] {
@@ -20852,6 +20861,7 @@ func (s *AVFilmGrainAOMParams) NumUvPoints() *Array[int] {
 }
 
 // UvPoints gets the uv_points field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	cb, cr
 func (s *AVFilmGrainAOMParams) UvPoints(i, j int) *Array[uint8] {
@@ -20906,6 +20916,7 @@ func (s *AVFilmGrainAOMParams) ArCoeffsY() *Array[int8] {
 }
 
 // ArCoeffsUv gets the ar_coeffs_uv field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	cb, cr
 func (s *AVFilmGrainAOMParams) ArCoeffsUv(i int) *Array[int8] {
@@ -21137,6 +21148,7 @@ func (s *AVFilmGrainH274Params) NumModelValues() *Array[uint8] {
 }
 
 // IntensityIntervalLowerBound gets the intensity_interval_lower_bound field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	y, cb, cr
 func (s *AVFilmGrainH274Params) IntensityIntervalLowerBound(i int) *Array[uint8] {
@@ -21147,6 +21159,7 @@ func (s *AVFilmGrainH274Params) IntensityIntervalLowerBound(i int) *Array[uint8]
 }
 
 // IntensityIntervalUpperBound gets the intensity_interval_upper_bound field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	y, cb, cr
 func (s *AVFilmGrainH274Params) IntensityIntervalUpperBound(i int) *Array[uint8] {
@@ -21157,6 +21170,7 @@ func (s *AVFilmGrainH274Params) IntensityIntervalUpperBound(i int) *Array[uint8]
 }
 
 // CompModelValue gets the comp_model_value field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	y, cb, cr
 func (s *AVFilmGrainH274Params) CompModelValue(i, j int) *Array[int16] {
@@ -23108,6 +23122,7 @@ func (s *AVHDRPlusColorTransformParams) SetNumDistributionMaxrgbPercentiles(valu
 }
 
 // DistributionMaxrgb gets the distribution_maxrgb field.
+// The returned pointer aliases struct-owned memory; do not free it.
 /*
   The linearized maxRGB values at given percentiles in the
   processing window in the scene.
@@ -23375,6 +23390,7 @@ func (s *AVDynamicHDRPlus) SetNumWindows(value uint8) {
 }
 
 // Params gets the params field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	The color transform parameters for every processing window.
 func (s *AVDynamicHDRPlus) Params(i int) *AVHDRPlusColorTransformParams {
@@ -23465,6 +23481,7 @@ func (s *AVDynamicHDRPlus) SetNumColsTargetedSystemDisplayActualPeakLuminance(va
 }
 
 // TargetedSystemDisplayActualPeakLuminance gets the targeted_system_display_actual_peak_luminance field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 /*
   The normalized actual peak luminance of the targeted system display. The
   values should be in the range of 0 to 1, inclusive and in multiples of
@@ -23535,6 +23552,7 @@ func (s *AVDynamicHDRPlus) SetNumColsMasteringDisplayActualPeakLuminance(value u
 }
 
 // MasteringDisplayActualPeakLuminance gets the mastering_display_actual_peak_luminance field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 /*
   The normalized actual peak luminance of the mastering display used for
   mastering the image essence. The values should be in the range of 0 to 1,
@@ -24034,6 +24052,7 @@ func (s *AVHDRVividColorToneMappingParams) SetThreeSplineNum(value int) {
 }
 
 // ThreeSpline gets the three_spline field.
+// The returned pointer aliases struct-owned memory; do not free it.
 func (s *AVHDRVividColorToneMappingParams) ThreeSpline(i int) *AVHDRVivid3SplineParams {
 	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
 		return nil
@@ -24207,6 +24226,7 @@ func (s *AVHDRVividColorTransformParams) SetToneMappingParamNum(value int) {
 }
 
 // TmParams gets the tm_params field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	The color tone mapping parameters.
 func (s *AVHDRVividColorTransformParams) TmParams(i int) *AVHDRVividColorToneMappingParams {
@@ -24350,6 +24370,7 @@ func (s *AVDynamicHDRVivid) SetNumWindows(value uint8) {
 }
 
 // Params gets the params field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	The color transform parameters for every processing window.
 func (s *AVDynamicHDRVivid) Params(i int) *AVHDRVividColorTransformParams {
@@ -25352,6 +25373,7 @@ func (s *AVDRMLayerDescriptor) SetNbPlanes(value int) {
 }
 
 // Planes gets the planes field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	Array of planes in this layer.
 func (s *AVDRMLayerDescriptor) Planes(i int) *AVDRMPlaneDescriptor {
@@ -25436,6 +25458,7 @@ func (s *AVDRMFrameDescriptor) SetNbObjects(value int) {
 }
 
 // Objects gets the objects field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	Array of objects making up the frame.
 func (s *AVDRMFrameDescriptor) Objects(i int) *AVDRMObjectDescriptor {
@@ -25461,6 +25484,7 @@ func (s *AVDRMFrameDescriptor) SetNbLayers(value int) {
 }
 
 // Layers gets the layers field.
+// The returned pointer aliases struct-owned memory; do not free it.
 //
 //	Array of layers in the frame.
 func (s *AVDRMFrameDescriptor) Layers(i int) *AVDRMLayerDescriptor {
@@ -25922,6 +25946,7 @@ func (s *AVIAMFReconGain) SetSubblockDuration(value uint) {
 }
 
 // ReconGain gets the recon_gain field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 /*
   Array of gain values to be applied to each channel for each layer
   defined in the Audio Element referencing the parent Parameter Definition.
@@ -27628,6 +27653,7 @@ func ToAVMasteringDisplayMetadataArray(ptr unsafe.Pointer) *Array[*AVMasteringDi
 }
 
 // DisplayPrimaries gets the display_primaries field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 //
 //	CIE 1931 xy chromaticity coords of color primaries (r, g, b order).
 func (s *AVMasteringDisplayMetadata) DisplayPrimaries(i int) *Array[*AVRational] {
@@ -28946,6 +28972,7 @@ func (s *AVPixFmtDescriptor) SetFlags(value uint64) {
 }
 
 // Comp gets the comp field.
+// The returned pointer aliases struct-owned memory; do not free it.
 /*
   Parameters that describe how pixels are packed.
   If the format has 1 or 2 components, then luma is 0.
@@ -30648,6 +30675,7 @@ func (s *AVVideoEncParams) SetQp(value int32) {
 }
 
 // DeltaQp gets the delta_qp field.
+// The returned Array aliases struct-owned memory; do not call Free on it.
 /*
   Quantisation parameter offset from the base (per-frame) qp for a given
   plane (first index) and AC/DC coefficients (second index).
