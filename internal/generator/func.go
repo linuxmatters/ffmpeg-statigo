@@ -293,7 +293,7 @@ func (g *Generator) marshalReturn(o *jen.File, fn *Function, result Type, cc jen
 }
 
 func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, args, body, postCall []jen.Code, skip bool) {
-	shape := g.classifyArgShape(fn, arg)
+	shape := g.classifyArgShape(arg)
 
 	switch shape.kind {
 	case argShapeIdentPrimitive:
@@ -321,7 +321,7 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 
 	case argShapePointer:
 		var pSkip bool
-		params, args, body, postCall, pSkip = g.marshalPointerArg(o, fn, arg, shape.ptr, shape.name, shape.actualTypeName)
+		params, args, body, postCall, pSkip = g.marshalPointerArg(o, fn, arg, shape.ptr, shape.name)
 		if pSkip {
 			return params, args, body, postCall, true
 		}
@@ -336,8 +336,8 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 	return params, args, body, postCall, false
 }
 
-func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *PointerType, pName, actualTypeName string) (params, args, body, postCall []jen.Code, skip bool) {
-	shape := g.classifyPointerArgShape(fn, arg, v, pName, actualTypeName)
+func (g *Generator) marshalPointerArg(o *jen.File, fn *Function, arg *Param, v *PointerType, pName string) (params, args, body, postCall []jen.Code, skip bool) {
+	shape := g.classifyPointerArgShape(fn, arg, v, pName)
 
 	switch shape.kind {
 	case pointerArgShapeUnsafePointer:

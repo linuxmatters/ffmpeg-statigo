@@ -108,220 +108,204 @@ var manuallyWrappedFields = map[string]map[string]bool{
 	},
 }
 
-// outputParam describes how marshalPointerArg and marshalArg treat an
-// output-pointer parameter. Membership in outputParams marks the parameter as
-// an output pointer. Variable-width C primitives use a temporary and copy-back;
-// other primitives use (*C.<type>)(unsafe.Pointer(p)). sizeT marks the subset
-// that correctPointerArgTypeName restores to size_t if the parser reported int.
-//
-// The sizeT flag has no effect today. WW-141 phase 5.2 measured all 16 entries
-// as *size_t already, under libclang and under cc/v4 alike, because parseType
-// keeps a spelling ending in _t. The flag, that _t guard and the
-// actualTypeName == "int" test in correctPointerArgTypeName are one unit; the
-// note on correctIdentArgTypeName says why none of the three may go alone.
-type outputParam struct {
-	sizeT bool
-}
-
 // outputParams enumerates the (function, parameter) pairs whose
-// primitive-pointer parameter is an output pointer. Mirrors the form of
-// skippedFields. Seeded against the pinned FFmpeg headers.
+// primitive-pointer parameter is an output pointer. Membership marks the
+// parameter as an output pointer: variable-width C primitives use a temporary
+// and copy-back, and other primitives use (*C.<type>)(unsafe.Pointer(p)).
+// Mirrors the form of skippedFields. Seeded against the pinned FFmpeg headers.
 //
-// 68 entries across 61 functions, of which 16 carry sizeT. WW-141 phase 5.2
-// checked every entry against what the cc/v4 parser reports and found none
-// stale: each names a function and a parameter that still exist.
-//
-// Sorted by function name then parameter name for reviewability.
-var outputParams = map[string]map[string]outputParam{
+// 68 entries across 61 functions, sorted by function name then parameter name
+// for reviewability.
+var outputParams = map[string]map[string]bool{
 	"av_ambient_viewing_environment_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_buffersink_get_side_data": {
-		"nb_side_data": {},
+		"nb_side_data": true,
 	},
 	"av_content_light_metadata_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_cpb_properties_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_detection_bbox_alloc": {
-		"out_size": {sizeT: true},
+		"out_size": true,
 	},
 	"av_dovi_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_dovi_metadata_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_dynamic_hdr_plus_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_dynamic_hdr_vivid_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_dynarray_add": {
-		"nb_ptr": {},
+		"nb_ptr": true,
 	},
 	"av_dynarray_add_nofree": {
-		"nb_ptr": {},
+		"nb_ptr": true,
 	},
 	"av_encryption_info_add_side_data": {
-		"side_data_size": {},
+		"side_data_size": true,
 	},
 	"av_encryption_init_info_add_side_data": {
-		"side_data_size": {},
+		"side_data_size": true,
 	},
 	"av_expr_count_func": {
-		"counter": {},
+		"counter": true,
 	},
 	"av_expr_count_vars": {
-		"counter": {},
+		"counter": true,
 	},
 	"av_expr_parse_and_eval": {
-		"res": {},
+		"res": true,
 	},
 	"av_fast_malloc": {
-		"size": {},
+		"size": true,
 	},
 	"av_fast_mallocz": {
-		"size": {},
+		"size": true,
 	},
 	"av_fast_padded_malloc": {
-		"size": {},
+		"size": true,
 	},
 	"av_fast_padded_mallocz": {
-		"size": {},
+		"size": true,
 	},
 	"av_fast_realloc": {
-		"size": {},
+		"size": true,
 	},
 	"av_film_grain_params_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_find_best_pix_fmt_of_2": {
-		"loss_ptr": {},
+		"loss_ptr": true,
 	},
 	"av_get_output_timestamp": {
-		"dts":  {},
-		"wall": {},
+		"dts":  true,
+		"wall": true,
 	},
 	"av_iamf_param_definition_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_lzo1x_decode": {
-		"outlen": {},
+		"outlen": true,
 	},
 	"av_mastering_display_metadata_alloc_size": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_opt_eval_double": {
-		"double_out": {},
+		"double_out": true,
 	},
 	"av_opt_eval_flags": {
-		"flags_out": {},
+		"flags_out": true,
 	},
 	"av_opt_eval_float": {
-		"float_out": {},
+		"float_out": true,
 	},
 	"av_opt_eval_int": {
-		"int_out": {},
+		"int_out": true,
 	},
 	"av_opt_eval_int64": {
-		"int64_out": {},
+		"int64_out": true,
 	},
 	"av_opt_eval_uint": {
-		"uint_out": {},
+		"uint_out": true,
 	},
 	"av_opt_get_array_size": {
-		"out_val": {},
+		"out_val": true,
 	},
 	"av_opt_get_double": {
-		"out_val": {},
+		"out_val": true,
 	},
 	"av_opt_get_image_size": {
-		"h_out": {},
-		"w_out": {},
+		"h_out": true,
+		"w_out": true,
 	},
 	"av_opt_get_int": {
-		"out_val": {},
+		"out_val": true,
 	},
 	"av_packet_get_side_data": {
-		"size": {},
+		"size": true,
 	},
 	"av_packet_pack_dictionary": {
-		"size": {},
+		"size": true,
 	},
 	"av_packet_side_data_add": {
-		"nb_sd": {},
+		"nb_sd": true,
 	},
 	"av_packet_side_data_free": {
-		"nb_sd": {},
+		"nb_sd": true,
 	},
 	"av_packet_side_data_from_frame": {
-		"nb_sd": {},
+		"nb_sd": true,
 	},
 	"av_packet_side_data_new": {
-		"pnb_sd": {},
+		"pnb_sd": true,
 	},
 	"av_packet_side_data_remove": {
-		"nb_sd": {},
+		"nb_sd": true,
 	},
 	"av_parse_time": {
-		"timeval": {},
+		"timeval": true,
 	},
 	"av_parse_video_size": {
-		"height_ptr": {},
-		"width_ptr":  {},
+		"height_ptr": true,
+		"width_ptr":  true,
 	},
 	"av_pix_fmt_get_chroma_sub_sample": {
-		"h_shift": {},
-		"v_shift": {},
+		"h_shift": true,
+		"v_shift": true,
 	},
 	"av_probe_input_format3": {
-		"score_ret": {},
+		"score_ret": true,
 	},
 	"av_reduce": {
-		"dst_den": {},
-		"dst_num": {},
+		"dst_den": true,
+		"dst_num": true,
 	},
 	"av_samples_get_buffer_size": {
-		"linesize": {},
+		"linesize": true,
 	},
 	"av_spherical_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_stereo3d_alloc_size": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_tdrdi_alloc": {
-		"size": {sizeT: true},
+		"size": true,
 	},
 	"av_url_split": {
-		"port_ptr": {},
+		"port_ptr": true,
 	},
 	"av_video_enc_params_alloc": {
-		"out_size": {sizeT: true},
+		"out_size": true,
 	},
 	"av_video_hint_alloc": {
-		"out_size": {sizeT: true},
+		"out_size": true,
 	},
 	"avcodec_align_dimensions": {
-		"height": {},
-		"width":  {},
+		"height": true,
+		"width":  true,
 	},
 	"avcodec_align_dimensions2": {
-		"height": {},
-		"width":  {},
+		"height": true,
+		"width":  true,
 	},
 	"avcodec_decode_subtitle2": {
-		"got_sub_ptr": {},
+		"got_sub_ptr": true,
 	},
 	"avcodec_find_best_pix_fmt_of_list": {
-		"loss_ptr": {},
+		"loss_ptr": true,
 	},
 	"swr_set_channel_mapping": {
-		"channel_map": {},
+		"channel_map": true,
 	},
 }
 

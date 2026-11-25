@@ -186,7 +186,7 @@ func TestMarshalArgOutputPointerAllowlist(t *testing.T) {
 	}{
 		// Allowlisted pairs spanning the original substring patterns.
 		{"out_-prefixed allowlisted", "av_detection_bbox_alloc", "out_size", ptr(ident("int")), false},
-		{"size allowlisted (size_t fixup site)", "av_cpb_properties_alloc", "size", ptr(ident("int")), false},
+		{"size allowlisted", "av_cpb_properties_alloc", "size", ptr(ident("size_t")), false},
 		{"w-suffixed allowlisted", "av_opt_get_image_size", "w_out", ptr(ident("int")), false},
 		{"h+ptr allowlisted", "av_parse_video_size", "height_ptr", ptr(ident("int")), false},
 		{"ptr allowlisted", "av_url_split", "port_ptr", ptr(ident("int")), false},
@@ -236,7 +236,7 @@ func TestMarshalArgOutputPointers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, ok := outputParams[tt.fnName][tt.argName]; !ok {
+			if !outputParams[tt.fnName][tt.argName] {
 				t.Fatalf("outputParams[%q][%q] absent: output-pointer table entry missing", tt.fnName, tt.argName)
 			}
 
@@ -258,69 +258,79 @@ func render(c jen.Code) string {
 	return (&jen.Statement{}).Add(c).GoString()
 }
 
-// TestMarshalArgSizeTOutputParams checks that marshalArg restores size_t only
-// when the (function, parameter) pair has sizeT: true in outputParams.
-// The positive case checks that the Go parameter becomes *uint64 and that the
-// call passes ptrsize, the pointer to a C.size_t temporary when size is not nil.
-// The regression case checks that an _alloc function name with sizeT: false
-// leaves the Go parameter as *int and casts the pointer to *C.int.
-// A reintroduced substring heuristic fails the regression case.
-func TestMarshalArgSizeTOutputParams(t *testing.T) {
+// TestMarshalArgPreservesParsedSizeT verifies that marshalArg emits the exact
+// primitive type reported by the parser for both output pointers and by-value
+// parameters, without name-based int-to-size_t rewrites.
+func TestMarshalArgPreservesParsedSizeT(t *testing.T) {
 	g := skipGen()
 
-	// Positive: av_dovi_alloc.size is in outputParams with sizeT: true, so the
-	// int* output pointer is rewritten to size_t.
-	t.Run("allowlisted size_t pair rewritten", func(t *testing.T) {
-		o := newFile()
-		fn := &Function{Name: "av_dovi_alloc"}
-		arg := &Param{Name: "size", Type: ptr(ident("int"))}
-		params, args, _, _, skip := g.marshalArg(o, fn, arg)
-		if skip {
-			t.Fatalf("av_dovi_alloc.size unexpectedly skipped")
-		}
-		if got := render(params[0]); got != "size * uint64" {
-			t.Errorf("param = %q, want %q", got, "size * uint64")
-		}
-		if got := render(args[0]); got != "ptrsize" {
-			t.Errorf("arg = %q, want %q", got, "ptrsize")
-		}
-	})
+	tests := []struct {
+		name      string
+		fnName    string
+		argName   string
+		argType   Type
+		wantParam string
+		wantArg   string
+	}{
+		{
+			name:      "allowlisted size_t output pointer",
+			fnName:    "av_dovi_alloc",
+			argName:   "size",
+			argType:   ptr(ident("size_t")),
+			wantParam: "var size *uint64",
+			wantArg:   "ptrsize",
+		},
+		{
+			name:      "allowlisted int output pointer stays int",
+			fnName:    "av_dovi_alloc",
+			argName:   "size",
+			argType:   ptr(ident("int")),
+			wantParam: "var size *int",
+			wantArg:   "(*C.int)(unsafe.Pointer(size))",
+		},
+		{
+			name:      "by-value size_t",
+			fnName:    "av_channel_name",
+			argName:   "buf_size",
+			argType:   ident("size_t"),
+			wantParam: "var bufSize uint64",
+			wantArg:   "C.size_t(bufSize)",
+		},
+		{
+			name:      "by-value int on buf_size stays int",
+			fnName:    "av_channel_name",
+			argName:   "buf_size",
+			argType:   ident("int"),
+			wantParam: "var bufSize int",
+			wantArg:   "C.int(bufSize)",
+		},
+		{
+			name:      "by-value int on max_size stays int",
+			fnName:    "avio_read_to_bprint",
+			argName:   "max_size",
+			argType:   ident("int"),
+			wantParam: "var maxSize int",
+			wantArg:   "C.int(maxSize)",
+		},
+	}
 
-	// Regression: an _alloc-named function that is allowlisted (so its output
-	// pointer is emitted, not skipped) but whose entry has sizeT: false must
-	// stay *int. outputParams is a package var, so inject and restore the fake
-	// entry with a defer to keep other tests unaffected. The pair is
-	// deliberately given sizeT: false.
-	t.Run("allocnamed pair absent from size_t table stays int", func(t *testing.T) {
-		const fnName = "av_fake_alloc"
-		saved := outputParams[fnName]
-		outputParams[fnName] = map[string]outputParam{"size": {}}
-		defer func() {
-			if saved == nil {
-				delete(outputParams, fnName)
-			} else {
-				outputParams[fnName] = saved
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := newFile()
+			fn := &Function{Name: tt.fnName}
+			arg := &Param{Name: tt.argName, Type: tt.argType}
+			params, args, _, _, skip := g.marshalArg(o, fn, arg)
+			if skip {
+				t.Fatalf("%s.%s unexpectedly skipped", tt.fnName, tt.argName)
 			}
-		}()
-
-		if p, ok := outputParams[fnName]["size"]; !ok || p.sizeT {
-			t.Fatalf("test invariant broken: %s.size must be present with sizeT: false", fnName)
-		}
-
-		o := newFile()
-		fn := &Function{Name: fnName}
-		arg := &Param{Name: "size", Type: ptr(ident("int"))}
-		params, args, _, _, skip := g.marshalArg(o, fn, arg)
-		if skip {
-			t.Fatalf("%s.size unexpectedly skipped", fnName)
-		}
-		if got := render(params[0]); got != "size * int" {
-			t.Errorf("param = %q, want %q (substring heuristic must be gone)", got, "size * int")
-		}
-		if got := render(args[0]); got != "(*C.int)(unsafe.Pointer(size))" {
-			t.Errorf("arg = %q, want %q (substring heuristic must be gone)", got, "(*C.int)(unsafe.Pointer(size))")
-		}
-	})
+			if got := render(jen.Var().Add(params[0])); got != tt.wantParam {
+				t.Errorf("param = %q, want %q", got, tt.wantParam)
+			}
+			if got := render(args[0]); got != tt.wantArg {
+				t.Errorf("arg = %q, want %q", got, tt.wantArg)
+			}
+		})
+	}
 }
 
 // marshalField is intentionally left to the byte-identical regeneration gate.

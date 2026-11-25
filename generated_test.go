@@ -495,9 +495,9 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	})
 
 	t.Run("av_cpb_properties_alloc compiles", func(t *testing.T) {
-		// Pins the size_t pointer fixup in internal/generator/generator.go.
-		// AVCpbPropertiesAlloc must keep its *uint64 size out-parameter; a parser
-		// that stops preserving the size_t spelling would change the signature.
+		// Pins size_t pointer preservation to *uint64.
+		// AVCpbPropertiesAlloc must keep its *uint64 size out-parameter. If the
+		// parser stops preserving the size_t spelling, this signature fails to compile.
 		var size uint64
 		sizePtr := &size
 
@@ -509,10 +509,10 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	})
 
 	t.Run("av_channel_name round-trips with uint64 buf_size", func(t *testing.T) {
-		// Pins the size_t buf_size fixup in internal/generator/generator.go.
-		// AVChannelName, AVChannelDescription and AVChannelLayoutDescribe must keep
-		// their bufSize uint64 parameter; passing a uint64 literal here fails to
-		// compile if the parser stops preserving the size_t spelling.
+		// Pins size_t preservation to uint64 for buf_size.
+		// AVChannelName, AVChannelDescription, and AVChannelLayoutDescribe must keep
+		// their uint64 bufSize parameter. If the parser stops preserving the size_t
+		// spelling, passing a uint64 value here fails to compile.
 		const bufLen uint = 64
 		bufSize := uint64(bufLen)
 
@@ -531,7 +531,7 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	})
 
 	t.Run("av_channel_description round-trips with uint64 buf_size", func(t *testing.T) {
-		// Pins the size_t buf_size fixup in internal/generator/generator.go.
+		// Pins size_t preservation to uint64 for buf_size.
 		const bufLen uint = 128
 		bufSize := uint64(bufLen)
 
@@ -550,11 +550,11 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	})
 
 	t.Run("av_channel_layout_describe compiles with uint64 buf_size", func(t *testing.T) {
-		// Pins the size_t buf_size fixup in internal/generator/generator.go.
+		// Pins size_t preservation to uint64 for buf_size.
 		// AVChannelLayout has no exported zero-value constructor (the Go wrapper
-		// wraps a C-allocated pointer), so we settle for a compile-time shape check
-		// rather than a runtime round-trip. Passing a uint64 literal to bufSize
-		// fails to compile if the size_t fixup regresses to int.
+		// wraps a C-allocated pointer), so this subtest checks compilation instead
+		// of running a round-trip. Passing a uint64 value to bufSize fails to
+		// compile if size_t preservation regresses to int.
 		var bufSize uint64 = 64
 		_ = func() (int, error) {
 			return AVChannelLayoutDescribe(nil, nil, bufSize)
@@ -564,10 +564,11 @@ func TestGeneratorOutputParameters(t *testing.T) {
 	})
 
 	t.Run("avio_read_to_bprint compiles with uint64 max_size", func(t *testing.T) {
-		// Pins the size_t max_size fixup in internal/generator/generator.go.
-		// AVIOContext and AVBPrint have no exported zero-value constructors, so we
-		// settle for a compile-time shape check. A uint64 literal passed to maxSize
-		// fails to compile if the size_t fixup regresses to int.
+		// Pins size_t preservation to uint64 for max_size.
+		// AVIOContext and AVBPrint have no exported zero-value constructors, so this
+		// subtest checks compilation instead of running a round-trip. Passing a
+		// uint64 value to maxSize fails to compile if size_t preservation regresses
+		// to int.
 		var maxSize uint64 = 1024
 		_ = func() (int, error) {
 			return AVIOReadToBprint(nil, nil, maxSize)
