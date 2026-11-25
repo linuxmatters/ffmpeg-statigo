@@ -515,6 +515,50 @@ func TestPruneZeroSectionCOFFMembers(t *testing.T) {
 		}
 	})
 
+	t.Run("sym64-symbol-table", func(t *testing.T) {
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 1, 40)
+		zeroObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 0, coffHeaderSize)
+
+		noopPath := filepath.Join(t.TempDir(), "noop-sym64.a")
+		noopArchive := buildTestArchive(
+			testARMember{name: "/SYM64/", payload: []byte{0, 0, 0, 0, 0, 0, 0, 0}},
+			testARMember{name: "valid.o/", payload: validObj},
+		)
+		if err := os.WriteFile(noopPath, noopArchive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err := pruneZeroSectionCOFFMembers(noopPath)
+		if err != nil || pruned != 0 {
+			t.Fatalf("pruneZeroSectionCOFFMembers (noop) = (%d, %v), want (0, nil)", pruned, err)
+		}
+		gotNoop, err := os.ReadFile(noopPath)
+		if err != nil || !bytes.Equal(gotNoop, noopArchive) {
+			t.Fatalf("no-op /SYM64/ archive changed: got %d bytes, want %d bytes, err=%v", len(gotNoop), len(noopArchive), err)
+		}
+
+		prunePath := filepath.Join(t.TempDir(), "prune-sym64.a")
+		pruneArchive := buildTestArchive(
+			testARMember{name: "/SYM64/", payload: []byte{0, 0, 0, 0, 0, 0, 0, 0}},
+			testARMember{name: "valid.o/", payload: validObj},
+			testARMember{name: "zero.o/", payload: zeroObj},
+		)
+		if err := os.WriteFile(prunePath, pruneArchive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err = pruneZeroSectionCOFFMembers(prunePath)
+		if err != nil || pruned != 1 {
+			t.Fatalf("pruneZeroSectionCOFFMembers (prune) = (%d, %v), want (1, nil)", pruned, err)
+		}
+		gotPruned, err := os.ReadFile(prunePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, gotPruned)
+		if len(members) != 1 || members[0].name != "valid.o/" || !bytes.Equal(members[0].payload, validObj) {
+			t.Fatalf("unexpected remaining members after pruning /SYM64/ archive: %+v", members)
+		}
+	})
+
 	t.Run("malformed-ar-headers", func(t *testing.T) {
 		badTrailer := buildTestArchive(testARMember{name: "a.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 20)})
 		badTrailer[len(arMagic)+58] = 'X'

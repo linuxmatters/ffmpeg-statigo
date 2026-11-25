@@ -1596,8 +1596,8 @@ func TestStripBitcodeSections_RemovesLLVMSections(t *testing.T) {
 	if out, err := exec.CommandContext(t.Context(), objcopyBin, "--add-section", ".llvmbc="+bcPath, "--add-section", ".llvmcmd="+cmdPath, objPath).CombinedOutput(); err != nil {
 		t.Fatalf("objcopy --add-section failed: %v: %s", err, out)
 	}
-	if out, err := exec.CommandContext(t.Context(), arBin, "cr", fixtureArchive, objPath).CombinedOutput(); err != nil {
-		t.Fatalf("ar cr failed: %v: %s", err, out)
+	if out, err := exec.CommandContext(t.Context(), arBin, "crs", fixtureArchive, objPath).CombinedOutput(); err != nil {
+		t.Fatalf("ar crs failed: %v: %s", err, out)
 	}
 
 	before := inspectARArchive(t, fixtureArchive)

@@ -233,7 +233,7 @@ func writeFilteredArchive(src, dst *os.File, members []arMember) error {
 }
 
 func isArchiveSymbolTableName(name string) bool {
-	return name == "/" || name == "__.SYMDEF" || name == "__.SYMDEF SORTED"
+	return name == "/" || name == "/SYM64/" || name == "__.SYMDEF" || name == "__.SYMDEF SORTED"
 }
 
 func isCOFFMachine(mach uint16) bool {
