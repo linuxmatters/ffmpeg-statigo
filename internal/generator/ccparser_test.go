@@ -380,6 +380,94 @@ func TestCCConfigTranslatesEveryTarget(t *testing.T) {
 	}
 }
 
+// TestCCWalkPreservesSizeTTypedef pins the cc/v4 parser invariant that
+// size_t keeps its typedef spelling for both by-value and pointer parameters
+// instead of collapsing to int or ulong.
+func TestCCWalkPreservesSizeTTypedef(t *testing.T) {
+	const src = `#include <stddef.h>
+
+int ffg_by_value(size_t buf_size);
+void *ffg_by_pointer(size_t *out_size);
+`
+
+	path := writeTestHeader(t, t.TempDir(), "size-t", src)
+
+	cfg, err := newCCConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("cc/v4 configuration: %v", err)
+	}
+
+	ast, err := ccTranslate(cfg, path)
+	if err != nil {
+		t.Fatalf("translate: %v", err)
+	}
+
+	table, err := BuildCommentTable(path)
+	if err != nil {
+		t.Fatalf("comment table: %v", err)
+	}
+
+	w := &ccWalk{
+		mod: &Module{
+			functions: map[string]*Function{},
+			structs:   map[string]*Struct{},
+			enums:     map[string]*Enum{},
+			callbacks: map[string]*Function{},
+			constants: map[string]*Constant{},
+		},
+		abs:   path,
+		skips: &SkipCollector{},
+		tags:  map[string]bool{},
+		table: table,
+	}
+
+	origOut := log.Writer()
+	log.SetOutput(io.Discard)
+
+	defer log.SetOutput(origOut)
+
+	w.walkAST(ast)
+
+	tests := []struct {
+		fnName    string
+		paramName string
+		want      Type
+	}{
+		{
+			fnName:    "ffg_by_value",
+			paramName: "buf_size",
+			want:      &IdentType{Name: "size_t"},
+		},
+		{
+			fnName:    "ffg_by_pointer",
+			paramName: "out_size",
+			want:      &PointerType{Inner: &IdentType{Name: "size_t"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.fnName, func(t *testing.T) {
+			fn, ok := w.mod.functions[tt.fnName]
+			if !ok {
+				t.Fatalf("function %q was not recorded in module", tt.fnName)
+			}
+
+			if len(fn.Args) != 1 {
+				t.Fatalf("%s has %d parameters, want 1", tt.fnName, len(fn.Args))
+			}
+
+			got := fn.Args[0]
+			if got.Name != tt.paramName {
+				t.Fatalf("%s parameter name = %q, want %q", tt.fnName, got.Name, tt.paramName)
+			}
+
+			if !typeEquals(got.Type, tt.want) {
+				t.Fatalf("%s(%s) type = %q (%T), want %q (%T)", tt.fnName, tt.paramName, got.Type, got.Type, tt.want, tt.want)
+			}
+		})
+	}
+}
+
 // predefinedMacro looks name up in a `#define` dump and returns its replacement
 // text. Each line is "#define NAME REPLACEMENT" or, for a function-like macro,
 // "#define NAME(ARGS) REPLACEMENT"; only object-like macros are wanted here.
