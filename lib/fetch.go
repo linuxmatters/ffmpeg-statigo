@@ -54,6 +54,9 @@ func ensureLibrary() error {
 
 	// Library already exists
 	if _, err := os.Stat(libPath); err == nil { //nolint:gosec // G703: platform and arch validated against allowlist above
+		if err := stripBitcodeSections(libPath, platform, arch); err != nil {
+			return fmt.Errorf("stripping bitcode sections: %w", err)
+		}
 		return nil
 	}
 
@@ -137,7 +140,7 @@ func stripBitcodeSections(archivePath, platform, arch string) error {
 	if err != nil {
 		return nil //nolint:nilerr // Keep extraction working when binutils ar is absent.
 	}
-	file, err := os.Open(archivePath) //nolint:gosec // G304: archivePath is inside the validated staging directory.
+	file, err := os.Open(archivePath) //nolint:gosec // G304: archivePath is a validated staged or existing library path.
 	if err != nil {
 		return err
 	}
