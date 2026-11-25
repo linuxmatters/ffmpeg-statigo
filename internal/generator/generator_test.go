@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/dave/jennifer/jen"
@@ -333,9 +334,162 @@ func TestMarshalArgPreservesParsedSizeT(t *testing.T) {
 	}
 }
 
-// marshalField is intentionally left to the byte-identical regeneration gate.
-// It returns nothing (void) and signals its three early-exit decisions
-// (skippedFields, bitfield, ident-callback) only by suppressing emitted output.
-// Asserting them would require rendering and inspecting the emitted bytes, which
-// duplicates the gate with brittle string matching and no added bug-catching
-// power, so no independent test is added here.
+// TestClassifyConstArrayFieldShape verifies that inline const-array fields
+// classify into the expected shape kind, target struct, and skip reason.
+func TestClassifyConstArrayFieldShape(t *testing.T) {
+	g := skipGen()
+
+	tests := []struct {
+		name           string
+		array          *ConstArray
+		wantKind       constArrayFieldShapeKind
+		wantStructName string
+		wantReason     string
+	}{
+		{
+			name:           "by-pointer struct inline array",
+			array:          &ConstArray{Inner: ident("AVBuf"), Size: 4},
+			wantKind:       constArrayFieldShapeByPointerStruct,
+			wantStructName: "AVBuf",
+		},
+		{
+			name:           "by-value struct inline array",
+			array:          &ConstArray{Inner: ident("AVFrame"), Size: 3},
+			wantKind:       constArrayFieldShapeByValueStruct,
+			wantStructName: "AVFrame",
+		},
+		{
+			name:       "multi-dimensional const array skipped",
+			array:      &ConstArray{Inner: &ConstArray{Inner: ident("int16_t"), Size: 2}, Size: 3},
+			wantKind:   constArrayFieldShapeMultiDimSkip,
+			wantReason: "multi dim const array",
+		},
+		{
+			name:           "struct pointer array",
+			array:          &ConstArray{Inner: ptr(ident("AVBuf")), Size: 4},
+			wantKind:       constArrayFieldShapeStructPointerArray,
+			wantStructName: "AVBuf",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := g.classifyConstArrayFieldShape(tt.array)
+			if got.kind != tt.wantKind {
+				t.Errorf("kind = %v, want %v", got.kind, tt.wantKind)
+			}
+			if tt.wantStructName != "" {
+				if got.st == nil {
+					t.Fatalf("st = nil, want %q", tt.wantStructName)
+				}
+				if got.st.Name != tt.wantStructName {
+					t.Errorf("st.Name = %q, want %q", got.st.Name, tt.wantStructName)
+				}
+			} else if got.st != nil {
+				t.Errorf("st = %+v, want nil", got.st)
+			}
+			if got.reason != tt.wantReason {
+				t.Errorf("reason = %q, want %q", got.reason, tt.wantReason)
+			}
+		})
+	}
+}
+
+// TestMarshalFieldInlineStructArray verifies indexed accessor emission,
+// Go-keyword C field escaping, and by-value parent skips for inline T[N]
+// struct-array fields.
+func TestMarshalFieldInlineStructArray(t *testing.T) {
+	t.Run("by-pointer parent emits guarded indexed getter without setter", func(t *testing.T) {
+		g := skipGen()
+		g.skips = &SkipCollector{}
+		o := jen.NewFile("ffmpeg")
+		parent := &Struct{Name: "AVParent", ByValue: false}
+		field := &Field{
+			Name:     "items",
+			Type:     &ConstArray{Inner: ident("AVBuf"), Size: 4},
+			BitWidth: -1,
+		}
+
+		g.marshalField(o, parent, field)
+
+		if got := g.skips.Total(); got != 0 {
+			t.Fatalf("skips.Total() = %d, want 0 (entries: %+v)", got, g.skips.Entries)
+		}
+
+		code := o.GoString()
+		for _, want := range []string{
+			"func (s *AVParent) Items(i int) *AVBuf",
+			"if s == nil || s.ptr == nil || i < 0 || i >= 4 {",
+			"return nil",
+			"return &AVBuf{ptr: &s.ptr.items[i]}",
+		} {
+			if !strings.Contains(code, want) {
+				t.Errorf("emitted code missing %q:\n%s", want, code)
+			}
+		}
+		for _, unwanted := range []string{"SetItems", "value :="} {
+			if strings.Contains(code, unwanted) {
+				t.Errorf("emitted code unexpectedly contains %q:\n%s", unwanted, code)
+			}
+		}
+	})
+
+	t.Run("go-keyword field name uses escaped cgo identifier", func(t *testing.T) {
+		g := skipGen()
+		g.skips = &SkipCollector{}
+		o := jen.NewFile("ffmpeg")
+		parent := &Struct{Name: "AVParent", ByValue: false}
+		field := &Field{
+			Name:     "type",
+			Type:     &ConstArray{Inner: ident("AVBuf"), Size: 2},
+			BitWidth: -1,
+		}
+
+		g.marshalField(o, parent, field)
+
+		if got := g.skips.Total(); got != 0 {
+			t.Fatalf("skips.Total() = %d, want 0 (entries: %+v)", got, g.skips.Entries)
+		}
+
+		code := o.GoString()
+		for _, want := range []string{
+			"func (s *AVParent) Type(i int) *AVBuf",
+			"if s == nil || s.ptr == nil || i < 0 || i >= 2 {",
+			"return &AVBuf{ptr: &s.ptr._type[i]}",
+		} {
+			if !strings.Contains(code, want) {
+				t.Errorf("emitted code missing %q:\n%s", want, code)
+			}
+		}
+	})
+
+	t.Run("by-value parent records skip and emits no method", func(t *testing.T) {
+		g := skipGen()
+		g.skips = &SkipCollector{}
+		o := jen.NewFile("ffmpeg")
+		parent := &Struct{Name: "AVParent", ByValue: true}
+		field := &Field{
+			Name:     "items",
+			Type:     &ConstArray{Inner: ident("AVBuf"), Size: 4},
+			BitWidth: -1,
+		}
+
+		g.marshalField(o, parent, field)
+
+		if got := g.skips.Total(); got != 1 {
+			t.Fatalf("skips.Total() = %d, want 1 (entries: %+v)", got, g.skips.Entries)
+		}
+		if got, want := g.skips.Entries[0].Reason, "ref field of value struct"; got != want {
+			t.Errorf("skip reason = %q, want %q", got, want)
+		}
+
+		code := o.GoString()
+		if strings.Contains(code, "func (s *AVParent)") {
+			t.Errorf("emitted code unexpectedly contains a method:\n%s", code)
+		}
+	})
+}
+
+// Other marshalField early-exit decisions (skippedFields, bitfield,
+// ident-callback) stay covered by the byte-identical regeneration gate rather
+// than separate unit tests.

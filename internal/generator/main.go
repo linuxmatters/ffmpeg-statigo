@@ -19,17 +19,15 @@ import (
 // bump might introduce while still catching wholesale degradation, such as an
 // allowlist regression that drops dozens of bindings.
 //
-// The current count is the residue of shapes the generator cannot safely emit:
-// int32 matrix-pointer functions, the AVExifEntry union field, and the
-// fixed-size struct-array fields in the DRM descriptors
-// (AVDRMFrameDescriptor.objects/layers, AVDRMLayerDescriptor.planes). Most are
-// covered by hand-written bindings; the skip marker records that the generator
-// declined them, not that the symbol is unavailable.
+// The current count is the residue of shapes the generator cannot safely emit,
+// such as int32 matrix-pointer functions and the AVExifEntry union field. Most
+// are covered by hand-written bindings; the skip marker records that the
+// generator declined them, not that the symbol is unavailable.
 //
 // Bumping this constant is a curation decision. An FFmpeg upgrade that binds new
 // headers carrying unemittable shapes needs an intentional bump alongside the
 // header update; do not raise it to silence a regression.
-const skipCeiling = 245
+const skipCeiling = 234
 
 func main() {
 	skips, err := run(os.Args[1:])

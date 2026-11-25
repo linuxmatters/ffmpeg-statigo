@@ -6,7 +6,6 @@ package ffmpeg
 #include <libavcodec/avcodec.h>
 #include <libavcodec/defs.h>
 #include <libavutil/frame.h>
-#include <libavutil/pixdesc.h>
 #include <libavutil/mastering_display_metadata.h>
 */
 import "C"
@@ -63,19 +62,6 @@ func (s *AVFrame) ExtendedData() *Array[unsafe.Pointer] {
 		return nil
 	}
 	return ToUint8PtrArray(unsafe.Pointer(s.ptr.extended_data))
-}
-
-// Comp gets the component at index i from the AVPixFmtDescriptor comp field.
-//
-// The field is a fixed AVComponentDescriptor comp[4] inline array describing how
-// each of up to four pixel components is laid out. Only the first NbComponents
-// entries are meaningful. Returns nil when i is out of the [0,4) range. The
-// returned descriptor aliases struct-owned memory; do not free it.
-func (s *AVPixFmtDescriptor) Comp(i int) *AVComponentDescriptor {
-	if i < 0 || i >= 4 {
-		return nil
-	}
-	return &AVComponentDescriptor{ptr: &s.ptr.comp[i]}
 }
 
 // DisplayPrimaries gets row i of the display_primaries field from

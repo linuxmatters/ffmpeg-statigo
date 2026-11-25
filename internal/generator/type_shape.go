@@ -460,7 +460,7 @@ const (
 	constArrayFieldShapePrimitive constArrayFieldShapeKind = iota
 	constArrayFieldShapeEnum
 	constArrayFieldShapeByValueStruct
-	constArrayFieldShapeStructPointerSkip
+	constArrayFieldShapeByPointerStruct
 	constArrayFieldShapeUint8PointerArray
 	constArrayFieldShapeValueIdentPointerSkip
 	constArrayFieldShapeStructPointerArray
@@ -492,7 +492,7 @@ func (g *Generator) classifyConstArrayFieldShape(array *ConstArray) constArrayFi
 		case identShapeByValueStruct:
 			return constArrayFieldShape{kind: constArrayFieldShapeByValueStruct, typeName: inner.Name, st: shape.st}
 		case identShapeByPointerStruct:
-			return constArrayFieldShape{kind: constArrayFieldShapeStructPointerSkip, typeName: inner.Name, reason: "const array of struct pointers"}
+			return constArrayFieldShape{kind: constArrayFieldShapeByPointerStruct, typeName: inner.Name, st: shape.st}
 		default:
 			return constArrayFieldShape{
 				kind:     constArrayFieldShapeUnknownTypeSkip,

@@ -94,9 +94,6 @@ var manuallyWrappedFields = map[string]map[string]bool{
 	"AVFrame": {
 		"extended_data": true,
 	},
-	"AVPixFmtDescriptor": {
-		"comp": true,
-	},
 	"AVMasteringDisplayMetadata": {
 		"display_primaries": true,
 	},

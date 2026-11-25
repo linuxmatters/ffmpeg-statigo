@@ -18286,7 +18286,15 @@ func (s *AVDOVIDataMapping) SetMappingChromaFormatIdc(value uint8) {
 	s.ptr.mapping_chroma_format_idc = (C.uint8_t)(value)
 }
 
-// curves skipped due to const array of struct pointers
+// Curves gets the curves field.
+//
+//	per component
+func (s *AVDOVIDataMapping) Curves(i int) *AVDOVIReshapingCurve {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVDOVIReshapingCurve{ptr: &s.ptr.curves[i]}
+}
 
 // NlqMethodIdc gets the nlq_method_idc field.
 //
@@ -18325,7 +18333,15 @@ func (s *AVDOVIDataMapping) SetNumYPartitions(value uint32) {
 	s.ptr.num_y_partitions = (C.uint32_t)(value)
 }
 
-// nlq skipped due to const array of struct pointers
+// Nlq gets the nlq field.
+//
+//	per component
+func (s *AVDOVIDataMapping) Nlq(i int) *AVDOVINLQParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVDOVINLQParams{ptr: &s.ptr.nlq[i]}
+}
 
 // NlqPivots gets the nlq_pivots field.
 func (s *AVDOVIDataMapping) NlqPivots() *Array[uint16] {
@@ -22998,7 +23014,17 @@ func (s *AVHDRPlusColorTransformParams) SetNumDistributionMaxrgbPercentiles(valu
 	s.ptr.num_distribution_maxrgb_percentiles = (C.uint8_t)(value)
 }
 
-// distribution_maxrgb skipped due to const array of struct pointers
+// DistributionMaxrgb gets the distribution_maxrgb field.
+/*
+  The linearized maxRGB values at given percentiles in the
+  processing window in the scene.
+*/
+func (s *AVHDRPlusColorTransformParams) DistributionMaxrgb(i int) *AVHDRPlusPercentile {
+	if s == nil || s.ptr == nil || i < 0 || i >= 15 {
+		return nil
+	}
+	return &AVHDRPlusPercentile{ptr: &s.ptr.distribution_maxrgb[i]}
+}
 
 // FractionBrightPixels gets the fraction_bright_pixels field.
 /*
@@ -23255,7 +23281,15 @@ func (s *AVDynamicHDRPlus) SetNumWindows(value uint8) {
 	s.ptr.num_windows = (C.uint8_t)(value)
 }
 
-// params skipped due to const array of struct pointers
+// Params gets the params field.
+//
+//	The color transform parameters for every processing window.
+func (s *AVDynamicHDRPlus) Params(i int) *AVHDRPlusColorTransformParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVHDRPlusColorTransformParams{ptr: &s.ptr.params[i]}
+}
 
 // TargetedSystemDisplayMaximumLuminance gets the targeted_system_display_maximum_luminance field.
 /*
@@ -23884,7 +23918,13 @@ func (s *AVHDRVividColorToneMappingParams) SetThreeSplineNum(value int) {
 	s.ptr.three_Spline_num = (C.int)(value)
 }
 
-// three_spline skipped due to const array of struct pointers
+// ThreeSpline gets the three_spline field.
+func (s *AVHDRVividColorToneMappingParams) ThreeSpline(i int) *AVHDRVivid3SplineParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
+		return nil
+	}
+	return &AVHDRVivid3SplineParams{ptr: &s.ptr.three_spline[i]}
+}
 
 // --- Struct AVHDRVividColorTransformParams ---
 
@@ -24051,7 +24091,15 @@ func (s *AVHDRVividColorTransformParams) SetToneMappingParamNum(value int) {
 	s.ptr.tone_mapping_param_num = (C.int)(value)
 }
 
-// tm_params skipped due to const array of struct pointers
+// TmParams gets the tm_params field.
+//
+//	The color tone mapping parameters.
+func (s *AVHDRVividColorTransformParams) TmParams(i int) *AVHDRVividColorToneMappingParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 2 {
+		return nil
+	}
+	return &AVHDRVividColorToneMappingParams{ptr: &s.ptr.tm_params[i]}
+}
 
 // ColorSaturationMappingFlag gets the color_saturation_mapping_flag field.
 /*
@@ -24186,7 +24234,15 @@ func (s *AVDynamicHDRVivid) SetNumWindows(value uint8) {
 	s.ptr.num_windows = (C.uint8_t)(value)
 }
 
-// params skipped due to const array of struct pointers
+// Params gets the params field.
+//
+//	The color transform parameters for every processing window.
+func (s *AVDynamicHDRVivid) Params(i int) *AVHDRVividColorTransformParams {
+	if s == nil || s.ptr == nil || i < 0 || i >= 3 {
+		return nil
+	}
+	return &AVHDRVividColorTransformParams{ptr: &s.ptr.params[i]}
+}
 
 // --- Struct AVHMAC ---
 
@@ -25180,7 +25236,15 @@ func (s *AVDRMLayerDescriptor) SetNbPlanes(value int) {
 	s.ptr.nb_planes = (C.int)(value)
 }
 
-// planes skipped due to const array of struct pointers
+// Planes gets the planes field.
+//
+//	Array of planes in this layer.
+func (s *AVDRMLayerDescriptor) Planes(i int) *AVDRMPlaneDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVDRMPlaneDescriptor{ptr: &s.ptr.planes[i]}
+}
 
 // --- Struct AVDRMFrameDescriptor ---
 
@@ -25256,7 +25320,15 @@ func (s *AVDRMFrameDescriptor) SetNbObjects(value int) {
 	s.ptr.nb_objects = (C.int)(value)
 }
 
-// objects skipped due to const array of struct pointers
+// Objects gets the objects field.
+//
+//	Array of objects making up the frame.
+func (s *AVDRMFrameDescriptor) Objects(i int) *AVDRMObjectDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVDRMObjectDescriptor{ptr: &s.ptr.objects[i]}
+}
 
 // NbLayers gets the nb_layers field.
 //
@@ -25273,7 +25345,15 @@ func (s *AVDRMFrameDescriptor) SetNbLayers(value int) {
 	s.ptr.nb_layers = (C.int)(value)
 }
 
-// layers skipped due to const array of struct pointers
+// Layers gets the layers field.
+//
+//	Array of layers in the frame.
+func (s *AVDRMFrameDescriptor) Layers(i int) *AVDRMLayerDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVDRMLayerDescriptor{ptr: &s.ptr.layers[i]}
+}
 
 // --- Struct AVDRMDeviceContext ---
 
@@ -28728,7 +28808,22 @@ func (s *AVPixFmtDescriptor) SetFlags(value uint64) {
 	s.ptr.flags = (C.uint64_t)(value)
 }
 
-// comp skipped due to manually wrapped in fields.go
+// Comp gets the comp field.
+/*
+  Parameters that describe how pixels are packed.
+  If the format has 1 or 2 components, then luma is 0.
+  If the format has 3 or 4 components:
+    if the RGB flag is set then 0 is red, 1 is green and 2 is blue;
+    otherwise 0 is luma, 1 is chroma-U and 2 is chroma-V.
+
+  If present, the Alpha channel is always the last component.
+*/
+func (s *AVPixFmtDescriptor) Comp(i int) *AVComponentDescriptor {
+	if s == nil || s.ptr == nil || i < 0 || i >= 4 {
+		return nil
+	}
+	return &AVComponentDescriptor{ptr: &s.ptr.comp[i]}
+}
 
 // Alias gets the alias field.
 //

@@ -1,5 +1,5 @@
 # generator skip dump (WW-139)
-# markers=245 symbols=245 pairs=245
+# markers=234 symbols=234 pairs=234
 AVBlowfish.s: multi dim const array
 AVChannelLayout.u: union type
 AVClass.child_class_iterate: func ptr
@@ -30,19 +30,12 @@ AVDCT.get_pixels: func ptr
 AVDCT.get_pixels_unaligned: func ptr
 AVDCT.idct: func ptr
 AVDES.round_keys: multi dim const array
-AVDOVIDataMapping.curves: const array of struct pointers
-AVDOVIDataMapping.nlq: const array of struct pointers
 AVDOVIReshapingCurve.mmr_coef: multi dim const array
 AVDOVIReshapingCurve.poly_coef: multi dim const array
-AVDRMFrameDescriptor.layers: const array of struct pointers
-AVDRMFrameDescriptor.objects: const array of struct pointers
-AVDRMLayerDescriptor.planes: const array of struct pointers
 AVDVProfile.audio_shuffle: unhandled pointer inner type *main.ConstArray
 AVDetectionBBox.classify_labels: multi dim const array
 AVDynamicHDRPlus.mastering_display_actual_peak_luminance: multi dim const array
-AVDynamicHDRPlus.params: const array of struct pointers
 AVDynamicHDRPlus.targeted_system_display_actual_peak_luminance: multi dim const array
-AVDynamicHDRVivid.params: const array of struct pointers
 AVEncryptionInitInfo.key_ids: unknown pointer pair
 AVExifEntry.value: union type
 AVFilmGrainAOMParams.ar_coeffs_uv: multi dim const array
@@ -59,9 +52,6 @@ AVFormatContext.control_message_cb: ident callback
 AVFormatContext.io_close2: func ptr
 AVFormatContext.io_open: func ptr
 AVFrame.extended_data: manually wrapped in fields.go
-AVHDRPlusColorTransformParams.distribution_maxrgb: const array of struct pointers
-AVHDRVividColorToneMappingParams.three_spline: const array of struct pointers
-AVHDRVividColorTransformParams.tm_params: const array of struct pointers
 AVHWDeviceContext.free: func ptr
 AVHWFramesContext.free: func ptr
 AVIAMFLayer.demixing_matrix: struct value ptr
@@ -84,7 +74,6 @@ AVIndexEntry.size: bitfield
 AVMasteringDisplayMetadata.display_primaries: manually wrapped in fields.go
 AVOption.default_val: union type
 AVPanScan.position: manually wrapped in fields.go
-AVPixFmtDescriptor.comp: manually wrapped in fields.go
 AVProbeData.buf: prim ptr
 AVProgram.stream_index: prim ptr
 AVRTSPResponse.body: prim ptr

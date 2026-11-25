@@ -204,7 +204,8 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		setParams  []jen.Code
 		tgt        *jen.Statement
 
-		refField bool
+		refField      bool
+		skipValueInit bool
 	)
 
 	if field.BitWidth != -1 {
@@ -320,7 +321,7 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 	case fieldShapeConstArray:
 		refField = true
 		var aSkip bool
-		getRetType, getBody, aSkip = g.marshalConstArrayField(o, st, field, shape.array)
+		getParams, getRetType, getBody, skipValueInit, aSkip = g.marshalConstArrayField(o, st, field, cName, shape.array)
 		if aSkip {
 			return
 		}
@@ -340,6 +341,8 @@ func (g *Generator) marshalField(o *jen.File, st *Struct, field *Field) {
 		g.skips.Record(goName+"."+field.Name, "ref field of value struct")
 
 		return
+	case skipValueInit:
+		// Guarded accessor reads s.ptr.<cName> directly after its nil-receiver check.
 	case refField:
 		getBody = slices.Insert(
 			getBody, 0,
@@ -410,7 +413,7 @@ func normalizedFieldCType(st *Struct, field *Field, typeName, goType string) str
 	return cType
 }
 
-func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, v *ConstArray) (getRetType, getBody []jen.Code, skip bool) {
+func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field, cName string, v *ConstArray) (getParams, getRetType, getBody []jen.Code, skipValueInit, skip bool) {
 	shape := g.classifyConstArrayFieldShape(v)
 
 	switch shape.kind {
@@ -452,6 +455,29 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 			)),
 		)
 
+	case constArrayFieldShapeByPointerStruct:
+		getParams = []jen.Code{jen.Id("i").Id("int")}
+		getRetType = []jen.Code{
+			jen.Op("*").Id(shape.st.Name),
+		}
+
+		getBody = append(
+			getBody,
+			jen.If(
+				jen.Id("s").Op("==").Nil().
+					Op("||").Id("s").Dot("ptr").Op("==").Nil().
+					Op("||").Id("i").Op("<").Lit(0).
+					Op("||").Id("i").Op(">=").Lit(int(v.Size)),
+			).Block(
+				jen.Return(jen.Nil()),
+			),
+			jen.Return(jen.Op("&").Id(shape.st.Name).Values(jen.Dict{
+				jen.Id("ptr"): jen.Op("&").Id("s").Dot("ptr").Dot(cName).Index(jen.Id("i")),
+			})),
+		)
+
+		return getParams, getRetType, getBody, true, false
+
 	case constArrayFieldShapeUint8PointerArray:
 		getRetType = []jen.Code{
 			jen.Op("*").Id("Array").Types(jen.Qual("unsafe", "Pointer")),
@@ -476,7 +502,7 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 			)),
 		)
 
-	case constArrayFieldShapeStructPointerSkip, constArrayFieldShapeValueIdentPointerSkip,
+	case constArrayFieldShapeValueIdentPointerSkip,
 		constArrayFieldShapeIdentPointerSkip, constArrayFieldShapeMultiDimSkip,
 		constArrayFieldShapeUnknownTypeSkip, constArrayFieldShapeUnhandledPointerInnerSkip,
 		constArrayFieldShapeUnhandledInnerSkip:
@@ -484,10 +510,10 @@ func (g *Generator) marshalConstArrayField(o *jen.File, st *Struct, field *Field
 		o.Line()
 		g.skips.Record(st.Name+"."+field.Name, shape.reason)
 
-		return getRetType, getBody, true
+		return getParams, getRetType, getBody, false, true
 	}
 
-	return getRetType, getBody, false
+	return getParams, getRetType, getBody, false, false
 }
 
 func (g *Generator) marshalPointerField(o *jen.File, st *Struct, field *Field, v *PointerType, tgt *jen.Statement) (getRetType, setParams, getBody, setBody []jen.Code, skip bool) {
