@@ -630,6 +630,54 @@ func TestPruneZeroSectionCOFFMembers(t *testing.T) {
 		}
 	})
 
+	t.Run("gnu-long-name-with-paths", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "long-paths.a")
+
+		longPathDwo := "target/i686-pc-windows-gnu/release/deps/compiler_builtins.rcgu.dwo/\n"
+		longPathDwoCRLF := "target/i686-pc-windows-gnu/release/deps/core.rcgu.dwo/\r\n"
+		longPathValid := "target/i686-pc-windows-gnu/release/deps/valid_member.o/\n"
+		longNames := []byte(longPathDwo + longPathDwoCRLF + longPathValid)
+		longPathDwoCRLFRef := fmt.Sprintf("/%d", len(longPathDwo))
+		longPathValidRef := fmt.Sprintf("/%d", len(longPathDwo)+len(longPathDwoCRLF))
+
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 48)
+		dwoELF := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 36)...)
+
+		archive := buildTestArchive(
+			testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+			testARMember{name: "//", payload: longNames},
+			testARMember{name: "/0", payload: dwoELF},
+			testARMember{name: longPathDwoCRLFRef, payload: dwoELF},
+			testARMember{name: longPathValidRef, payload: validObj},
+		)
+		if err := os.WriteFile(path, archive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 2 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (2, nil)", pruned, err)
+		}
+
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, got)
+		wantMembers := []testARMember{
+			{name: "//", payload: longNames},
+			{name: longPathValidRef, payload: validObj},
+		}
+		if len(members) != len(wantMembers) {
+			t.Fatalf("member count = %d, want %d: %+v", len(members), len(wantMembers), members)
+		}
+		for i, want := range wantMembers {
+			if members[i].name != want.name || !bytes.Equal(members[i].payload, want.payload) {
+				t.Fatalf("member[%d] = (%q, %d bytes), want (%q, %d bytes)", i, members[i].name, len(members[i].payload), want.name, len(want.payload))
+			}
+		}
+	})
+
 	t.Run("malformed-ar-headers", func(t *testing.T) {
 		badTrailer := buildTestArchive(testARMember{name: "a.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 20)})
 		badTrailer[len(arMagic)+58] = 'X'

@@ -264,10 +264,10 @@ func resolveGNULongName(name string, longNames []byte) string {
 		return ""
 	}
 	rest := longNames[off:]
-	if end := bytes.IndexAny(rest, "/\r\n\x00"); end >= 0 {
+	if end := bytes.IndexAny(rest, "\r\n\x00"); end >= 0 {
 		rest = rest[:end]
 	}
-	return string(rest)
+	return string(bytes.TrimSuffix(rest, []byte("/")))
 }
 
 func isSplitDWARFName(name string) bool {
