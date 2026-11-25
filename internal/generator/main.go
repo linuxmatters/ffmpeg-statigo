@@ -27,7 +27,7 @@ import (
 // Bumping this constant is a curation decision. An FFmpeg upgrade that binds new
 // headers carrying unemittable shapes needs an intentional bump alongside the
 // header update; do not raise it to silence a regression.
-const skipCeiling = 217
+const skipCeiling = 203
 
 func main() {
 	skips, err := run(os.Args[1:])

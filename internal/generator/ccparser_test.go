@@ -468,6 +468,148 @@ void *ffg_by_pointer(size_t *out_size);
 	}
 }
 
+// TestCCWalkConstArrayElemConst pins ConstArray.ElemConst across const and
+// mutable fixed-size array parameters, including typedef'd primitives and
+// pointer-element arrays.
+func TestCCWalkConstArrayElemConst(t *testing.T) {
+	const src = `#include <stddef.h>
+#include <stdint.h>
+
+void ffg_const_int(const int a[4]);
+void ffg_const_ptrdiff(const ptrdiff_t a[4]);
+void ffg_const_uint8(const uint8_t a[16]);
+void ffg_const_uint32(const uint32_t a[4]);
+void ffg_int(int a[4]);
+void ffg_size_t(size_t a[4]);
+void ffg_double(double a[2]);
+void ffg_uint8_ptr_const(uint8_t * const a[4]);
+`
+
+	path := writeTestHeader(t, t.TempDir(), "const-array-elem-const", src)
+
+	cfg, err := newCCConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("cc/v4 configuration: %v", err)
+	}
+
+	ast, err := ccTranslate(cfg, path)
+	if err != nil {
+		t.Fatalf("translate: %v", err)
+	}
+
+	table, err := BuildCommentTable(path)
+	if err != nil {
+		t.Fatalf("comment table: %v", err)
+	}
+
+	w := &ccWalk{
+		mod: &Module{
+			functions: map[string]*Function{},
+			structs:   map[string]*Struct{},
+			enums:     map[string]*Enum{},
+			callbacks: map[string]*Function{},
+			constants: map[string]*Constant{},
+		},
+		abs:   path,
+		skips: &SkipCollector{},
+		tags:  map[string]bool{},
+		table: table,
+	}
+
+	origOut := log.Writer()
+	log.SetOutput(io.Discard)
+
+	defer log.SetOutput(origOut)
+
+	w.walkAST(ast)
+
+	tests := []struct {
+		fnName        string
+		wantInner     Type
+		wantSize      int64
+		wantElemConst bool
+	}{
+		{
+			fnName:        "ffg_const_int",
+			wantInner:     &IdentType{Name: "int"},
+			wantSize:      4,
+			wantElemConst: true,
+		},
+		{
+			fnName:        "ffg_const_ptrdiff",
+			wantInner:     &IdentType{Name: "ptrdiff_t"},
+			wantSize:      4,
+			wantElemConst: true,
+		},
+		{
+			fnName:        "ffg_const_uint8",
+			wantInner:     &IdentType{Name: "uint8_t"},
+			wantSize:      16,
+			wantElemConst: true,
+		},
+		{
+			fnName:        "ffg_const_uint32",
+			wantInner:     &IdentType{Name: "uint32_t"},
+			wantSize:      4,
+			wantElemConst: true,
+		},
+		{
+			fnName:        "ffg_int",
+			wantInner:     &IdentType{Name: "int"},
+			wantSize:      4,
+			wantElemConst: false,
+		},
+		{
+			fnName:        "ffg_size_t",
+			wantInner:     &IdentType{Name: "size_t"},
+			wantSize:      4,
+			wantElemConst: false,
+		},
+		{
+			fnName:        "ffg_double",
+			wantInner:     &IdentType{Name: "double"},
+			wantSize:      2,
+			wantElemConst: false,
+		},
+		{
+			fnName:        "ffg_uint8_ptr_const",
+			wantInner:     &PointerType{Inner: &IdentType{Name: "uint8_t"}},
+			wantSize:      4,
+			wantElemConst: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.fnName, func(t *testing.T) {
+			fn, ok := w.mod.functions[tt.fnName]
+			if !ok {
+				t.Fatalf("function %q was not recorded in module", tt.fnName)
+			}
+
+			if len(fn.Args) != 1 {
+				t.Fatalf("%s has %d parameters, want 1", tt.fnName, len(fn.Args))
+			}
+
+			got, ok := fn.Args[0].Type.(*ConstArray)
+			if !ok {
+				t.Fatalf("%s parameter type = %q (%T), want *ConstArray", tt.fnName, fn.Args[0].Type, fn.Args[0].Type)
+			}
+
+			if !typeEquals(got.Inner, tt.wantInner) {
+				t.Errorf("%s Inner = %q (%T), want %q (%T)", tt.fnName, got.Inner, got.Inner, tt.wantInner, tt.wantInner)
+			}
+
+			if got.Size != tt.wantSize {
+				t.Errorf("%s Size = %d, want %d", tt.fnName, got.Size, tt.wantSize)
+			}
+
+			if got.ElemConst != tt.wantElemConst {
+				t.Errorf("%s ElemConst = %v, want %v", tt.fnName, got.ElemConst, tt.wantElemConst)
+			}
+		})
+	}
+}
+
 // predefinedMacro looks name up in a `#define` dump and returns its replacement
 // text. Each line is "#define NAME REPLACEMENT" or, for a function-like macro,
 // "#define NAME(ARGS) REPLACEMENT"; only object-like macros are wanted here.

@@ -3,6 +3,7 @@ package ffmpeg
 import (
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"unsafe"
 )
@@ -948,6 +949,327 @@ func TestGeneratorSkipPatterns(t *testing.T) {
 		if strings.Contains(string(data), "AVFopenUtf8") {
 			t.Errorf("AVFopenUtf8 unexpectedly present in functions.gen.go; " +
 				"the av_fopen_utf8 skip in internal/generator/generator.go is now spurious")
+		}
+	})
+}
+
+// TestGeneratorFixedSizeArrayParams validates all 14 newly generated bindings
+// whose C signatures accept fixed-size array parameters, under -race and
+// GOEXPERIMENT=cgocheck2.
+func TestGeneratorFixedSizeArrayParams(t *testing.T) {
+	t.Run("nil_probe_av_image_fill_black_and_color", func(t *testing.T) {
+		ret, err := AVImageFillBlack(nil, nil, AVPixFmtYuv420P, AVColRangeMpeg, 16, 16)
+		if err != nil || ret < 0 {
+			t.Fatalf("AVImageFillBlack nil probe failed: ret=%d err=%v", ret, err)
+		}
+
+		color := [4]uint32{0x12, 0x34, 0x56, 0xFF}
+		ret, err = AVImageFillColor(nil, nil, AVPixFmtRgb24, &color, 16, 16, 0)
+		if err != nil || ret < 0 {
+			t.Fatalf("AVImageFillColor nil probe failed: ret=%d err=%v", ret, err)
+		}
+
+		ret, err = AVImageFillBlack(nil, nil, AVPixFmtNone, AVColRangeMpeg, 16, 16)
+		if err == nil || ret >= 0 {
+			t.Errorf("AVImageFillBlack(AVPixFmtNone) expected error, got ret=%d err=%v", ret, err)
+		}
+
+		ret, err = AVImageFillColor(nil, nil, AVPixFmtNone, &color, 16, 16, 0)
+		if err == nil || ret >= 0 {
+			t.Errorf("AVImageFillColor(AVPixFmtNone) expected error, got ret=%d err=%v", ret, err)
+		}
+	})
+
+	t.Run("optional_output_av_image_fill_max_pixsteps", func(t *testing.T) {
+		desc := AVPixFmtDescGet(AVPixFmtRgb24)
+		if desc == nil {
+			t.Fatal("AVPixFmtDescGet(AVPixFmtRgb24) returned nil")
+		}
+
+		var steps [4]int
+		AVImageFillMaxPixsteps(&steps, nil, desc)
+		if steps[0] != 3 {
+			t.Errorf("AVImageFillMaxPixsteps(nil comps): steps[0]=%d, want 3", steps[0])
+		}
+
+		steps = [4]int{}
+		comps := [4]int{-1, -1, -1, -1}
+		AVImageFillMaxPixsteps(&steps, &comps, desc)
+		if steps[0] != 3 {
+			t.Errorf("AVImageFillMaxPixsteps(with comps): steps[0]=%d, want 3", steps[0])
+		}
+		if comps[0] != 0 {
+			t.Errorf("AVImageFillMaxPixsteps(with comps): comps[0]=%d, want 0", comps[0])
+		}
+	})
+
+	t.Run("linesizes_and_plane_sizes", func(t *testing.T) {
+		var linesizes [4]int
+		ret, err := AVImageFillLinesizes(&linesizes, AVPixFmtYuv420P, 16)
+		if err != nil || ret < 0 {
+			t.Fatalf("AVImageFillLinesizes failed: ret=%d err=%v", ret, err)
+		}
+		wantLinesizes := [4]int{16, 8, 8, 0}
+		if linesizes != wantLinesizes {
+			t.Fatalf("linesizes = %v, want %v", linesizes, wantLinesizes)
+		}
+
+		linesizes64 := [4]int64{
+			int64(linesizes[0]),
+			int64(linesizes[1]),
+			int64(linesizes[2]),
+			int64(linesizes[3]),
+		}
+		var planeSizes [4]uint64
+		ret, err = AVImageFillPlaneSizes(&planeSizes, AVPixFmtYuv420P, 16, &linesizes64)
+		if err != nil || ret < 0 {
+			t.Fatalf("AVImageFillPlaneSizes failed: ret=%d err=%v", ret, err)
+		}
+		wantPlaneSizes := [4]uint64{256, 64, 64, 0}
+		if planeSizes != wantPlaneSizes {
+			t.Errorf("planeSizes = %v, want %v", planeSizes, wantPlaneSizes)
+		}
+	})
+
+	t.Run("cgocheck_pointer_arrays", func(t *testing.T) {
+		const (
+			width  = 16
+			height = 16
+			align  = 64
+		)
+
+		srcPlanes, srcLines, _, err := AVImageAlloc(width, height, AVPixFmtRgb24, align)
+		if err != nil {
+			t.Fatalf("AVImageAlloc src failed: %v", err)
+		}
+		defer AVImageFreePlanes(srcPlanes)
+
+		dstPlanes, dstLines, _, err := AVImageAlloc(width, height, AVPixFmtRgb24, align)
+		if err != nil {
+			t.Fatalf("AVImageAlloc dst failed: %v", err)
+		}
+		defer AVImageFreePlanes(dstPlanes)
+
+		var (
+			srcData, dstData       [4]unsafe.Pointer
+			srcLines64, dstLines64 [4]int64
+			dstLinesInt            [4]int
+		)
+		for i := range 4 {
+			srcData[i] = srcPlanes[i]
+			dstData[i] = dstPlanes[i]
+			srcLines64[i] = int64(srcLines[i])
+			dstLines64[i] = int64(dstLines[i])
+			dstLinesInt[i] = dstLines[i]
+		}
+
+		desc := AVPixFmtDescGet(AVPixFmtRgb24)
+		if desc == nil {
+			t.Fatal("AVPixFmtDescGet(AVPixFmtRgb24) returned nil")
+		}
+
+		color := [4]uint32{0x12, 0x34, 0x56, 0}
+		if ret, err := AVImageFillColor(&srcData, &srcLines64, AVPixFmtRgb24, &color, width, height, 0); err != nil || ret < 0 {
+			t.Fatalf("AVImageFillColor failed: ret=%d err=%v", ret, err)
+		}
+
+		if ret, err := AVImageFillBlack(&dstData, &dstLines64, AVPixFmtRgb24, AVColRangeMpeg, width, height); err != nil || ret < 0 {
+			t.Fatalf("AVImageFillBlack failed: ret=%d err=%v", ret, err)
+		}
+
+		var readBuf [width]uint16
+		AVReadImageLine2(unsafe.Pointer(&readBuf[0]), &dstData, &dstLinesInt, desc, 0, 0, 0, width, 0, 2)
+		for i, v := range readBuf {
+			if v != 0 {
+				t.Fatalf("after AVImageFillBlack: dst pixel[%d] = %d, want 0", i, v)
+			}
+		}
+
+		AVImageCopyUcFrom(&dstData, &dstLines64, &srcData, &srcLines64, AVPixFmtRgb24, width, height)
+
+		wantChannels := [3]uint16{0x12, 0x34, 0x56}
+		for ch, want := range wantChannels {
+			AVReadImageLine2(unsafe.Pointer(&readBuf[0]), &dstData, &dstLinesInt, desc, 0, 0, ch, width, 0, 2)
+			for x, got := range readBuf {
+				if got != want {
+					t.Fatalf("after AVImageCopyUcFrom: channel %d pixel[%d] = 0x%x, want 0x%x", ch, x, got, want)
+				}
+			}
+		}
+
+		// AVWriteImageLine2 requires a zeroed target plane.
+		if ret, err := AVImageFillBlack(&dstData, &dstLines64, AVPixFmtRgb24, AVColRangeMpeg, width, height); err != nil || ret < 0 {
+			t.Fatalf("AVImageFillBlack before write failed: ret=%d err=%v", ret, err)
+		}
+
+		var writeBuf [width]uint16
+		for i := range writeBuf {
+			writeBuf[i] = uint16(i * 11)
+		}
+		AVWriteImageLine2(unsafe.Pointer(&writeBuf[0]), &dstData, &dstLinesInt, desc, 0, 0, 0, width, 2)
+
+		readBuf = [width]uint16{}
+		AVReadImageLine2(unsafe.Pointer(&readBuf[0]), &dstData, &dstLinesInt, desc, 0, 0, 0, width, 0, 2)
+		if readBuf != writeBuf {
+			t.Errorf("AVWriteImageLine2/AVReadImageLine2 round-trip mismatch: got %v, want %v", readBuf, writeBuf)
+		}
+	})
+
+	t.Run("race_const_arrays", func(t *testing.T) {
+		const (
+			width      = 16
+			height     = 16
+			goroutines = 8
+			iterations = 16
+		)
+
+		planes, allocLines, _, err := AVImageAlloc(width, height, AVPixFmtRgb24, 32)
+		if err != nil {
+			t.Fatalf("AVImageAlloc failed: %v", err)
+		}
+		defer AVImageFreePlanes(planes)
+
+		var (
+			baseData       [4]unsafe.Pointer
+			sharedLinesInt [4]int
+			allocLines64   [4]int64
+			sharedLines64  = [4]int64{16, 8, 8, 0}
+			sharedColor    = [4]uint32{0x22, 0x44, 0x66, 0}
+			sharedKey      = [16]uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+		)
+		for i := range 4 {
+			baseData[i] = planes[i]
+			sharedLinesInt[i] = allocLines[i]
+			allocLines64[i] = int64(allocLines[i])
+		}
+		if ret, err := AVImageFillColor(&baseData, &allocLines64, AVPixFmtRgb24, &sharedColor, width, height, 0); err != nil || ret < 0 {
+			t.Fatalf("AVImageFillColor setup failed: ret=%d err=%v", ret, err)
+		}
+
+		desc := AVPixFmtDescGet(AVPixFmtRgb24)
+		if desc == nil {
+			t.Fatal("AVPixFmtDescGet(AVPixFmtRgb24) returned nil")
+		}
+
+		var wg sync.WaitGroup
+		for range goroutines {
+			wg.Go(func() {
+				tea := AVTeaAlloc()
+				if tea == nil {
+					t.Error("AVTeaAlloc returned nil")
+					return
+				}
+				defer AVFree(tea.RawPtr())
+
+				xtea := AVXteaAlloc()
+				if xtea == nil {
+					t.Error("AVXteaAlloc returned nil")
+					return
+				}
+				defer AVFree(xtea.RawPtr())
+
+				localData := baseData
+				var (
+					planeSizes [4]uint64
+					readBuf    [width]uint16
+				)
+				for range iterations {
+					if ret, err := AVImageFillPlaneSizes(&planeSizes, AVPixFmtYuv420P, height, &sharedLines64); err != nil || ret < 0 {
+						t.Errorf("AVImageFillPlaneSizes failed: ret=%d err=%v", ret, err)
+						return
+					}
+					if ret, err := AVImageFillBlack(nil, &sharedLines64, AVPixFmtYuv420P, AVColRangeMpeg, width, height); err != nil || ret < 0 {
+						t.Errorf("AVImageFillBlack probe failed: ret=%d err=%v", ret, err)
+						return
+					}
+					if ret, err := AVImageFillColor(nil, nil, AVPixFmtRgb24, &sharedColor, width, height, 0); err != nil || ret < 0 {
+						t.Errorf("AVImageFillColor probe failed: ret=%d err=%v", ret, err)
+						return
+					}
+					AVReadImageLine2(unsafe.Pointer(&readBuf[0]), &localData, &sharedLinesInt, desc, 0, 0, 0, width, 0, 2)
+					if readBuf[0] != 0x22 {
+						t.Errorf("AVReadImageLine2 read 0x%x, want 0x22", readBuf[0])
+						return
+					}
+					AVTeaInit(tea, &sharedKey, 64)
+					AVXteaInit(xtea, &sharedKey)
+					AVXteaLeInit(xtea, &sharedKey)
+				}
+			})
+		}
+		wg.Wait()
+	})
+
+	t.Run("avcodec_align_dimensions2_preserves_high_slots", func(t *testing.T) {
+		codec := AVCodecFindDecoder(AVCodecIdH264)
+		if codec == nil {
+			t.Fatal("AVCodecFindDecoder(AVCodecIdH264) returned nil")
+		}
+		ctx := AVCodecAllocContext3(codec)
+		if ctx == nil {
+			t.Fatal("AVCodecAllocContext3 returned nil")
+		}
+		defer AVCodecFreeContext(&ctx)
+
+		if ret, err := AVCodecOpen2(ctx, codec, nil); err != nil || ret < 0 {
+			t.Fatalf("AVCodecOpen2 failed: ret=%d err=%v", ret, err)
+		}
+
+		w := 100
+		h := 100
+		align := [8]int{0, 0, 0, 0, 111, 222, 333, 444}
+		AVCodecAlignDimensions2(ctx, &w, &h, &align)
+
+		wantHigh := [4]int{111, 222, 333, 444}
+		gotHigh := [4]int{align[4], align[5], align[6], align[7]}
+		if gotHigh != wantHigh {
+			t.Errorf("align[4..7] = %v, want %v", gotHigh, wantHigh)
+		}
+	})
+
+	t.Run("murmur3_and_bmg", func(t *testing.T) {
+		m := AVMurmur3Alloc()
+		if m == nil {
+			t.Fatal("AVMurmur3Alloc returned nil")
+		}
+		defer AVFree(m.RawPtr())
+
+		AVMurmur3Init(m)
+		payload := []byte("ffmpeg-statigo-murmur3")
+		AVMurmur3Update(m, unsafe.Pointer(&payload[0]), uint64(len(payload)))
+
+		var digest [16]uint8
+		AVMurmur3Final(m, &digest)
+		if digest == ([16]uint8{}) {
+			t.Error("AVMurmur3Final produced an all-zero digest")
+		}
+
+		var _ func(*AVLFG, *[2]float64) = AVBmgGet //nolint:staticcheck // QF1011: intentional compile-time signature check
+	})
+
+	t.Run("kept_manual_wrappers_not_duplicated", func(t *testing.T) {
+		gen, err := os.ReadFile("functions.gen.go")
+		if err != nil {
+			t.Fatalf("read functions.gen.go: %v", err)
+		}
+		genSrc := string(gen)
+
+		keptManual := []string{
+			"func AVDisplayMatrixFlip(",
+			"func AVDisplayRotationGet(",
+			"func AVDisplayRotationSet(",
+			"func AVImageAlloc(",
+			"func AVImageCopy(",
+			"func AVImageCopy2(",
+			"func AVImageCopyToBuffer(",
+			"func AVImageFillArrays(",
+			"func AVImageFillPointers(",
+			"func SwsSetcolorspacedetails(",
+		}
+		for _, decl := range keptManual {
+			if strings.Contains(genSrc, decl) {
+				t.Errorf("kept manual wrapper %q unexpectedly present in functions.gen.go", decl)
+			}
 		}
 	})
 }

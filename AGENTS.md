@@ -63,7 +63,7 @@
   - `display.go` — `av_display_*` display-matrix + `av_exif_*` orientation wrappers; `int32[9]` matrix params CGO can't pass directly (`AVDisplayMatrix` type)
   - `streamgroup.go` — `AVStreamGroupTileGridOffset` accessors for anonymous C struct
   - `opt.go` — `AVOptSetSlice`; Go-slice → C binary option setter
-  - `image.go` — `av_image_*` plane/linesize wrappers
+  - `image.go` — `av_image_*` plane/linesize wrappers (hybrid: 6 manual wrappers in `image.go`, 6 unwrapped siblings with fixed-size array params generated in `functions.gen.go`)
   - `samples.go` — `av_samples_*` audio sample-plane wrappers
   - `audio_fifo.go` — `av_audio_fifo_*` data-path wrappers (write/read/peek/peek_at); `void * const *data` plane-pointer params CGO can't pass directly (reuses `samplePointerArray`)
   - `swscale.go` — `sws_*` software scaling / pixel-format conversion

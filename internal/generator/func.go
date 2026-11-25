@@ -54,14 +54,13 @@ outer:
 			continue outer
 		}
 
-		// WORKAROUND: UUID functions use AVUUID (array typedef) which requires pointer conversion in CGO
-		// These are manually wrapped in uuid.go with proper pointer handling
-		// Pinned by TestUUIDBindingsNotDuplicated in bindings_test.go (asserts the seven manual wrappers are not also generated).
-		if fn.Name == "av_uuid_parse" || fn.Name == "av_uuid_urn_parse" || fn.Name == "av_uuid_parse_range" ||
-			fn.Name == "av_uuid_unparse" || fn.Name == "av_uuid_equal" || fn.Name == "av_uuid_copy" || fn.Name == "av_uuid_nil" {
-			o.Commentf("%v skipped due to array typedef (manually wrapped in uuid.go)", fn.Name)
+		// Skip functions that have hand-written Go wrappers in display.go, image.go,
+		// swscale.go, and uuid.go to avoid symbol collisions.
+		// Pinned by TestUUIDBindingsNotDuplicated in uuid_test.go.
+		if reason, ok := manuallyWrappedFuncs[fn.Name]; ok {
+			o.Commentf("%v skipped due to %v", fn.Name, reason)
 			o.Line()
-			g.skips.Record(fn.Name, "array typedef (manually wrapped in uuid.go)")
+			g.skips.Record(fn.Name, reason)
 
 			continue outer
 		}
@@ -326,7 +325,91 @@ func (g *Generator) marshalArg(o *jen.File, fn *Function, arg *Param) (params, a
 			return params, args, body, postCall, true
 		}
 
-	case argShapeConstArraySkip, argShapeUnhandledSkip:
+	case argShapeConstArray:
+		var aSkip bool
+		params, args, body, postCall, aSkip = g.marshalConstArrayArg(o, fn, arg, shape.array, shape.name)
+		if aSkip {
+			return params, args, body, postCall, true
+		}
+
+	case argShapeUnhandledSkip:
+		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)
+		o.Line()
+		g.skips.Record(fn.Name, shape.reason)
+		return params, args, body, postCall, true
+	}
+
+	return params, args, body, postCall, false
+}
+
+func (g *Generator) marshalConstArrayArg(o *jen.File, fn *Function, arg *Param, v *ConstArray, pName string) (params, args, body, postCall []jen.Code, skip bool) {
+	shape := g.classifyConstArrayArgShape(v, pName)
+
+	tmpName := "tmp" + pName
+	ptrName := "ptr" + pName
+
+	switch shape.kind {
+	case constArrayArgShapeFixedPrimitive:
+		params = append(params, jen.Id(pName).Op("*").Index(jen.Lit(int(shape.size))).Id(shape.goType))
+		body = append(body,
+			jen.Var().Id(tmpName).Op("*").Qual("C", shape.cType),
+			jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+				jen.Id(tmpName).Op("=").Params(jen.Op("*").Qual("C", shape.cType)).Params(
+					jen.Qual("unsafe", "Pointer").Params(jen.Op("&").Id(pName).Index(jen.Lit(0))),
+				),
+			),
+		)
+		args = append(args, jen.Id(tmpName))
+
+	case constArrayArgShapeBouncePrimitive:
+		params = append(params, jen.Id(pName).Op("*").Index(jen.Lit(int(shape.size))).Id(shape.goType))
+		loopBody := append(
+			primitiveWidthCheck(shape.cType, shape.goType, jen.Id(pName).Index(jen.Id("idx")), fn.Name+"."+arg.Name),
+			jen.Id(tmpName).Index(jen.Id("idx")).Op("=").Qual("C", shape.cType).Params(jen.Id(pName).Index(jen.Id("idx"))),
+		)
+		body = append(body,
+			jen.Var().Id(tmpName).Index(jen.Lit(int(shape.size))).Qual("C", shape.cType),
+			jen.Var().Id(ptrName).Op("*").Qual("C", shape.cType),
+			jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+				jen.For(jen.Id("idx").Op(":=").Range().Id(tmpName)).Block(loopBody...),
+				jen.Id(ptrName).Op("=").Op("&").Id(tmpName).Index(jen.Lit(0)),
+			),
+		)
+		args = append(args, jen.Id(ptrName))
+		if !shape.elemConst {
+			postCall = append(postCall,
+				jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+					jen.For(jen.Id("idx").Op(":=").Range().Id(tmpName)).Block(
+						jen.Id(pName).Index(jen.Id("idx")).Op("=").Id(shape.goType).Params(jen.Id(tmpName).Index(jen.Id("idx"))),
+					),
+				),
+			)
+		}
+
+	case constArrayArgShapeUint8Pointer:
+		params = append(params, jen.Id(pName).Op("*").Index(jen.Lit(int(shape.size))).Qual("unsafe", "Pointer"))
+		body = append(body,
+			jen.Var().Id(tmpName).Index(jen.Lit(int(shape.size))).Op("*").Qual("C", "uint8_t"),
+			jen.Var().Id(ptrName).Op("**").Qual("C", "uint8_t"),
+			jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+				jen.For(jen.Id("idx").Op(":=").Range().Id(tmpName)).Block(
+					jen.Id(tmpName).Index(jen.Id("idx")).Op("=").Params(jen.Op("*").Qual("C", "uint8_t")).Params(jen.Id(pName).Index(jen.Id("idx"))),
+				),
+				jen.Id(ptrName).Op("=").Op("&").Id(tmpName).Index(jen.Lit(0)),
+			),
+		)
+		args = append(args, jen.Id(ptrName))
+		if !shape.elemConst {
+			postCall = append(postCall,
+				jen.If(jen.Id(pName).Op("!=").Nil()).Block(
+					jen.For(jen.Id("idx").Op(":=").Range().Id(tmpName)).Block(
+						jen.Id(pName).Index(jen.Id("idx")).Op("=").Qual("unsafe", "Pointer").Params(jen.Id(tmpName).Index(jen.Id("idx"))),
+					),
+				),
+			)
+		}
+
+	case constArrayArgShapeSkip:
 		o.Commentf("%v skipped due to %v", fn.Name, shape.reason)
 		o.Line()
 		g.skips.Record(fn.Name, shape.reason)

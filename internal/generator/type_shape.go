@@ -162,7 +162,7 @@ const (
 	argShapeIdentUnknown
 	argShapePointer
 	argShapeArraySkip
-	argShapeConstArraySkip
+	argShapeConstArray
 	argShapeUnhandledSkip
 )
 
@@ -175,6 +175,7 @@ type argShape struct {
 	enum     *Enum
 	st       *Struct
 	ptr      *PointerType
+	array    *ConstArray
 	reason   string
 }
 
@@ -213,7 +214,7 @@ func (g *Generator) classifyArgShape(arg *Param) argShape {
 	case *Array:
 		return argShape{kind: argShapeArraySkip, name: pName, reason: pName}
 	case *ConstArray:
-		return argShape{kind: argShapeConstArraySkip, name: pName, reason: fmt.Sprintf("const array param %v", pName)}
+		return argShape{kind: argShapeConstArray, name: pName, array: v}
 	default:
 		return argShape{
 			kind:   argShapeUnhandledSkip,
@@ -310,6 +311,65 @@ func (g *Generator) classifyPointerArgShape(fn *Function, arg *Param, ptr *Point
 			name:   pName,
 			reason: fmt.Sprintf("unhandled pointer arg inner type %v (%v)", reflect.TypeOf(ptr.Inner), pName),
 		}
+	}
+}
+
+type constArrayArgShapeKind int
+
+const (
+	constArrayArgShapeFixedPrimitive constArrayArgShapeKind = iota
+	constArrayArgShapeBouncePrimitive
+	constArrayArgShapeUint8Pointer
+	constArrayArgShapeSkip
+)
+
+type constArrayArgShape struct {
+	kind      constArrayArgShapeKind
+	size      int64
+	elemConst bool
+	goType    string
+	cType     string
+	reason    string
+}
+
+func (g *Generator) classifyConstArrayArgShape(array *ConstArray, pName string) constArrayArgShape {
+	skip := constArrayArgShape{
+		kind:   constArrayArgShapeSkip,
+		reason: fmt.Sprintf("const array param %v", pName),
+	}
+	if array == nil || array.Size <= 0 {
+		return skip
+	}
+
+	switch inner := array.Inner.(type) {
+	case *IdentType:
+		shape := g.classifyIdent(inner.Name)
+		if shape.kind != identShapePrimitive {
+			return skip
+		}
+		cType := getCType(inner.Name, shape.goType)
+		kind := constArrayArgShapeFixedPrimitive
+		if needsArrayBounceBuffer(cType) {
+			kind = constArrayArgShapeBouncePrimitive
+		}
+		return constArrayArgShape{
+			kind:      kind,
+			size:      array.Size,
+			elemConst: array.ElemConst,
+			goType:    shape.goType,
+			cType:     cType,
+		}
+	case *PointerType:
+		if innerIdent, ok := inner.Inner.(*IdentType); ok && innerIdent != nil && innerIdent.Name == "uint8_t" {
+			return constArrayArgShape{
+				kind:      constArrayArgShapeUint8Pointer,
+				size:      array.Size,
+				elemConst: array.ElemConst,
+			}
+		}
+		return skip
+	default:
+		return skip
 	}
 }
 

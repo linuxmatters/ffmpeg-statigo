@@ -94,8 +94,9 @@ func (t *FuncType) Equals(other Type) bool {
 }
 
 type ConstArray struct {
-	Inner Type
-	Size  int64
+	Inner     Type
+	Size      int64
+	ElemConst bool
 }
 
 func (t *ConstArray) typeMarker()    {}
@@ -107,7 +108,7 @@ func (t *ConstArray) Equals(other Type) bool {
 		return false
 	}
 
-	return t.Size == ot.Size && typeEquals(t.Inner, ot.Inner)
+	return t.Size == ot.Size && t.ElemConst == ot.ElemConst && typeEquals(t.Inner, ot.Inner)
 }
 
 type Array struct {
@@ -247,7 +248,11 @@ func (w *ccWalk) parseType(indent string, t cc.Type) Type {
 			return &Array{Inner: inner}
 		}
 
-		return &ConstArray{Inner: inner, Size: at.Len()}
+		return &ConstArray{
+			Inner:     inner,
+			Size:      at.Len(),
+			ElemConst: at.Elem() != nil && at.Elem().Attributes().IsConst(),
+		}
 
 	case cc.Function:
 		ft, ok := t.(*cc.FunctionType)
