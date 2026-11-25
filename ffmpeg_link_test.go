@@ -46,7 +46,7 @@ func TestWindowsProfileLinkSelection(t *testing.T) {
 				}
 				want = append(want, "-lm", "-lws2_32", "-lbcrypt", "-luser32")
 				if profile == "default" {
-					want = append(want, "-lntdll", "-luserenv", "-lcrypt32")
+					want = append(want, "-lntdll", "-luserenv", "-lcrypt32", "-lsynchronization")
 				}
 				if !slices.Equal(pkg.CgoLDFLAGS, want) {
 					t.Errorf("link flags = %v, want %v", pkg.CgoLDFLAGS, want)

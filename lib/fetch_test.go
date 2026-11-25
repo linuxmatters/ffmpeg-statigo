@@ -5,13 +5,18 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
+	"debug/elf"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -1126,4 +1131,588 @@ func TestExtractTarball_ValidExtraction(t *testing.T) {
 	if string(content) != "mock library content" {
 		t.Errorf("Content mismatch: got %s", string(content))
 	}
+}
+
+// =============================================================================
+// Bitcode Section Stripping Tests
+// =============================================================================
+
+func writeFakeTool(t *testing.T, dir, name, body string) {
+	t.Helper()
+	script := "#!/bin/sh\n" + body
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(script), 0o755); err != nil {
+		t.Fatalf("writing fake %s: %v", name, err)
+	}
+}
+
+func mockLinuxRelease(t *testing.T, arch string, archiveBytes []byte) *int {
+	t.Helper()
+
+	platArch := "linux_" + arch
+	payloadPath := filepath.Join(libraryProfile, platArch, "libffmpeg.a")
+	asset := "ffmpeg-linux-" + arch + ".tar.gz"
+	if libraryProfile != "" {
+		asset = "ffmpeg-" + libraryProfile + "-linux-" + arch + ".tar.gz"
+	}
+
+	tarball := createValidTarball(t, map[string][]byte{
+		filepath.ToSlash(payloadPath): archiveBytes,
+	})
+	t.Cleanup(func() { _ = os.Remove(tarball) })
+
+	payload, err := os.ReadFile(tarball)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(payload)
+	digest := hex.EncodeToString(sum[:])
+
+	const release = "lib-" + Version + ".0"
+	requests := 0
+	mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+		requests++
+		var data any
+		switch req.URL.Path {
+		case "/repos/linuxmatters/ffmpeg-statigo/releases":
+			data = []GitHubRelease{{TagName: release}}
+		case "/repos/linuxmatters/ffmpeg-statigo/releases/tags/" + release:
+			data = GitHubReleaseDetail{
+				Assets: []GitHubAsset{{Name: asset, Digest: "sha256:" + digest}},
+			}
+		case "/linuxmatters/ffmpeg-statigo/releases/download/" + release + "/" + asset:
+			return testHTTPResponse(http.StatusOK, payload), nil
+		default:
+			return nil, fmt.Errorf("unexpected request: %s", req.URL)
+		}
+		body, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+		return testHTTPResponse(http.StatusOK, body), nil
+	})
+	return &requests
+}
+
+func TestStripBitcodeSections_Guards(t *testing.T) {
+	dir := t.TempDir()
+	binDir := filepath.Join(dir, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	calledPath := filepath.Join(dir, "called")
+	t.Setenv("STRIP_GUARD_CALLED", calledPath)
+	failBody := "printf 'called\\n' >> \"$STRIP_GUARD_CALLED\"\nexit 1\n"
+	writeFakeTool(t, binDir, "objcopy", failBody)
+	writeFakeTool(t, binDir, "ar", failBody)
+	t.Setenv("PATH", binDir)
+
+	archivePath := filepath.Join(dir, "valid.a")
+	if err := os.WriteFile(archivePath, []byte("!<arch>\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	nonArchivePath := filepath.Join(dir, "plain.txt")
+	if err := os.WriteFile(nonArchivePath, []byte("not an ar archive"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	shortPath := filepath.Join(dir, "short.a")
+	if err := os.WriteFile(shortPath, []byte("short"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	otherArch := "arm64"
+	if runtime.GOARCH == "arm64" {
+		otherArch = "amd64"
+	}
+
+	cases := []struct {
+		name     string
+		path     string
+		platform string
+		arch     string
+	}{
+		{name: "non_linux_platform", path: archivePath, platform: "darwin", arch: runtime.GOARCH},
+		{name: "mismatched_arch", path: archivePath, platform: "linux", arch: otherArch},
+		{name: "non_archive_file", path: nonArchivePath, platform: "linux", arch: runtime.GOARCH},
+		{name: "short_file", path: shortPath, platform: "linux", arch: runtime.GOARCH},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := stripBitcodeSections(tc.path, tc.platform, tc.arch); err != nil {
+				t.Fatalf("stripBitcodeSections() error = %v, want nil", err)
+			}
+			if err := stripCachedBitcodeSections(tc.path, tc.platform, tc.arch); err != nil {
+				t.Fatalf("stripCachedBitcodeSections() error = %v, want nil", err)
+			}
+			if _, err := os.Stat(calledPath); !os.IsNotExist(err) {
+				t.Fatalf("guard failed to short-circuit: fake tool was invoked")
+			}
+			leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(tc.path), ".strip-*.a"))
+			if err != nil {
+				t.Fatalf("globbing staged temp files: %v", err)
+			}
+			if len(leftovers) != 0 {
+				t.Fatalf("guard left staged temp files: %v", leftovers)
+			}
+		})
+	}
+}
+
+func TestStripBitcodeSections_FreshAndCachedLinuxArchive(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Linux-only test")
+	}
+
+	arch := runtime.GOARCH
+	libPath := filepath.Join("lib", libraryProfile, "linux_"+arch, "libffmpeg.a")
+
+	installLoggingTools := func(t *testing.T) string {
+		t.Helper()
+		toolDir := t.TempDir()
+		logPath := filepath.Join(toolDir, "calls.log")
+		t.Setenv("STRIP_TEST_LOG", logPath)
+		writeFakeTool(t, toolDir, "objcopy", "printf 'objcopy %s\\n' \"$*\" >> \"$STRIP_TEST_LOG\"\n")
+		writeFakeTool(t, toolDir, "ar", "printf 'ar %s\\n' \"$*\" >> \"$STRIP_TEST_LOG\"\n")
+		t.Setenv("PATH", toolDir)
+		return logPath
+	}
+
+	readLogLines := func(t *testing.T, logPath string) []string {
+		t.Helper()
+		data, err := os.ReadFile(logPath)
+		if err != nil {
+			t.Fatalf("reading call log: %v", err)
+		}
+		trimmed := strings.TrimSpace(string(data))
+		if trimmed == "" {
+			return nil
+		}
+		return strings.Split(trimmed, "\n")
+	}
+
+	t.Run("fresh_download_strips_before_ar_s", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		logPath := installLoggingTools(t)
+		requests := mockLinuxRelease(t, arch, []byte("!<arch>\n"))
+
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v", err)
+		}
+		if *requests == 0 {
+			t.Fatal("expected HTTP requests for fresh download")
+		}
+
+		lines := readLogLines(t, logPath)
+		if len(lines) != 2 {
+			t.Fatalf("tool calls = %v, want 2 calls", lines)
+		}
+		const objcopyPrefix = "objcopy --remove-section=.llvmbc --remove-section=.llvmcmd "
+		if !strings.HasPrefix(lines[0], objcopyPrefix) {
+			t.Fatalf("first call = %q, want prefix %q", lines[0], objcopyPrefix)
+		}
+		stagedPath := strings.TrimPrefix(lines[0], objcopyPrefix)
+		if !strings.HasSuffix(stagedPath, filepath.Join(libraryProfile, "linux_"+arch, "libffmpeg.a")) {
+			t.Fatalf("unexpected staged path %q", stagedPath)
+		}
+		wantArCall := "ar s " + stagedPath
+		if lines[1] != wantArCall {
+			t.Fatalf("second call = %q, want %q", lines[1], wantArCall)
+		}
+		if _, err := os.Stat(libPath); err != nil {
+			t.Fatalf("installed library missing: %v", err)
+		}
+	})
+
+	t.Run("cached_archive_strips_without_http", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(libPath, []byte("!<arch>\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		logPath := installLoggingTools(t)
+		requests := 0
+		mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+			requests++
+			return nil, fmt.Errorf("unexpected HTTP request: %s", req.URL)
+		})
+
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v", err)
+		}
+		if requests != 0 {
+			t.Fatalf("cached archive made %d HTTP requests, want 0", requests)
+		}
+
+		lines := readLogLines(t, logPath)
+		if len(lines) != 2 {
+			t.Fatalf("tool calls = %v, want 2 calls", lines)
+		}
+		const objcopyPrefix = "objcopy --remove-section=.llvmbc --remove-section=.llvmcmd "
+		if !strings.HasPrefix(lines[0], objcopyPrefix) {
+			t.Fatalf("first call = %q, want prefix %q", lines[0], objcopyPrefix)
+		}
+		stagedPath := strings.TrimPrefix(lines[0], objcopyPrefix)
+		if stagedPath == libPath {
+			t.Fatalf("cached archive stripped in place at %q, want staged copy", stagedPath)
+		}
+		if filepath.Dir(stagedPath) != filepath.Dir(libPath) {
+			t.Fatalf("staged dir = %q, want %q", filepath.Dir(stagedPath), filepath.Dir(libPath))
+		}
+		if !strings.HasPrefix(filepath.Base(stagedPath), ".strip-") || !strings.HasSuffix(stagedPath, ".a") {
+			t.Fatalf("unexpected staged temp path %q", stagedPath)
+		}
+		wantArCall := "ar s " + stagedPath
+		if lines[1] != wantArCall {
+			t.Fatalf("second call = %q, want %q", lines[1], wantArCall)
+		}
+		if _, err := os.Stat(libPath); err != nil {
+			t.Fatalf("installed library missing: %v", err)
+		}
+		leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(libPath), ".strip-*.a"))
+		if err != nil {
+			t.Fatalf("globbing staged temp files: %v", err)
+		}
+		if len(leftovers) != 0 {
+			t.Fatalf("leftover staged temp files: %v", leftovers)
+		}
+	})
+
+	t.Run("error_propagation_cached_objcopy", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(libPath, []byte("!<arch>\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		toolDir := t.TempDir()
+		writeFakeTool(t, toolDir, "objcopy", "printf 'simulated objcopy failure\\n' >&2\nexit 1\n")
+		writeFakeTool(t, toolDir, "ar", "exit 0\n")
+		t.Setenv("PATH", toolDir)
+
+		requests := 0
+		mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+			requests++
+			return nil, fmt.Errorf("unexpected HTTP request: %s", req.URL)
+		})
+
+		err := DownloadLibs()
+		if err == nil {
+			t.Fatal("DownloadLibs() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "stripping bitcode sections") || !strings.Contains(err.Error(), "simulated objcopy failure") {
+			t.Fatalf("DownloadLibs() error = %v, want wrapped objcopy failure", err)
+		}
+		if requests != 0 {
+			t.Fatalf("cached archive made %d HTTP requests, want 0", requests)
+		}
+	})
+
+	t.Run("error_propagation_cached_ar", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		origBytes := []byte("!<arch>\noriginal-cached-archive")
+		if err := os.WriteFile(libPath, origBytes, 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		toolDir := t.TempDir()
+		writeFakeTool(t, toolDir, "objcopy", "printf 'mutated-by-objcopy' >> \"$3\"\nexit 0\n")
+		writeFakeTool(t, toolDir, "ar", "printf 'simulated ar failure\\n' >&2\nexit 1\n")
+		t.Setenv("PATH", toolDir)
+
+		err := DownloadLibs()
+		if err == nil {
+			t.Fatal("DownloadLibs() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "stripping bitcode sections") || !strings.Contains(err.Error(), "simulated ar failure") {
+			t.Fatalf("DownloadLibs() error = %v, want wrapped ar failure", err)
+		}
+		gotBytes, readErr := os.ReadFile(libPath)
+		if readErr != nil {
+			t.Fatalf("reading cached library after failed ar: %v", readErr)
+		}
+		if !bytes.Equal(gotBytes, origBytes) {
+			t.Fatalf("cached library mutated on ar failure: got %q, want %q", gotBytes, origBytes)
+		}
+		leftovers, globErr := filepath.Glob(filepath.Join(filepath.Dir(libPath), ".strip-*.a"))
+		if globErr != nil {
+			t.Fatalf("globbing staged temp files: %v", globErr)
+		}
+		if len(leftovers) != 0 {
+			t.Fatalf("leftover staged temp files after ar failure: %v", leftovers)
+		}
+	})
+
+	t.Run("error_propagation_fresh_download", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		toolDir := t.TempDir()
+		writeFakeTool(t, toolDir, "objcopy", "printf 'fresh objcopy failure\\n' >&2\nexit 1\n")
+		writeFakeTool(t, toolDir, "ar", "exit 0\n")
+		t.Setenv("PATH", toolDir)
+
+		mockLinuxRelease(t, arch, []byte("!<arch>\n"))
+
+		err := DownloadLibs()
+		if err == nil {
+			t.Fatal("DownloadLibs() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "stripping bitcode sections") || !strings.Contains(err.Error(), "fresh objcopy failure") {
+			t.Fatalf("DownloadLibs() error = %v, want wrapped objcopy failure", err)
+		}
+		if _, statErr := os.Stat(libPath); !os.IsNotExist(statErr) {
+			t.Fatalf("failed strip installed library: %v", statErr)
+		}
+	})
+
+	t.Run("missing_objcopy_returns_nil", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+
+		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(libPath, []byte("!<arch>\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		toolDir := t.TempDir()
+		writeFakeTool(t, toolDir, "ar", "exit 1\n")
+		t.Setenv("PATH", toolDir)
+
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v, want nil when objcopy is missing", err)
+		}
+	})
+
+	t.Run("missing_ar_returns_nil", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+
+		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(libPath, []byte("!<arch>\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		toolDir := t.TempDir()
+		writeFakeTool(t, toolDir, "objcopy", "exit 1\n")
+		t.Setenv("PATH", toolDir)
+
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v, want nil when ar is missing", err)
+		}
+	})
+}
+
+type archiveInspection struct {
+	hasSymbolTable    bool
+	elfMembers        int
+	hasLLVMBCSection  bool
+	hasLLVMCmdSection bool
+}
+
+func inspectARArchive(t *testing.T, archivePath string) archiveInspection {
+	t.Helper()
+
+	data, err := os.ReadFile(archivePath)
+	if err != nil {
+		t.Fatalf("reading archive %s: %v", archivePath, err)
+	}
+	const arMagic = "!<arch>\n"
+	if len(data) < len(arMagic) || string(data[:len(arMagic)]) != arMagic {
+		t.Fatalf("archive %s missing ar magic", archivePath)
+	}
+
+	var info archiveInspection
+	for offset := len(arMagic); offset < len(data); {
+		if offset+60 > len(data) {
+			t.Fatalf("archive %s has truncated member header at offset %d", archivePath, offset)
+		}
+		hdr := data[offset : offset+60]
+		if string(hdr[58:60]) != "`\n" {
+			t.Fatalf("archive %s has invalid header trailer %q at offset %d", archivePath, hdr[58:60], offset)
+		}
+		name := strings.TrimRight(string(hdr[0:16]), " ")
+		size, err := strconv.ParseInt(strings.TrimSpace(string(hdr[48:58])), 10, 64)
+		if err != nil || size < 0 {
+			t.Fatalf("archive %s has invalid member size %q: %v", archivePath, hdr[48:58], err)
+		}
+		offset += 60
+		if offset+int(size) > len(data) {
+			t.Fatalf("archive %s member %q truncated", archivePath, name)
+		}
+		member := data[offset : offset+int(size)]
+		offset += int(size)
+		if size%2 == 1 && offset < len(data) {
+			offset++
+		}
+
+		if name == "/" && len(member) > 0 {
+			info.hasSymbolTable = true
+			continue
+		}
+		if bytes.HasPrefix(member, []byte("\x7fELF")) {
+			info.elfMembers++
+			ef, err := elf.NewFile(bytes.NewReader(member))
+			if err != nil {
+				t.Fatalf("parsing ELF member %q: %v", name, err)
+			}
+			if ef.Section(".llvmbc") != nil {
+				info.hasLLVMBCSection = true
+			}
+			if ef.Section(".llvmcmd") != nil {
+				info.hasLLVMCmdSection = true
+			}
+			_ = ef.Close()
+		}
+	}
+	return info
+}
+
+func TestStripBitcodeSections_RemovesLLVMSections(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Linux-only test")
+	}
+
+	ccBin, err := exec.LookPath("cc")
+	if err != nil {
+		t.Skip("cc not found in PATH")
+	}
+	objcopyBin, err := exec.LookPath("objcopy")
+	if err != nil {
+		t.Skip("objcopy not found in PATH")
+	}
+	arBin, err := exec.LookPath("ar")
+	if err != nil {
+		t.Skip("ar not found in PATH")
+	}
+
+	fixtureDir := t.TempDir()
+	cPath := filepath.Join(fixtureDir, "stub.c")
+	objPath := filepath.Join(fixtureDir, "stub.o")
+	bcPath := filepath.Join(fixtureDir, "llvmbc.bin")
+	cmdPath := filepath.Join(fixtureDir, "llvmcmd.bin")
+	fixtureArchive := filepath.Join(fixtureDir, "libffmpeg.a")
+
+	if err := os.WriteFile(cPath, []byte("int ffmpeg_statigo_bitcode_test(void) { return 42; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bcPath, []byte("BC\xc0\xde"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cmdPath, []byte("-flto"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := exec.CommandContext(t.Context(), ccBin, "-c", cPath, "-o", objPath).CombinedOutput(); err != nil {
+		t.Fatalf("cc -c failed: %v: %s", err, out)
+	}
+	if out, err := exec.CommandContext(t.Context(), objcopyBin, "--add-section", ".llvmbc="+bcPath, "--add-section", ".llvmcmd="+cmdPath, objPath).CombinedOutput(); err != nil {
+		t.Fatalf("objcopy --add-section failed: %v: %s", err, out)
+	}
+	if out, err := exec.CommandContext(t.Context(), arBin, "crs", fixtureArchive, objPath).CombinedOutput(); err != nil {
+		t.Fatalf("ar crs failed: %v: %s", err, out)
+	}
+
+	before := inspectARArchive(t, fixtureArchive)
+	if before.elfMembers != 1 || !before.hasLLVMBCSection || !before.hasLLVMCmdSection || !before.hasSymbolTable {
+		t.Fatalf("fixture archive state = %+v, want 1 ELF member with .llvmbc, .llvmcmd, and symbol table", before)
+	}
+
+	fixtureBytes, err := os.ReadFile(fixtureArchive)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	arch := runtime.GOARCH
+	libPath := filepath.Join("lib", libraryProfile, "linux_"+arch, "libffmpeg.a")
+
+	t.Run("fresh_download", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		requests := mockLinuxRelease(t, arch, fixtureBytes)
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v", err)
+		}
+		if *requests == 0 {
+			t.Fatal("expected HTTP requests for fresh download")
+		}
+
+		after := inspectARArchive(t, libPath)
+		if after.elfMembers != 1 || after.hasLLVMBCSection || after.hasLLVMCmdSection || !after.hasSymbolTable {
+			t.Fatalf("stripped fresh archive state = %+v, want 1 ELF member without .llvmbc/.llvmcmd and with symbol table", after)
+		}
+	})
+
+	t.Run("cached_archive", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", "linux")
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		if err := os.MkdirAll(filepath.Dir(libPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(libPath, fixtureBytes, 0o644); err != nil { //nolint:gosec // G703: libPath uses runtime.GOARCH and build-time libraryProfile inside t.TempDir().
+			t.Fatal(err)
+		}
+
+		requests := 0
+		mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+			requests++
+			return nil, fmt.Errorf("unexpected HTTP request: %s", req.URL)
+		})
+
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v", err)
+		}
+		if requests != 0 {
+			t.Fatalf("cached archive made %d HTTP requests, want 0", requests)
+		}
+
+		after := inspectARArchive(t, libPath)
+		if after.elfMembers != 1 || after.hasLLVMBCSection || after.hasLLVMCmdSection || !after.hasSymbolTable {
+			t.Fatalf("stripped cached archive state = %+v, want 1 ELF member without .llvmbc/.llvmcmd and with symbol table", after)
+		}
+	})
 }

@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"debug/pe"
+	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -24,7 +29,16 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(0)
 	}
-	if slices.Equal(os.Args[1:], []string{"--strip-unneeded", "combined.a"}) {
+	if slices.Equal(os.Args[1:], []string{"--strip-unneeded", "--remove-section=.llvmbc", "--remove-section=.llvmcmd", "combined.a"}) {
+		f, err := os.Open("combined.a")
+		if err != nil {
+			os.Exit(3)
+		}
+		_, pruned, scanErr := scanArchiveMembers(f)
+		_ = f.Close()
+		if scanErr != nil || pruned != 0 {
+			os.Exit(4)
+		}
 		if err := os.WriteFile(filepath.Join("..", "strip-called"), []byte("called"), 0o644); err != nil {
 			os.Exit(2)
 		}
@@ -33,7 +47,106 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(0)
 	}
+	if slices.Equal(os.Args[1:], []string{"s", "combined.a"}) {
+		if !fileExists(filepath.Join("..", "strip-called")) {
+			os.Exit(5)
+		}
+		if err := os.WriteFile(filepath.Join("..", "ar-index-called"), []byte("called"), 0o644); err != nil {
+			os.Exit(2)
+		}
+		if os.Getenv("FFMPEG_BUILDER_AR_INDEX_FAIL") == "1" {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 	os.Exit(2)
+}
+
+type testARMember struct {
+	name    string
+	payload []byte
+}
+
+func buildTestArchive(members ...testARMember) []byte {
+	var buf bytes.Buffer
+	buf.WriteString(arMagic)
+	for _, m := range members {
+		if len(m.name) > 16 {
+			panic("archive member name too long: " + m.name)
+		}
+		fmt.Fprintf(&buf, "%-16s%-12s%-6s%-6s%-8s%-10d`\n", m.name, "0", "0", "0", "100644", len(m.payload))
+		buf.Write(m.payload)
+		if len(m.payload)&1 != 0 {
+			buf.WriteByte('\n')
+		}
+	}
+	return buf.Bytes()
+}
+
+func parseTestArchive(t *testing.T, data []byte) []testARMember {
+	t.Helper()
+	if len(data) < len(arMagic) || string(data[:len(arMagic)]) != arMagic {
+		t.Fatalf("invalid archive magic: %q", data)
+	}
+	var members []testARMember
+	off := len(arMagic)
+	for off < len(data) {
+		if off+arHeaderSize > len(data) {
+			t.Fatalf("truncated header at offset %d", off)
+		}
+		hdr := data[off : off+arHeaderSize]
+		if hdr[58] != '`' || hdr[59] != '\n' {
+			t.Fatalf("malformed header trailer at offset %d: %q", off, hdr[58:60])
+		}
+		name := strings.TrimSpace(string(hdr[0:16]))
+		size, err := strconv.Atoi(strings.TrimSpace(string(hdr[48:58])))
+		if err != nil || size < 0 || off+arHeaderSize+size > len(data) {
+			t.Fatalf("invalid member size at offset %d: %v", off, err)
+		}
+		payload := bytes.Clone(data[off+arHeaderSize : off+arHeaderSize+size])
+		members = append(members, testARMember{name: name, payload: payload})
+		off += arHeaderSize + size
+		if size&1 != 0 {
+			if off >= len(data) || data[off] != '\n' {
+				t.Fatalf("missing odd-size pad at offset %d", off)
+			}
+			off++
+		}
+	}
+	return members
+}
+
+func makeCOFFObject(machine, numSections uint16, totalLen int) []byte {
+	buf := make([]byte, totalLen)
+	binary.LittleEndian.PutUint16(buf[0:2], machine)
+	binary.LittleEndian.PutUint16(buf[2:4], numSections)
+	for i := coffHeaderSize; i < len(buf); i++ {
+		buf[i] = byte(i)
+	}
+	return buf
+}
+
+func makeCOFFBigObj(machine, version uint16, numSections uint32, classID [16]byte) []byte {
+	buf := make([]byte, coffBigObjHeaderSize)
+	binary.LittleEndian.PutUint16(buf[0:2], 0x0000)
+	binary.LittleEndian.PutUint16(buf[2:4], 0xffff)
+	binary.LittleEndian.PutUint16(buf[4:6], version)
+	binary.LittleEndian.PutUint16(buf[6:8], machine)
+	copy(buf[12:28], classID[:])
+	binary.LittleEndian.PutUint32(buf[44:48], numSections)
+	return buf
+}
+
+func makePEShortImportObject(machine uint16) []byte {
+	const stringsData = "av_version_info\x00avutil.dll\x00"
+	buf := make([]byte, 20+len(stringsData))
+	binary.LittleEndian.PutUint16(buf[0:2], 0x0000)
+	binary.LittleEndian.PutUint16(buf[2:4], 0xffff)
+	binary.LittleEndian.PutUint16(buf[4:6], 0)
+	binary.LittleEndian.PutUint16(buf[6:8], machine)
+	binary.LittleEndian.PutUint32(buf[12:16], uint32(len(stringsData)))
+	copy(buf[20:], stringsData)
+	return buf
 }
 
 func TestPortabilityWindowsMergeStrip(t *testing.T) {
@@ -42,48 +155,110 @@ func TestPortabilityWindowsMergeStrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
-		name, arch            string
-		stripFails, wantStrip bool
+		name            string
+		machine         uint16
+		stripFails      bool
+		indexFails      bool
+		wantErrContains string
+		wantStrip       bool
+		wantIndex       bool
 	}{
-		{"embedded-386", "386", true, false},
-		{"embedded-amd64", "amd64", false, true},
-		{"default-386", "386", true, false},
-		{"default-amd64", "amd64", false, true},
-		{"strip-failure", "amd64", true, true},
+		{name: "amd64", machine: pe.IMAGE_FILE_MACHINE_AMD64, wantStrip: true, wantIndex: true},
+		{name: "386", machine: pe.IMAGE_FILE_MACHINE_I386, wantStrip: true, wantIndex: true},
+		{name: "strip-failure", machine: pe.IMAGE_FILE_MACHINE_AMD64, stripFails: true, wantErrContains: "strip failed", wantStrip: true, wantIndex: false},
+		{name: "ar-index-failure", machine: pe.IMAGE_FILE_MACHINE_I386, indexFails: true, wantErrContains: "archive index failed", wantStrip: true, wantIndex: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
 			input, output := filepath.Join(root, "input.a"), filepath.Join(root, "output.a")
-			marker := filepath.Join(root, "strip-called")
-			for path, data := range map[string]string{input: "!<arch>\n", output: "original archive"} {
-				if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
-					t.Fatal(err)
-				}
+			stripMarker := filepath.Join(root, "strip-called")
+			indexMarker := filepath.Join(root, "ar-index-called")
+
+			longZeroName := "very_long_zero_section_member_name.o/\n"
+			longDwoName := "compiler_builtins-5694ded896bf8a99.compiler_builtins.3250d56ac9347a8a-cgu.217.rcgu.dwo/\n"
+			longValidName := "valid_long_member_name.o/\n"
+			longNames := []byte(longZeroName + longDwoName + longValidName)
+			longDwoRef := fmt.Sprintf("/%d", len(longZeroName))
+			longValidRef := fmt.Sprintf("/%d", len(longZeroName)+len(longDwoName))
+
+			validObj := makeCOFFObject(tc.machine, 1, 61)
+			validLongObj := makeCOFFObject(tc.machine, 2, 48)
+			zeroObj := makeCOFFObject(tc.machine, 0, coffHeaderSize)
+			dwoPayload := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 40)...)
+			importObj := makePEShortImportObject(tc.machine)
+
+			archiveBytes := buildTestArchive(
+				testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+				testARMember{name: "//", payload: longNames},
+				testARMember{name: "valid.o/", payload: validObj},
+				testARMember{name: "/0", payload: zeroObj},
+				testARMember{name: "short.dwo/", payload: dwoPayload},
+				testARMember{name: longDwoRef, payload: dwoPayload},
+				testARMember{name: longValidRef, payload: validLongObj},
+				testARMember{name: "imp.o/", payload: importObj},
+			)
+
+			if err := os.WriteFile(input, archiveBytes, 0o644); err != nil {
+				t.Fatal(err)
 			}
+			if err := os.WriteFile(output, []byte("original archive"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
 			t.Setenv("AR", tool)
 			t.Setenv("STRIP", tool)
 			t.Setenv("FFMPEG_BUILDER_ARCHIVE_FIXTURE", "1")
 			t.Setenv("FFMPEG_BUILDER_STRIP_FAIL", "0")
+			t.Setenv("FFMPEG_BUILDER_AR_INDEX_FAIL", "0")
 			if tc.stripFails {
 				t.Setenv("FFMPEG_BUILDER_STRIP_FAIL", "1")
 			}
-			err := combineWindows(context.Background(), []string{input}, output, tc.arch)
-			wantOutput := "!<arch>\n"
-			if tc.wantStrip && tc.stripFails {
-				if err == nil || !strings.Contains(err.Error(), "strip failed") {
-					t.Fatalf("merge error = %v, want strip failure", err)
+			if tc.indexFails {
+				t.Setenv("FFMPEG_BUILDER_AR_INDEX_FAIL", "1")
+			}
+
+			err := combineWindows(context.Background(), []string{input}, output)
+			if tc.wantErrContains != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErrContains) {
+					t.Fatalf("merge error = %v, want substring %q", err, tc.wantErrContains)
 				}
-				wantOutput = "original archive"
 			} else if err != nil {
 				t.Fatal(err)
 			}
-			if got := fileExists(marker); got != tc.wantStrip {
+
+			if got := fileExists(stripMarker); got != tc.wantStrip {
 				t.Fatalf("strip invoked = %v, want %v", got, tc.wantStrip)
 			}
-			got, err := os.ReadFile(output)
-			if err != nil || string(got) != wantOutput {
-				t.Fatalf("output = %q, %v, want %q", got, err, wantOutput)
+			if got := fileExists(indexMarker); got != tc.wantIndex {
+				t.Fatalf("ar index invoked = %v, want %v", got, tc.wantIndex)
 			}
+
+			got, err := os.ReadFile(output)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.wantErrContains != "" {
+				if string(got) != "original archive" {
+					t.Fatalf("output changed on error: %q", got)
+				}
+			} else {
+				members := parseTestArchive(t, got)
+				wantMembers := []testARMember{
+					{name: "//", payload: longNames},
+					{name: "valid.o/", payload: validObj},
+					{name: longValidRef, payload: validLongObj},
+					{name: "imp.o/", payload: importObj},
+				}
+				if len(members) != len(wantMembers) {
+					t.Fatalf("member count = %d, want %d", len(members), len(wantMembers))
+				}
+				for i, want := range wantMembers {
+					if members[i].name != want.name || !bytes.Equal(members[i].payload, want.payload) {
+						t.Fatalf("member[%d] = (%q, %d bytes), want (%q, %d bytes)", i, members[i].name, len(members[i].payload), want.name, len(want.payload))
+					}
+				}
+			}
+
 			entries, err := filepath.Glob(filepath.Join(root, ".ffmpeg-merge-*"))
 			if err != nil || len(entries) != 0 {
 				t.Fatalf("temporary merge directory remains: %v, %v", entries, err)
@@ -243,7 +418,7 @@ func TestPortabilityMergeRejectsInvalidInputWithoutReplacingOutput(t *testing.T)
 					t.Fatal(err)
 				}
 			}
-			if err := combineWindows(context.Background(), []string{input}, output, "386"); err == nil {
+			if err := combineWindows(context.Background(), []string{input}, output); err == nil {
 				t.Fatal("invalid archive was accepted")
 			}
 			got, err := os.ReadFile(output)
@@ -253,6 +428,333 @@ func TestPortabilityMergeRejectsInvalidInputWithoutReplacingOutput(t *testing.T)
 			entries, err := os.ReadDir(root)
 			if err != nil || len(entries) != 2 {
 				t.Fatalf("temporary merge directory remains: %v, %v", entries, err)
+			}
+		})
+	}
+}
+
+func TestPruneZeroSectionCOFFMembers(t *testing.T) {
+	t.Run("empty-archive", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "empty.a")
+		if err := os.WriteFile(path, []byte(arMagic), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 0 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (0, nil)", pruned, err)
+		}
+		got, err := os.ReadFile(path)
+		if err != nil || string(got) != arMagic {
+			t.Fatalf("empty archive mutated: %q, %v", got, err)
+		}
+	})
+
+	t.Run("noop-keeps-symbol-table", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "noop.a")
+		original := buildTestArchive(
+			testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+			testARMember{name: "valid.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 1, 40)},
+		)
+		if err := os.WriteFile(path, original, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 0 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (0, nil)", pruned, err)
+		}
+		got, err := os.ReadFile(path)
+		if err != nil || !bytes.Equal(got, original) {
+			t.Fatalf("no-op archive changed: got %d bytes, want %d bytes, err=%v", len(got), len(original), err)
+		}
+	})
+
+	t.Run("bigobj-zero-section", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "bigobj.a")
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 2, 41)
+		zeroBigObj := makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 2, 0, coffBigObjClassID)
+		validBigObj := makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 2, 3, coffBigObjClassID)
+		archive := buildTestArchive(
+			testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+			testARMember{name: "valid.o/", payload: validObj},
+			testARMember{name: "zero_big.o/", payload: zeroBigObj},
+			testARMember{name: "valid_big.o/", payload: validBigObj},
+		)
+		if err := os.WriteFile(path, archive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 1 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (1, nil)", pruned, err)
+		}
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, got)
+		if len(members) != 2 ||
+			members[0].name != "valid.o/" || !bytes.Equal(members[0].payload, validObj) ||
+			members[1].name != "valid_big.o/" || !bytes.Equal(members[1].payload, validBigObj) {
+			t.Fatalf("unexpected remaining members: %+v", members)
+		}
+	})
+
+	t.Run("bsd-extended-names", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "bsd.a")
+		symdefPayload := append([]byte("__.SYMDEF SORTED\x00\x00\x00\x00"), 0, 0, 0, 0)
+		validName := []byte("valid_member.o\x00\x00")
+		zeroName := []byte("empty_member.o\x00\x00")
+		validPayload := append(bytes.Clone(validName), makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 32)...)
+		zeroPayload := append(bytes.Clone(zeroName), makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 0, coffHeaderSize)...)
+		archive := buildTestArchive(
+			testARMember{name: "#1/20", payload: symdefPayload},
+			testARMember{name: "#1/16", payload: validPayload},
+			testARMember{name: "#1/16", payload: zeroPayload},
+		)
+		if err := os.WriteFile(path, archive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 1 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (1, nil)", pruned, err)
+		}
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, got)
+		if len(members) != 1 || members[0].name != "#1/16" || !bytes.Equal(members[0].payload, validPayload) {
+			t.Fatalf("unexpected remaining BSD members: %+v", members)
+		}
+	})
+
+	t.Run("sym64-symbol-table", func(t *testing.T) {
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 1, 40)
+		zeroObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 0, coffHeaderSize)
+
+		noopPath := filepath.Join(t.TempDir(), "noop-sym64.a")
+		noopArchive := buildTestArchive(
+			testARMember{name: "/SYM64/", payload: []byte{0, 0, 0, 0, 0, 0, 0, 0}},
+			testARMember{name: "valid.o/", payload: validObj},
+		)
+		if err := os.WriteFile(noopPath, noopArchive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err := pruneZeroSectionCOFFMembers(noopPath)
+		if err != nil || pruned != 0 {
+			t.Fatalf("pruneZeroSectionCOFFMembers (noop) = (%d, %v), want (0, nil)", pruned, err)
+		}
+		gotNoop, err := os.ReadFile(noopPath)
+		if err != nil || !bytes.Equal(gotNoop, noopArchive) {
+			t.Fatalf("no-op /SYM64/ archive changed: got %d bytes, want %d bytes, err=%v", len(gotNoop), len(noopArchive), err)
+		}
+
+		prunePath := filepath.Join(t.TempDir(), "prune-sym64.a")
+		pruneArchive := buildTestArchive(
+			testARMember{name: "/SYM64/", payload: []byte{0, 0, 0, 0, 0, 0, 0, 0}},
+			testARMember{name: "valid.o/", payload: validObj},
+			testARMember{name: "zero.o/", payload: zeroObj},
+		)
+		if err := os.WriteFile(prunePath, pruneArchive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		pruned, err = pruneZeroSectionCOFFMembers(prunePath)
+		if err != nil || pruned != 1 {
+			t.Fatalf("pruneZeroSectionCOFFMembers (prune) = (%d, %v), want (1, nil)", pruned, err)
+		}
+		gotPruned, err := os.ReadFile(prunePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, gotPruned)
+		if len(members) != 1 || members[0].name != "valid.o/" || !bytes.Equal(members[0].payload, validObj) {
+			t.Fatalf("unexpected remaining members after pruning /SYM64/ archive: %+v", members)
+		}
+	})
+
+	t.Run("split-dwarf-dwo-members", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "dwo.a")
+
+		longDwoSlash := "compiler_builtins-5694ded896bf8a99.compiler_builtins.3250d56ac9347a8a-cgu.217.rcgu.dwo/\n"
+		longDwoNul := "std-3388af8b7e88581a.std.3c24e6189dc2f3dd-cgu.0.rcgu.DWO\x00"
+		longValidObjName := "valid_long_member_name.o/\n"
+		longNames := []byte(longDwoSlash + longDwoNul + longValidObjName)
+		longDwoNulRef := fmt.Sprintf("/%d", len(longDwoSlash))
+		longValidRef := fmt.Sprintf("/%d", len(longDwoSlash)+len(longDwoNul))
+
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 40)
+		validLongObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 2, 52)
+		keepNotDwoObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 44)
+		dwoELF := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 36)...)
+		bsdLongDwoName := "compiler_builtins-5694ded896bf8a99.compiler_builtins.3250d56ac9347a8a-cgu.0.rcgu.dwo\x00\x00\x00\x00"
+		bsdLongDwoPayload := append([]byte(bsdLongDwoName), dwoELF...)
+
+		archive := buildTestArchive(
+			testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+			testARMember{name: "//", payload: longNames},
+			testARMember{name: "valid.o/", payload: validObj},
+			testARMember{name: "short.dwo/", payload: dwoELF},
+			testARMember{name: "UPPER.DWO", payload: validObj},
+			testARMember{name: "/0", payload: dwoELF},
+			testARMember{name: longDwoNulRef, payload: dwoELF},
+			testARMember{name: fmt.Sprintf("#1/%d", len(bsdLongDwoName)), payload: bsdLongDwoPayload},
+			testARMember{name: longValidRef, payload: validLongObj},
+			testARMember{name: "keep.dwo.o/", payload: keepNotDwoObj},
+		)
+		if err := os.WriteFile(path, archive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 5 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (5, nil)", pruned, err)
+		}
+
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, got)
+		wantMembers := []testARMember{
+			{name: "//", payload: longNames},
+			{name: "valid.o/", payload: validObj},
+			{name: longValidRef, payload: validLongObj},
+			{name: "keep.dwo.o/", payload: keepNotDwoObj},
+		}
+		if len(members) != len(wantMembers) {
+			t.Fatalf("member count = %d, want %d: %+v", len(members), len(wantMembers), members)
+		}
+		for i, want := range wantMembers {
+			if members[i].name != want.name || !bytes.Equal(members[i].payload, want.payload) {
+				t.Fatalf("member[%d] = (%q, %d bytes), want (%q, %d bytes)", i, members[i].name, len(members[i].payload), want.name, len(want.payload))
+			}
+		}
+	})
+
+	t.Run("gnu-long-name-with-paths", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "long-paths.a")
+
+		longPathDwo := "target/i686-pc-windows-gnu/release/deps/compiler_builtins.rcgu.dwo/\n"
+		longPathDwoCRLF := "target/i686-pc-windows-gnu/release/deps/core.rcgu.dwo/\r\n"
+		longPathValid := "target/i686-pc-windows-gnu/release/deps/valid_member.o/\n"
+		longNames := []byte(longPathDwo + longPathDwoCRLF + longPathValid)
+		longPathDwoCRLFRef := fmt.Sprintf("/%d", len(longPathDwo))
+		longPathValidRef := fmt.Sprintf("/%d", len(longPathDwo)+len(longPathDwoCRLF))
+
+		validObj := makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 48)
+		dwoELF := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 36)...)
+
+		archive := buildTestArchive(
+			testARMember{name: "/", payload: []byte{0, 0, 0, 0}},
+			testARMember{name: "//", payload: longNames},
+			testARMember{name: "/0", payload: dwoELF},
+			testARMember{name: longPathDwoCRLFRef, payload: dwoELF},
+			testARMember{name: longPathValidRef, payload: validObj},
+		)
+		if err := os.WriteFile(path, archive, 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		pruned, err := pruneZeroSectionCOFFMembers(path)
+		if err != nil || pruned != 2 {
+			t.Fatalf("pruneZeroSectionCOFFMembers = (%d, %v), want (2, nil)", pruned, err)
+		}
+
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		members := parseTestArchive(t, got)
+		wantMembers := []testARMember{
+			{name: "//", payload: longNames},
+			{name: longPathValidRef, payload: validObj},
+		}
+		if len(members) != len(wantMembers) {
+			t.Fatalf("member count = %d, want %d: %+v", len(members), len(wantMembers), members)
+		}
+		for i, want := range wantMembers {
+			if members[i].name != want.name || !bytes.Equal(members[i].payload, want.payload) {
+				t.Fatalf("member[%d] = (%q, %d bytes), want (%q, %d bytes)", i, members[i].name, len(members[i].payload), want.name, len(want.payload))
+			}
+		}
+	})
+
+	t.Run("malformed-ar-headers", func(t *testing.T) {
+		badTrailer := buildTestArchive(testARMember{name: "a.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 20)})
+		badTrailer[len(arMagic)+58] = 'X'
+
+		badSize := buildTestArchive(testARMember{name: "a.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 20)})
+		copy(badSize[len(arMagic)+48:len(arMagic)+58], "notanumber")
+
+		truncatedPayload := buildTestArchive(testARMember{name: "a.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 20)})
+		truncatedPayload = truncatedPayload[:len(truncatedPayload)-5]
+
+		truncatedOddPad := buildTestArchive(testARMember{name: "a.o/", payload: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 1, 21)})
+		truncatedOddPad = truncatedOddPad[:len(truncatedOddPad)-1]
+
+		for _, tc := range []struct {
+			name string
+			data []byte
+		}{
+			{name: "bad-magic", data: []byte("!<thin>\n")},
+			{name: "truncated-header", data: []byte(arMagic + "short")},
+			{name: "bad-trailer", data: badTrailer},
+			{name: "bad-size", data: badSize},
+			{name: "truncated-payload", data: truncatedPayload},
+			{name: "truncated-odd-pad", data: truncatedOddPad},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				dir := t.TempDir()
+				path := filepath.Join(dir, "bad.a")
+				if err := os.WriteFile(path, tc.data, 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := pruneZeroSectionCOFFMembers(path); err == nil {
+					t.Fatalf("expected error for %s archive", tc.name)
+				}
+				temps, err := filepath.Glob(filepath.Join(dir, ".filtered-*.a"))
+				if err != nil || len(temps) != 0 {
+					t.Fatalf("temporary filtered archive remains: %v, %v", temps, err)
+				}
+			})
+		}
+	})
+}
+
+func TestIsZeroSectionCOFF(t *testing.T) {
+	elfObj := append([]byte{0x7f, 'E', 'L', 'F'}, make([]byte, 60)...)
+	mzImage := append([]byte{'M', 'Z', 0x90, 0x00}, make([]byte, 60)...)
+	wrongClassID := coffBigObjClassID
+	wrongClassID[0] ^= 0xff
+
+	cases := []struct {
+		name        string
+		prefix      []byte
+		payloadSize int64
+		want        bool
+	}{
+		{name: "std-i386-zero", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 0, 20), payloadSize: 20, want: true},
+		{name: "std-amd64-zero", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 0, 56), payloadSize: 120, want: true},
+		{name: "std-arm64-zero", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_ARM64, 0, 20), payloadSize: 20, want: true},
+		{name: "std-riscv64-zero", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_RISCV64, 0, 20), payloadSize: 20, want: true},
+		{name: "std-loongarch64-zero", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_LOONGARCH64, 0, 20), payloadSize: 20, want: true},
+		{name: "std-amd64-nonzero", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_AMD64, 1, 40), payloadSize: 40, want: false},
+		{name: "std-truncated", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_I386, 0, 20)[:19], payloadSize: 19, want: false},
+		{name: "bigobj-zero", prefix: makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 2, 0, coffBigObjClassID), payloadSize: 56, want: true},
+		{name: "bigobj-i386-zero", prefix: makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_I386, 2, 0, coffBigObjClassID), payloadSize: 56, want: true},
+		{name: "bigobj-nonzero", prefix: makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 2, 4, coffBigObjClassID), payloadSize: 100, want: false},
+		{name: "bigobj-v1", prefix: makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 1, 0, coffBigObjClassID), payloadSize: 56, want: false},
+		{name: "bigobj-wrong-clsid", prefix: makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 2, 0, wrongClassID), payloadSize: 56, want: false},
+		{name: "bigobj-truncated", prefix: makeCOFFBigObj(pe.IMAGE_FILE_MACHINE_AMD64, 2, 0, coffBigObjClassID)[:55], payloadSize: 55, want: false},
+		{name: "pe-short-import", prefix: makePEShortImportObject(pe.IMAGE_FILE_MACHINE_I386), payloadSize: 47, want: false},
+		{name: "elf", prefix: elfObj, payloadSize: int64(len(elfObj)), want: false},
+		{name: "mz", prefix: mzImage, payloadSize: int64(len(mzImage)), want: false},
+		{name: "unknown-machine", prefix: makeCOFFObject(pe.IMAGE_FILE_MACHINE_UNKNOWN, 0, 20), payloadSize: 20, want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isZeroSectionCOFF(tc.prefix, tc.payloadSize); got != tc.want {
+				t.Fatalf("isZeroSectionCOFF = %v, want %v", got, tc.want)
 			}
 		})
 	}

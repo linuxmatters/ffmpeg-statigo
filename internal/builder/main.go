@@ -292,7 +292,7 @@ func combineLibraries(ctx context.Context, libs []*Library, stagingDir, output s
 		return combineMac(ctx, libFiles, output)
 	}
 	if runtime.GOOS == "windows" {
-		return combineWindows(ctx, libFiles, output, runtime.GOARCH)
+		return combineWindows(ctx, libFiles, output)
 	}
 	return combineLinux(ctx, libFiles, output)
 }
@@ -388,7 +388,7 @@ func copyMergeArchive(source, destination string) error {
 	return closeErr
 }
 
-func combineWindows(ctx context.Context, libFiles []string, output, goarch string) error {
+func combineWindows(ctx context.Context, libFiles []string, output string) error {
 	outputDir := filepath.Dir(output)
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
@@ -403,21 +403,36 @@ func combineWindows(ctx context.Context, libFiles []string, output, goarch strin
 	if err != nil {
 		return fmt.Errorf("prepare archive merge: %w", err)
 	}
-	ar := exec.CommandContext(ctx, configuredArchiveTool("AR", "ar"), "-M") //nolint:gosec // G204: AR selects a trusted local build tool, with fixed arguments and no shell.
+	arBin := configuredArchiveTool("AR", "ar")
+	ar := exec.CommandContext(ctx, arBin, "-M") //nolint:gosec // G204: AR selects a trusted local build tool, with fixed arguments and no shell.
 	ar.Dir = workDir
 	ar.Stdin = strings.NewReader(script)
 	if diagnostic, err := ar.CombinedOutput(); err != nil {
 		return fmt.Errorf("archive merge failed: %w: %s", err, diagnostic)
 	}
-	// MinGW32 strip rejects FFmpeg objects without sections in both archive profiles.
-	if goarch != "386" {
-		strip := exec.CommandContext(ctx, configuredArchiveTool("STRIP", "strip"), "--strip-unneeded", "combined.a") //nolint:gosec // G204: STRIP selects a trusted local build tool, with fixed arguments and no shell.
-		strip.Dir = workDir
-		if diagnostic, err := strip.CombinedOutput(); err != nil {
-			return fmt.Errorf("strip failed: %w: %s", err, diagnostic)
-		}
+
+	combinedPath := filepath.Join(workDir, "combined.a")
+	pruned, err := pruneZeroSectionCOFFMembers(combinedPath)
+	if err != nil {
+		return fmt.Errorf("prune zero-section COFF or .dwo members: %w", err)
 	}
-	if err := os.Rename(filepath.Join(workDir, "combined.a"), output); err != nil {
+	if pruned > 0 {
+		log.Printf("Pruned %d zero-section COFF or .dwo member(s) from combined archive", pruned)
+	}
+
+	strip := exec.CommandContext(ctx, configuredArchiveTool("STRIP", "strip"), "--strip-unneeded", "--remove-section=.llvmbc", "--remove-section=.llvmcmd", "combined.a") //nolint:gosec // G204: STRIP selects a trusted local build tool, with fixed arguments and no shell.
+	strip.Dir = workDir
+	if diagnostic, err := strip.CombinedOutput(); err != nil {
+		return fmt.Errorf("strip failed: %w: %s", err, diagnostic)
+	}
+
+	index := exec.CommandContext(ctx, arBin, "s", "combined.a") //nolint:gosec // G204: AR selects a trusted local build tool, with fixed arguments and no shell.
+	index.Dir = workDir
+	if diagnostic, err := index.CombinedOutput(); err != nil {
+		return fmt.Errorf("archive index failed: %w: %s", err, diagnostic)
+	}
+
+	if err := os.Rename(combinedPath, output); err != nil {
 		return fmt.Errorf("replace combined archive: %w", err)
 	}
 	return nil

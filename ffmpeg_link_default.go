@@ -12,7 +12,7 @@ package ffmpeg
 
 #cgo linux LDFLAGS: -lffmpeg -lm -ldl -lstdc++ -lpthread
 #cgo darwin LDFLAGS: -lffmpeg -lstdc++ -lm -framework ApplicationServices -framework CoreVideo -framework CoreMedia -framework VideoToolbox -framework AudioToolbox
-#cgo windows,amd64 LDFLAGS: -lstdc++ -lpthread -lm -lws2_32 -lbcrypt -luser32 -lntdll -luserenv -lcrypt32
-#cgo windows,386 LDFLAGS: -lstdc++ -lpthread -lm -lws2_32 -lbcrypt -luser32 -lntdll -luserenv -lcrypt32
+#cgo windows,amd64 LDFLAGS: -lstdc++ -lpthread -lm -lws2_32 -lbcrypt -luser32 -lntdll -luserenv -lcrypt32 -lsynchronization
+#cgo windows,386 LDFLAGS: -lstdc++ -lpthread -lm -lws2_32 -lbcrypt -luser32 -lntdll -luserenv -lcrypt32 -lsynchronization
 */
 import "C"
