@@ -117,12 +117,6 @@
             elif lspci -d ::0300 2>/dev/null | grep -qi nvidia; then
               export LIBVA_DRIVER_NAME="nvidia"
             fi
-
-            # Vulkan ICD discovery: tell vulkan-loader where to find GPU drivers
-            # NixOS installs ICDs under /run/opengl-driver/share/vulkan/icd.d/
-            if [ -d "/run/opengl-driver/share/vulkan/icd.d" ]; then
-              export VK_DRIVER_FILES=$(find /run/opengl-driver/share/vulkan/icd.d -name '*.json' 2>/dev/null | tr '\n' ':' | sed 's/:$//')
-            fi
           '';
         };
       }
