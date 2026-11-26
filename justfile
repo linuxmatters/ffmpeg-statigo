@@ -7,20 +7,8 @@ default:
 # Clean build artifacts, preserving downloads and library archives
 clean:
     @if [ ! -L .build ]; then for root in .build .build/embedded; do if [ ! -L "$root" ]; then rm -rf "$root/build" "$root/src" "$root/staging" 2>/dev/null || true; fi; done; fi
-    @rm examples/asciiplayer/asciiplayer 2>/dev/null || true
-    @rm examples/hwdecode/hwdecode 2>/dev/null || true
-    @rm examples/introspect/introspect 2>/dev/null || true
-    @rm examples/metadata/metadata 2>/dev/null || true
-    @rm examples/transcode/transcode 2>/dev/null || true
-    @rm examples/transcode-hl/transcode-hl 2>/dev/null || true
-    @rm asciiplayer 2>/dev/null || true
-    @rm hwdecode 2>/dev/null || true
-    @rm introspect 2>/dev/null || true
-    @rm metadata 2>/dev/null || true
-    @rm transcode 2>/dev/null || true
-    @rm transcode-hl 2>/dev/null || true
-    @rm generator 2>/dev/null || true
-    @rm builder 2>/dev/null || true
+    @for name in asciiplayer hwdecode introspect metadata transcode transcode-hl; do rm -f "examples/$name/$name" "$name" 2>/dev/null || true; done
+    @rm -f generator builder 2>/dev/null || true
     @if [ -d bin ] && [ ! -L bin ]; then for name in asciiplayer hwdecode introspect metadata transcode transcode-hl download-lib builder generator; do rm -f "bin/$name" "bin/$name.exe" 2>/dev/null || true; done; fi
 
 # Build FFmpeg static library
@@ -47,7 +35,7 @@ build-ffmpeg:
     set -euo pipefail
     just build-static ffmpeg --clean
     just build-static
-    go run ./internal/generator
+    just generate
     go build -a -v ./...
     just build
     ./bin/introspect
@@ -70,10 +58,6 @@ ffmpeg-release VERSION:
     fi
     gh workflow run ffmpeg-release.yml -f version={{VERSION}}
 
-# Check library release workflow status
-ffmpeg-release-status:
-    gh run list --workflow=ffmpeg-release.yml --limit 5
-
 # Trigger Go module release
 go-release VERSION:
     #!/usr/bin/env bash
@@ -83,15 +67,3 @@ go-release VERSION:
         exit 1
     fi
     gh workflow run go-release.yml -f version={{VERSION}}
-
-# Check Go module release workflow status
-go-release-status:
-    gh run list --workflow=go-release.yml --limit 5
-
-# Check the static FFmpeg library is present (lint/vet need CGO to compile)
-_check-lib:
-    #!/usr/bin/env bash
-    if [ ! -f "lib/$(go env GOOS)_$(go env GOARCH)/libffmpeg.a" ]; then
-        echo "Error: static library missing. Run 'just download-lib' first."
-        exit 1
-    fi
