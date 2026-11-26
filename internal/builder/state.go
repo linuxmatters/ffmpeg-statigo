@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 )
 
@@ -80,16 +81,21 @@ func (s *BuildState) CanSkip(installDir string) bool {
 		return false
 	}
 
-	// For header-only libraries (LinkLibs == nil), we can skip if we built before
-	if s.lib.LinkLibs == nil {
-		return true
-	}
-
 	// For libraries with LinkLibs, require non-empty regular .a files
 	libDir := filepath.Join(installDir, "lib")
 	for _, libName := range s.lib.LinkLibs {
 		libPath := filepath.Join(libDir, libName+".a")
 		info, err := os.Stat(libPath)
+		if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
+			return false
+		}
+	}
+
+	// For libraries with Binaries, require non-empty regular executables
+	binDir := filepath.Join(installDir, "bin")
+	for _, binName := range s.lib.Binaries {
+		binPath := filepath.Join(binDir, binaryFilename(binName, runtime.GOOS))
+		info, err := os.Stat(binPath)
 		if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
 			return false
 		}

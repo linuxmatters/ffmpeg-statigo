@@ -899,3 +899,92 @@ func touchAutomakeFiles(srcPath string) error {
 		return nil
 	})
 }
+
+// scrubLinuxPkgConfig removes dynamic -lgcc_s flags from staged Linux pkg-config files.
+func scrubLinuxPkgConfig(stagingDir string) error {
+	return scrubPkgConfigDir(pkgConfigPath(stagingDir))
+}
+
+// scrubPkgConfigDir strips exact -lgcc_s tokens from Libs and Libs.private lines
+// in regular .pc files under pkgConfigDir. Unchanged lines and files are preserved.
+func scrubPkgConfigDir(pkgConfigDir string) error {
+	entries, err := os.ReadDir(pkgConfigDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("read pkg-config directory %s: %w", pkgConfigDir, err)
+	}
+
+	for _, entry := range entries {
+		if !entry.Type().IsRegular() || !strings.HasSuffix(entry.Name(), ".pc") {
+			continue
+		}
+
+		path := filepath.Join(pkgConfigDir, entry.Name())
+		content, err := os.ReadFile(path) //nolint:gosec // G304: path is a regular .pc file inside the local staging pkg-config directory
+		if err != nil {
+			return fmt.Errorf("read %s: %w", path, err)
+		}
+
+		lines := strings.Split(string(content), "\n")
+		changed := false
+		for i, line := range lines {
+			cr := ""
+			body := line
+			if stripped, ok := strings.CutSuffix(body, "\r"); ok {
+				body = stripped
+				cr = "\r"
+			}
+
+			trimmed := strings.TrimLeft(body, " \t")
+			indent := body[:len(body)-len(trimmed)]
+
+			key := "Libs.private:"
+			value, ok := strings.CutPrefix(trimmed, key)
+			if !ok {
+				key = "Libs:"
+				value, ok = strings.CutPrefix(trimmed, key)
+			}
+			if !ok {
+				continue
+			}
+
+			fields := strings.Fields(value)
+			kept := make([]string, 0, len(fields))
+			removed := false
+			for _, field := range fields {
+				if field == "-lgcc_s" {
+					removed = true
+					continue
+				}
+				kept = append(kept, field)
+			}
+			if !removed {
+				continue
+			}
+
+			if len(kept) == 0 {
+				lines[i] = indent + key + cr
+			} else {
+				lines[i] = indent + key + " " + strings.Join(kept, " ") + cr
+			}
+			changed = true
+		}
+
+		if !changed {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			return fmt.Errorf("stat %s: %w", path, err)
+		}
+		updated := strings.Join(lines, "\n")
+		if err := os.WriteFile(path, []byte(updated), info.Mode().Perm()); err != nil { //nolint:gosec // G703: path is a regular .pc file inside the local staging pkg-config directory
+			return fmt.Errorf("write %s: %w", path, err)
+		}
+	}
+
+	return nil
+}

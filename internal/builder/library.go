@@ -38,6 +38,7 @@ type Library struct {
 	BuildEnv      func() []string                                 // optional extra KEY=value env applied to all build commands
 	SkipAutoFlags bool                                            // Skip automatic CFLAGS/LDFLAGS (for non-standard configure scripts like zlib)
 	LinkLibs      []string                                        // Libraries to link in final static lib (nil for header-only)
+	Binaries      []string                                        // Executables installed into <installDir>/bin
 	Dependencies  []*Library                                      // Build-time dependencies; platform-specific deps are auto-filtered via ShouldBuild()
 }
 
@@ -161,6 +162,17 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		}
 	}
 
+	for _, name := range lib.Binaries {
+		path := filepath.Join(installDir, "bin", binaryFilename(name, runtime.GOOS))
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("expected installed binary %s: %w", path, err)
+		}
+		if !info.Mode().IsRegular() || info.Size() == 0 {
+			return fmt.Errorf("expected non-empty installed binary %s", path)
+		}
+	}
+
 	if err := state.Save(); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
@@ -219,6 +231,55 @@ func pkgConfigPath(installDir string) string {
 	return filepath.Join(installDir, "lib", "pkgconfig")
 }
 
+const defaultMacOSDeploymentTarget = "13.0"
+
+func binaryFilename(name, targetOS string) string {
+	if targetOS == "windows" {
+		return name + ".exe"
+	}
+	return name
+}
+
+type commandRunner func(ctx context.Context, name string, args ...string) ([]byte, error)
+
+func runToolCombinedOutput(ctx context.Context, name string, args ...string) ([]byte, error) {
+	// name selects a trusted local build tool with fixed arguments and no shell.
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // G204,G702: trusted local build tool with fixed arguments and no shell
+	return cmd.CombinedOutput()
+}
+
+func stripAndSignBinary(ctx context.Context, path, targetOS string) error {
+	return stripAndSignBinaryWithRunner(ctx, path, targetOS, runToolCombinedOutput)
+}
+
+func stripAndSignBinaryWithRunner(ctx context.Context, path, targetOS string, run commandRunner) error {
+	stripTool := configuredArchiveTool("STRIP", "strip")
+	stripArgs := []string{"--strip-all", path}
+	if targetOS == "darwin" {
+		stripArgs = []string{path}
+	}
+	if output, err := run(ctx, stripTool, stripArgs...); err != nil {
+		if msg := strings.TrimSpace(string(output)); msg != "" {
+			return fmt.Errorf("strip %s failed: %w: %s", path, err, msg)
+		}
+		return fmt.Errorf("strip %s failed: %w", path, err)
+	}
+
+	if targetOS != "darwin" {
+		return nil
+	}
+
+	codesignTool := configuredArchiveTool("CODESIGN", "codesign")
+	if output, err := run(ctx, codesignTool, "--force", "--sign", "-", path); err != nil {
+		if msg := strings.TrimSpace(string(output)); msg != "" {
+			return fmt.Errorf("codesign %s failed: %w: %s", path, err, msg)
+		}
+		return fmt.Errorf("codesign %s failed: %w", path, err)
+	}
+
+	return nil
+}
+
 // upsertEnv sets key in env. If an existing "key=..." entry is present, value is
 // combined with the existing value using sep — prepended when prepend is true,
 // appended otherwise. If key is absent, "key=value" is appended.
@@ -235,6 +296,31 @@ func upsertEnv(env []string, key, value, sep string, prepend bool) []string {
 		}
 	}
 	return append(env, prefix+value)
+}
+
+// setDefaultEnv sets key=value in env when key is absent or empty, preserving
+// any non-empty value.
+func setDefaultEnv(env []string, key, value string) []string {
+	prefix := key + "="
+	for i, e := range env {
+		if existing, ok := strings.CutPrefix(e, prefix); ok {
+			if existing == "" {
+				env[i] = prefix + value
+			}
+			return env
+		}
+	}
+	return append(env, prefix+value)
+}
+
+func envValue(env []string, key string) string {
+	prefix := key + "="
+	for _, e := range env {
+		if value, ok := strings.CutPrefix(e, prefix); ok {
+			return value
+		}
+	}
+	return ""
 }
 
 func windowsGNUHost(arch string) string {
@@ -285,12 +371,16 @@ func buildPathEnv(env []string, installDir, targetOS string) []string {
 
 // buildEnv returns environment variables for building
 func buildEnv(installDir string) []string {
-	env := buildPathEnv(os.Environ(), installDir, runtime.GOOS)
+	return buildEnvForOS(os.Environ(), installDir, runtime.GOOS)
+}
+
+func buildEnvForOS(baseEnv []string, installDir, targetOS string) []string {
+	env := buildPathEnv(slices.Clone(baseEnv), installDir, targetOS)
 
 	// On macOS, remove NIX_CFLAGS_COMPILE which interferes with C++ header search order
 	// The Nix clang wrapper injects -isystem paths that cause libc++ headers to be
 	// searched after C standard library headers, breaking <cstddef> and similar wrappers
-	if runtime.GOOS == "darwin" {
+	if targetOS == "darwin" {
 		filtered := env[:0]
 		for _, e := range env {
 			if !strings.HasPrefix(e, "NIX_CFLAGS_COMPILE=") {
@@ -304,12 +394,11 @@ func buildEnv(installDir string) []string {
 		// paths to Clang's builtin headers (stddef.h, stdarg.h) which use Clang-specific
 		// features like __has_feature and __building_module that gcc doesn't understand
 		env = append(env, "CC=clang", "CXX=clang++")
-	}
+		env = setDefaultEnv(env, "MACOSX_DEPLOYMENT_TARGET", defaultMacOSDeploymentTarget)
 
-	// On macOS, ensure CFLAGS/CXXFLAGS include SDK path and clang builtin headers
-	// This is required for both C (stdarg.h, stddef.h) and C++ (<algorithm>, <cstring>) compilation
-	if runtime.GOOS == "darwin" {
-		cgoCflags := os.Getenv("CGO_CFLAGS")
+		// On macOS, ensure CFLAGS/CXXFLAGS include SDK path and clang builtin headers
+		// This is required for both C (stdarg.h, stddef.h) and C++ (<algorithm>, <cstring>) compilation
+		cgoCflags := envValue(env, "CGO_CFLAGS")
 		if cgoCflags != "" {
 			// Set CFLAGS with full CGO_CFLAGS (includes -isysroot and -I.../clang/18/include)
 			env = upsertEnv(env, "CFLAGS", cgoCflags, " ", false)
@@ -319,7 +408,7 @@ func buildEnv(installDir string) []string {
 			// from interfering with header search order
 			// Then add libc++ headers before clang builtins
 			var cxxExtra string
-			libcxxInclude := os.Getenv("LIBCXX_INCLUDE")
+			libcxxInclude := envValue(env, "LIBCXX_INCLUDE")
 			if libcxxInclude != "" {
 				cxxExtra = "-nostdinc++ -I" + libcxxInclude + " " + cgoCflags
 			} else {

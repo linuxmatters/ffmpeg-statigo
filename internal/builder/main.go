@@ -27,36 +27,17 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	selectedLibs := make(map[string]bool)
-	cleanBuild := false
-	listMode := false
-	updateDigests := false
-	embedded := false
+	opts := parseBuilderArgs(os.Args[1:])
 
-	for _, arg := range os.Args[1:] {
-		switch arg {
-		case "--embedded":
-			embedded = true
-		case "--clean":
-			cleanBuild = true
-		case "--list":
-			listMode = true
-		case "--update-digests":
-			updateDigests = true
-		default:
-			selectedLibs[arg] = true
-		}
-	}
-
-	buildRoot, targetOutput, err := profilePaths(embedded, runtime.GOOS, runtime.GOARCH)
+	buildRoot, targetOutput, err := profilePaths(opts.embedded, runtime.GOOS, runtime.GOARCH)
 	if err != nil {
 		return err
 	}
 	stagingDir := filepath.Join(buildRoot, "staging")
-	profileLibs := librariesForProfile(embedded, stagingDir)
+	profileLibs := librariesForProfileWithPrograms(opts.embedded, opts.programs, stagingDir)
 
 	// Handle --list mode: display library information and exit
-	if listMode {
+	if opts.list {
 		printLibraryList(profileLibs)
 		return nil
 	}
@@ -65,7 +46,7 @@ func run() error {
 	// enabled library's archive, computes its SHA-256, and prints the manifest
 	// entries for review. Run once in a trusted environment, then verify each
 	// digest against upstream-published checksums and commit digests.go.
-	if updateDigests {
+	if opts.updateDigests {
 		return updateDigestsMode(ctx, buildRoot, profileLibs)
 	}
 
@@ -76,6 +57,9 @@ func run() error {
 		filepath.Join(stagingDir, "lib"),
 		filepath.Join(stagingDir, "include"),
 	}
+	if opts.programs {
+		dirs = append(dirs, filepath.Join(stagingDir, "bin"))
+	}
 
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -84,21 +68,21 @@ func run() error {
 	}
 
 	libs := profileLibs
-	if len(selectedLibs) > 0 {
+	if len(opts.selectedLibs) > 0 {
 		filtered := []*Library{}
 		for _, lib := range profileLibs {
-			if selectedLibs[lib.Name] {
+			if opts.selectedLibs[lib.Name] {
 				filtered = append(filtered, lib)
 			}
 		}
-		if len(filtered) != len(selectedLibs) {
+		if len(filtered) != len(opts.selectedLibs) {
 			return fmt.Errorf("unknown or excluded library selection; use --list with the same profile")
 		}
 		libs = filtered
 	}
 
 	// Handle --clean mode: clean and exit
-	if cleanBuild {
+	if opts.clean {
 		total := len(libs)
 		for i, lib := range libs {
 			fmt.Printf("[%d/%d] Cleaning %s...\n", i+1, total, lib.Name)
@@ -123,6 +107,16 @@ func run() error {
 								log.Printf("warning: failed to remove %s: %v", libPath, err)
 							}
 						}
+					}
+				}
+			}
+
+			// Also remove installed binaries from staging
+			for _, binName := range lib.Binaries {
+				binPath := filepath.Join(stagingDir, "bin", binaryFilename(binName, runtime.GOOS))
+				if fileExists(binPath) {
+					if err := os.Remove(binPath); err != nil {
+						log.Printf("warning: failed to remove %s: %v", binPath, err)
 					}
 				}
 			}
@@ -169,13 +163,24 @@ func run() error {
 	fmt.Println(strings.Repeat("=", 60))
 
 	// Only combine libraries on a full build (no library filters)
-	if len(selectedLibs) == 0 {
+	if len(opts.selectedLibs) == 0 {
 		if err := combineLibraries(ctx, libs, stagingDir, targetOutput); err != nil {
 			return fmt.Errorf("combine libraries: %w", err)
 		}
 		fmt.Printf("\n✓ Success! Output: %s\n", targetOutput)
 	} else {
-		fmt.Printf("\n✓ Success! Built %d selected libraries\n", len(selectedLibs))
+		fmt.Printf("\n✓ Success! Built %d selected libraries\n", len(opts.selectedLibs))
+	}
+
+	if opts.programs && (len(opts.selectedLibs) == 0 || opts.selectedLibs["ffmpeg"]) {
+		binDir, err := programsOutputDir(opts.embedded, runtime.GOOS, runtime.GOARCH)
+		if err != nil {
+			return err
+		}
+		if err := stagePrograms(ctx, buildRoot, stagingDir, binDir, opts.embedded, runtime.GOOS, runtime.GOARCH, releaseTagFromEnv(), profileLibs); err != nil {
+			return fmt.Errorf("stage programs: %w", err)
+		}
+		fmt.Printf("\n✓ Programs output: %s\n", binDir)
 	}
 
 	return nil
