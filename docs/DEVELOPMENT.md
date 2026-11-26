@@ -414,7 +414,7 @@ When parity passes, the workflow calls `_build-libs.yml` with `clean_ffmpeg: tru
 
 ### `go-release.yml`
 
-Push a `vX.Y.Z.N` tag or run `just go-release X.Y.Z.N` to start a Go module release. The workflow tests both profiles on Linux, macOS, and Windows against the pinned `LibRelease` archives. When all tests pass, the workflow creates the `vX.Y.Z.N` tag on `workflow_dispatch` runs, generates the changelog, and publishes the GitHub Release.
+Push a `vX.Y.Z.N` tag or run `just go-release X.Y.Z.N` to start a Go module release. The workflow tests both profiles on Linux and macOS against the pinned `LibRelease` archives, and runs Windows tests when `LibRelease` contains all four Windows archives. When all required tests pass, the workflow creates the `vX.Y.Z.N` tag on `workflow_dispatch` runs, generates the changelog, and publishes the GitHub Release.
 
 ### Bumping FFmpeg or static libraries
 
