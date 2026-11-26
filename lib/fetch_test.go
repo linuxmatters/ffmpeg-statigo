@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,112 +22,319 @@ import (
 	"github.com/linuxmatters/ffmpeg-statigo/internal/pathsafe"
 )
 
-// =============================================================================
-// Test 1.1: Version Parsing Validation
-// =============================================================================
-
-func TestFindCompatibleRelease_VersionParsing(t *testing.T) {
-	t.Run("valid_version_format", func(t *testing.T) {
-		// Valid versions should produce a release string (even if API fails, fallback works)
-		validVersions := []string{
-			"8.1.2",
-			"1.2.3",
-			"10.20.30",
+func TestLibReleaseMatchesVersion(t *testing.T) {
+	prefix := "lib-" + Version + "."
+	suffix, ok := strings.CutPrefix(LibRelease, prefix)
+	if !ok {
+		t.Fatalf("LibRelease = %q, want prefix %q", LibRelease, prefix)
+	}
+	if suffix == "" {
+		t.Fatalf("LibRelease = %q, missing numeric build revision after %q", LibRelease, prefix)
+	}
+	for i := range len(suffix) {
+		if suffix[i] < '0' || suffix[i] > '9' {
+			t.Fatalf("LibRelease = %q, build revision %q must contain only ASCII digits", LibRelease, suffix)
 		}
-
-		for _, version := range validVersions {
-			// We can't test the full function without network, but we can test
-			// the version parsing logic directly
-			parts := strings.Split(version, ".")
-			if len(parts) != 3 {
-				t.Errorf("Version %s should have 3 parts, got %d", version, len(parts))
-			}
-		}
-	})
-
-	t.Run("invalid_version_format_two_parts", func(t *testing.T) {
-		// This tests the version parsing validation
-		version := "8.0"
-		parts := strings.Split(version, ".")
-		if len(parts) == 3 {
-			t.Errorf("Version %s should NOT have 3 parts", version)
-		}
-	})
-
-	t.Run("invalid_version_format_four_parts", func(t *testing.T) {
-		version := "8.1.1.0"
-		parts := strings.Split(version, ".")
-		if len(parts) == 3 {
-			t.Errorf("Version %s should NOT have 3 parts", version)
-		}
-	})
-
-	t.Run("invalid_version_format_empty", func(t *testing.T) {
-		version := ""
-		parts := strings.Split(version, ".")
-		if len(parts) == 3 {
-			t.Errorf("Empty version should NOT have 3 parts")
-		}
-	})
-
-	t.Run("release_prefix_construction", func(t *testing.T) {
-		// Verify that release prefix is constructed correctly
-		moduleVersion := "8.1.2"
-		expectedPrefix := "lib-8.1.2"
-		actualPrefix := "lib-" + moduleVersion
-
-		if actualPrefix != expectedPrefix {
-			t.Errorf("Expected prefix %s, got %s", expectedPrefix, actualPrefix)
-		}
-	})
-
-	t.Run("fallback_release_pattern", func(t *testing.T) {
-		// When API fails, fallback should produce lib-X.Y.Z.0
-		moduleVersion := "8.1.1"
-		expectedFallback := "lib-8.1.1.0"
-		actualFallback := "lib-" + moduleVersion + ".0"
-
-		if actualFallback != expectedFallback {
-			t.Errorf("Expected fallback %s, got %s", expectedFallback, actualFallback)
-		}
-	})
+	}
 }
 
-// TestFindViaAPI_ReleaseSorting tests that releases are sorted correctly
-// to find the highest version number
-func TestFindViaAPI_ReleaseSorting(t *testing.T) {
-	t.Run("sorts_release_versions_correctly", func(t *testing.T) {
-		// Simulate release list sorting logic
-		releases := []string{
-			"lib-8.1.1.0",
-			"lib-8.1.1.2",
-			"lib-8.1.1.1",
-			"lib-8.1.1.10", // 10 > 2 lexicographically
+func TestValidatePlatformArch(t *testing.T) {
+	valid := []struct {
+		platform string
+		arch     string
+	}{
+		{"linux", "amd64"},
+		{"linux", "arm64"},
+		{"darwin", "amd64"},
+		{"darwin", "arm64"},
+		{"windows", "amd64"},
+		{"windows", "386"},
+	}
+	for _, tc := range valid {
+		t.Run("valid/"+tc.platform+"_"+tc.arch, func(t *testing.T) {
+			if err := validatePlatformArch(tc.platform, tc.arch); err != nil {
+				t.Errorf("validatePlatformArch(%q, %q) = %v, want nil", tc.platform, tc.arch, err)
+			}
+		})
+	}
+
+	invalid := []struct {
+		name     string
+		platform string
+		arch     string
+		wantErr  string
+	}{
+		{"linux_386", "linux", "386", "unsupported arch"},
+		{"darwin_386", "darwin", "386", "unsupported arch"},
+		{"windows_arm64", "windows", "arm64", "unsupported arch"},
+		{"freebsd_amd64", "freebsd", "amd64", "unsupported platform"},
+		{"linux_riscv64", "linux", "riscv64", "unsupported arch"},
+		{"platform_traversal", "../linux", "amd64", "unsupported platform"},
+		{"arch_traversal", "linux", "../amd64", "unsupported arch"},
+		{"both_traversal", "../../etc", "../passwd", "unsupported platform"},
+	}
+	for _, tc := range invalid {
+		t.Run("invalid/"+tc.name, func(t *testing.T) {
+			err := validatePlatformArch(tc.platform, tc.arch)
+			if err == nil {
+				t.Fatalf("validatePlatformArch(%q, %q) = nil, want error containing %q", tc.platform, tc.arch, tc.wantErr)
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("validatePlatformArch(%q, %q) = %v, want error containing %q", tc.platform, tc.arch, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestDownloadLibs_RejectsUnsupportedPlatformArch(t *testing.T) {
+	cases := []struct {
+		platform string
+		arch     string
+	}{
+		{"linux", "386"},
+		{"darwin", "386"},
+		{"windows", "arm64"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.platform+"_"+tc.arch, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("GOOS", tc.platform)
+			t.Setenv("GOARCH", tc.arch)
+			t.Setenv("GITHUB_TOKEN", "")
+			t.Setenv("GH_TOKEN", "")
+
+			requests := 0
+			mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+				requests++
+				return nil, fmt.Errorf("unexpected HTTP request: %s", req.URL)
+			})
+
+			err := DownloadLibs()
+			if err == nil {
+				t.Fatalf("DownloadLibs() = nil, want error for %s/%s", tc.platform, tc.arch)
+			}
+			if !strings.Contains(err.Error(), "unsupported arch") {
+				t.Errorf("DownloadLibs() = %v, want unsupported arch error", err)
+			}
+			if requests != 0 {
+				t.Errorf("DownloadLibs() made %d HTTP requests, want 0", requests)
+			}
+		})
+	}
+}
+
+func TestDownloadLibs_DirectTagLookup(t *testing.T) {
+	const (
+		platform = "darwin"
+		arch     = "arm64"
+	)
+	platArch := platform + "_" + arch
+	payloadPath := filepath.Join(libraryProfile, platArch, "libffmpeg.a")
+	asset := "ffmpeg-" + platform + "-" + arch + ".tar.gz"
+	if libraryProfile != "" {
+		asset = "ffmpeg-" + libraryProfile + "-" + platform + "-" + arch + ".tar.gz"
+	}
+	tagPath := "/repos/linuxmatters/ffmpeg-statigo/releases/tags/" + LibRelease
+	downloadPath := "/linuxmatters/ffmpeg-statigo/releases/download/" + LibRelease + "/" + asset
+
+	tarball := createValidTarball(t, map[string][]byte{
+		filepath.ToSlash(payloadPath): []byte("direct tag payload"),
+	})
+	t.Cleanup(func() { _ = os.Remove(tarball) })
+	payload, err := os.ReadFile(tarball)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(payload)
+	digest := hex.EncodeToString(sum[:])
+
+	t.Run("fetches_tag_directly_without_list_request", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("GOOS", platform)
+		t.Setenv("GOARCH", arch)
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		var listRequests, tagRequests, downloadRequests int
+		mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+			switch req.URL.Path {
+			case "/repos/linuxmatters/ffmpeg-statigo/releases":
+				listRequests++
+				return nil, fmt.Errorf("unexpected release list request: %s", req.URL)
+			case tagPath:
+				tagRequests++
+				body, err := json.Marshal(GitHubReleaseDetail{
+					Assets: []GitHubAsset{{Name: asset, Digest: "sha256:" + digest}},
+				})
+				if err != nil {
+					return nil, err
+				}
+				return testHTTPResponse(http.StatusOK, body), nil
+			case downloadPath:
+				downloadRequests++
+				return testHTTPResponse(http.StatusOK, payload), nil
+			default:
+				return nil, fmt.Errorf("unexpected request: %s", req.URL)
+			}
+		})
+
+		if err := DownloadLibs(); err != nil {
+			t.Fatalf("DownloadLibs() error = %v", err)
+		}
+		if listRequests != 0 {
+			t.Errorf("release list requests = %d, want 0", listRequests)
+		}
+		if tagRequests != 1 {
+			t.Errorf("tag requests = %d, want 1", tagRequests)
+		}
+		if downloadRequests != 1 {
+			t.Errorf("download requests = %d, want 1", downloadRequests)
 		}
 
-		// Current implementation uses sort.Strings - test this behavior
-		sortedReleases := make([]string, len(releases))
-		copy(sortedReleases, releases)
-		// Lexicographic sort (same as sort.Strings)
-		for i := 0; i < len(sortedReleases)-1; i++ {
-			for j := i + 1; j < len(sortedReleases); j++ {
-				if sortedReleases[i] > sortedReleases[j] {
-					sortedReleases[i], sortedReleases[j] = sortedReleases[j], sortedReleases[i]
+		libPath := filepath.Join("lib", payloadPath)
+		got, err := os.ReadFile(libPath)
+		if err != nil || string(got) != "direct tag payload" {
+			t.Fatalf("installed library = %q, %v, want %q", got, err, "direct tag payload")
+		}
+	})
+
+	for _, status := range []int{http.StatusNotFound, http.StatusForbidden} {
+		t.Run(fmt.Sprintf("fails_closed_on_tag_%d", status), func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("GOOS", platform)
+			t.Setenv("GOARCH", arch)
+			t.Setenv("GITHUB_TOKEN", "")
+			t.Setenv("GH_TOKEN", "")
+
+			var listRequests, tagRequests int
+			mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+				switch req.URL.Path {
+				case "/repos/linuxmatters/ffmpeg-statigo/releases":
+					listRequests++
+					return nil, fmt.Errorf("unexpected release list request: %s", req.URL)
+				case tagPath:
+					tagRequests++
+					return testHTTPResponse(status, []byte(`{"message":"error"}`)), nil
+				case downloadPath:
+					return testHTTPResponse(http.StatusOK, payload), nil
+				default:
+					return nil, fmt.Errorf("unexpected request (possible fallback): %s", req.URL)
 				}
+			})
+
+			err := DownloadLibs()
+			if err == nil || !strings.Contains(err.Error(), "no checksum") {
+				t.Fatalf("DownloadLibs() = %v, want fail-closed checksum error", err)
+			}
+			if listRequests != 0 {
+				t.Errorf("release list requests = %d, want 0", listRequests)
+			}
+			if tagRequests != 1 {
+				t.Errorf("tag requests = %d, want 1", tagRequests)
+			}
+
+			libPath := filepath.Join("lib", payloadPath)
+			if _, statErr := os.Stat(libPath); !os.IsNotExist(statErr) {
+				t.Fatalf("failed download installed library: %v", statErr)
+			}
+			staging, globErr := filepath.Glob("lib/.download-*")
+			if globErr != nil || len(staging) != 0 {
+				t.Fatalf("staging directories remain: %v, %v", staging, globErr)
+			}
+		})
+	}
+}
+
+func TestFetchReleaseDetails(t *testing.T) {
+	wantPath := "/repos/linuxmatters/ffmpeg-statigo/releases/tags/" + LibRelease
+
+	t.Run("decodes_valid_json", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		want := GitHubReleaseDetail{
+			Assets: []GitHubAsset{
+				{
+					Name:               "ffmpeg-linux-amd64.tar.gz",
+					BrowserDownloadURL: "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/" + LibRelease + "/ffmpeg-linux-amd64.tar.gz",
+					Digest:             "sha256:abcdef0123456789",
+				},
+				{
+					Name:               "SHA256SUMS",
+					BrowserDownloadURL: "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/" + LibRelease + "/SHA256SUMS",
+				},
+			},
+		}
+		body, err := json.Marshal(want)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+			if req.URL.Host != "api.github.com" || req.URL.Path != wantPath {
+				return nil, fmt.Errorf("unexpected request: %s", req.URL)
+			}
+			return testHTTPResponse(http.StatusOK, body), nil
+		})
+
+		got, err := fetchReleaseDetails()
+		if err != nil {
+			t.Fatalf("fetchReleaseDetails() error = %v", err)
+		}
+		if len(got.Assets) != len(want.Assets) {
+			t.Fatalf("len(Assets) = %d, want %d", len(got.Assets), len(want.Assets))
+		}
+		for i := range want.Assets {
+			if got.Assets[i] != want.Assets[i] {
+				t.Errorf("Assets[%d] = %+v, want %+v", i, got.Assets[i], want.Assets[i])
 			}
 		}
+	})
 
-		// Last element should be the "highest"
-		highest := sortedReleases[len(sortedReleases)-1]
+	for _, status := range []int{http.StatusNotFound, http.StatusForbidden, http.StatusInternalServerError} {
+		t.Run(fmt.Sprintf("non_200_status_%d", status), func(t *testing.T) {
+			t.Setenv("GITHUB_TOKEN", "")
+			t.Setenv("GH_TOKEN", "")
 
-		// Note: lexicographic sorting means "lib-8.1.1.2" > "lib-8.1.1.10",
-		// a known limitation of this sort.
-		t.Logf("Sorted releases: %v", sortedReleases)
-		t.Logf("Selected highest: %s", highest)
+			mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+				if req.URL.Host != "api.github.com" || req.URL.Path != wantPath {
+					return nil, fmt.Errorf("unexpected request: %s", req.URL)
+				}
+				return testHTTPResponse(status, []byte(`{"message":"error"}`)), nil
+			})
 
-		// Document that this is lexicographic, not semantic versioning
-		if highest != "lib-8.1.1.2" {
-			t.Logf("Note: Current sorting is lexicographic, not semver-aware")
+			got, err := fetchReleaseDetails()
+			if err == nil {
+				t.Fatalf("fetchReleaseDetails() = %+v, nil, want error for status %d", got, status)
+			}
+			if got != nil {
+				t.Errorf("fetchReleaseDetails() detail = %+v, want nil", got)
+			}
+			wantMsg := fmt.Sprintf("status %d", status)
+			if !strings.Contains(err.Error(), wantMsg) {
+				t.Errorf("fetchReleaseDetails() error = %v, want substring %q", err, wantMsg)
+			}
+		})
+	}
+
+	t.Run("malformed_json", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "")
+		t.Setenv("GH_TOKEN", "")
+
+		mockHTTP(t, func(req *http.Request) (*http.Response, error) {
+			if req.URL.Host != "api.github.com" || req.URL.Path != wantPath {
+				return nil, fmt.Errorf("unexpected request: %s", req.URL)
+			}
+			return testHTTPResponse(http.StatusOK, []byte(`{"assets": [invalid`)), nil
+		})
+
+		got, err := fetchReleaseDetails()
+		if err == nil {
+			t.Fatalf("fetchReleaseDetails() = %+v, nil, want JSON decode error", got)
+		}
+		if got != nil {
+			t.Errorf("fetchReleaseDetails() detail = %+v, want nil", got)
 		}
 	})
 }
@@ -188,176 +394,6 @@ func TestNewGitHubAPIRequest(t *testing.T) {
 		if got := req.Header.Get("Authorization"); got != "Bearer gh-token" {
 			t.Errorf("Expected GH_TOKEN authorization, got %q", got)
 		}
-	})
-}
-
-// =============================================================================
-// Test 5: Release Version Semantic Sort Bug
-// =============================================================================
-
-// TestReleaseVersionSemanticSortBug demonstrates the bug where lexicographic
-// sorting picks the wrong version when patch numbers have different digit counts.
-// Example: lib-8.1.1.10 should be > lib-8.1.1.2 semantically, but
-// lexicographically lib-8.1.1.10 < lib-8.1.1.2 (string "10" < "2")
-func TestReleaseVersionSemanticSortBug(t *testing.T) {
-	t.Run("lexicographic_sort_picks_wrong_version", func(t *testing.T) {
-		// Releases with double-digit patch number
-		releases := []string{
-			"lib-8.1.1.2",
-			"lib-8.1.1.10",
-		}
-
-		// Use sort.Strings (current implementation in fetch.go line 169)
-		sorted := make([]string, len(releases))
-		copy(sorted, releases)
-		sort.Strings(sorted)
-
-		// With lexicographic sort, "lib-8.1.1.10" comes before "lib-8.1.1.2"
-		// because '1' < '2' when comparing character by character
-		if sorted[0] != "lib-8.1.1.10" {
-			t.Errorf("Expected lib-8.1.1.10 to be first (lexicographically), got %s", sorted[0])
-		}
-		if sorted[1] != "lib-8.1.1.2" {
-			t.Errorf("Expected lib-8.1.1.2 to be last (lexicographically), got %s", sorted[1])
-		}
-
-		// The bug: last element is selected as "highest" version
-		selectedVersion := sorted[len(sorted)-1]
-
-		// BUG: This selects lib-8.1.1.2 instead of lib-8.1.1.10
-		if selectedVersion != "lib-8.1.1.2" {
-			t.Errorf("Expected bug to select lib-8.1.1.2 (lexicographically last), got %s", selectedVersion)
-		}
-
-		t.Logf("BUG: Lexicographic sort selected %s instead of semantically correct lib-8.1.1.10", selectedVersion)
-	})
-
-	t.Run("demonstrates_bug_with_realistic_release_sequence", func(t *testing.T) {
-		// Realistic scenario: multiple patch releases
-		releases := []string{
-			"lib-8.1.1.0",
-			"lib-8.1.1.1",
-			"lib-8.1.1.2",
-			"lib-8.1.1.3",
-			"lib-8.1.1.10", // Latest release (semantic version 8.1.1.10)
-		}
-
-		sorted := make([]string, len(releases))
-		copy(sorted, releases)
-		sort.Strings(sorted)
-
-		// Lexicographic sort order: 0, 1, 10, 2, 3
-		expectedLexOrder := []string{
-			"lib-8.1.1.0",
-			"lib-8.1.1.1",
-			"lib-8.1.1.10", // BUG: 10 comes before 2 lexicographically
-			"lib-8.1.1.2",
-			"lib-8.1.1.3",
-		}
-
-		for i, expected := range expectedLexOrder {
-			if sorted[i] != expected {
-				t.Errorf("Position %d: expected %s, got %s", i, expected, sorted[i])
-			}
-		}
-
-		// The bug: selects lib-8.1.1.3 instead of lib-8.1.1.10
-		selectedVersion := sorted[len(sorted)-1]
-		if selectedVersion != "lib-8.1.1.3" {
-			t.Errorf("Expected bug to select lib-8.1.1.3, got %s", selectedVersion)
-		}
-
-		t.Logf("BUG: Selected %s instead of latest release lib-8.1.1.10", selectedVersion)
-		t.Logf("Lexicographic order: %v", sorted)
-	})
-
-	t.Run("bug_affects_all_double_digit_versions", func(t *testing.T) {
-		// Test that any double-digit component causes the issue
-		testCases := []struct {
-			name             string
-			releases         []string
-			wrongSelection   string // What gets selected (lexicographically last)
-			correctSelection string // What should be selected (semantically latest)
-		}{
-			{
-				name:             "patch_version_10_vs_9",
-				releases:         []string{"lib-8.1.1.9", "lib-8.1.1.10"},
-				wrongSelection:   "lib-8.1.1.9",
-				correctSelection: "lib-8.1.1.10",
-			},
-			{
-				name:             "patch_version_19_vs_100",
-				releases:         []string{"lib-8.1.1.19", "lib-8.1.1.100"},
-				wrongSelection:   "lib-8.1.1.19",
-				correctSelection: "lib-8.1.1.100",
-			},
-			{
-				name:             "patch_version_2_vs_12",
-				releases:         []string{"lib-8.1.1.2", "lib-8.1.1.12"},
-				wrongSelection:   "lib-8.1.1.2",
-				correctSelection: "lib-8.1.1.12",
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				sorted := make([]string, len(tc.releases))
-				copy(sorted, tc.releases)
-				sort.Strings(sorted)
-
-				selectedVersion := sorted[len(sorted)-1]
-
-				// Verify the bug: lexicographic sort picks wrong version
-				if selectedVersion != tc.wrongSelection {
-					t.Errorf("Expected bug to select %s (lexicographically), got %s", tc.wrongSelection, selectedVersion)
-				}
-
-				// Document what should be selected semantically
-				if selectedVersion == tc.correctSelection {
-					t.Logf("Note: This case happens to work correctly")
-				} else {
-					t.Logf("BUG: Selected %s instead of semantically correct %s", selectedVersion, tc.correctSelection)
-				}
-			})
-		}
-	})
-
-	t.Run("documents_correct_semantic_version_comparison", func(t *testing.T) {
-		// This test documents how semantic versioning should work
-		// to prevent the bug in future implementations
-
-		type semver struct {
-			prefix string
-			major  int
-			minor  int
-			patch  int
-			build  int
-		}
-
-		releases := []semver{
-			{prefix: "lib", major: 8, minor: 1, patch: 1, build: 0},
-			{prefix: "lib", major: 8, minor: 1, patch: 1, build: 2},
-			{prefix: "lib", major: 8, minor: 1, patch: 1, build: 10},
-		}
-
-		// Find semantically highest version
-		highest := releases[0]
-		for _, r := range releases {
-			if r.major > highest.major ||
-				(r.major == highest.major && r.minor > highest.minor) ||
-				(r.major == highest.major && r.minor == highest.minor && r.patch > highest.patch) ||
-				(r.major == highest.major && r.minor == highest.minor && r.patch == highest.patch && r.build > highest.build) {
-				highest = r
-			}
-		}
-
-		// Semantically, lib-8.1.1.10 should be selected
-		if highest.build != 10 {
-			t.Errorf("Semantic version comparison failed: expected build 10, got %d", highest.build)
-		}
-
-		t.Logf("Correct semantic selection: %s-%d.%d.%d.%d",
-			highest.prefix, highest.major, highest.minor, highest.patch, highest.build)
 	})
 }
 
@@ -922,42 +958,6 @@ func TestStreamDownloadAndExtract_ErrorHandling(t *testing.T) {
 	})
 }
 
-func TestFindCompatibleRelease_APIFailureRecovery(t *testing.T) {
-	t.Run("fallback_when_api_unavailable", func(t *testing.T) {
-		// Test the fallback pattern construction
-		moduleVersion := "8.1.2"
-		expectedFallback := "lib-8.1.2.0"
-
-		// Simulate what happens when API fails: fallback to predictable pattern
-		fallbackRelease := "lib-" + moduleVersion + ".0"
-
-		if fallbackRelease != expectedFallback {
-			t.Errorf("Expected fallback %s, got %s", expectedFallback, fallbackRelease)
-		}
-
-		t.Logf("Fallback release pattern: %s", fallbackRelease)
-	})
-
-	t.Run("fallback_with_different_versions", func(t *testing.T) {
-		testCases := []struct {
-			version  string
-			expected string
-		}{
-			{"8.0.0", "lib-8.0.0.0"},
-			{"8.1.2", "lib-8.1.2.0"},
-			{"9.1.0", "lib-9.1.0.0"},
-			{"10.0.0", "lib-10.0.0.0"},
-		}
-
-		for _, tc := range testCases {
-			fallback := "lib-" + tc.version + ".0"
-			if fallback != tc.expected {
-				t.Errorf("Version %s: expected %s, got %s", tc.version, tc.expected, fallback)
-			}
-		}
-	})
-}
-
 func TestVerifyChecksum_APIFailureHandling(t *testing.T) {
 	t.Run("handles_api_rate_limit", func(t *testing.T) {
 		// When checksum verification fails due to rate limit (403),
@@ -1167,28 +1167,23 @@ func mockLinuxRelease(t *testing.T, arch string, archiveBytes []byte) *int {
 	sum := sha256.Sum256(payload)
 	digest := hex.EncodeToString(sum[:])
 
-	const release = "lib-" + Version + ".0"
 	requests := 0
 	mockHTTP(t, func(req *http.Request) (*http.Response, error) {
 		requests++
-		var data any
 		switch req.URL.Path {
-		case "/repos/linuxmatters/ffmpeg-statigo/releases":
-			data = []GitHubRelease{{TagName: release}}
-		case "/repos/linuxmatters/ffmpeg-statigo/releases/tags/" + release:
-			data = GitHubReleaseDetail{
+		case "/repos/linuxmatters/ffmpeg-statigo/releases/tags/" + LibRelease:
+			body, err := json.Marshal(GitHubReleaseDetail{
 				Assets: []GitHubAsset{{Name: asset, Digest: "sha256:" + digest}},
+			})
+			if err != nil {
+				return nil, err
 			}
-		case "/linuxmatters/ffmpeg-statigo/releases/download/" + release + "/" + asset:
+			return testHTTPResponse(http.StatusOK, body), nil
+		case "/linuxmatters/ffmpeg-statigo/releases/download/" + LibRelease + "/" + asset:
 			return testHTTPResponse(http.StatusOK, payload), nil
 		default:
 			return nil, fmt.Errorf("unexpected request: %s", req.URL)
 		}
-		body, err := json.Marshal(data)
-		if err != nil {
-			return nil, err
-		}
-		return testHTTPResponse(http.StatusOK, body), nil
 	})
 	return &requests
 }
