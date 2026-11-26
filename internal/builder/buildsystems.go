@@ -278,13 +278,10 @@ func rav1eInstallWithLog(targetOS, arch string) func(context.Context, string, st
 }
 
 func rav1eInstallCommand(targetOS, arch, installDir, cgoCflags string) (args, env []string) {
-	var rustflags string
-	if arch == "amd64" {
-		rustflags = "-C target-cpu=x86-64-v3"
-	}
+	var rustflags []string
 	if targetOS == "darwin" {
 		if sdkPath := extractSDKPath(cgoCflags); sdkPath != "" {
-			rustflags += " -C link-arg=-L" + filepath.Join(sdkPath, "usr", "lib")
+			rustflags = append(rustflags, "-C link-arg=-L"+filepath.Join(sdkPath, "usr", "lib"))
 		}
 	}
 
@@ -305,13 +302,13 @@ func rav1eInstallCommand(targetOS, arch, installDir, cgoCflags string) (args, en
 		}
 		args = append(args, "--target="+target)
 		// Use the active UCRT64 or MINGW32 runtime, not Rust's bundled MinGW objects.
-		rustflags = strings.TrimSpace(rustflags + " -C link-self-contained=no")
+		rustflags = append(rustflags, "-C link-self-contained=no")
 		env = append(env,
 			"CARGO_TARGET_"+strings.ToUpper(strings.ReplaceAll(target, "-", "_"))+"_LINKER="+windowsGNUHost(arch)+"-gcc",
 			"WINAPI_NO_BUNDLED_LIBRARIES=1",
 		)
 	}
-	return args, append(env, "RUSTFLAGS="+rustflags, "CARGO_PROFILE_RELEASE_DEBUG=false")
+	return args, append(env, "RUSTFLAGS="+strings.Join(rustflags, " "), "CARGO_PROFILE_RELEASE_DEBUG=false")
 }
 
 // MakefileBuild implements the BuildSystem interface for Makefile-based builds
