@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"errors"
 	"testing"
 	"unsafe"
 )
@@ -96,4 +97,69 @@ func TestAVAudioFifoRoundTripPlanar(t *testing.T) {
 // format (S16 → 1 plane).
 func TestAVAudioFifoRoundTripPacked(t *testing.T) {
 	fifoRoundTrip(t, AVSampleFmtS16, 2, 1024)
+}
+
+// TestAVAudioFifoNilReceiver verifies that the FIFO data-path wrappers reject
+// nil and zero-value AVAudioFifo receivers with AVErrorUnknownConst instead of
+// dereferencing a nil pointer.
+func TestAVAudioFifoNilReceiver(t *testing.T) {
+	const (
+		nbSamples  = 1
+		nbChannels = 1
+		sampleFmt  = AVSampleFmtS16
+	)
+	planes := make([]unsafe.Pointer, 1)
+	wantErr := AVError{Code: AVErrorUnknownConst}
+
+	receivers := []struct {
+		name string
+		af   *AVAudioFifo
+	}{
+		{name: "nil", af: nil},
+		{name: "zero_value", af: &AVAudioFifo{}},
+	}
+
+	calls := []struct {
+		name string
+		fn   func(*AVAudioFifo) (int, error)
+	}{
+		{
+			name: "AVAudioFifoWrite",
+			fn: func(af *AVAudioFifo) (int, error) {
+				return AVAudioFifoWrite(af, planes, nbSamples, nbChannels, sampleFmt)
+			},
+		},
+		{
+			name: "AVAudioFifoRead",
+			fn: func(af *AVAudioFifo) (int, error) {
+				return AVAudioFifoRead(af, planes, nbSamples, nbChannels, sampleFmt)
+			},
+		},
+		{
+			name: "AVAudioFifoPeek",
+			fn: func(af *AVAudioFifo) (int, error) {
+				return AVAudioFifoPeek(af, planes, nbSamples, nbChannels, sampleFmt)
+			},
+		},
+		{
+			name: "AVAudioFifoPeekAt",
+			fn: func(af *AVAudioFifo) (int, error) {
+				return AVAudioFifoPeekAt(af, planes, nbSamples, 0, nbChannels, sampleFmt)
+			},
+		},
+	}
+
+	for _, rx := range receivers {
+		for _, tc := range calls {
+			t.Run(tc.name+"/"+rx.name, func(t *testing.T) {
+				ret, err := tc.fn(rx.af)
+				if ret != 0 {
+					t.Errorf("%s(%s) returned %d, want 0", tc.name, rx.name, ret)
+				}
+				if !errors.Is(err, wantErr) {
+					t.Errorf("%s(%s) err = %v, want %v", tc.name, rx.name, err, wantErr)
+				}
+			})
+		}
+	}
 }
