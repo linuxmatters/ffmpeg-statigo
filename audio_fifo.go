@@ -14,6 +14,9 @@ import "unsafe"
 //
 // Returns the number of samples written, or a negative error code.
 func AVAudioFifoWrite(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, nbChannels int, sampleFmt AVSampleFormat) (int, error) {
+	if af == nil || af.ptr == nil {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
 	if len(data) < samplePlaneCount(nbChannels, sampleFmt) {
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
@@ -32,6 +35,9 @@ func AVAudioFifoWrite(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, nbChann
 //
 // Returns the number of samples read, or a negative error code.
 func AVAudioFifoRead(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, nbChannels int, sampleFmt AVSampleFormat) (int, error) {
+	if af == nil || af.ptr == nil {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
 	if len(data) < samplePlaneCount(nbChannels, sampleFmt) {
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
@@ -50,6 +56,9 @@ func AVAudioFifoRead(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, nbChanne
 //
 // Returns the number of samples peeked, or a negative error code.
 func AVAudioFifoPeek(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, nbChannels int, sampleFmt AVSampleFormat) (int, error) {
+	if af == nil || af.ptr == nil {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
 	if len(data) < samplePlaneCount(nbChannels, sampleFmt) {
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
@@ -68,6 +77,9 @@ func AVAudioFifoPeek(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, nbChanne
 //
 // Returns the number of samples peeked, or a negative error code.
 func AVAudioFifoPeekAt(af *AVAudioFifo, data []unsafe.Pointer, nbSamples, offset, nbChannels int, sampleFmt AVSampleFormat) (int, error) {
+	if af == nil || af.ptr == nil {
+		return 0, WrapErr(AVErrorUnknownConst)
+	}
 	if len(data) < samplePlaneCount(nbChannels, sampleFmt) {
 		return 0, WrapErr(AVErrorUnknownConst)
 	}
