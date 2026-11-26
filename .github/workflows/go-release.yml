@@ -4,36 +4,138 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Go module version (e.g., 8.0.0.1)"
+        description: "Go module version (e.g., 8.1.2.1)"
+        type: string
         required: true
   push:
     tags:
       - "v[0-9]*.[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    name: Create Go module release
+  validate:
+    name: Validate release
     runs-on: ubuntu-24.04
-    env:
-      CGO_ENABLED: "1"
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      display_version: ${{ steps.version.outputs.display_version }}
+      windows_assets: ${{ steps.windows-assets.outputs.windows_assets || 'false' }}
 
     steps:
       - name: Validate version format
-        if: github.event_name == 'workflow_dispatch'
+        id: version
         env:
-          VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        shell: bash
         run: |
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version must be in format X.Y.Z.N (e.g., 8.0.0.1)"
-            exit 1
-          fi
+          set -euo pipefail
+          case "$EVENT_NAME" in
+            workflow_dispatch)
+              if [[ ! "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "::error::Version must be in format X.Y.Z.N (e.g., 8.1.2.1): $INPUT_VERSION"
+                exit 1
+              fi
+              version="v${INPUT_VERSION}"
+              display_version="${INPUT_VERSION}"
+              ;;
+            push)
+              if [[ ! "$REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+                echo "::error::Tag must be in format vX.Y.Z.N (e.g., v8.1.2.1): $REF_NAME"
+                exit 1
+              fi
+              version="$REF_NAME"
+              display_version="${BASH_REMATCH[1]}"
+              ;;
+            *)
+              echo "::error::Unsupported event: $EVENT_NAME"
+              exit 1
+              ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "display_version=$display_version" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check Windows release assets
+        id: windows-assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=$(sed -En 's/^[[:space:]]*const[[:space:]]+LibRelease[[:space:]]*=[[:space:]]*"([^"]+)"[[:space:]]*$/\1/p' lib/fetch.go)
+          if [[ ! "$tag" =~ ^lib-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid or missing LibRelease in lib/fetch.go: $tag"
+            exit 1
+          fi
+          api="https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/${tag}"
+          body_file="${RUNNER_TEMP}/release.json"
+          http_code=$(curl --silent --show-error \
+            --output "$body_file" \
+            --write-out '%{http_code}' \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$api")
+          if [[ "$http_code" != "200" ]]; then
+            echo "::error::GitHub API returned HTTP $http_code for release $tag"
+            exit 1
+          fi
+          windows_assets=$(jq -r '
+            if (.assets | type) != "array" then
+              error("Missing release asset metadata")
+            else
+              (.assets | map(.name)) as $names |
+              [
+                "ffmpeg-windows-amd64.tar.gz",
+                "ffmpeg-windows-386.tar.gz",
+                "ffmpeg-embedded-windows-amd64.tar.gz",
+                "ffmpeg-embedded-windows-386.tar.gz"
+              ] | all(. as $a | $names | index($a) != null)
+            end
+          ' "$body_file")
+          echo "windows_assets=$windows_assets" >> "$GITHUB_OUTPUT"
+          if [[ "$windows_assets" != "true" ]]; then
+            echo "::notice::Release $tag does not contain all Windows library archives. Skipping test-windows."
+          fi
+
+  test-unix:
+    name: Test ${{ matrix.variant }} on ${{ matrix.os }} ${{ matrix.arch }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    env:
+      CGO_ENABLED: "1"
+      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
+    strategy:
+      matrix:
+        os: [linux, darwin]
+        arch: [amd64, arm64]
+        variant: [default, embedded]
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-24.04
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: darwin
+            arch: amd64
+            runner: macos-15-intel
+          - os: darwin
+            arch: arm64
+            runner: macos-15
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@v7
         with:
@@ -45,58 +147,158 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: go run ./cmd/download-lib/
 
-      - name: Verify module builds
+      - name: Build
         run: go build -v ./...
 
-      - name: Run tests
+      - name: Test
         run: go test -v ./...
 
-      - name: Download embedded FFmpeg libraries
+  test-windows:
+    name: Test ${{ matrix.variant }} on windows ${{ matrix.arch }}
+    needs: validate
+    if: needs.validate.outputs.windows_assets == 'true'
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, "386"]
+        variant: [default, embedded]
+        include:
+          - arch: amd64
+            msystem: UCRT64
+            bin: /ucrt64/bin
+            package-prefix: mingw-w64-ucrt-x86_64
+            cc-target: x86_64-w64-mingw32
+          - arch: "386"
+            msystem: MINGW32
+            bin: /mingw32/bin
+            package-prefix: mingw-w64-i686
+            cc-target: i686-w64-mingw32
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      GOOS: windows
+      GOARCH: ${{ matrix.arch }}
+      MINGW_BIN: ${{ matrix.bin }}
+      CC_TARGET: ${{ matrix.cc-target }}
+      CGO_ENABLED: "1"
+      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
+
+    steps:
+      - name: Preserve LF line endings
+        shell: pwsh
+        run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Capture Go binary directory
+        shell: pwsh
+        run: |
+          $goBin = Split-Path (Get-Command go).Source
+          "GO_BIN=$goBin" | Out-File -Append $env:GITHUB_ENV -Encoding utf8
+
+      # msys2/setup-msys2 v2.33.0
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          cache: true
+          path-type: minimal
+          install: >-
+            ${{ matrix.package-prefix }}-binutils
+            ${{ matrix.package-prefix }}-gcc
+
+      - name: Configure and validate toolchain
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          CC="$(cygpath -m "$MINGW_BIN/gcc.exe")"
+          CXX="$(cygpath -m "$MINGW_BIN/g++.exe")"
+          export CC CXX
+          printf 'CC=%s\nCXX=%s\n' "$CC" "$CXX" >> "$GITHUB_ENV"
+          go version
+          go env GOOS GOARCH CGO_ENABLED CC CXX GOFLAGS
+          "$CC" --version
+          "$CC" -dumpmachine
+          test "$("$CC" -dumpmachine)" = "$CC_TARGET"
+
+      - name: Download FFmpeg libraries
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          GOFLAGS: -tags=embedded
-        run: go run ./cmd/download-lib/
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          go run ./cmd/download-lib/
 
-      - name: Verify embedded module builds
-        env:
-          GOFLAGS: -tags=embedded
-        run: go build -v ./...
+      - name: Build
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          go build -v ./...
 
-      - name: Run embedded tests
-        env:
-          GOFLAGS: -tags=embedded
-        run: go test -v ./...
+      - name: Test
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          go test -v ./...
+
+  release:
+    name: Create Go module release
+    needs: [validate, test-unix, test-windows]
+    if: >-
+      !cancelled() &&
+      needs.validate.result == 'success' &&
+      needs.test-unix.result == 'success' &&
+      (needs.test-windows.result == 'success' ||
+      (needs.validate.outputs.windows_assets == 'false' &&
+      needs.test-windows.result == 'skipped'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Create tag (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch'
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          DISPLAY_VERSION: ${{ needs.validate.outputs.display_version }}
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Go modules require v prefix for version tags
-          git tag -a "v$VERSION" -m "Release $VERSION"
-          git push origin "v$VERSION"
-
-      - name: Determine version
-        id: version
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
-            echo "display_version=$VERSION" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-            echo "display_version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
-          fi
+          git tag -a "$VERSION" -m "Release $DISPLAY_VERSION"
+          git push origin "$VERSION"
 
       - name: Generate changelog
         id: changelog
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        shell: bash
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
-          # Get previous tag (look for v8.* tags)
+          set -euo pipefail
+          # Get previous tag (look for vX.Y.Z.N tags)
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null |
             grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
 
@@ -141,8 +343,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.display_version }}
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: ${{ needs.validate.outputs.display_version }}
           body_path: changelog.md
           draft: false
           prerelease: false
