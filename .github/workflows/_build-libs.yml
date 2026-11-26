@@ -1,0 +1,470 @@
+name: Build FFmpeg libraries
+
+on:
+  workflow_call:
+    inputs:
+      clean_ffmpeg:
+        description: "Clean FFmpeg build directory before building"
+        type: boolean
+        default: false
+        required: false
+      test:
+        description: "Build and test Go packages after building libraries"
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-unix:
+    name: Build ${{ matrix.variant }} for ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      CGO_ENABLED: "1"
+      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
+      BUILDER_FLAGS: ${{ matrix.variant == 'embedded' && '--embedded' || '' }}
+      LIB_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded/' || '' }}
+      ASSET_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded-' || '' }}
+      BUILD_ROOT: >-
+        ${{ matrix.variant == 'embedded' && '.build/embedded' || '.build' }}
+    strategy:
+      matrix:
+        os: [linux, darwin]
+        arch: [amd64, arm64]
+        variant: [default, embedded]
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-24.04
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: darwin
+            arch: amd64
+            runner: macos-15-intel
+          - os: darwin
+            arch: arm64
+            runner: macos-15
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.variant == 'default' || matrix.os == 'darwin'
+        with:
+          toolchain: stable
+          components: llvm-tools
+
+      - name: Locate llvm-objcopy
+        if: matrix.os == 'darwin'
+        run: |
+          tool="$(rustc --print sysroot)/lib/rustlib/$(rustc --print host-tuple)/bin/llvm-objcopy"
+          test -x "$tool"
+          echo "LLVM_OBJCOPY=$tool" >> "$GITHUB_ENV"
+
+      - uses: Swatinem/rust-cache@v2
+        if: matrix.variant == 'default'
+        with:
+          cache-bin: false
+
+      - uses: taiki-e/cache-cargo-install-action@v3
+        if: matrix.variant == 'default'
+        with:
+          tool: cargo-c
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yasm nasm meson gperf python3
+
+      - name: Install macOS dependencies
+        if: matrix.os == 'darwin'
+        run: |
+          brew update
+          brew install yasm autoconf ragel meson nasm automake libtool python3
+
+      - name: Calculate builder hash
+        id: file-hashes
+        run: |
+          hash=$(shasum -a 256 internal/builder/*.go | shasum -a 256)
+          echo "builder-hash=${hash%% *}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache FFmpeg source downloads
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.BUILD_ROOT }}/downloads
+          key: >-
+            ${{ matrix.os }}-${{ matrix.arch }}-ffmpeg-${{
+            matrix.variant }}-downloads-${{
+            steps.file-hashes.outputs.builder-hash }}
+          restore-keys: >-
+            ${{ matrix.os }}-${{ matrix.arch }}-ffmpeg-${{
+            matrix.variant }}-downloads-
+
+      - name: Cache compiled dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.BUILD_ROOT }}/staging
+            ${{ env.BUILD_ROOT }}/build
+          key: >-
+            ${{ matrix.os }}-${{ matrix.arch }}-ffmpeg-${{
+            matrix.variant }}-deps-${{
+            steps.file-hashes.outputs.builder-hash }}
+
+      - name: Clean FFmpeg build
+        if: inputs.clean_ffmpeg
+        run: |
+          go run ./internal/builder/ \
+            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} ffmpeg --clean
+
+      - name: Build FFmpeg library
+        run: go run ./internal/builder/ ${BUILDER_FLAGS:+"$BUILDER_FLAGS"}
+
+      - name: Build Go packages
+        if: inputs.test
+        run: go build -v ./...
+
+      - name: Test Go packages
+        if: inputs.test
+        run: go test -v ./...
+
+      - name: Create tarball
+        env:
+          PLATFORM: ${{ matrix.os }}_${{ matrix.arch }}
+          ASSET_PLATFORM: ${{ matrix.os }}-${{ matrix.arch }}
+        run: |
+          archive="ffmpeg-${ASSET_PREFIX}${ASSET_PLATFORM}.tar.gz"
+          payload="${LIB_PREFIX}${PLATFORM}/libffmpeg.a"
+          test -s "lib/$payload"
+          tar -czf "$archive" -C lib "$payload"
+          test "$(tar -tzf "$archive")" = "$payload"
+
+      - name: Upload library artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-${{ matrix.variant }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: ffmpeg-*.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  build-windows:
+    name: Build ${{ matrix.variant }} for windows ${{ matrix.arch }}
+    runs-on: windows-2025
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            variant: default
+            msystem: UCRT64
+            bin: /ucrt64/bin
+            package-prefix: mingw-w64-ucrt-x86_64
+            nasm-package: mingw-w64-ucrt-x86_64-nasm
+            yasm-package: mingw-w64-ucrt-x86_64-yasm
+            extra-packages: >-
+              mingw-w64-ucrt-x86_64-meson
+              mingw-w64-ucrt-x86_64-rust
+              mingw-w64-ucrt-x86_64-cargo-c
+            cc-target: x86_64-w64-mingw32
+            object-arch: i386:x86-64
+            asm-format: win64
+            build-root: .build
+          - arch: amd64
+            variant: embedded
+            msystem: UCRT64
+            bin: /ucrt64/bin
+            package-prefix: mingw-w64-ucrt-x86_64
+            nasm-package: mingw-w64-ucrt-x86_64-nasm
+            yasm-package: mingw-w64-ucrt-x86_64-yasm
+            extra-packages: ""
+            cc-target: x86_64-w64-mingw32
+            object-arch: i386:x86-64
+            asm-format: win64
+            build-root: .build/embedded
+          - arch: "386"
+            variant: default
+            msystem: MINGW32
+            bin: /mingw32/bin
+            package-prefix: mingw-w64-i686
+            # MSYS2 has no i686 NASM or YASM packages.
+            # The host assemblers emit Win32 objects.
+            nasm-package: nasm
+            yasm-package: yasm
+            extra-packages: mingw-w64-i686-meson
+            cc-target: i686-w64-mingw32
+            object-arch: i386
+            asm-format: win32
+            build-root: .build/windows_386_msvcrt
+          - arch: "386"
+            variant: embedded
+            msystem: MINGW32
+            bin: /mingw32/bin
+            package-prefix: mingw-w64-i686
+            nasm-package: nasm
+            yasm-package: yasm
+            extra-packages: ""
+            cc-target: i686-w64-mingw32
+            object-arch: i386
+            asm-format: win32
+            build-root: .build/embedded/windows_386_msvcrt
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      GOOS: windows
+      GOARCH: ${{ matrix.arch }}
+      MINGW_BIN: ${{ matrix.bin }}
+      CC_TARGET: ${{ matrix.cc-target }}
+      OBJECT_ARCH: ${{ matrix.object-arch }}
+      ASM_FORMAT: ${{ matrix.asm-format }}
+      CGO_ENABLED: "1"
+      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
+      BUILDER_FLAGS: ${{ matrix.variant == 'embedded' && '--embedded' || '' }}
+      LIB_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded/' || '' }}
+      ASSET_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded-' || '' }}
+      BUILD_ROOT: ${{ matrix.build-root }}
+      CMAKE_GENERATOR: Ninja
+
+    steps:
+      - name: Set up Rust host tools for Windows 386
+        if: matrix.variant == 'default' && matrix.arch == '386'
+        shell: pwsh
+        run: |
+          $toolchain = '1.93.1-x86_64-pc-windows-msvc'
+          rustup toolchain install $toolchain --profile minimal `
+            --target i686-pc-windows-gnu
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo "+$toolchain" install cargo-c --version 0.10.20 --locked `
+            --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $rustBin = Split-Path (Get-Command cargo).Source
+          "RUST_BIN=$rustBin" | Out-File -Append $env:GITHUB_ENV -Encoding utf8
+          "RUSTUP_TOOLCHAIN=$toolchain" |
+            Out-File -Append $env:GITHUB_ENV -Encoding utf8
+
+      - name: Preserve LF line endings
+        shell: pwsh
+        run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Capture Go binary directory
+        shell: pwsh
+        run: |
+          $goBin = Split-Path (Get-Command go).Source
+          "GO_BIN=$goBin" | Out-File -Append $env:GITHUB_ENV -Encoding utf8
+
+      # msys2/setup-msys2 v2.33.0
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          cache: false
+          path-type: minimal
+          install: >-
+            autoconf
+            automake
+            diffutils
+            git
+            libtool
+            make
+            patch
+            perl
+            ${{ matrix.package-prefix }}-binutils
+            ${{ matrix.package-prefix }}-cmake
+            ${{ matrix.package-prefix }}-gcc
+            ${{ matrix.nasm-package }}
+            ${{ matrix.package-prefix }}-ninja
+            ${{ matrix.package-prefix }}-pkgconf
+            ${{ matrix.package-prefix }}-python
+            ${{ matrix.yasm-package }}
+            ${{ matrix.extra-packages }}
+
+      - name: Record and validate toolchain
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          if [ -n "${RUST_BIN:-}" ]; then
+            rust_bin="$(cygpath -u "$RUST_BIN")"
+            PATH="$rust_bin:$PATH"
+          fi
+          export PATH
+          CC="$(cygpath -m "$MINGW_BIN/gcc.exe")"
+          CXX="$(cygpath -m "$MINGW_BIN/g++.exe")"
+          export CC CXX
+          printf 'CC=%s\nCXX=%s\n' "$CC" "$CXX" >> "$GITHUB_ENV"
+          go version
+          go env GOOS GOARCH CGO_ENABLED CC CXX GOFLAGS
+          "$CC" --version
+          "$CC" -dumpmachine
+          test "$("$CC" -dumpmachine)" = "$CC_TARGET"
+          "$CXX" --version
+          cmake --version
+          ninja --version
+          if [ "$VARIANT" = default ]; then
+            test -z "$(go env GOFLAGS)"
+            meson --version
+            rustc -vV
+            cargo --version
+            cargo cinstall --version
+            nasm --version
+            yasm --version
+            printf 'section .text\nret\n' > "$RUNNER_TEMP/assembler-check.asm"
+            for assembler in nasm yasm; do
+              "$assembler" -f "$ASM_FORMAT" \
+                "$RUNNER_TEMP/assembler-check.asm" \
+                -o "$RUNNER_TEMP/$assembler-check.o"
+              objdump -f "$RUNNER_TEMP/$assembler-check.o" |
+                awk -v expected="$OBJECT_ARCH," '
+                /^architecture:/ {
+                  print
+                  found = 1
+                  if ($2 != expected) invalid = 1
+                }
+                END { if (!found || invalid) exit 1 }
+              '
+            done
+          fi
+          ar --version
+          pacman -Q
+          df -h .
+
+      - name: Calculate builder hash
+        id: file-hashes
+        run: |
+          set -euo pipefail
+          hash=$(sha256sum internal/builder/*.go | sha256sum)
+          echo "builder-hash=${hash%% *}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache FFmpeg source downloads
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.BUILD_ROOT }}/downloads
+          key: >-
+            windows-${{ matrix.arch }}-ffmpeg-${{
+            matrix.variant }}-downloads-${{
+            steps.file-hashes.outputs.builder-hash }}
+          restore-keys: >-
+            windows-${{ matrix.arch }}-ffmpeg-${{
+            matrix.variant }}-downloads-
+
+      - name: Cache compiled dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ env.BUILD_ROOT }}/staging
+            ${{ env.BUILD_ROOT }}/build
+          key: >-
+            windows-${{ matrix.arch }}-ffmpeg-${{
+            matrix.variant }}-deps-${{
+            steps.file-hashes.outputs.builder-hash }}
+
+      - name: Clean FFmpeg build
+        if: inputs.clean_ffmpeg
+        env:
+          MSYS2_ENV_CONV_EXCL: ACLOCAL_PATH
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          go run ./internal/builder/ \
+            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} ffmpeg --clean
+
+      - name: Build FFmpeg library
+        env:
+          MSYS2_ENV_CONV_EXCL: ACLOCAL_PATH
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          if [ -n "${RUST_BIN:-}" ]; then
+            rust_bin="$(cygpath -u "$RUST_BIN")"
+            PATH="$rust_bin:$PATH"
+          fi
+          export PATH
+          go run ./internal/builder/ ${BUILDER_FLAGS:+"$BUILDER_FLAGS"}
+
+      - name: Validate archive
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          archive="lib/${LIB_PREFIX}windows_${GOARCH}/libffmpeg.a"
+          test -s "$archive"
+          ls -lh "$archive"
+          sha256sum "$archive"
+          ar t "$archive" | awk '
+            NR <= 20 { print }
+            END { print "Archive members:", NR; if (NR == 0) exit 1 }
+          '
+          objdump -f "$archive" | awk -v expected="$OBJECT_ARCH," '
+            /^architecture:/ {
+              if (++members <= 20) print
+              if ($2 != expected) invalid = 1
+            }
+            END {
+              print "Archive object headers:", members
+              if (members == 0 || invalid) exit 1
+            }
+          '
+          df -h .
+
+      - name: Build Go packages
+        if: inputs.test
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          go build -v ./...
+
+      - name: Test Go packages
+        if: inputs.test
+        run: |
+          set -euo pipefail
+          go_bin="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin:$PATH"
+          export PATH
+          go test -v ./...
+
+      - name: Create tarball
+        run: |
+          set -euo pipefail
+          archive="ffmpeg-${ASSET_PREFIX}windows-${GOARCH}.tar.gz"
+          payload="${LIB_PREFIX}windows_${GOARCH}/libffmpeg.a"
+          test -s "lib/$payload"
+          tar -czf "$archive" -C lib "$payload"
+          test "$(tar -tzf "$archive")" = "$payload"
+
+      - name: Upload library artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-${{ matrix.variant }}-windows-${{ matrix.arch }}
+          path: ffmpeg-*.tar.gz
+          if-no-files-found: error
+          retention-days: 1

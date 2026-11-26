@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "FFmpeg library version (e.g., lib-8.1.1.0)"
+        description: "FFmpeg library version (e.g., lib-8.1.2.1)"
         required: true
+        type: string
   push:
     tags:
       - "lib-[0-9]*.[0-9]*.[0-9]*.[0-9]*"
@@ -14,149 +15,60 @@ permissions:
   contents: read
 
 jobs:
-  ffmpeg-release:
-    name: Build ${{ matrix.variant }} for ${{ matrix.os }} ${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
-    env:
-      CGO_ENABLED: "1"
-      GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
-      BUILDER_FLAGS: ${{ matrix.variant == 'embedded' && '--embedded' || '' }}
-      LIB_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded/' || '' }}
-      ASSET_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded-' || '' }}
-      BUILD_ROOT: >-
-        ${{ matrix.variant == 'embedded' && '.build/embedded' || '.build' }}
-    strategy:
-      matrix:
-        os: [linux, darwin]
-        arch: [amd64, arm64]
-        variant: [default, embedded]
-        include:
-          - os: linux
-            arch: amd64
-            runner: ubuntu-24.04
-          - os: linux
-            arch: arm64
-            runner: ubuntu-24.04-arm
-          - os: darwin
-            arch: amd64
-            runner: macos-15-intel
-          - os: darwin
-            arch: arm64
-            runner: macos-15
-      fail-fast: false
-
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
     steps:
-      - name: Validate version format
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate release tag and version parity
+        id: check
+        shell: bash
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
-          if [[ ! "$VERSION" =~ ^lib-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version must match lib-X.Y.Z.N (e.g., lib-8.1.1.0)"
+          set -euo pipefail
+
+          if [[ ! "$VERSION" =~ ^lib-([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
+            echo "::error::Version must match lib-X.Y.Z.N (e.g., lib-8.1.2.1), got: $VERSION"
+            exit 1
+          fi
+          tag_ffmpeg_version="${BASH_REMATCH[1]}"
+
+          lib_release=$(sed -En 's/^[[:space:]]*const[[:space:]]+LibRelease[[:space:]]*=[[:space:]]*"([^"]+)"[[:space:]]*$/\1/p' lib/fetch.go)
+          if [[ "$VERSION" != "$lib_release" ]]; then
+            echo "::error::Release tag ($VERSION) does not match LibRelease in lib/fetch.go ($lib_release)"
             exit 1
           fi
 
-      - uses: actions/checkout@v7
+          lib_version=$(sed -En 's/^[[:space:]]*const[[:space:]]+Version[[:space:]]*=[[:space:]]*"([^"]+)"[[:space:]]*$/\1/p' lib/fetch.go)
+          if [[ "$tag_ffmpeg_version" != "$lib_version" ]]; then
+            echo "::error::Tag FFmpeg version ($tag_ffmpeg_version) does not match Version in lib/fetch.go ($lib_version)"
+            exit 1
+          fi
 
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: false
+          builder_ffmpeg_version=$(sed -En 's|^[[:space:]]*URL:[[:space:]]*"https://github\.com/FFmpeg/FFmpeg/archive/refs/tags/n([0-9]+\.[0-9]+\.[0-9]+)\.tar\.[^"]+",[[:space:]]*$|\1|p' internal/builder/libraries.go)
+          if [[ "$tag_ffmpeg_version" != "$builder_ffmpeg_version" ]]; then
+            echo "::error::Tag FFmpeg version ($tag_ffmpeg_version) does not match FFmpeg URL in internal/builder/libraries.go ($builder_ffmpeg_version)"
+            exit 1
+          fi
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          components: llvm-tools
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Locate llvm-objcopy
-        if: matrix.os == 'darwin'
-        run: |
-          tool="$(rustc --print sysroot)/lib/rustlib/$(rustc --print host-tuple)/bin/llvm-objcopy"
-          test -x "$tool"
-          echo "LLVM_OBJCOPY=$tool" >> "$GITHUB_ENV"
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-bin: false
-
-      - uses: taiki-e/cache-cargo-install-action@v3
-        with:
-          tool: cargo-c
-
-      - name: Install Linux dependencies
-        if: matrix.os == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y yasm nasm meson gperf python3
-
-      - name: Install macOS dependencies
-        if: matrix.os == 'darwin'
-        run: |
-          brew update
-          brew install yasm autoconf ragel meson nasm automake libtool python3
-
-      - name: Calculate builder hash
-        id: file-hashes
-        run: |
-          hash=$(shasum -a 256 internal/builder/*.go | shasum -a 256)
-          echo "builder-hash=${hash%% *}" >> "$GITHUB_OUTPUT"
-
-      - name: Cache FFmpeg source downloads
-        uses: actions/cache@v6
-        with:
-          path: ${{ env.BUILD_ROOT }}/downloads
-          key: >-
-            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-${{
-            matrix.variant }}-downloads-${{
-            steps.file-hashes.outputs.builder-hash }}
-          restore-keys: >-
-            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-${{
-            matrix.variant }}-downloads-
-
-      - name: Cache compiled dependencies
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ env.BUILD_ROOT }}/staging
-            ${{ env.BUILD_ROOT }}/build
-          key: >-
-            ${{ runner.os }}-${{ runner.arch }}-ffmpeg-${{
-            matrix.variant }}-deps-${{ steps.file-hashes.outputs.builder-hash }}
-
-      - name: Clean FFmpeg build
-        run: |
-          go run ./internal/builder/ \
-            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} ffmpeg --clean
-
-      - name: Build FFmpeg library
-        run: go run ./internal/builder/ ${BUILDER_FLAGS:+"$BUILDER_FLAGS"}
-
-      - name: Build Go packages
-        run: go build -v ./...
-
-      - name: Test Go packages
-        run: go test -v ./...
-
-      - name: Create tarball
-        env:
-          PLATFORM: ${{ matrix.os }}_${{ matrix.arch }}
-          ASSET_PLATFORM: ${{ matrix.os }}-${{ matrix.arch }}
-        run: |
-          archive="ffmpeg-${ASSET_PREFIX}${ASSET_PLATFORM}.tar.gz"
-          payload="${LIB_PREFIX}${PLATFORM}/libffmpeg.a"
-          tar -czf "$archive" -C lib "$payload"
-          test "$(tar -tzf "$archive")" = "$payload"
-
-      - name: Upload library artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ffmpeg-${{ matrix.variant }}-${{ matrix.os }}-${{ matrix.arch }}
-          path: ffmpeg-*.tar.gz
-          if-no-files-found: error
-          retention-days: 1
+  build-libs:
+    needs: validate
+    uses: ./.github/workflows/_build-libs.yml
+    with:
+      clean_ffmpeg: true
+      test: true
 
   publish:
     name: Publish FFmpeg libraries
-    needs: ffmpeg-release
+    needs: [validate, build-libs]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -167,9 +79,41 @@ jobs:
           pattern: ffmpeg-*
           merge-multiple: true
 
-      - name: Create checksums
+      - name: Verify archives and create checksums
+        shell: bash
         run: |
-          sha256sum ffmpeg-*.tar.gz > SHA256SUMS
+          set -euo pipefail
+          shopt -s nullglob
+
+          expected=(
+            ffmpeg-darwin-amd64.tar.gz
+            ffmpeg-darwin-arm64.tar.gz
+            ffmpeg-embedded-darwin-amd64.tar.gz
+            ffmpeg-embedded-darwin-arm64.tar.gz
+            ffmpeg-embedded-linux-amd64.tar.gz
+            ffmpeg-embedded-linux-arm64.tar.gz
+            ffmpeg-embedded-windows-386.tar.gz
+            ffmpeg-embedded-windows-amd64.tar.gz
+            ffmpeg-linux-amd64.tar.gz
+            ffmpeg-linux-arm64.tar.gz
+            ffmpeg-windows-386.tar.gz
+            ffmpeg-windows-amd64.tar.gz
+          )
+
+          for archive in "${expected[@]}"; do
+            if [[ ! -s "$archive" ]]; then
+              echo "::error::Missing or empty archive: $archive"
+              exit 1
+            fi
+          done
+
+          actual=(ffmpeg-*.tar.gz)
+          if (( ${#actual[@]} != ${#expected[@]} )); then
+            echo "::error::Expected ${#expected[@]} archives, found ${#actual[@]}: ${actual[*]}"
+            exit 1
+          fi
+
+          LC_ALL=C sha256sum "${expected[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
 
       - name: Create release
@@ -179,18 +123,20 @@ jobs:
             ffmpeg-*.tar.gz
             SHA256SUMS
           fail_on_unmatched_files: true
-          tag_name: ${{ inputs.version || github.ref_name }}
+          tag_name: ${{ needs.validate.outputs.tag }}
           target_commitish: ${{ github.sha }}
           body: |
             ## FFmpeg Static Libraries
 
-            **Version:** ${{ inputs.version || github.ref_name }}
+            **Version:** ${{ needs.validate.outputs.tag }}
 
             Default and embedded libraries are available for:
             - Linux amd64
             - Linux arm64
             - macOS x86 (Intel)
             - macOS arm64 (Apple Silicon)
+            - Windows amd64
+            - Windows 386
 
             Use `GOFLAGS=-tags=embedded` to download and use embedded libraries.
             `SHA256SUMS` covers both profiles.

@@ -342,12 +342,86 @@ The goldens paid for themselves during the swap from libclang to `cc/v4`: they h
 
 ## Versioning
 
-Two distinct version schemes:
+This repository uses two version schemes:
 
-- **Library releases** (`lib-8.1.2.x`): Static library builds, distributed via GitHub Releases
-- **Module releases** (`v8.1.2.x`): Go module versions
+- **Library releases** (`lib-X.Y.Z.N`): static library archives on GitHub Releases, where `X.Y.Z` is the FFmpeg version and `N` is the build revision.
+- **Module releases** (`vX.Y.Z.N`): Go module versions.
 
-The download tool automatically fetches the latest `lib-8.1.2.x` release matching the FFmpeg version in `lib/fetch.go`.
+`lib/fetch.go` defines two constants:
+
+- `const Version` holds the FFmpeg version (`X.Y.Z`, for example `8.1.2`).
+- `const LibRelease` pins the GitHub Release tag (`lib-X.Y.Z.N`, for example `lib-8.1.2.1`) that the downloader fetches.
+
+`cmd/download-lib` reads release metadata directly from `/releases/tags/<LibRelease>`, downloads the archive for the target platform and profile, and checks its SHA-256 digest.
+
+Each `lib-X.Y.Z.N` release ships 12 archives across 6 targets and 2 profiles (`default` and `embedded`), plus a `SHA256SUMS` file:
+
+| Target | Default archive | Embedded archive |
+|--------|-----------------|------------------|
+| `linux/amd64` | `ffmpeg-linux-amd64.tar.gz` | `ffmpeg-embedded-linux-amd64.tar.gz` |
+| `linux/arm64` | `ffmpeg-linux-arm64.tar.gz` | `ffmpeg-embedded-linux-arm64.tar.gz` |
+| `darwin/amd64` | `ffmpeg-darwin-amd64.tar.gz` | `ffmpeg-embedded-darwin-amd64.tar.gz` |
+| `darwin/arm64` | `ffmpeg-darwin-arm64.tar.gz` | `ffmpeg-embedded-darwin-arm64.tar.gz` |
+| `windows/amd64` | `ffmpeg-windows-amd64.tar.gz` | `ffmpeg-embedded-windows-amd64.tar.gz` |
+| `windows/386` | `ffmpeg-windows-386.tar.gz` | `ffmpeg-embedded-windows-386.tar.gz` |
+
+## CI and Release Workflows
+
+Four GitHub Actions workflows build, test, and release ffmpeg-statigo:
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `.github/workflows/_build-libs.yml` | `workflow_call` | Build all 12 native archives across Linux, macOS, and Windows |
+| `.github/workflows/go-test.yml` | `push`, `pull_request`, `workflow_dispatch` | Test Go packages with downloaded or freshly built libraries |
+| `.github/workflows/ffmpeg-release.yml` | `lib-X.Y.Z.N` tag or `just ffmpeg-release lib-X.Y.Z.N` | Build, verify, and publish all 12 library archives |
+| `.github/workflows/go-release.yml` | `vX.Y.Z.N` tag or `just go-release X.Y.Z.N` | Test Linux, macOS, and Windows, then publish the Go module release |
+
+### `_build-libs.yml`
+
+`_build-libs.yml` is a reusable native builder for all 12 platform and profile combinations. It accepts two optional boolean inputs:
+
+- `clean_ffmpeg`: cleans the FFmpeg build directory before compilation (default `false`).
+- `test`: builds and tests Go packages after library compilation (default `false`).
+
+Each matrix job packages its `libffmpeg.a` into a tarball and uploads the tarball as a workflow artefact.
+
+### `go-test.yml`
+
+`go-test.yml` runs in two modes:
+
+- **Fast download mode** (default for Go-only changes): downloads pre-built archives from the `LibRelease` tag in `lib/fetch.go`.
+- **From-source mode**: calls `_build-libs.yml` and tests against the uploaded artefacts.
+
+`go-test.yml` switches to from-source mode automatically when a push or pull request changes any of these paths or declarations:
+
+- `internal/builder/*`
+- `include/*`
+- `ffmpeg_link_*.go`
+- `.github/workflows/_build-libs.yml`
+- `const LibRelease` in `lib/fetch.go`
+
+To force a from-source build manually, dispatch `go-test.yml` with the `build_libs` input set to `true`.
+
+### `ffmpeg-release.yml`
+
+Push a `lib-X.Y.Z.N` tag or run `just ffmpeg-release lib-X.Y.Z.N` to start a library release. Before the build starts, the workflow checks tag parity across three places:
+
+- `const LibRelease` in `lib/fetch.go`
+- `const Version` in `lib/fetch.go`
+- The FFmpeg source URL in `internal/builder/libraries.go`
+
+When parity passes, the workflow calls `_build-libs.yml` with `clean_ffmpeg: true` and `test: true`. The publish job downloads all 12 tarballs, verifies that every expected archive exists, generates and checks `SHA256SUMS`, and publishes the GitHub Release.
+
+### `go-release.yml`
+
+Push a `vX.Y.Z.N` tag or run `just go-release X.Y.Z.N` to start a Go module release. The workflow tests both profiles on Linux and macOS against the pinned `LibRelease` archives, and runs Windows tests when `LibRelease` contains all four Windows archives. When all required tests pass, the workflow creates the `vX.Y.Z.N` tag on `workflow_dispatch` runs, generates the changelog, and publishes the GitHub Release.
+
+### Bumping FFmpeg or static libraries
+
+1. Update `internal/builder/libraries.go`, `internal/builder/digests.go`, headers in `include/`, bindings via `just generate`, and `Version` and `LibRelease` in `lib/fetch.go`.
+2. Open a pull request so `go-test.yml` builds all 12 archives from source and runs the test suite. When CI passes, merge the pull request to `main`.
+3. Run `just ffmpeg-release lib-X.Y.Z.N` (or push the `lib-X.Y.Z.N` tag) to build and publish all 12 archives and `SHA256SUMS`.
+4. Run `just go-release X.Y.Z.N` (or push `vX.Y.Z.N`) to test Linux, macOS, and Windows and publish the release.
 
 ## Troubleshooting
 

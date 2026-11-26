@@ -13,19 +13,36 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/linuxmatters/ffmpeg-statigo/internal/archiveextract"
 )
 
-// Version is the FFmpeg library version (major.minor.patch)
-// The downloader will find the latest internal release (e.g., lib-8.1.2.0)
+// Version is the FFmpeg library version (major.minor.patch).
 const Version = "8.1.2"
+
+// LibRelease is the exact GitHub Release tag for the pre-built static libraries.
+const LibRelease = "lib-8.1.2.1"
 
 // DownloadLibs downloads the FFmpeg static libraries for the current platform
 func DownloadLibs() error {
 	return ensureLibrary()
+}
+
+func validatePlatformArch(platform, arch string) error {
+	switch platform {
+	case "linux", "darwin":
+		if arch == "amd64" || arch == "arm64" {
+			return nil
+		}
+	case "windows":
+		if arch == "amd64" || arch == "386" {
+			return nil
+		}
+	default:
+		return fmt.Errorf("unsupported platform: %q", platform)
+	}
+	return fmt.Errorf("unsupported arch %q for platform %q", arch, platform)
 }
 
 func ensureLibrary() error {
@@ -41,11 +58,8 @@ func ensureLibrary() error {
 	}
 
 	// Restrict platform/arch to known values; these feed filesystem paths below.
-	if !slices.Contains([]string{"linux", "darwin"}, platform) {
-		return fmt.Errorf("unsupported platform: %s", platform)
-	}
-	if !slices.Contains([]string{"amd64", "arm64"}, arch) {
-		return fmt.Errorf("unsupported arch: %s", arch)
+	if err := validatePlatformArch(platform, arch); err != nil {
+		return err
 	}
 
 	libDir := "lib"
@@ -60,12 +74,6 @@ func ensureLibrary() error {
 		return nil
 	}
 
-	// Determine latest compatible release
-	release, err := findCompatibleRelease(Version)
-	if err != nil {
-		return fmt.Errorf("finding release: %w", err)
-	}
-
 	assetPrefix := "ffmpeg-"
 	if libraryProfile != "" {
 		assetPrefix += libraryProfile + "-"
@@ -73,13 +81,13 @@ func ensureLibrary() error {
 	tarballName := fmt.Sprintf("%s%s-%s.tar.gz", assetPrefix, platform, arch)
 	downloadURL := fmt.Sprintf(
 		"https://github.com/linuxmatters/ffmpeg-statigo/releases/download/%s/%s",
-		release, tarballName,
+		LibRelease, tarballName,
 	)
 
-	fmt.Printf("Downloading FFmpeg library %s for %s/%s...\n", release, platform, arch)
+	fmt.Printf("Downloading FFmpeg library %s for %s/%s...\n", LibRelease, platform, arch)
 
 	// Fetch expected checksum before streaming download
-	expectedChecksum, err := fetchExpectedChecksum(release, tarballName)
+	expectedChecksum, err := fetchExpectedChecksum(tarballName)
 	if err != nil {
 		// Treat a fetch failure as no checksum available, which is fatal downstream.
 		expectedChecksum = ""
@@ -248,78 +256,6 @@ func runBitcodeStripTools(archivePath, objcopyBin, arBin string) error {
 	return nil
 }
 
-func findCompatibleRelease(moduleVersion string) (string, error) {
-	parts := strings.Split(moduleVersion, ".")
-	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid version format: %s", moduleVersion)
-	}
-	prefix := "lib-" + moduleVersion // "lib-8.0.0"
-
-	// Try GitHub API first
-	release, err := findViaAPI(prefix)
-	if err == nil {
-		return release, nil
-	}
-
-	// Fallback to predictable pattern if API fails (rate limit, network issue).
-	// The synthesised lib-X.Y.Z.0 tag resolves to the FIRST build of that patch
-	// line, so it can be OLDER than the latest available build: without the API
-	// we cannot discover later builds (lib-X.Y.Z.1, .2, ...) of the same patch.
-	fmt.Fprintf(os.Stderr, "GitHub API unavailable, using fallback release pattern: %v\n", err)
-	return fmt.Sprintf("lib-%s.0", moduleVersion), nil
-}
-
-type GitHubRelease struct {
-	TagName string `json:"tag_name"`
-	Name    string `json:"name"`
-}
-
-func findViaAPI(prefix string) (string, error) {
-	apiURL := "https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases?per_page=100"
-
-	req, err := newGitHubAPIRequest(apiURL)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Check for rate limiting
-	if resp.StatusCode == http.StatusForbidden {
-		return "", fmt.Errorf("GitHub API rate limit exceeded")
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
-	}
-
-	var releases []GitHubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return "", fmt.Errorf("parsing releases: %w", err)
-	}
-
-	var matchingReleases []string
-	for _, rel := range releases {
-		if strings.HasPrefix(rel.TagName, prefix+".") {
-			matchingReleases = append(matchingReleases, rel.TagName)
-		}
-	}
-
-	if len(matchingReleases) == 0 {
-		return "", fmt.Errorf("no releases found matching %s", prefix)
-	}
-
-	// Sort to find highest version (lib-8.0.0.0 < lib-8.0.0.1 < lib-8.0.0.3)
-	slices.Sort(matchingReleases)
-
-	// Return the last (highest) version
-	return matchingReleases[len(matchingReleases)-1], nil
-}
-
 type GitHubAsset struct {
 	Name               string `json:"name"`
 	BrowserDownloadURL string `json:"browser_download_url"`
@@ -356,9 +292,9 @@ func githubToken() string {
 	return ""
 }
 
-// fetchReleaseDetails retrieves asset metadata from GitHub API for a release.
-func fetchReleaseDetails(release string) (*GitHubReleaseDetail, error) {
-	apiURL := fmt.Sprintf("https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s", release)
+// fetchReleaseDetails retrieves asset metadata from GitHub API for LibRelease.
+func fetchReleaseDetails() (*GitHubReleaseDetail, error) {
+	apiURL := fmt.Sprintf("https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/%s", LibRelease)
 
 	req, err := newGitHubAPIRequest(apiURL)
 	if err != nil {
@@ -480,8 +416,8 @@ func checksumError(expected, actual, tarball string) error {
 
 // fetchExpectedChecksum retrieves the expected SHA256 checksum for a tarball from GitHub.
 // It tries the asset digest first (newer releases), then falls back to SHA256SUMS file.
-func fetchExpectedChecksum(release, tarballName string) (string, error) {
-	releaseDetail, err := fetchReleaseDetails(release)
+func fetchExpectedChecksum(tarballName string) (string, error) {
+	releaseDetail, err := fetchReleaseDetails()
 	if err != nil {
 		return "", err
 	}
