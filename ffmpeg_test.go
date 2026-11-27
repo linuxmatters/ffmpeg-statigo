@@ -13,8 +13,8 @@ import (
 )
 
 func TestVersions(t *testing.T) {
-	// FFmpeg 8.1.x: libavcodec version 62.28.102 (0x3E1C66 = 4070502)
-	assert.Equal(t, 4070502, int(ffmpeg.AVCodecVersion()), "AVCodec version should match expected")
+	// FFmpeg 8.1.x: libavcodec version 62.28.103 (0x3E1C67 = 4070503)
+	assert.Equal(t, 4070503, int(ffmpeg.AVCodecVersion()), "AVCodec version should match expected")
 	assert.Equal(t, ffmpeg.LIBAVCodecVersionInt, int(ffmpeg.AVCodecVersion()), "AVCodec version func and const should match")
 }
 

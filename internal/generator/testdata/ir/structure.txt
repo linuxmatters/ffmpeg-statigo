@@ -2236,10 +2236,10 @@ order constant LIBSWSCALE_VERSION_MICRO
 order constant LIBSWSCALE_VERSION_INT
 order constant LIBSWSCALE_BUILD
 order constant LIBSWSCALE_VERSION_MAJOR
+order constant SWS_MAX_REDUCE_CUTOFF
 order constant SWS_SRC_V_CHR_DROP_MASK
 order constant SWS_SRC_V_CHR_DROP_SHIFT
 order constant SWS_PARAM_DEFAULT
-order constant SWS_MAX_REDUCE_CUTOFF
 order constant SWS_CS_ITU709
 order constant SWS_CS_FCC
 order constant SWS_CS_ITU601
@@ -10862,10 +10862,10 @@ constant LIBSWSCALE_VERSION_MICRO fromenum=false comment=-
 constant LIBSWSCALE_VERSION_INT fromenum=false comment=-
 constant LIBSWSCALE_BUILD fromenum=false comment=-
 constant LIBSWSCALE_VERSION_MAJOR fromenum=false comment=-
+constant SWS_MAX_REDUCE_CUTOFF fromenum=false comment=-
 constant SWS_SRC_V_CHR_DROP_MASK fromenum=false comment=-
 constant SWS_SRC_V_CHR_DROP_SHIFT fromenum=false comment=-
 constant SWS_PARAM_DEFAULT fromenum=false comment=-
-constant SWS_MAX_REDUCE_CUTOFF fromenum=false comment=-
 constant SWS_CS_ITU709 fromenum=false comment=-
 constant SWS_CS_FCC fromenum=false comment=-
 constant SWS_CS_ITU601 fromenum=false comment=-

@@ -2812,6 +2812,9 @@ const LIBSwscaleBuild = C.LIBSWSCALE_BUILD
 // LIBSwscaleVersionMajor wraps LIBSWSCALE_VERSION_MAJOR.
 const LIBSwscaleVersionMajor = C.LIBSWSCALE_VERSION_MAJOR
 
+// SwsMaxReduceCutoff wraps SWS_MAX_REDUCE_CUTOFF.
+const SwsMaxReduceCutoff = C.SWS_MAX_REDUCE_CUTOFF
+
 // SwsSrcVChrDropMask wraps SWS_SRC_V_CHR_DROP_MASK.
 const SwsSrcVChrDropMask = C.SWS_SRC_V_CHR_DROP_MASK
 
@@ -2820,9 +2823,6 @@ const SwsSrcVChrDropShift = C.SWS_SRC_V_CHR_DROP_SHIFT
 
 // SwsParamDefault wraps SWS_PARAM_DEFAULT.
 const SwsParamDefault = C.SWS_PARAM_DEFAULT
-
-// SwsMaxReduceCutoff wraps SWS_MAX_REDUCE_CUTOFF.
-const SwsMaxReduceCutoff = C.SWS_MAX_REDUCE_CUTOFF
 
 // SwsCsItu709 wraps SWS_CS_ITU709.
 const SwsCsItu709 = C.SWS_CS_ITU709
