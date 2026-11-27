@@ -171,6 +171,137 @@ func TestExtractTar(t *testing.T) {
 			t.Fatalf("file stat error = %v, want not exist", statErr)
 		}
 	})
+
+	t.Run("rejects_forward_parent_link_escape_regular_file", func(t *testing.T) {
+		outerDir := t.TempDir()
+		midDir := filepath.Join(outerDir, "mid")
+		destDir := filepath.Join(midDir, "dest")
+		err := ExtractTar(tarStream(t,
+			tarEntry{name: "sub/up", linkname: "..", typeflag: tar.TypeSymlink},
+			tarEntry{name: "sub/up/escape", linkname: "../..", typeflag: tar.TypeSymlink},
+			tarEntry{name: "escape/pwn", body: "pwned", typeflag: tar.TypeReg},
+		), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected symlink escape error, got nil")
+		}
+		if !strings.Contains(err.Error(), "escapes destination directory") {
+			t.Fatalf("error = %v, want escapes destination directory", err)
+		}
+		if _, statErr := os.Lstat(filepath.Join(destDir, "escape")); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("escape symlink stat error = %v, want not exist", statErr)
+		}
+		assertDirOnlyContains(t, midDir, "dest")
+		assertDirOnlyContains(t, outerDir, "mid")
+	})
+
+	t.Run("rejects_forward_parent_link_escape_symlink", func(t *testing.T) {
+		outerDir := t.TempDir()
+		midDir := filepath.Join(outerDir, "mid")
+		destDir := filepath.Join(midDir, "dest")
+		err := ExtractTar(tarStream(t,
+			tarEntry{name: "sub/up", linkname: "..", typeflag: tar.TypeSymlink},
+			tarEntry{name: "sub/up/escape", linkname: "../..", typeflag: tar.TypeSymlink},
+			tarEntry{name: "escape/pwn", linkname: "target", typeflag: tar.TypeSymlink},
+		), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected symlink escape error, got nil")
+		}
+		if !strings.Contains(err.Error(), "escapes destination directory") {
+			t.Fatalf("error = %v, want escapes destination directory", err)
+		}
+		if _, statErr := os.Lstat(filepath.Join(destDir, "escape")); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("escape symlink stat error = %v, want not exist", statErr)
+		}
+		assertDirOnlyContains(t, midDir, "dest")
+		assertDirOnlyContains(t, outerDir, "mid")
+	})
+
+	t.Run("rejects_forward_target_chain_escape", func(t *testing.T) {
+		outerDir := t.TempDir()
+		destDir := filepath.Join(outerDir, "dest")
+		err := ExtractTar(tarStream(t,
+			tarEntry{name: "sub/up", linkname: "..", typeflag: tar.TypeSymlink},
+			tarEntry{name: "escape", linkname: "sub/up/..", typeflag: tar.TypeSymlink},
+		), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected symlink escape error, got nil")
+		}
+		if !strings.Contains(err.Error(), "escapes destination directory") {
+			t.Fatalf("error = %v, want escapes destination directory", err)
+		}
+		if _, statErr := os.Lstat(filepath.Join(destDir, "escape")); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("escape symlink stat error = %v, want not exist", statErr)
+		}
+		assertDirOnlyContains(t, outerDir, "dest")
+	})
+
+	t.Run("rejects_reverse_target_chain_escape", func(t *testing.T) {
+		outerDir := t.TempDir()
+		destDir := filepath.Join(outerDir, "dest")
+		err := ExtractTar(tarStream(t,
+			tarEntry{name: "escape", linkname: "sub/up/..", typeflag: tar.TypeSymlink},
+			tarEntry{name: "sub/up", linkname: "..", typeflag: tar.TypeSymlink},
+		), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected symlink escape error, got nil")
+		}
+		if !strings.Contains(err.Error(), "escapes destination directory") {
+			t.Fatalf("error = %v, want escapes destination directory", err)
+		}
+		if _, statErr := os.Lstat(filepath.Join(destDir, "escape")); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("escape symlink stat error = %v, want not exist", statErr)
+		}
+		assertDirOnlyContains(t, outerDir, "dest")
+	})
+
+	t.Run("rejects_symlink_loop", func(t *testing.T) {
+		outerDir := t.TempDir()
+		destDir := filepath.Join(outerDir, "dest")
+		err := ExtractTar(tarStream(t,
+			tarEntry{name: "a", linkname: "b", typeflag: tar.TypeSymlink},
+			tarEntry{name: "b", linkname: "a", typeflag: tar.TypeSymlink},
+		), TarOptions{
+			DestDir:    destDir,
+			LinkPolicy: PreserveSymlinks,
+		})
+		if err == nil {
+			t.Fatal("expected symlink loop error, got nil")
+		}
+		if !strings.Contains(err.Error(), "symlink hops") {
+			t.Fatalf("error = %v, want symlink hops", err)
+		}
+		if _, statErr := os.Lstat(filepath.Join(destDir, "b")); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("loop symlink stat error = %v, want not exist", statErr)
+		}
+		assertDirOnlyContains(t, outerDir, "dest")
+	})
+}
+
+func assertDirOnlyContains(t *testing.T, dir, expected string) {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read dir %s: %v", dir, err)
+	}
+	if len(entries) != 1 || entries[0].Name() != expected {
+		names := make([]string, len(entries))
+		for i, entry := range entries {
+			names[i] = entry.Name()
+		}
+		t.Fatalf("dir %s contains %v, want only [%s]", dir, names, expected)
+	}
 }
 
 func TestSymlinkTargetSafe(t *testing.T) {
@@ -272,6 +403,9 @@ func tarStream(t *testing.T, entries ...tarEntry) io.Reader {
 	t.Helper()
 
 	reader, writer := io.Pipe()
+	t.Cleanup(func() {
+		_ = reader.Close()
+	})
 	go func() {
 		tw := tar.NewWriter(writer)
 		var err error
