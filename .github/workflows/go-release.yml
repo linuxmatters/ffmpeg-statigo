@@ -334,11 +334,12 @@ jobs:
           cd "$in_dir"
           verified=$(sha256sum --check --ignore-missing SHA256SUMS)
           printf '%s\n' "$verified"
-          verified_count=$(printf '%s\n' "$verified" | grep -c ': OK$')
-          if [[ "$verified_count" -ne 6 ]]; then
-            echo "::error::Expected 6 verified CLI archives, got $verified_count"
-            exit 1
-          fi
+          for archive in "${archives[@]}"; do
+            if ! grep -Fqx "$archive: OK" <<< "$verified"; then
+              echo "::error::CLI archive was not verified: $archive"
+              exit 1
+            fi
+          done
 
       - name: Install nfpm
         if: needs.validate.outputs.cli_assets == 'true'
@@ -490,12 +491,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          release_version="${RELEASE_TAG#v}"
+          latest_ref=$(git ls-remote --tags origin refs/tags/latest)
+          if [[ -n "$latest_ref" ]]; then
+            git fetch --no-tags origin refs/tags/latest
+            if latest_sources=$(git show FETCH_HEAD:nix/sources.json 2>/dev/null); then
+              latest_version=$(jq -r '.version // empty' <<< "$latest_sources")
+              latest_version="${latest_version#v}"
+              if [[ -n "$latest_version" && "$latest_version" != "$release_version" ]]; then
+                newest=$(printf '%s\n%s\n' "$latest_version" "$release_version" | sort -V | tail -n 1)
+                if [[ "$newest" == "$latest_version" ]]; then
+                  echo "::notice::Skipping latest tag update: existing latest ($latest_version) is newer than $release_version"
+                  exit 0
+                fi
+              fi
+            fi
+          fi
           git checkout --detach "${RELEASE_TAG}^{commit}"
           mkdir -p nix
           cp "${RUNNER_TEMP}/nix-sources.json" nix/sources.json
           git add -f nix/sources.json
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit --message "chore(nix): update sources.json for ${RELEASE_TAG#v}"
+            commit --message "chore(nix): update sources.json for ${release_version}"
           git tag --force latest HEAD
           git push --force origin refs/tags/latest
