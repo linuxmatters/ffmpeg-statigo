@@ -9,7 +9,7 @@ FFmpeg Statigo bundles static FFmpeg libraries directly into your Go binary so y
 
 ## What is included
 
-Every release ships two build profiles for Linux (`amd64`, `arm64`), macOS (`amd64`, `arm64`), and Windows (`amd64`, `386`).
+Library releases ship two build profiles for Linux (`amd64`, `arm64`), macOS (`amd64`, `arm64`), and Windows (`amd64`, `386`).
 
 | Area | `default` (GPLv3) | `embedded` (LGPLv2.1) |
 | --- | --- | --- |
@@ -27,13 +27,13 @@ Static libraries (~100 MB per platform) do not distribute via `go get`. Add FFmp
 2. Add a replace directive to `go.mod`: `replace github.com/linuxmatters/ffmpeg-statigo => ./third_party/ffmpeg-statigo`
 3. Download the pre-built static library (verified against release `SHA256SUMS`): `cd third_party/ffmpeg-statigo && go run ./cmd/download-lib`
 4. Configure git for fast-forward submodule pulls: `git config pull.ff only && git config submodule.recurse true`
-5. Build your module: `go build ./...`
+5. Build your module: `CGO_ENABLED=1 go build ./...`
 
 To use the LGPLv2.1 `embedded` profile instead of the default GPLv3 profile, pass `-tags=embedded` for both the library download and your Go build:
 
 ```sh
 cd third_party/ffmpeg-statigo && GOFLAGS=-tags=embedded go run ./cmd/download-lib
-cd ../.. && GOFLAGS=-tags=embedded go build ./...
+cd ../.. && CGO_ENABLED=1 go build -tags=embedded ./...
 ```
 
 ### Quick start

@@ -38,7 +38,7 @@ The `default` static build compiles FFmpeg 8.1.2 together with 20 active depende
 Two additional library definitions exist in `internal/builder/`:
 
 - **OpenH264 2.6.0** (`internal/builder/openh264.go`): Built only in the `embedded` profile on Linux, macOS, and Windows to provide software H.264 encoding without GPL flags.
-- **VVenC 1.14.0** (`internal/builder/libraries.go`, noted as 1.13.1 in `README.md` - the builder code pins `v1.14.0.tar.gz`): Defined in the builder but disabled (`Enabled: Disabled()`), because it adds about 25 MB to `libffmpeg.a` and encodes too slowly for practical use.
+- **VVenC 1.14.0** (`internal/builder/libraries.go`, pinned to `v1.14.0.tar.gz`): Defined in the builder but disabled (`Enabled: Disabled()`), because it adds about 25 MB to `libffmpeg.a` and encodes too slowly for practical use.
 
 ## Hardware acceleration matrix
 
@@ -63,7 +63,7 @@ Hardware acceleration is enabled only in the `default` profile. The `embedded` p
 | **H.266 / VVC** | No | No | Decode | No | Decode |
 | **H.265 / HEVC** | Encode / Decode | Encode | Encode / Decode | Encode / Decode | Encode / Decode |
 | **H.264 / AVC** | Encode / Decode | Encode | Encode / Decode | Encode / Decode | Encode / Decode |
-| **VP9** | Encode / Decode | Encode | Encode / Decode | Decode (hwaccel) | Decode |
+| **VP9** | Decode | Encode | Encode / Decode | Decode (hwaccel) | Decode |
 | **VP8** | Decode | Encode | Decode | No | No |
 | **MPEG-2** | Decode | Encode | Encode / Decode | Decode (hwaccel) | No |
 | **MJPEG** | Decode | Encode | Encode / Decode | No | No |
@@ -84,7 +84,7 @@ On macOS, `internal/builder/ffmpeg_args.go` also enables VideoToolbox decode hwa
   - Intel: use the `iHD` driver (`intel-media-driver`) for the widest codec set.
   - AMD: use the Mesa `radeonsi` driver on RDNA and GCN GPUs.
   - NVIDIA: use `nvidia-vaapi-driver`, which translates VA-API calls to NVENC/NVDEC.
-- **QuickSync / Intel VPL (Linux)**: Requires an 11th Gen Intel CPU (Tiger Lake) or newer, or an Intel Arc GPU, using the `libvpl` (oneVPL) dispatcher. Older 6th to 10th Gen Intel CPUs must use VA-API instead.
+- **QuickSync / Intel VPL (Linux)**: Requires an Intel GPU with QuickSync support (6th Gen Core and newer) or an Intel Arc GPU, using the `libvpl` (oneVPL) dispatcher. Per-codec minimums are listed below.
   - H.264 8-bit encode and decode: any QuickSync-capable Intel GPU.
   - HEVC 8-bit encode and decode: Gen 9 Skylake (6th Gen Core) and newer.
   - HEVC 10-bit encode and decode: Gen 9.5 Kaby Lake (7th Gen Core), Apollo Lake, Gemini Lake, and newer.

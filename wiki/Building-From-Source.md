@@ -125,7 +125,7 @@ For every `--programs` build, `stageLicense` writes `COPYING.GPLv3` (`default`) 
 
 ## Pinned source digests (CWE-494)
 
-Every third-party source archive URL in `internal/builder/libraries.go` and `internal/builder/openh264.go` is SHA-256 pinned in `internal/builder/digests.go` (`archiveDigests`). This design prevents unverified archive execution (CWE-494).
+Every enabled third-party source archive URL in `internal/builder/libraries.go` and `internal/builder/openh264.go` is SHA-256 pinned in `internal/builder/digests.go` (`archiveDigests`). This design prevents unverified archive execution (CWE-494).
 
 `DownloadFile` invokes `verifyDigest` fail-closed on both fresh downloads and cached files in `<buildRoot>/downloads/`:
 

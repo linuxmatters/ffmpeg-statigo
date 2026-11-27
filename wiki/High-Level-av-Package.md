@@ -298,6 +298,11 @@ for {
         return err
     }
 
+    if packet.StreamIndex() != inStream.Index() {
+        ffmpeg.AVPacketUnref(packet)
+        continue
+    }
+
     err := decoder.Decode(packet, func(frame *ffmpeg.AVFrame) error {
         frame.SetPts(frame.BestEffortTimestamp())
         if err := filter.Push(frame); err != nil {

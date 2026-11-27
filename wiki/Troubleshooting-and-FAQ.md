@@ -47,7 +47,7 @@ go clean -modcache
 
 Every build and test of the root package and `av/` links against `libffmpeg.a` through cgo and requires `CGO_ENABLED=1`.
 
-Use `just build` and `just test`, because `just/tailor.just` exports `CGO_ENABLED=1` automatically. If you invoke `go test` or `go build` manually in a consumer project, set `CGO_ENABLED=1` explicitly. Only `internal/generator` builds with `CGO_ENABLED=0`.
+Use `just build` and `just test`, because `just/tailor.just` exports `CGO_ENABLED=1` automatically. If you invoke `go test` or `go build` manually in a consumer project, set `CGO_ENABLED=1` explicitly. The root package and `av/` require cgo, while pure-Go packages such as `internal/generator`, `lib/`, `cmd/download-lib`, and `internal/builder` also build with `CGO_ENABLED=0`.
 
 ## Platform-specific issues
 
@@ -103,11 +103,11 @@ Three licences appear in this repository. Which one governs your distributed bin
 | --- | --- | --- |
 | Go binding source code (`*.go`, `av/`, tooling) | MIT (`LICENSE` in repository root) | Preserve copyright and permission notices |
 | `default` static library and CLI binaries (`x264`, `x265`, full codecs, hardware acceleration) | GPLv3 (`COPYING.GPLv3`) | Combined work inherits GPLv3, including Section 6 source-code availability |
-| `embedded` static library and CLI binaries (software-only OpenH264, no GPL flags) | LGPLv2.1 (`COPYING.LGPLv2.1`) plus two-clause BSD for OpenH264 | Preserve copyright notices and satisfy LGPLv2.1 Section 4 relinking for static binaries |
+| `embedded` static library and CLI binaries (software-only OpenH264, no GPL flags) | LGPLv2.1 (`COPYING.LGPLv2.1`) plus two-clause BSD for OpenH264 | Preserve copyright notices and satisfy LGPLv2.1 Section 6 relinking for static binaries |
 
 ### Does the `embedded` profile remove all copyleft obligations?
 
-No. The `embedded` profile omits GPL build flags, `x264`, `x265`, `rav1e`, `dav1d`, and hardware acceleration, but FFmpeg itself remains under LGPLv2.1. If you distribute a statically linked binary built with `-tags=embedded`, LGPLv2.1 Section 4 requires you to give recipients a way to relink your application with a modified FFmpeg library.
+No. The `embedded` profile omits GPL build flags, `x264`, `x265`, `rav1e`, `dav1d`, and hardware acceleration, but FFmpeg itself remains under LGPLv2.1. If you distribute a statically linked binary built with `-tags=embedded`, LGPLv2.1 Section 6 requires you to give recipients a way to relink your application with a modified FFmpeg library.
 
 ### Does the self-built OpenH264 archive get Cisco's AVC patent coverage?
 

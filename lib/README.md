@@ -17,7 +17,7 @@ GOFLAGS=-tags=embedded go run ./cmd/download-lib
 Set `GOOS` and `GOARCH` to download a library for another target platform, for example:
 
 ```sh
-GOOS=darwin GOARCH=arm64 go run ./cmd/download-lib
+go build -o bin/download-lib ./cmd/download-lib && GOOS=darwin GOARCH=arm64 ./bin/download-lib
 ```
 
 The downloader verifies every archive against the `SHA256SUMS` file published on the matching `lib-X.Y.Z.N` GitHub release. If the checksum is missing or does not match, the download fails and the extracted files are deleted.
