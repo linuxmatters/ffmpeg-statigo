@@ -125,6 +125,10 @@ func (lib *Library) Build(ctx context.Context, buildRoot, installDir string, log
 		return fmt.Errorf("extract failed: %w", err)
 	}
 
+	if err := stageLibraryLicense(lib, srcPath, installDir); err != nil {
+		return fmt.Errorf("stage license failed: %w", err)
+	}
+
 	// Post-extract hook (for patches, etc.)
 	if lib.PostExtract != nil {
 		if err := lib.PostExtract(ctx, srcPath); err != nil {

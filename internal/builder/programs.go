@@ -2,7 +2,10 @@ package main
 
 import (
 	"archive/tar"
+	"archive/zip"
+	"bytes"
 	"cmp"
+	"compress/bzip2"
 	"compress/gzip"
 	"context"
 	"errors"
@@ -14,12 +17,16 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/ulikunitz/xz"
 )
 
 const (
 	repoURL             = "https://github.com/linuxmatters/ffmpeg-statigo"
 	maxLicenseFileBytes = 1 << 20 // 1 MiB
 )
+
+var errLicenseNotFound = errors.New("license file not found")
 
 type builderOptions struct {
 	embedded      bool
@@ -77,6 +84,35 @@ var libraryLicenses = map[string]string{
 	"x265":             "GPL-2.0-or-later",
 	"zimg":             "WTFPL",
 	"zlib":             "Zlib",
+}
+
+var libraryLicenseFileOverrides = map[string][]string{
+	// LAME's LICENSE is a short commercial-use FAQ that refers to COPYING (LGPLv2).
+	"lame": {"COPYING"},
+	// GNU libiconv distributes the library under COPYING.LIB (LGPLv2.1) and the CLI under COPYING (GPLv3).
+	"libiconv": {"COPYING.LIB", "COPYING"},
+}
+
+var defaultLicenseFilenames = []string{
+	"LICENSE",
+	"LICENSE.txt",
+	"LICENSE.md",
+	"LICENSE.rst",
+	"COPYING.LIB",
+	"COPYING",
+	"Copyright",
+	"COPYRIGHT",
+}
+
+func licenseCandidatesForLibrary(name string) []string {
+	if candidates, ok := libraryLicenseFileOverrides[name]; ok {
+		return candidates
+	}
+	return defaultLicenseFilenames
+}
+
+func isRequiredThirdPartyLicense(name string) bool {
+	return name == "libvpx"
 }
 
 func libraryLicense(name string, embedded bool) (string, error) {
@@ -181,23 +217,58 @@ func readFFmpegLicenseBytes(buildRoot, stagingDir, licenseFile string) ([]byte, 
 }
 
 func extractLicenseFromTarGz(archivePath, licenseFile string) ([]byte, error) {
-	file, err := os.Open(archivePath) //nolint:gosec // G304: archivePath is the SHA-256-verified FFmpeg download archive
-	if err != nil {
-		return nil, err
+	data, err := extractLicenseFromArchive(archivePath, "tar.gz", []string{licenseFile}, false)
+	if errors.Is(err, errLicenseNotFound) {
+		return nil, fmt.Errorf("%s not found in %s", licenseFile, archivePath)
 	}
-	defer file.Close()
+	return data, err
+}
 
-	gzReader, err := gzip.NewReader(file)
-	if err != nil {
-		return nil, fmt.Errorf("open gzip stream %s: %w", archivePath, err)
+func extractLicenseFromArchive(archivePath, archiveType string, candidates []string, includePatents bool) ([]byte, error) {
+	switch archiveType {
+	case "zip":
+		return extractLicenseFromZip(archivePath, candidates, includePatents)
+	case "tar.gz", "tar.bz2", "tar.xz":
+		file, err := os.Open(archivePath) //nolint:gosec // G304: archivePath is a SHA-256-verified download archive
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		var reader io.Reader = file
+		switch archiveType {
+		case "tar.gz":
+			gzReader, err := gzip.NewReader(file)
+			if err != nil {
+				return nil, fmt.Errorf("open gzip stream %s: %w", archivePath, err)
+			}
+			defer gzReader.Close()
+			reader = gzReader
+		case "tar.bz2":
+			reader = bzip2.NewReader(file)
+		case "tar.xz":
+			xzReader, err := xz.NewReader(file)
+			if err != nil {
+				return nil, fmt.Errorf("open xz stream %s: %w", archivePath, err)
+			}
+			reader = xzReader
+		}
+
+		return extractLicenseFromTar(tar.NewReader(reader), archivePath, candidates, includePatents)
+	default:
+		return nil, fmt.Errorf("unsupported archive type %q for %s", archiveType, archivePath)
 	}
-	defer gzReader.Close()
+}
 
-	tarReader := tar.NewReader(gzReader)
+func extractLicenseFromTar(tarReader *tar.Reader, archivePath string, candidates []string, includePatents bool) ([]byte, error) {
+	bestIdx := len(candidates)
+	var bestData []byte
+	var patentsData []byte
+
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {
-			return nil, fmt.Errorf("%s not found in %s", licenseFile, archivePath)
+			break
 		}
 		if err != nil {
 			return nil, fmt.Errorf("read tar %s: %w", archivePath, err)
@@ -206,21 +277,261 @@ func extractLicenseFromTarGz(archivePath, licenseFile string) ([]byte, error) {
 			continue
 		}
 		clean := path.Clean(strings.TrimPrefix(header.Name, "./"))
-		if !isTopLevelArchiveFile(clean, licenseFile) {
+		if idx := matchCandidateIndex(clean, candidates); idx >= 0 && idx < bestIdx {
+			data, err := readCappedLicenseBytes(tarReader, header.Name, archivePath, true)
+			if err != nil {
+				return nil, err
+			}
+			bestIdx = idx
+			bestData = data
+		} else if includePatents && patentsData == nil && isTopLevelArchiveFile(clean, "PATENTS") {
+			data, err := readCappedLicenseBytes(tarReader, header.Name, archivePath, false)
+			if err != nil {
+				return nil, err
+			}
+			if len(bytes.TrimSpace(data)) > 0 {
+				patentsData = data
+			}
+		}
+
+		if bestIdx == 0 && (!includePatents || patentsData != nil) {
+			break
+		}
+	}
+
+	if bestData == nil {
+		return nil, errLicenseNotFound
+	}
+	if len(patentsData) > 0 {
+		return combineLicenseWithPatents(bestData, patentsData), nil
+	}
+	return bestData, nil
+}
+
+func extractLicenseFromZip(archivePath string, candidates []string, includePatents bool) ([]byte, error) {
+	zr, err := zip.OpenReader(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("open zip %s: %w", archivePath, err)
+	}
+	defer zr.Close()
+
+	bestIdx := len(candidates)
+	var bestData []byte
+	var patentsData []byte
+
+	for _, f := range zr.File {
+		if !f.Mode().IsRegular() {
 			continue
 		}
-		data, err := io.ReadAll(io.LimitReader(tarReader, maxLicenseFileBytes+1))
+		clean := path.Clean(strings.TrimPrefix(f.Name, "./"))
+		idx := matchCandidateIndex(clean, candidates)
+		isPatents := includePatents && patentsData == nil && isTopLevelArchiveFile(clean, "PATENTS")
+		if (idx < 0 || idx >= bestIdx) && !isPatents {
+			continue
+		}
+
+		rc, err := f.Open()
 		if err != nil {
-			return nil, fmt.Errorf("read %s from %s: %w", header.Name, archivePath, err)
+			return nil, fmt.Errorf("open %s in %s: %w", f.Name, archivePath, err)
 		}
-		if len(data) > maxLicenseFileBytes {
-			return nil, fmt.Errorf("%s in %s exceeds %d bytes", header.Name, archivePath, maxLicenseFileBytes)
+		data, readErr := readCappedLicenseBytes(rc, f.Name, archivePath, idx >= 0 && idx < bestIdx)
+		closeErr := rc.Close()
+		if readErr != nil {
+			return nil, readErr
 		}
-		if len(data) == 0 {
-			return nil, fmt.Errorf("%s in %s is empty", header.Name, archivePath)
+		if closeErr != nil {
+			return nil, fmt.Errorf("close %s in %s: %w", f.Name, archivePath, closeErr)
+		}
+
+		if idx >= 0 && idx < bestIdx {
+			bestIdx = idx
+			bestData = data
+		} else if len(bytes.TrimSpace(data)) > 0 {
+			patentsData = data
+		}
+
+		if bestIdx == 0 && (!includePatents || patentsData != nil) {
+			break
+		}
+	}
+
+	if bestData == nil {
+		return nil, errLicenseNotFound
+	}
+	if len(patentsData) > 0 {
+		return combineLicenseWithPatents(bestData, patentsData), nil
+	}
+	return bestData, nil
+}
+
+func matchCandidateIndex(cleanName string, candidates []string) int {
+	for i, candidate := range candidates {
+		if isTopLevelArchiveFile(cleanName, candidate) {
+			return i
+		}
+	}
+	return -1
+}
+
+func readCappedLicenseBytes(r io.Reader, entryName, archivePath string, requireNonEmpty bool) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(r, maxLicenseFileBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read %s from %s: %w", entryName, archivePath, err)
+	}
+	if len(data) > maxLicenseFileBytes {
+		return nil, fmt.Errorf("%s in %s exceeds %d bytes", entryName, archivePath, maxLicenseFileBytes)
+	}
+	if requireNonEmpty && len(bytes.TrimSpace(data)) == 0 {
+		return nil, fmt.Errorf("%s in %s is empty", entryName, archivePath)
+	}
+	return data, nil
+}
+
+func combineLicenseWithPatents(licenseData, patentsData []byte) []byte {
+	var buf bytes.Buffer
+	buf.Write(bytes.TrimRight(licenseData, "\r\n"))
+	buf.WriteString("\n\n")
+	buf.Write(bytes.TrimRight(patentsData, "\r\n"))
+	buf.WriteByte('\n')
+	return buf.Bytes()
+}
+
+func readRegularLicenseFile(filePath string) ([]byte, bool, error) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("stat %s: %w", filePath, err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, false, nil
+	}
+	if info.Size() > maxLicenseFileBytes {
+		return nil, false, fmt.Errorf("license file %s exceeds %d bytes", filePath, maxLicenseFileBytes)
+	}
+	data, err := os.ReadFile(filePath) //nolint:gosec // G304: filePath is a local license candidate inside the builder workspace
+	if err != nil {
+		return nil, false, fmt.Errorf("read %s: %w", filePath, err)
+	}
+	return data, true, nil
+}
+
+func readLibraryLicenseFromDir(libName, srcDir string) ([]byte, error) {
+	for _, candidate := range licenseCandidatesForLibrary(libName) {
+		p := filepath.Join(srcDir, candidate)
+		data, ok, err := readRegularLicenseFile(p)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		if len(bytes.TrimSpace(data)) == 0 {
+			return nil, fmt.Errorf("license file %s is empty", p)
+		}
+		patentsData, patentsOK, err := readRegularLicenseFile(filepath.Join(srcDir, "PATENTS"))
+		if err != nil {
+			return nil, err
+		}
+		if patentsOK && len(bytes.TrimSpace(patentsData)) > 0 {
+			data = combineLicenseWithPatents(data, patentsData)
 		}
 		return data, nil
 	}
+	return nil, errLicenseNotFound
+}
+
+func stageLibraryLicense(lib *Library, srcPath, stagingDir string) error {
+	if lib == nil || lib.Name == "ffmpeg" {
+		return nil
+	}
+	destDir := filepath.Join(stagingDir, "share", "licenses")
+	destPath := filepath.Join(destDir, lib.Name)
+
+	data, err := readLibraryLicenseFromDir(lib.Name, srcPath)
+	if err != nil {
+		if errors.Is(err, errLicenseNotFound) {
+			if isRequiredThirdPartyLicense(lib.Name) {
+				return fmt.Errorf("missing required license file for %s in %s", lib.Name, srcPath)
+			}
+			if removeErr := os.Remove(destPath); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+				return fmt.Errorf("remove stale license cache %s: %w", destPath, removeErr)
+			}
+			return nil
+		}
+		return err
+	}
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return fmt.Errorf("create %s: %w", destDir, err)
+	}
+	if err := os.WriteFile(destPath, data, 0o644); err != nil { //nolint:gosec // G703: destPath is a builder-defined library name under stagingDir/share/licenses
+		return fmt.Errorf("write %s: %w", destPath, err)
+	}
+	return nil
+}
+
+func readLibraryLicenseBytes(buildRoot, stagingDir string, lib *Library) ([]byte, error) {
+	srcDir := filepath.Join(buildRoot, "src", lib.Name)
+	data, err := readLibraryLicenseFromDir(lib.Name, srcDir)
+	if err == nil {
+		return data, nil
+	}
+	if !errors.Is(err, errLicenseNotFound) {
+		return nil, err
+	}
+
+	cachedPath := filepath.Join(stagingDir, "share", "licenses", lib.Name)
+	data, ok, err := readRegularLicenseFile(cachedPath)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		if len(bytes.TrimSpace(data)) == 0 {
+			return nil, fmt.Errorf("cached license file %s is empty", cachedPath)
+		}
+		return data, nil
+	}
+
+	archivePath := filepath.Join(buildRoot, "downloads", filepath.Base(lib.URL))
+	if _, err := os.Stat(archivePath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, errLicenseNotFound
+		}
+		return nil, fmt.Errorf("stat %s: %w", archivePath, err)
+	}
+	if err := verifyDigest(lib.URL, archivePath); err != nil {
+		return nil, fmt.Errorf("verify %s archive before extracting license: %w", lib.Name, err)
+	}
+	return extractLicenseFromArchive(archivePath, lib.ArchiveType(), licenseCandidatesForLibrary(lib.Name), true)
+}
+
+func resolveLibraryLicenseTexts(buildRoot, stagingDir, targetOS string, libs []*Library) (map[string]string, error) {
+	texts := make(map[string]string)
+	for _, lib := range libs {
+		if !isLibraryActiveForTarget(lib, targetOS) || lib.Name == "ffmpeg" {
+			continue
+		}
+		data, err := readLibraryLicenseBytes(buildRoot, stagingDir, lib)
+		if err != nil {
+			if errors.Is(err, errLicenseNotFound) {
+				if isRequiredThirdPartyLicense(lib.Name) {
+					return nil, fmt.Errorf(
+						"missing required third-party license for %s: checked %s, %s, and archive %s",
+						lib.Name,
+						filepath.Join(buildRoot, "src", lib.Name),
+						filepath.Join(stagingDir, "share", "licenses", lib.Name),
+						filepath.Join(buildRoot, "downloads", filepath.Base(lib.URL)),
+					)
+				}
+				continue
+			}
+			return nil, fmt.Errorf("resolve license for %s: %w", lib.Name, err)
+		}
+		texts[lib.Name] = string(data)
+	}
+	return texts, nil
 }
 
 func isTopLevelArchiveFile(cleanName, targetFile string) bool {
@@ -248,7 +559,7 @@ func isLibraryActiveForTarget(lib *Library, targetOS string) bool {
 	return true
 }
 
-func renderNotice(embedded bool, targetOS, arch, releaseTag string, libs []*Library) (string, error) {
+func renderNotice(embedded bool, targetOS, arch, releaseTag string, libs []*Library, licenseTexts map[string]string) (string, error) {
 	profileName := "default"
 	effectiveLicense := "GPL-3.0-or-later"
 	if embedded {
@@ -306,6 +617,13 @@ func renderNotice(embedded bool, targetOS, arch, releaseTag string, libs []*Libr
 		b.WriteString("archives listed below.\n")
 	}
 
+	type thirdPartyLicenseEntry struct {
+		name    string
+		spdx    string
+		content string
+	}
+	var thirdParty []thirdPartyLicenseEntry
+
 	b.WriteString("\nBundled Libraries:\n")
 	for _, lib := range active {
 		lic, err := libraryLicense(lib.Name, embedded)
@@ -317,6 +635,30 @@ func renderNotice(embedded bool, targetOS, arch, releaseTag string, libs []*Libr
 			return "", fmt.Errorf("missing pinned SHA-256 digest for %s (%s)", lib.Name, lib.URL)
 		}
 		fmt.Fprintf(&b, "- %s | %s | %s | sha256:%s\n", lib.Name, lic, lib.URL, digest)
+
+		if lib.Name == "ffmpeg" {
+			continue
+		}
+		text := strings.TrimRight(licenseTexts[lib.Name], "\r\n")
+		if strings.TrimSpace(text) == "" {
+			if isRequiredThirdPartyLicense(lib.Name) {
+				return "", fmt.Errorf("missing required third-party license text for %s", lib.Name)
+			}
+			continue
+		}
+		thirdParty = append(thirdParty, thirdPartyLicenseEntry{
+			name:    lib.Name,
+			spdx:    lic,
+			content: text,
+		})
+	}
+
+	if len(thirdParty) > 0 {
+		sep := strings.Repeat("=", 80)
+		b.WriteString("\nThird-party licences:\n")
+		for _, entry := range thirdParty {
+			fmt.Fprintf(&b, "\n%s\n%s (%s)\n%s\n%s\n", sep, entry.name, entry.spdx, sep, entry.content)
+		}
 	}
 
 	return b.String(), nil
@@ -354,7 +696,12 @@ func stageProgramsWithRunner(ctx context.Context, buildRoot, stagingDir, binDir 
 		return fmt.Errorf("stage license: %w", err)
 	}
 
-	notice, err := renderNotice(embedded, targetOS, arch, releaseTag, libs)
+	licenseTexts, err := resolveLibraryLicenseTexts(buildRoot, stagingDir, targetOS, libs)
+	if err != nil {
+		return fmt.Errorf("resolve third-party licenses: %w", err)
+	}
+
+	notice, err := renderNotice(embedded, targetOS, arch, releaseTag, libs, licenseTexts)
 	if err != nil {
 		return fmt.Errorf("render notice: %w", err)
 	}

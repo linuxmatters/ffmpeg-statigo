@@ -1,9 +1,15 @@
 package main
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
@@ -707,8 +713,14 @@ func TestStripAndSignBinary(t *testing.T) {
 
 func TestStageProgramsAndLicenseNotice(t *testing.T) {
 	const (
-		gplFixture  = "GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n"
-		lgplFixture = "GNU LESSER GENERAL PUBLIC LICENSE\nVersion 2.1, February 1999\n"
+		gplFixture    = "GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n"
+		lgplFixture   = "GNU LESSER GENERAL PUBLIC LICENSE\nVersion 2.1, February 1999\n"
+		libvpxFixture = "Copyright (c) 2010, The WebM Project authors. All rights reserved.\n\n" +
+			"Redistribution and use in source and binary forms, with or without\n" +
+			"modification, are permitted provided that the following conditions are met:\n" +
+			"  * Redistributions in binary form must reproduce the above copyright notice.\n\n" +
+			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n" +
+			"AND ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED.\n"
 	)
 
 	noopRunner := func(_ context.Context, _ string, _ ...string) ([]byte, error) {
@@ -768,6 +780,24 @@ func TestStageProgramsAndLicenseNotice(t *testing.T) {
 					}
 					if err := os.WriteFile(filepath.Join(licenseDir, "COPYING.LGPLv2.1"), []byte(lgplFixture), 0o644); err != nil {
 						t.Fatalf("write COPYING.LGPLv2.1: %v", err)
+					}
+
+					if fromStagingFallback {
+						cachedDir := filepath.Join(stagingDir, "share", "licenses")
+						if err := os.MkdirAll(cachedDir, 0o755); err != nil {
+							t.Fatalf("mkdir cached licenses dir: %v", err)
+						}
+						if err := os.WriteFile(filepath.Join(cachedDir, "libvpx"), []byte(libvpxFixture), 0o644); err != nil {
+							t.Fatalf("write cached libvpx license: %v", err)
+						}
+					} else {
+						vpxSrcDir := filepath.Join(buildRoot, "src", "libvpx")
+						if err := os.MkdirAll(vpxSrcDir, 0o755); err != nil {
+							t.Fatalf("mkdir libvpx src dir: %v", err)
+						}
+						if err := os.WriteFile(filepath.Join(vpxSrcDir, "LICENSE"), []byte(libvpxFixture), 0o644); err != nil {
+							t.Fatalf("write libvpx LICENSE: %v", err)
+						}
 					}
 
 					libs := librariesForPlatformWithPrograms(embedded, true, stagingDir, target.targetOS, target.arch)
@@ -870,6 +900,18 @@ func TestStageProgramsAndLicenseNotice(t *testing.T) {
 						}
 						if !strings.Contains(notice, "sha256:"+digest) {
 							t.Errorf("NOTICE.txt missing SHA-256 digest for active library %s", lib.Name)
+						}
+					}
+
+					for _, wantSubstr := range []string{
+						"Third-party licences:",
+						"libvpx (BSD-3-Clause)",
+						"Copyright (c) 2010, The WebM Project authors. All rights reserved.",
+						"Redistribution and use in source and binary forms",
+						"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS",
+					} {
+						if !strings.Contains(notice, wantSubstr) {
+							t.Errorf("NOTICE.txt missing %q", wantSubstr)
 						}
 					}
 				})
@@ -979,4 +1021,341 @@ func TestBuildStateCanSkipBinaries(t *testing.T) {
 			}
 		})
 	}
+}
+
+func makeTarGzFixture(t *testing.T, files map[string]string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	for _, name := range names {
+		content := files[name]
+		if err := tw.WriteHeader(&tar.Header{
+			Name:     name,
+			Mode:     0o644,
+			Size:     int64(len(content)),
+			Typeflag: tar.TypeReg,
+		}); err != nil {
+			t.Fatalf("write tar header %s: %v", name, err)
+		}
+		if _, err := io.WriteString(tw, content); err != nil {
+			t.Fatalf("write tar body %s: %v", name, err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("close tar: %v", err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatalf("close gzip: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func makeZipFixture(t *testing.T, files map[string]string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	for _, name := range names {
+		w, err := zw.Create(name)
+		if err != nil {
+			t.Fatalf("create zip entry %s: %v", name, err)
+		}
+		if _, err := io.WriteString(w, files[name]); err != nil {
+			t.Fatalf("write zip entry %s: %v", name, err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func TestThirdPartyLicenseResolutionAndNotice(t *testing.T) {
+	const (
+		libvpxBSDText = "Copyright (c) 2010, The WebM Project authors. All rights reserved.\n\n" +
+			"Redistribution and use in source and binary forms, with or without\n" +
+			"modification, are permitted provided that the following conditions are met:\n" +
+			"  * Redistributions of source code must retain the above copyright notice.\n" +
+			"  * Redistributions in binary form must reproduce the above copyright notice.\n" +
+			"  * Neither the name of Google nor the names of its contributors may be used.\n\n" +
+			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n" +
+			"AND ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED.\n"
+		libvpxPatentsText = "Additional IP Rights Grant (Patents)\nGoogle hereby grants a patent license.\n"
+		opusLicenseText   = "Copyright 2001-2023 Xiph.Org\nRedistribution and use permitted.\n"
+		zlibLicenseText   = "Copyright (C) 1995-2026 Jean-loup Gailly and Mark Adler\n"
+		lameCopyingText   = "GNU LIBRARY GENERAL PUBLIC LICENSE Version 2\n"
+	)
+
+	t.Run("resolves libvpx license and patents from src directory", func(t *testing.T) {
+		buildRoot := t.TempDir()
+		stagingDir := filepath.Join(buildRoot, "staging")
+		vpxSrc := filepath.Join(buildRoot, "src", "libvpx")
+		if err := os.MkdirAll(vpxSrc, 0o755); err != nil {
+			t.Fatalf("mkdir src/libvpx: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(vpxSrc, "LICENSE"), []byte(libvpxBSDText), 0o644); err != nil {
+			t.Fatalf("write LICENSE: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(vpxSrc, "PATENTS"), []byte(libvpxPatentsText), 0o644); err != nil {
+			t.Fatalf("write PATENTS: %v", err)
+		}
+
+		texts, err := resolveLibraryLicenseTexts(buildRoot, stagingDir, "linux", []*Library{libvpx, ffmpeg})
+		if err != nil {
+			t.Fatalf("resolveLibraryLicenseTexts() error = %v", err)
+		}
+		got := texts["libvpx"]
+		for _, want := range []string{
+			"Copyright (c) 2010, The WebM Project authors. All rights reserved.",
+			"Redistribution and use in source and binary forms",
+			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS",
+			"Additional IP Rights Grant (Patents)",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("resolved libvpx text missing %q", want)
+			}
+		}
+		if _, ok := texts["ffmpeg"]; ok {
+			t.Error("resolveLibraryLicenseTexts must skip ffmpeg")
+		}
+	})
+
+	t.Run("falls back to staging/share/licenses/<name> when src is absent", func(t *testing.T) {
+		buildRoot := t.TempDir()
+		stagingDir := filepath.Join(buildRoot, "staging")
+		cachedDir := filepath.Join(stagingDir, "share", "licenses")
+		if err := os.MkdirAll(cachedDir, 0o755); err != nil {
+			t.Fatalf("mkdir share/licenses: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(cachedDir, "libvpx"), []byte(libvpxBSDText), 0o644); err != nil {
+			t.Fatalf("write cached libvpx license: %v", err)
+		}
+
+		texts, err := resolveLibraryLicenseTexts(buildRoot, stagingDir, "linux", []*Library{libvpx})
+		if err != nil {
+			t.Fatalf("resolveLibraryLicenseTexts() error = %v", err)
+		}
+		if texts["libvpx"] != libvpxBSDText {
+			t.Errorf("cached libvpx text = %q, want %q", texts["libvpx"], libvpxBSDText)
+		}
+	})
+
+	t.Run("falls back to verified tar.gz download archive and embeds in NOTICE.txt", func(t *testing.T) {
+		buildRoot := t.TempDir()
+		stagingDir := filepath.Join(buildRoot, "staging")
+		downloadsDir := filepath.Join(buildRoot, "downloads")
+		if err := os.MkdirAll(downloadsDir, 0o755); err != nil {
+			t.Fatalf("mkdir downloads: %v", err)
+		}
+
+		const testURL = "https://example.test/libvpx-1.16.0-fixture.tar.gz"
+		archiveBytes := makeTarGzFixture(t, map[string]string{
+			"libvpx-1.16.0/LICENSE":            libvpxBSDText,
+			"libvpx-1.16.0/PATENTS":            libvpxPatentsText,
+			"libvpx-1.16.0/nested/sub/LICENSE": "nested license must be ignored\n",
+		})
+		archivePath := filepath.Join(downloadsDir, filepath.Base(testURL))
+		if err := os.WriteFile(archivePath, archiveBytes, 0o644); err != nil {
+			t.Fatalf("write archive: %v", err)
+		}
+		digest := fmt.Sprintf("%x", sha256.Sum256(archiveBytes))
+		withPinnedDigest(t, testURL, digest)
+
+		testVpx := *libvpx
+		testVpx.URL = testURL
+
+		texts, err := resolveLibraryLicenseTexts(buildRoot, stagingDir, "linux", []*Library{&testVpx})
+		if err != nil {
+			t.Fatalf("resolveLibraryLicenseTexts() error = %v", err)
+		}
+		got := texts["libvpx"]
+		if strings.Contains(got, "nested license must be ignored") {
+			t.Errorf("archive extraction picked nested LICENSE instead of top-level: %q", got)
+		}
+		for _, want := range []string{
+			"Copyright (c) 2010, The WebM Project authors. All rights reserved.",
+			"Redistribution and use in source and binary forms",
+			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS",
+			"Additional IP Rights Grant (Patents)",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("extracted libvpx text missing %q", want)
+			}
+		}
+
+		notice, err := renderNotice(true, "linux", "amd64", "v1.0.0", []*Library{&testVpx, ffmpeg}, texts)
+		if err != nil {
+			t.Fatalf("renderNotice() error = %v", err)
+		}
+		for _, want := range []string{
+			"Third-party licences:",
+			"libvpx (BSD-3-Clause)",
+			"Copyright (c) 2010, The WebM Project authors. All rights reserved.",
+			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS",
+		} {
+			if !strings.Contains(notice, want) {
+				t.Errorf("NOTICE.txt missing %q", want)
+			}
+		}
+	})
+
+	t.Run("rejects tampered download archive before extracting license", func(t *testing.T) {
+		buildRoot := t.TempDir()
+		stagingDir := filepath.Join(buildRoot, "staging")
+		downloadsDir := filepath.Join(buildRoot, "downloads")
+		if err := os.MkdirAll(downloadsDir, 0o755); err != nil {
+			t.Fatalf("mkdir downloads: %v", err)
+		}
+
+		const testURL = "https://example.test/libvpx-tampered.tar.gz"
+		archiveBytes := makeTarGzFixture(t, map[string]string{
+			"libvpx-1.16.0/LICENSE": libvpxBSDText,
+		})
+		archivePath := filepath.Join(downloadsDir, filepath.Base(testURL))
+		if err := os.WriteFile(archivePath, archiveBytes, 0o644); err != nil {
+			t.Fatalf("write archive: %v", err)
+		}
+		withPinnedDigest(t, testURL, strings.Repeat("0", 64))
+
+		testVpx := *libvpx
+		testVpx.URL = testURL
+
+		_, err := resolveLibraryLicenseTexts(buildRoot, stagingDir, "linux", []*Library{&testVpx})
+		if err == nil || !strings.Contains(err.Error(), "SHA-256 mismatch") {
+			t.Fatalf("resolveLibraryLicenseTexts() error = %v, want SHA-256 mismatch", err)
+		}
+	})
+
+	t.Run("extracts highest-priority candidate from zip archive", func(t *testing.T) {
+		archivePath := filepath.Join(t.TempDir(), "libiconv-test.zip")
+		zipBytes := makeZipFixture(t, map[string]string{
+			"libiconv-1.19/COPYING":     "GPLv3 CLI license\n",
+			"libiconv-1.19/COPYING.LIB": "LGPLv2.1 library license\n",
+		})
+		if err := os.WriteFile(archivePath, zipBytes, 0o644); err != nil {
+			t.Fatalf("write zip: %v", err)
+		}
+
+		got, err := extractLicenseFromArchive(archivePath, "zip", licenseCandidatesForLibrary("libiconv"), true)
+		if err != nil {
+			t.Fatalf("extractLicenseFromArchive(zip) error = %v", err)
+		}
+		if string(got) != "LGPLv2.1 library license\n" {
+			t.Errorf("zip license = %q, want COPYING.LIB", string(got))
+		}
+	})
+
+	t.Run("stageLibraryLicense caches license and respects lame override", func(t *testing.T) {
+		root := t.TempDir()
+		stagingDir := filepath.Join(root, "staging")
+
+		lameSrc := filepath.Join(root, "src", "lame")
+		if err := os.MkdirAll(lameSrc, 0o755); err != nil {
+			t.Fatalf("mkdir lame src: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(lameSrc, "LICENSE"), []byte("Commercial FAQ pointing to COPYING\n"), 0o644); err != nil {
+			t.Fatalf("write lame LICENSE: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(lameSrc, "COPYING"), []byte(lameCopyingText), 0o644); err != nil {
+			t.Fatalf("write lame COPYING: %v", err)
+		}
+		if err := stageLibraryLicense(lame, lameSrc, stagingDir); err != nil {
+			t.Fatalf("stageLibraryLicense(lame) error = %v", err)
+		}
+		got, err := os.ReadFile(filepath.Join(stagingDir, "share", "licenses", "lame"))
+		if err != nil {
+			t.Fatalf("read cached lame license: %v", err)
+		}
+		if string(got) != lameCopyingText {
+			t.Errorf("cached lame license = %q, want %q", string(got), lameCopyingText)
+		}
+
+		// Optional library without a top-level license file succeeds cleanly.
+		drmSrc := filepath.Join(root, "src", "libdrm")
+		if err := os.MkdirAll(drmSrc, 0o755); err != nil {
+			t.Fatalf("mkdir libdrm src: %v", err)
+		}
+		if err := stageLibraryLicense(libdrm, drmSrc, stagingDir); err != nil {
+			t.Fatalf("stageLibraryLicense(libdrm) error = %v", err)
+		}
+	})
+
+	t.Run("fails when active libvpx license cannot be found anywhere", func(t *testing.T) {
+		root := t.TempDir()
+		buildRoot := filepath.Join(root, "buildroot")
+		stagingDir := filepath.Join(buildRoot, "staging")
+		binDir := filepath.Join(root, "out")
+
+		stageBinDir := filepath.Join(stagingDir, "bin")
+		if err := os.MkdirAll(stageBinDir, 0o755); err != nil {
+			t.Fatalf("mkdir staging bin: %v", err)
+		}
+		for _, name := range []string{"ffmpeg", "ffprobe"} {
+			if err := os.WriteFile(filepath.Join(stageBinDir, name), []byte("bin"), 0o755); err != nil { //nolint:gosec // G302: fixture executable in temp dir
+				t.Fatalf("write %s: %v", name, err)
+			}
+		}
+		ffmpegSrc := filepath.Join(buildRoot, "src", "ffmpeg")
+		if err := os.MkdirAll(ffmpegSrc, 0o755); err != nil {
+			t.Fatalf("mkdir ffmpeg src: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(ffmpegSrc, "COPYING.LGPLv2.1"), []byte("LGPLv2.1\n"), 0o644); err != nil {
+			t.Fatalf("write COPYING.LGPLv2.1: %v", err)
+		}
+
+		noopRunner := func(_ context.Context, _ string, _ ...string) ([]byte, error) {
+			return nil, nil
+		}
+		libs := librariesForPlatformWithPrograms(true, true, stagingDir, "linux", "amd64")
+
+		err := stageProgramsWithRunner(t.Context(), buildRoot, stagingDir, binDir, true, "linux", "amd64", "v1.0.0", libs, noopRunner)
+		if err == nil || !strings.Contains(err.Error(), "libvpx") {
+			t.Fatalf("stageProgramsWithRunner() error = %v, want error mentioning missing libvpx license", err)
+		}
+
+		if _, err := renderNotice(true, "linux", "amd64", "v1.0.0", libs, nil); err == nil || !strings.Contains(err.Error(), "libvpx") {
+			t.Fatalf("renderNotice() error = %v, want error mentioning missing libvpx license", err)
+		}
+	})
+
+	t.Run("renders multiple third-party licences in deterministic alphabetical order", func(t *testing.T) {
+		// Pass libraries deliberately out of alphabetical order, plus an inactive darwin-only library.
+		libs := []*Library{zlib, opus, libiconv, libvpx, ffmpeg}
+		texts := map[string]string{
+			"zlib":     zlibLicenseText,
+			"opus":     opusLicenseText,
+			"libiconv": "should not appear on linux\n",
+			"libvpx":   libvpxBSDText,
+			"ffmpeg":   "should not appear in Third-party licences section\n",
+		}
+
+		notice, err := renderNotice(true, "linux", "amd64", "v2.0.0", libs, texts)
+		if err != nil {
+			t.Fatalf("renderNotice() error = %v", err)
+		}
+
+		idxSection := strings.Index(notice, "Third-party licences:")
+		idxLibvpx := strings.Index(notice, "libvpx (BSD-3-Clause)")
+		idxOpus := strings.Index(notice, "opus (BSD-3-Clause)")
+		idxZlib := strings.Index(notice, "zlib (Zlib)")
+		if idxSection < 0 || idxLibvpx <= idxSection || idxOpus <= idxLibvpx || idxZlib <= idxOpus {
+			t.Fatalf("unexpected Third-party licences ordering: section=%d libvpx=%d opus=%d zlib=%d\n%s", idxSection, idxLibvpx, idxOpus, idxZlib, notice)
+		}
+		if strings.Contains(notice, "should not appear on linux") {
+			t.Error("NOTICE.txt included inactive darwin-only libiconv license on linux")
+		}
+		if strings.Contains(notice, "should not appear in Third-party licences section") {
+			t.Error("NOTICE.txt duplicated ffmpeg license inside Third-party licences section")
+		}
+	})
 }
