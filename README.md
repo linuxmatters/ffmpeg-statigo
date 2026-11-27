@@ -65,7 +65,7 @@ The tagged build uses `lib/embedded/<os>_<arch>/libffmpeg.a`, from `ffmpeg-embed
 | <img src="https://scoop.wimpys.world/logo.svg" width="32" height="32" alt=""> | Windows (Scoop) | [scoop.wimpys.world](https://scoop.wimpys.world/#ffmpeg-statigo) |
 | <img src="https://nix.wimpys.world/logo.svg" width="32" height="32" alt=""> | Nix and NixOS | [nix.wimpys.world](https://nix.wimpys.world/#ffmpeg-statigo) |
 
-Each repository is signed, and its page gives the setup steps and keeps ffmpeg-statigo up to date.
+APT, RPM, Arch, and Nix repositories are signed, and Homebrew and Scoop verify packages over HTTPS with SHA-256 checksums. Each page gives the setup steps and keeps ffmpeg-statigo up to date.
 
 The Linux packages and binaries need glibc 2.39 or later, for example Ubuntu 24.04, Debian 13, or Fedora 40.
 
