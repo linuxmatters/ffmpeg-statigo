@@ -35,7 +35,8 @@
 //
 // The subpackage github.com/linuxmatters/ffmpeg-statigo/av adds owned io.Closer
 // pipeline wrappers (Input, Decoder, Encoder, FilterGraph, Output) for callers
-// who prefer managed lifetimes over this raw bridge. See docs/PIPELINE.md.
+// who prefer managed lifetimes over this raw bridge. See
+// https://github.com/linuxmatters/ffmpeg-statigo/wiki/High-Level-av-Package.
 //
 // # Example usage
 //
