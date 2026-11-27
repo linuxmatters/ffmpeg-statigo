@@ -401,6 +401,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          head_commit=$(git rev-parse HEAD)
+          tag_commit=$(git rev-parse -q --verify "refs/tags/${VERSION}^{commit}" || true)
+          if [[ -z "$tag_commit" ]]; then
+            remote_tag=$(git ls-remote --tags origin "refs/tags/${VERSION}")
+            if [[ -n "$remote_tag" ]]; then
+              git fetch --no-tags origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+              tag_commit=$(git rev-parse -q --verify "refs/tags/${VERSION}^{commit}" || true)
+            fi
+          fi
+          if [[ -n "$tag_commit" ]]; then
+            if [[ "$tag_commit" == "$head_commit" ]]; then
+              echo "::notice::Skipping tag creation: tag $VERSION already points to HEAD ($head_commit)"
+              exit 0
+            fi
+            echo "::error::Tag $VERSION already exists on a different commit ($tag_commit != $head_commit)"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Go modules require v prefix for version tags
