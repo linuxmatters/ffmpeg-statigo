@@ -8,7 +8,7 @@ import (
 
 var openh264 = &Library{
 	Name:          "openh264",
-	URL:           "https://github.com/cisco/openh264/archive/refs/tags/v2.6.0.tar.gz",
+	URL:           "https://github.com/cisco/openh264/archive/refs/tags/v2.7.0.tar.gz",
 	FFmpegEnables: []string{"libopenh264"},
 	BuildSystem:   openh264BuildSystem(openh264MakeArgs, runtime.GOOS),
 	ConfigureArgs: openh264MakeArgs,
