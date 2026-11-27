@@ -7,9 +7,9 @@ languages:
     cgo: true
 
 repository:
-  description: "Real FFmpeg bindings for Go. Not a wrapper. Not a CLI tool. The actual libraries 📚"
+  description: "Static FFmpeg Go bindings and standalone ffmpeg-statigo/ffprobe-statigo CLI binaries for Linux, macOS, and Windows"
   homepage: https://linuxmatters.sh
-  has_wiki: false
+  has_wiki: true
   has_discussions: false
   has_projects: false
   has_issues: true
@@ -200,6 +200,9 @@ swatches:
     alteration: never
 
   - path: .github/workflows/build-go.yml
+    alteration: never
+
+  - path: .github/workflows/tailor-vendor-hash.yml
     alteration: never
 
   - path: .golangci.yml
