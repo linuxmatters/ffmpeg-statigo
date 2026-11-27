@@ -17,7 +17,7 @@ Back: [examples/](../README.md)
 - Flushing all stages at end of stream via `decoder.Flush`, `filter.Push(nil)`, `filter.Pull`, and `encoder.Flush`
 - Using `Raw()` to reach the underlying `*ffmpeg.AV*` handle when the `av` layer does not surface a needed value (e.g. `output.Raw().Oformat().Flags()` for the global-header flag, `filter.Raw()` to read the buffersink time base)
 
-For a full description of the `av` package API, see [docs/PIPELINE.md](../../docs/PIPELINE.md).
+For a full description of the `av` package API, see the [High-level `av` package guide](https://github.com/linuxmatters/ffmpeg-statigo/wiki/High-Level-av-Package).
 
 ## Run signature
 

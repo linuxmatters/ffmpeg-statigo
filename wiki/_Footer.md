@@ -1,0 +1,1 @@
+Edit this documentation in the repository's `wiki/` directory. [Repository](https://github.com/linuxmatters/ffmpeg-statigo) | [Releases](https://github.com/linuxmatters/ffmpeg-statigo/releases) | [Issues](https://github.com/linuxmatters/ffmpeg-statigo/issues)
