@@ -65,15 +65,17 @@ jobs:
     with:
       clean_ffmpeg: true
       test: true
+      build_programs: true
+      release_tag: ${{ needs.validate.outputs.tag }}
 
   publish:
-    name: Publish FFmpeg libraries
+    name: Publish FFmpeg libraries and CLI binaries
     needs: [validate, build-libs]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - name: Download library artifacts
+      - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
           pattern: ffmpeg-*
@@ -85,7 +87,7 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          expected=(
+          expected_libs=(
             ffmpeg-darwin-amd64.tar.gz
             ffmpeg-darwin-arm64.tar.gz
             ffmpeg-embedded-darwin-amd64.tar.gz
@@ -100,43 +102,91 @@ jobs:
             ffmpeg-windows-amd64.tar.gz
           )
 
+          expected_bins=(
+            ffmpeg-bin-darwin-amd64.tar.gz
+            ffmpeg-bin-darwin-arm64.tar.gz
+            ffmpeg-bin-embedded-darwin-amd64.tar.gz
+            ffmpeg-bin-embedded-darwin-arm64.tar.gz
+            ffmpeg-bin-embedded-linux-amd64.tar.gz
+            ffmpeg-bin-embedded-linux-arm64.tar.gz
+            ffmpeg-bin-embedded-windows-386.zip
+            ffmpeg-bin-embedded-windows-amd64.zip
+            ffmpeg-bin-linux-amd64.tar.gz
+            ffmpeg-bin-linux-arm64.tar.gz
+            ffmpeg-bin-windows-386.zip
+            ffmpeg-bin-windows-amd64.zip
+          )
+
+          mapfile -t expected < <(printf '%s\n' "${expected_libs[@]}" "${expected_bins[@]}" | LC_ALL=C sort)
+
           for archive in "${expected[@]}"; do
-            if [[ ! -s "$archive" ]]; then
+            if [[ ! -f "$archive" || ! -s "$archive" ]]; then
               echo "::error::Missing or empty archive: $archive"
               exit 1
             fi
           done
 
-          actual=(ffmpeg-*.tar.gz)
+          actual=(ffmpeg-*.tar.gz ffmpeg-*.zip)
           if (( ${#actual[@]} != ${#expected[@]} )); then
-            echo "::error::Expected ${#expected[@]} archives, found ${#actual[@]}: ${actual[*]}"
+            echo "::error::Expected ${#expected[@]} archives, found ${#actual[@]}: ${actual[*]-}"
+            exit 1
+          fi
+
+          all_downloaded=(ffmpeg-*)
+          if (( ${#all_downloaded[@]} != ${#expected[@]} )); then
+            echo "::error::Expected ${#expected[@]} ffmpeg-* files, found ${#all_downloaded[@]}: ${all_downloaded[*]-}"
             exit 1
           fi
 
           LC_ALL=C sha256sum "${expected[@]}" > SHA256SUMS
-          sha256sum --check SHA256SUMS
+          sha256sum --check --strict SHA256SUMS
 
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
           files: |
             ffmpeg-*.tar.gz
+            ffmpeg-*.zip
             SHA256SUMS
           fail_on_unmatched_files: true
+          make_latest: false
           tag_name: ${{ needs.validate.outputs.tag }}
           target_commitish: ${{ github.sha }}
           body: |
-            ## FFmpeg Static Libraries
+            ## FFmpeg Static Libraries and CLI Binaries
 
             **Version:** ${{ needs.validate.outputs.tag }}
 
-            Default and embedded libraries are available for:
-            - Linux amd64
-            - Linux arm64
-            - macOS x86 (Intel)
-            - macOS arm64 (Apple Silicon)
-            - Windows amd64
-            - Windows 386
+            ### Static Library Archives (12)
+
+            `ffmpeg-[embedded-]<os>-<arch>.tar.gz` archives are available for:
+            - Linux amd64 and arm64
+            - macOS amd64 (Intel) and arm64 (Apple Silicon)
+            - Windows amd64 and 386
 
             Use `GOFLAGS=-tags=embedded` to download and use embedded libraries.
-            `SHA256SUMS` covers both profiles.
+
+            ### Standalone CLI Archives (12)
+
+            `ffmpeg-bin-[embedded-]<os>-<arch>.tar.gz` (Linux and macOS) and `ffmpeg-bin-[embedded-]<os>-<arch>.zip` (Windows) archives are available for the same six platforms and both profiles. Each archive contains `ffmpeg` (`ffmpeg.exe` on Windows), `ffprobe` (`ffprobe.exe` on Windows), `LICENSE`, and `NOTICE.txt`.
+
+            ### Profiles and Licences
+
+            - `default` (GPLv3): full codec set and hardware acceleration (`COPYING.GPLv3`).
+            - `embedded` (LGPLv2.1): software-only OpenH264 with no GPL flags (`COPYING.LGPLv2.1`).
+
+            ### macOS Gatekeeper
+
+            macOS CLI binaries are ad-hoc signed without Apple Developer ID notarisation. After extracting an archive downloaded through a browser, remove the quarantine attribute before running `ffmpeg` or `ffprobe`:
+
+            ```sh
+            xattr -dr com.apple.quarantine <extracted-dir>
+            ```
+
+            ### Checksums
+
+            `SHA256SUMS` covers all 24 archives (12 static library archives and 12 CLI archives). To verify a single downloaded archive alongside `SHA256SUMS`, run:
+
+            ```sh
+            sha256sum -c --ignore-missing SHA256SUMS
+            ```

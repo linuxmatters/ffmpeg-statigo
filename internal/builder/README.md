@@ -1,259 +1,104 @@
-# FFmpeg Builder Refactoring Plan
+# FFmpeg Builder
 
-## Overview
+`internal/builder` downloads pinned third-party source archives, builds FFmpeg and its dependencies incrementally, and combines the static archives into `lib/<os>_<arch>/libffmpeg.a` (or `lib/embedded/<os>_<arch>/libffmpeg.a` with `--embedded`).
+With `--programs`, it also builds, strips, signs on macOS, and stages standalone `ffmpeg` and `ffprobe` executables alongside `LICENSE` and `NOTICE.txt` into `bin/[embedded/]<os>_<arch>/`.
 
-Refactoring the internal builder from 2,129 lines of duplicated code to ~850 lines of clean, maintainable code with incremental builds, per-library logging, and selective build support.
+## File layout
 
-## Approach
+| File | Responsibility |
+| --- | --- |
+| `main.go` | CLI entry point, build orchestration, `--clean`, `--list`, `--update-digests`, and platform archive merging (`combineMac`, `combineWindows`, `combineLinux`) |
+| `library.go` | `Library` definition, incremental `Build` loop, configuration hashing, build environment setup, and `stripAndSignBinary` |
+| `libraries.go` | Third-party library definitions, dependency order, platform filters, Windows overrides, and `scrubLinuxPkgConfig` |
+| `profile.go` | Output paths, `default` and `embedded` profile selection, FFmpeg configure wrapper, and licence pre-staging |
+| `programs.go` | CLI flag parsing (`parseBuilderArgs`), `LICENSE` staging, `NOTICE.txt` rendering, and `stagePrograms` |
+| `ffmpeg_args.go` | Curated FFmpeg codec, format, filter, hardware acceleration, and `--enable-ffmpeg`/`--enable-ffprobe` configure flags |
+| `buildsystems.go` | `AutoconfBuild`, `CMakeBuild`, `MesonBuild`, `CargoBuild`, and `MakefileBuild` implementations |
+| `digests.go` | Pinned SHA-256 source archive manifest (`archiveDigests`) and fail-closed `verifyDigest` |
+| `download.go` | Retryable `grab/v3` downloader and safe archive extraction |
+| `state.go` | Per-library `.build-state` JSON tracking for incremental skips |
+| `openh264.go` | OpenH264 library definition for the `embedded` profile |
+| `coff_archive.go` | Windows archive filter that removes zero-section COFF and split DWARF (`.dwo`) members |
+| `pointer.go` | `Disabled()` helper for disabled library entries such as `vvenc` |
 
-**Strategy:** Rename existing `internal/builder` → `internal/old-builder`, create fresh implementation in `internal/builder`.
+## Usage and CLI flags
 
-**Benefits:**
-- No risk to working code
-- Easy side-by-side comparison
-- Clean slate without legacy constraints
-- Simple rollback if needed
+Run the builder from the repository root. Output paths derive automatically from `runtime.GOOS`, `runtime.GOARCH`, and `--embedded`, so the CLI takes no output path argument.
 
-## Architecture
+```sh
+# Build default profile static library into lib/<os>_<arch>/libffmpeg.a
+go run ./internal/builder
 
-### New Structure
+# Build default profile static library and standalone CLI binaries into bin/<os>_<arch>/
+go run ./internal/builder --programs
 
-```
-internal/builder/
-├── main.go           # CLI entry point (~100 lines)
-├── library.go        # Library struct and core build logic (~200 lines)
-├── buildsystems.go   # Autoconf, CMake, Meson, Cargo implementations (~150 lines)
-├── libraries.go      # All 22 library definitions (~300 lines)
-├── state.go          # Incremental build state management (~50 lines)
-└── download.go       # grab-based downloader (~50 lines)
-```
+# Build embedded LGPLv2.1 profile (OpenH264, no GPL flags) into lib/embedded/ and bin/embedded/
+go run ./internal/builder --embedded --programs
 
-### Key Design Decisions
+# List libraries for a profile
+go run ./internal/builder --list
+go run ./internal/builder --embedded --list
 
-1. **Library as Data:** Each library is a struct with configuration, not a function
-2. **Platform Support:** Libraries specify platforms (empty = all platforms)
-3. **Incremental Builds:** Hash-based state tracking (URL + config hash)
-4. **Simple Dependencies:** Linear dependency order, platform-aware skipping
-5. **One External Dep:** `github.com/cavaliergopher/grab/v3` for downloads
+# Rebuild only FFmpeg and re-stage CLI binaries
+go run ./internal/builder --programs ffmpeg
 
-## Implementation Phases
+# Clean build, source, and staged outputs for FFmpeg (or all profile libraries when none are named)
+go run ./internal/builder --programs --clean ffmpeg
+go run ./internal/builder --clean
 
-### Phase 1: Core Framework
-
-**Files:** `library.go`, `buildsystems.go`, `state.go`, `download.go`
-
-**Key types:**
-```go
-type Library struct {
-    Name         string
-    URL          string
-    ArchiveType  string      // "tar.gz", "tar.bz2", "tar.xz", "zip"
-    StripPrefix  string
-    Platform     []string    // empty = all platforms, ["linux"], ["darwin"], etc.
-    BuildSystem  BuildSystem
-    ConfigureArgs func(os string) []string
-    PostExtract  func(srcPath string) error // optional patches
-    Dependencies []*Library
-}
-
-type BuildSystem interface {
-    Configure(lib *Library, srcPath string) error
-    Build(lib *Library, srcPath string) error
-}
+# Print SHA-256 manifest entries for enabled archives on the current platform
+go run ./internal/builder --update-digests
 ```
 
-**Incremental build logic:**
-- Store `.build-state` JSON in each library's build directory
-- Track: URL, config hash, build timestamp
-- Skip if: state exists + URL matches + config hash matches + output exists
-- Rebuild if: any of above fail
+| Flag or argument | Behaviour |
+| --- | --- |
+| `--embedded` | Selects the LGPLv2.1/OpenH264 profile. Sets the build root to `.build/embedded` (`.build/embedded/windows_386_msvcrt` on `windows/386`), the static library path to `lib/embedded/<os>_<arch>/libffmpeg.a`, and the CLI directory to `bin/embedded/<os>_<arch>/`. |
+| `--programs` | Builds `ffmpeg` and `ffprobe` (`ffmpeg.exe` and `ffprobe.exe` on Windows) alongside the static libraries, then stages the stripped binaries, `LICENSE`, and `NOTICE.txt` into `bin/[embedded/]<os>_<arch>/`. |
+| `--clean` | Deletes `<buildRoot>/build/<lib>`, `<buildRoot>/src/<lib>`, staged `.a` files in `<buildRoot>/staging/lib/`, and staged executables in `<buildRoot>/staging/bin/` for the selected libraries (or all profile libraries), then exits. Cached downloads remain in `<buildRoot>/downloads/`. |
+| `--list` | Prints a table of libraries, platforms, build systems, and link archives for the selected profile, then exits. |
+| `--update-digests` | Downloads enabled archives for the current platform and prints sorted `archiveDigests` entries for review and inclusion in `digests.go`. |
+| `<library> ...` | Positional library names restrict the build or `--clean` to those libraries. Unknown or profile-excluded names return an error. `combineLibraries` runs only on full builds with no positional filter, while `stagePrograms` runs on full builds or when `ffmpeg` is selected with `--programs`. |
 
-**Download:**
-- Use `grab/v3` for robust downloads with resume support
-- Simple progress logging (no animations)
-- Per-library log file via `io.MultiWriter`
+Default profile builds use `.build` as the build root (`.build/windows_386_msvcrt` on `windows/386`).
+Each library writes its incremental skip state to `<buildRoot>/build/<lib>/.build-state` (tracking URL, configuration hash, and required staged outputs) and streams command output to `<buildRoot>/build/<lib>/build.log`.
 
-### Phase 2: Library Definitions
+## Environment variables
 
-**File:** `libraries.go`
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `FFMPEG_RELEASE_TAG` | `GITHUB_REF_NAME` | Release tag written as `Release: <tag>` in `NOTICE.txt`. Overrides `GITHUB_REF_NAME` when both are set (for example during `workflow_dispatch` runs). |
+| `MACOSX_DEPLOYMENT_TARGET` | `13.0` | Minimum macOS version set in the build environment on `darwin` when unset or empty. |
+| `LLVM_OBJCOPY` | `llvm-objcopy` | Tool used on macOS by `combineMac` to strip `__LLVM,__bitcode` and `__LLVM,__cmdline` sections from `libffmpeg.a`. |
+| `AR` | `ar` | Archive tool used on Windows by `combineWindows` for `ar -M` merging and `ar s` indexing. |
+| `STRIP` | `strip` | Strip tool used by `combineWindows` (`--strip-unneeded`) and by `stripAndSignBinary` on all platforms. |
+| `CODESIGN` | `codesign` | Signing tool used on macOS by `stripAndSignBinary` for ad-hoc binary signing. |
 
-Convert all 22 library build functions to data structures:
+## How `--programs` builds and stages CLI binaries
 
-```go
-var x264 = &Library{
-    Name: "x264",
-    URL: "https://code.videolan.org/videolan/x264/-/archive/master/x264-master.tar.bz2",
-    ArchiveType: "tar.bz2",
-    StripPrefix: "x264-master/",
-    BuildSystem: &AutoconfBuild{},
-    ConfigureArgs: func(os string) []string {
-        return []string{
-            "--disable-cli",
-            "--enable-static",
-            "--enable-strip",
-        }
-    },
-}
+1. **FFmpeg configure flags**: `ffmpegArgsCommonWithPrograms` replaces `--disable-programs` with `--enable-ffmpeg --enable-ffprobe --disable-ffplay`.
+2. **Static runtime linking**:
+   - **Linux**: FFmpeg's `PostExtract` hook runs `scrubLinuxPkgConfig` to remove dynamic `-lgcc_s` flags from staged `.pc` files, and configure receives `--extra-ldexeflags=-static-libstdc++ -static-libgcc`.
+   - **Windows**: Configure receives `--extra-ldexeflags=-static -static-libgcc -static-libstdc++` so the executables depend only on built-in OS DLLs.
+   - **macOS**: Executables link only against `/usr/lib/*` and `/System/Library/Frameworks/*` with `MACOSX_DEPLOYMENT_TARGET` defaulting to `13.0`.
+3. **Stripping and macOS signing**: `stagePrograms` copies `ffmpeg` and `ffprobe` (`ffmpeg.exe` and `ffprobe.exe` on Windows) from `<buildRoot>/staging/bin/` into `bin/[embedded/]<os>_<arch>/`. It removes any existing target binary first so macOS allocates a fresh inode and avoids stale Mach-O vnode signature caches. `stripAndSignBinary` then runs `strip --strip-all <bin>` on Linux and Windows, or `strip <bin>` followed by `codesign --force --sign - <bin>` (ad-hoc signing) on macOS.
+4. **macOS Gatekeeper quarantine**: Ad-hoc signed binaries are not Apple Developer ID notarised. When a user downloads a macOS CLI archive in a browser, they must remove the quarantine attribute after extraction:
 
-var iconv = &Library{
-    Name: "iconv",
-    URL: "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz",
-    Platform: []string{"darwin"}, // macOS only
-    // ... rest of config
-}
-```
+   ```sh
+   xattr -dr com.apple.quarantine <extracted-dir>
+   ```
 
-**Platform handling:**
-- Libraries with `Platform: []string{"linux"}` auto-skip on macOS
-- Libraries with `Platform: []string{"darwin"}` auto-skip on Linux
-- Libraries with `Platform: nil` or empty build on all platforms
+5. **Licence and notice staging**:
+   - `stageLicense` writes `COPYING.GPLv3` (`default`) or `COPYING.LGPLv2.1` (`embedded`) to `bin/[embedded/]<os>_<arch>/LICENSE`. It checks `<buildRoot>/src/ffmpeg/`, `<buildRoot>/staging/share/ffmpeg/`, and finally the SHA-256-verified FFmpeg download archive in `<buildRoot>/downloads/`. It never copies the repository root MIT `LICENSE`.
+   - `renderNotice` writes `bin/[embedded/]<os>_<arch>/NOTICE.txt` containing the profile, target, FFmpeg version tag, effective licence, repository URL, optional `Release:` line, GPLv3 Section 6 notice or LGPLv2.1 Section 4 relinking instructions, and every active bundled library with its SPDX licence, upstream URL, and pinned SHA-256 digest.
 
-**Dependency order:**
-- Define in `libraries.go` as ordered slice
-- Builder respects order but skips platform-incompatible libs
+## Pinned source digests (`digests.go`)
 
-### Phase 3: Main + Logging
+Every third-party source archive URL is SHA-256 pinned in `digests.go` (`archiveDigests`) for fail-closed integrity verification (CWE-494).
+`DownloadFile` runs `verifyDigest` on both fresh downloads and cached archives in `<buildRoot>/downloads/`:
 
-**File:** `main.go`
+- A missing pin aborts the build with an error naming the unpinned URL.
+- A digest mismatch deletes the downloaded archive and aborts the build so a re-run downloads fresh bytes.
 
-**CLI interface:**
-```bash
-# Build everything
-go run ./internal/builder lib/linux_amd64/libffmpeg.a
-
-# Build specific libraries only (with dependencies)
-go run ./internal/builder lib/linux_amd64/libffmpeg.a x264 vpx
-
-# Force rebuild (ignore state)
-go run ./internal/builder --force lib/linux_amd64/libffmpeg.a
-```
-
-**Per-library logging:**
-- Create `.build/build/{lib-name}/build.log`
-- `io.MultiWriter` to both stdout and log file
-- Clean separation for debugging
-
-**Progress reporting:**
-```
-[1/22] x264: Checking build state... SKIP (already built)
-[2/22] x265: Downloading...
-[2/22] x265: Extracting...
-[2/22] x265: Configuring...
-[2/22] x265: Building...
-[2/22] x265: Complete (45.2s)
-```
-
-### Phase 4: Testing & Validation
-
-**Validation approach:**
-
-1. **Symbol comparison** (primary):
-   - Extract well-known symbols: `avcodec_version`, `avformat_version`, etc.
-   - Compare symbol counts and key exports
-   - Warning if different, not failure
-
-2. **Binary hash** (secondary):
-   - SHA256 hash comparison
-   - **WARNING ONLY** (due to HEAD snapshot for x264)
-   - Documents that hashes may differ for x264 HEAD builds (x265 is pinned to a tagged release and is reproducible)
-
-3. **Build success** (required):
-   - All libraries build without errors
-   - Final static library created
-   - All expected `.a` files in staging
-
-**Test script:**
-```bash
-#!/usr/bin/env bash
-# Compare old vs new builder outputs
-
-# Build with old builder
-mv internal/builder internal/builder-new
-mv internal/old-builder internal/builder
-go run ./internal/builder lib/test-old.a
-mv internal/builder internal/old-builder
-mv internal/builder-new internal/builder
-
-# Build with new builder
-rm -rf .build
-go run ./internal/builder lib/test-new.a
-
-# Compare symbols (primary validation)
-nm lib/test-old.a | grep -E "avcodec_version|avformat_version" > old-symbols.txt
-nm lib/test-new.a | grep -E "avcodec_version|avformat_version" > new-symbols.txt
-diff old-symbols.txt new-symbols.txt
-
-# Compare hashes (warning only)
-sha256sum lib/test-old.a lib/test-new.a
-echo "Note: Hash differences expected for x264 HEAD snapshot (x265 is a tagged release)"
-```
-
-## Migration Plan
-
-### Step 1: Backup (5 minutes)
-```bash
-git checkout -b builder-refactor
-mv internal/builder internal/old-builder
-git add internal/old-builder
-git commit -m "refactor: backup old builder before refactor"
-```
-
-### Step 2: Implement New Builder (3 days)
-- Create `internal/builder/` with new implementation
-- Test incrementally as each phase completes
-- Keep old builder functional for comparison
-
-### Step 3: Update Justfile (5 minutes)
-```just
-# Old builder (temporary)
-build-ffmpeg-old:
-    go run ./internal/old-builder "lib/${GOOS}_${GOARCH}/libffmpeg.a"
-
-# New builder
-build-ffmpeg:
-    go run ./internal/builder "lib/${GOOS}_${GOARCH}/libffmpeg.a"
-```
-
-### Step 4: Validation (1 day)
-- Build with both builders
-- Compare outputs (symbols + hashes)
-- Fix any discrepancies
-- Document expected differences (HEAD snapshots)
-
-### Step 5: Cleanup (5 minutes)
-```bash
-rm -rf internal/old-builder
-git add .
-git commit -m "refactor: remove old builder after validation"
-```
-
-## Success Criteria
-
-- ✅ All 22 libraries build successfully
-- ✅ Final static library contains expected symbols
-- ✅ Incremental builds work (skip already-built libs)
-- ✅ Selective builds work (build only specified libs)
-- ✅ Per-library log files created
-- ✅ Platform-specific libs auto-skip on wrong platform
-- ✅ Code reduced by ~63% (2,129 → ~850 lines)
-- ✅ Maintainable: adding new library = add struct, not function
-
-## Known Differences from Old Builder
-
-1. **Binary hashes may differ** for x264 (using HEAD snapshot) - WARNING ONLY; x265 is a tagged release (4.2) and is reproducible
-2. **Build order optimized** based on dependencies
-3. **Better error messages** with per-library context
-4. **Progress reporting** shows current library being built
-
-## Future Enhancements (Not in Scope)
-
-- Parallel library builds (would require more complexity)
-- Build system plugins (YAGNI - 4 build systems is enough)
-- Remote caching (not needed for this use case)
-- Fancy progress bars (conflicts with CI simplicity goal)
-
----
-
-**Start Date:** 13 November 2025
-**Estimated Completion:** 16 November 2025
-**Actual Completion:** TBD
+After bumping a library version or URL, run `go run ./internal/builder --update-digests` (and `go run ./internal/builder --embedded --update-digests` for OpenH264) in a trusted environment.
+Verify each printed digest against upstream checksums before committing the updated entries to `digests.go`.
+Platform-specific libraries download only on their target operating system, so update their pins on the corresponding platform.
