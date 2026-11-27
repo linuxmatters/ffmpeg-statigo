@@ -9,7 +9,7 @@ With `--programs`, it also builds, strips, signs on macOS, and stages standalone
 | --- | --- |
 | `main.go` | CLI entry point, build orchestration, `--clean`, `--list`, `--update-digests`, and platform archive merging (`combineMac`, `combineWindows`, `combineLinux`) |
 | `library.go` | `Library` definition, incremental `Build` loop, configuration hashing, build environment setup, and `stripAndSignBinary` |
-| `libraries.go` | Third-party library definitions, dependency order, platform filters, Windows overrides, and `scrubLinuxPkgConfig` |
+| `libraries.go` | Third-party library definitions, dependency order, platform filters, Windows overrides, `scrubProgramPkgConfig`, and `pruneStagingDylibs` |
 | `profile.go` | Output paths, `default` and `embedded` profile selection, FFmpeg configure wrapper, and licence pre-staging |
 | `programs.go` | CLI flag parsing (`parseBuilderArgs`), `LICENSE` staging, `NOTICE.txt` rendering, and `stagePrograms` |
 | `ffmpeg_args.go` | Curated FFmpeg codec, format, filter, hardware acceleration, and `--enable-ffmpeg`/`--enable-ffprobe` configure flags |
@@ -77,9 +77,9 @@ Each library writes its incremental skip state to `<buildRoot>/build/<lib>/.buil
 
 1. **FFmpeg configure flags**: `ffmpegArgsCommonWithPrograms` replaces `--disable-programs` with `--enable-ffmpeg --enable-ffprobe --disable-ffplay`.
 2. **Static runtime linking**:
-   - **Linux**: FFmpeg's `PostExtract` hook runs `scrubLinuxPkgConfig` to remove dynamic `-lgcc_s` flags from staged `.pc` files, and configure receives `--extra-ldexeflags=-static-libstdc++ -static-libgcc`.
-   - **Windows**: Configure receives `--extra-ldexeflags=-static -static-libgcc -static-libstdc++` so the executables depend only on built-in OS DLLs.
-   - **macOS**: Executables link only against `/usr/lib/*` and `/System/Library/Frameworks/*` with `MACOSX_DEPLOYMENT_TARGET` defaulting to `13.0`.
+   - **Linux**: FFmpeg's `PostExtract` hook runs `scrubProgramPkgConfig` to remove dynamic `-lgcc_s` flags from staged `.pc` files. Configure receives `--extra-ldexeflags=-static-libstdc++ -static-libgcc`.
+   - **Windows**: FFmpeg's `PostExtract` hook also runs `scrubProgramPkgConfig` to remove dynamic `-lgcc_s` flags from staged `.pc` files. Configure receives `--extra-ldexeflags=-static -static-libgcc -static-libstdc++` so the executables depend only on built-in OS DLLs.
+   - **macOS**: `libiconv` builds with `--disable-shared`, and FFmpeg's `PostExtract` hook runs `pruneStagingDylibs` to remove stale `*.dylib` files from `<buildRoot>/staging/lib/`. Executables link only against `/usr/lib/*` and `/System/Library/Frameworks/*` with `MACOSX_DEPLOYMENT_TARGET` defaulting to `13.0`.
 3. **Stripping and macOS signing**: `stagePrograms` copies `ffmpeg` and `ffprobe` (`ffmpeg.exe` and `ffprobe.exe` on Windows) from `<buildRoot>/staging/bin/` into `bin/[embedded/]<os>_<arch>/`. It removes any existing target binary first so macOS allocates a fresh inode and avoids stale Mach-O vnode signature caches. `stripAndSignBinary` then runs `strip --strip-all <bin>` on Linux and Windows, or `strip <bin>` followed by `codesign --force --sign - <bin>` (ad-hoc signing) on macOS.
 4. **macOS Gatekeeper quarantine**: Ad-hoc signed binaries are not Apple Developer ID notarised. When a user downloads a macOS CLI archive in a browser, they must remove the quarantine attribute after extraction:
 
