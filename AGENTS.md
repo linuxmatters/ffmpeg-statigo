@@ -91,7 +91,7 @@
 
 ## Hardware acceleration
 
-Supported: NVENC/NVDEC (Linux), QuickSync (Linux), VideoToolbox (macOS), Vulkan Video (cross-platform). See `README.md` and the [Codec and Hardware Matrix](https://github.com/linuxmatters/ffmpeg-statigo/wiki/Codec-and-Hardware-Matrix) on the GitHub Wiki.
+Supported: NVENC/NVDEC (Linux), VA-API (Linux), QuickSync (Linux), VideoToolbox (macOS), Vulkan Video (cross-platform). See `README.md` and the [Codec and Hardware Matrix](https://github.com/linuxmatters/ffmpeg-statigo/wiki/Codec-and-Hardware-Matrix) on the GitHub Wiki.
 
 ## Security considerations
 

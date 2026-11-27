@@ -34,6 +34,7 @@ Run these commands from your project root:
 2. Point `go.mod` at the local submodule:
 
    ```sh
+   go mod edit -require=github.com/linuxmatters/ffmpeg-statigo@v0.0.0
    go mod edit -replace github.com/linuxmatters/ffmpeg-statigo=./third_party/ffmpeg-statigo
    ```
 
@@ -128,7 +129,7 @@ setup:
         cd ../..
 
         # Remove old library to force re-download
-        rm -f third_party/ffmpeg-statigo/lib/*/libffmpeg.a
+        rm -f third_party/ffmpeg-statigo/lib/*/libffmpeg.a third_party/ffmpeg-statigo/lib/embedded/*/libffmpeg.a
 
         # Stage the submodule change
         git add third_party/ffmpeg-statigo
