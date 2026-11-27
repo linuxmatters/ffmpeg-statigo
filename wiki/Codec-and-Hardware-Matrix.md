@@ -15,21 +15,21 @@ The `default` static build compiles FFmpeg 8.1.2 together with 20 active depende
 | --- | --- | --- | --- | --- |
 | FFmpeg | 8.1.2 | Linux, macOS, Windows | `default`, `embedded` | Core multimedia framework (`libavcodec`, `libavdevice`, `libavfilter`, `libavformat`, `libavutil`, `libswresample`, `libswscale`) |
 | dav1d | 1.5.5 | Linux, macOS, Windows | `default` | Fast software AV1 decoder |
-| glslang | 16.3.0 | Linux, macOS, Windows | `default` | Khronos GLSL/ESSL front end and SPIR-V compiler for Vulkan codecs and filters |
+| glslang | 16.6.0 | Linux, macOS, Windows | `default` | Khronos GLSL/ESSL front end and SPIR-V compiler for Vulkan codecs and filters |
 | libdrm | 2.4.134 | Linux | `default` | Direct Rendering Manager library required by `libva` |
-| libiconv | 1.19 | macOS | `default`, `embedded` | Character set conversion library |
+| libiconv | 1.19.1 | macOS | `default`, `embedded` | Character set conversion library |
 | libsrt | 1.5.7 | Linux, macOS, Windows | `default` | Secure Reliable Transport (SRT) streaming protocol library |
-| libva | 2.24.0 | Linux | `default` | Video Acceleration API (VA-API) library and Intel QSV backend |
+| libva | 2.24.1 | Linux | `default` | Video Acceleration API (VA-API) library and Intel QSV backend |
 | libvpl | 2.17.0 | Linux | `default` | Intel Video Processing Library (oneVPL) dispatcher for QuickSync |
 | libvpx | 1.17.0 | Linux, macOS, Windows | `default`, `embedded` | VP8 decoder and VP9 decoder/encoder (`vp8` encoder disabled) |
 | libwebp | 1.6.0 | Linux, macOS, Windows | `default`, `embedded` | WebP still and animated image encoder |
 | libxml2 | 2.15.4 | Linux, macOS, Windows | `default`, `embedded` | XML parser for DASH and playlist formats |
 | mp3lame (`lame`) | 4.0 | Linux, macOS, Windows | `default`, `embedded` | MPEG Audio Layer III (MP3) encoder |
-| nv-codec-headers | 13.0.19.0 | Linux | `default` | NVIDIA Video Codec SDK headers for NVENC and NVDEC |
+| nv-codec-headers | 13.0.19.1 | Linux | `default` | NVIDIA Video Codec SDK headers for NVENC and NVDEC |
 | openssl | 3.6.5 | Linux, macOS, Windows | `default` | TLS 1.2/1.3 and DTLS 1.2 for HTTPS, RTMPS, and SRT |
 | opus | 1.6.1 | Linux, macOS, Windows | `default`, `embedded` | Royalty-free Opus audio codec |
 | rav1e | 0.8.1 | Linux, macOS, Windows | `default` | Software AV1 encoder |
-| Vulkan-Headers | 1.4.356 | Linux, macOS, Windows | `default` | Vulkan API headers and registry |
+| Vulkan-Headers | 1.4.369 | Linux, macOS, Windows | `default` | Vulkan API headers and registry |
 | x264 | head (`0480cb05fa18`) | Linux, macOS, Windows | `default` | GPL software H.264/AVC encoder |
 | x265 | 4.2 | Linux, macOS, Windows | `default` | GPL software H.265/HEVC encoder |
 | zimg | 3.0.6 | Linux, macOS, Windows | `default`, `embedded` | High-precision scaling, colours, and dithering (`zscale` filter) |

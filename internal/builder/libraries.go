@@ -188,7 +188,7 @@ var zlib = &Library{
 // libiconv - character encoding conversion (macOS only)
 var libiconv = &Library{
 	Name:        "libiconv",
-	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz",
+	URL:         "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.1.tar.gz",
 	Platform:    []string{"darwin"},
 	BuildSystem: &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -230,7 +230,7 @@ var libxml2 = &Library{
 // nvcodecheaders - NVIDIA codec SDK headers (Linux only)
 var nvcodecheaders = &Library{
 	Name:          "nv-codec-headers",
-	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n13.0.19.0/nv-codec-headers-13.0.19.0.tar.gz",
+	URL:           "https://github.com/FFmpeg/nv-codec-headers/releases/download/n13.0.19.1/nv-codec-headers-13.0.19.1.tar.gz",
 	Platform:      []string{"linux"},
 	FFmpegEnables: []string{"cuvid", "ffnvcodec", "nvdec", "nvenc"},
 	BuildSystem: &MakefileBuild{
@@ -245,7 +245,7 @@ var nvcodecheaders = &Library{
 // vulkanheaders - Vulkan API headers (cross-platform)
 var vulkanheaders = &Library{
 	Name:          "Vulkan-Headers",
-	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.356.tar.gz",
+	URL:           "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.369.tar.gz",
 	FFmpegEnables: []string{"vulkan"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -261,7 +261,7 @@ var vulkanheaders = &Library{
 // configure gates -lSPVRemapper behind GLSLANG_VERSION_MAJOR >= 16, so 16.x links cleanly.
 var glslang = &Library{
 	Name:          "glslang",
-	URL:           "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.3.0.tar.gz",
+	URL:           "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.6.0.tar.gz",
 	FFmpegEnables: []string{"libglslang"},
 	BuildSystem:   &CMakeBuild{},
 	PostExtract: func(ctx context.Context, srcPath string) error {
@@ -335,7 +335,7 @@ var libdrm = &Library{
 // libva - Video Acceleration API (Linux only, provides VA-API backend for QSV)
 var libva = &Library{
 	Name:          "libva",
-	URL:           "https://github.com/intel/libva/releases/download/2.24.0/libva-2.24.0.tar.bz2",
+	URL:           "https://github.com/intel/libva/releases/download/2.24.1/libva-2.24.1.tar.bz2",
 	Platform:      []string{"linux"},
 	Dependencies:  []*Library{libdrm},
 	FFmpegEnables: []string{"vaapi"},
