@@ -13,6 +13,16 @@ on:
         type: boolean
         default: false
         required: false
+      build_programs:
+        description: "Build, verify, and upload standalone ffmpeg and ffprobe CLI archives"
+        type: boolean
+        default: true
+        required: false
+      release_tag:
+        description: "Release tag written to NOTICE.txt (defaults to GITHUB_REF_NAME)"
+        type: string
+        default: ""
+        required: false
 
 permissions:
   contents: read
@@ -25,8 +35,12 @@ jobs:
       CGO_ENABLED: "1"
       GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
       BUILDER_FLAGS: ${{ matrix.variant == 'embedded' && '--embedded' || '' }}
+      PROGRAMS_FLAG: ${{ inputs.build_programs && '--programs' || '' }}
+      FFMPEG_RELEASE_TAG: ${{ inputs.release_tag }}
       LIB_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded/' || '' }}
       ASSET_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded-' || '' }}
+      PLATFORM: ${{ matrix.os }}_${{ matrix.arch }}
+      ASSET_PLATFORM: ${{ matrix.os }}-${{ matrix.arch }}
       BUILD_ROOT: >-
         ${{ matrix.variant == 'embedded' && '.build/embedded' || '.build' }}
     strategy:
@@ -71,6 +85,10 @@ jobs:
           tool="$(rustc --print sysroot)/lib/rustlib/$(rustc --print host-tuple)/bin/llvm-objcopy"
           test -x "$tool"
           echo "LLVM_OBJCOPY=$tool" >> "$GITHUB_ENV"
+
+      - name: Set macOS deployment target
+        if: matrix.os == 'darwin'
+        run: echo "MACOSX_DEPLOYMENT_TARGET=13.0" >> "$GITHUB_ENV"
 
       - uses: Swatinem/rust-cache@v2
         if: matrix.variant == 'default'
@@ -127,10 +145,194 @@ jobs:
         if: inputs.clean_ffmpeg
         run: |
           go run ./internal/builder/ \
-            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} ffmpeg --clean
+            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} \
+            ${PROGRAMS_FLAG:+"$PROGRAMS_FLAG"} ffmpeg --clean
 
       - name: Build FFmpeg library
-        run: go run ./internal/builder/ ${BUILDER_FLAGS:+"$BUILDER_FLAGS"}
+        run: |
+          go run ./internal/builder/ \
+            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} \
+            ${PROGRAMS_FLAG:+"$PROGRAMS_FLAG"}
+
+      - name: Verify Linux CLI binaries
+        if: inputs.build_programs && matrix.os == 'linux'
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          bin_dir="bin/${LIB_PREFIX}${PLATFORM}"
+          for bin in "$bin_dir/ffmpeg" "$bin_dir/ffprobe"; do
+            test -x "$bin"
+            test -s "$bin"
+          done
+          test -s "$bin_dir/LICENSE"
+          test -s "$bin_dir/NOTICE.txt"
+
+          if [ "$VARIANT" = default ]; then
+            grep -q 'GNU GENERAL PUBLIC LICENSE' "$bin_dir/LICENSE"
+            grep -q 'Version 3' "$bin_dir/LICENSE"
+          elif [ "$VARIANT" = embedded ]; then
+            grep -q 'GNU LESSER GENERAL PUBLIC LICENSE' "$bin_dir/LICENSE"
+            grep -q 'Version 2.1' "$bin_dir/LICENSE"
+          else
+            echo "::error::Unexpected variant: $VARIANT"
+            exit 1
+          fi
+
+          for bin in "$bin_dir/ffmpeg" "$bin_dir/ffprobe"; do
+            echo "=== $bin ==="
+            ldd "$bin"
+
+            needed=$(readelf -d "$bin" | sed -En 's/.*\(NEEDED\).*Shared library: \[([^]]+)\].*/\1/p')
+            if [ -z "$needed" ]; then
+              echo "::error::No DT_NEEDED entries parsed from $bin"
+              exit 1
+            fi
+            while IFS= read -r lib; do
+              case "$lib" in
+                libc.so.6 | libm.so.6 | libmvec.so.1 | libpthread.so.0 | libdl.so.2 | librt.so.1 | \
+                ld-linux-x86-64.so.2 | ld-linux-aarch64.so.1)
+                  ;;
+                *)
+                  echo "::error::$bin has disallowed DT_NEEDED dependency: $lib"
+                  exit 1
+                  ;;
+              esac
+            done <<< "$needed"
+
+            versions=$(readelf --version-info "$bin" | awk '/Name:/ { for (i = 1; i <= NF; i++) if ($i == "Name:") print $(i + 1) }' | sort -u)
+            if [ -z "$versions" ]; then
+              echo "::error::No ELF symbol version entries parsed from $bin"
+              exit 1
+            fi
+            while IFS= read -r ver; do
+              if [ "$ver" = "GLIBC_ABI_DT_RELR" ]; then
+                continue
+              fi
+              if [[ "$ver" =~ ^GLIBC_([0-9]+)\.([0-9]+)(\.[0-9]+)?$ ]]; then
+                major=$((10#${BASH_REMATCH[1]}))
+                minor=$((10#${BASH_REMATCH[2]}))
+                if [ "$major" -gt 2 ] || { [ "$major" -eq 2 ] && [ "$minor" -gt 39 ]; }; then
+                  echo "::error::$bin requires disallowed glibc symbol version: $ver (max GLIBC_2.39)"
+                  exit 1
+                fi
+              else
+                echo "::error::$bin requires disallowed ELF symbol version: $ver"
+                exit 1
+              fi
+            done <<< "$versions"
+          done
+
+      - name: Verify macOS CLI binaries
+        if: inputs.build_programs && matrix.os == 'darwin'
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          bin_dir="bin/${LIB_PREFIX}${PLATFORM}"
+          for bin in "$bin_dir/ffmpeg" "$bin_dir/ffprobe"; do
+            test -x "$bin"
+            test -s "$bin"
+          done
+          test -s "$bin_dir/LICENSE"
+          test -s "$bin_dir/NOTICE.txt"
+
+          if [ "$VARIANT" = default ]; then
+            grep -q 'GNU GENERAL PUBLIC LICENSE' "$bin_dir/LICENSE"
+            grep -q 'Version 3' "$bin_dir/LICENSE"
+          elif [ "$VARIANT" = embedded ]; then
+            grep -q 'GNU LESSER GENERAL PUBLIC LICENSE' "$bin_dir/LICENSE"
+            grep -q 'Version 2.1' "$bin_dir/LICENSE"
+          else
+            echo "::error::Unexpected variant: $VARIANT"
+            exit 1
+          fi
+
+          for bin in "$bin_dir/ffmpeg" "$bin_dir/ffprobe"; do
+            echo "=== $bin ==="
+            codesign --verify --strict "$bin"
+
+            otool_out=$(otool -L "$bin")
+            printf '%s\n' "$otool_out"
+            deps=$(printf '%s\n' "$otool_out" | tail -n +2 | awk '{ print $1 }')
+            if [ -z "$deps" ]; then
+              echo "::error::No otool -L dependencies parsed from $bin"
+              exit 1
+            fi
+            while IFS= read -r dep; do
+              case "$dep" in
+                /usr/lib/* | /System/Library/Frameworks/*)
+                  ;;
+                *)
+                  echo "::error::$bin has disallowed dynamic library dependency: $dep"
+                  exit 1
+                  ;;
+              esac
+            done <<< "$deps"
+
+            vtool_out=$(vtool -show-build "$bin")
+            printf '%s\n' "$vtool_out"
+            minos_list=$(printf '%s\n' "$vtool_out" | awk '$1 == "minos" { print $2 }')
+            if [ -z "$minos_list" ]; then
+              echo "::error::No minos entry parsed from vtool -show-build for $bin"
+              exit 1
+            fi
+            while IFS= read -r minos; do
+              if [[ "$minos" =~ ^([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]]; then
+                major=$((10#${BASH_REMATCH[1]}))
+                minor=$((10#${BASH_REMATCH[2]}))
+                patch=$((10#${BASH_REMATCH[4]:-0}))
+                if [ "$major" -gt 13 ] || { [ "$major" -eq 13 ] && { [ "$minor" -gt 0 ] || [ "$patch" -gt 0 ]; }; }; then
+                  echo "::error::$bin has disallowed macOS minos: $minos (max 13.0)"
+                  exit 1
+                fi
+              else
+                echo "::error::$bin has unparseable macOS minos: $minos"
+                exit 1
+              fi
+            done <<< "$minos_list"
+          done
+
+      - name: Smoke test CLI binaries
+        if: inputs.build_programs
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          bin_dir="bin/${LIB_PREFIX}${PLATFORM}"
+          "$bin_dir/ffmpeg" -version
+          "$bin_dir/ffprobe" -version
+          "$bin_dir/ffmpeg" -hide_banner -hwaccels
+
+          if [ "$VARIANT" = default ]; then
+            codec="libx264"
+          else
+            codec="libopenh264"
+          fi
+
+          out_mp4="$RUNNER_TEMP/smoke.mp4"
+          rm -f "$out_mp4"
+          "$bin_dir/ffmpeg" -hide_banner -loglevel error -y \
+            -filter_complex "testsrc=duration=1:size=320x240:rate=25,format=yuv420p" \
+            -c:v "$codec" "$out_mp4"
+          test -s "$out_mp4"
+
+          probe=$("$bin_dir/ffprobe" -v error -select_streams v:0 \
+            -show_entries stream=codec_name,width,height,pix_fmt,nb_frames \
+            -of default=nw=1 "$out_mp4")
+          printf '%s\n' "$probe"
+          for expected in \
+            "codec_name=h264" \
+            "width=320" \
+            "height=240" \
+            "pix_fmt=yuv420p" \
+            "nb_frames=25"; do
+            if ! printf '%s\n' "$probe" | grep -Fxq "$expected"; then
+              echo "::error::ffprobe output missing expected line: $expected"
+              exit 1
+            fi
+          done
+          rm -f "$out_mp4"
 
       - name: Build Go packages
         if: inputs.test
@@ -141,9 +343,6 @@ jobs:
         run: go test -v ./...
 
       - name: Create tarball
-        env:
-          PLATFORM: ${{ matrix.os }}_${{ matrix.arch }}
-          ASSET_PLATFORM: ${{ matrix.os }}-${{ matrix.arch }}
         run: |
           archive="ffmpeg-${ASSET_PREFIX}${ASSET_PLATFORM}.tar.gz"
           payload="${LIB_PREFIX}${PLATFORM}/libffmpeg.a"
@@ -155,7 +354,49 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ffmpeg-${{ matrix.variant }}-${{ matrix.os }}-${{ matrix.arch }}
-          path: ffmpeg-*.tar.gz
+          path: ffmpeg-${{ env.ASSET_PREFIX }}${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Create CLI archive
+        if: inputs.build_programs
+        run: |
+          set -euo pipefail
+          bin_dir="bin/${LIB_PREFIX}${PLATFORM}"
+          stem="ffmpeg-bin-${ASSET_PREFIX}${ASSET_PLATFORM}"
+          archive="${stem}.tar.gz"
+          stage_root="$RUNNER_TEMP/cli-stage"
+
+          rm -rf "$stage_root" "$archive"
+          mkdir -p "$stage_root/$stem"
+          cp "$bin_dir/ffmpeg" "$bin_dir/ffprobe" \
+            "$bin_dir/LICENSE" "$bin_dir/NOTICE.txt" "$stage_root/$stem/"
+          chmod 0755 "$stage_root/$stem/ffmpeg" "$stage_root/$stem/ffprobe"
+          chmod 0644 "$stage_root/$stem/LICENSE" "$stage_root/$stem/NOTICE.txt"
+
+          COPYFILE_DISABLE=1 tar -czf "$archive" -C "$stage_root" \
+            "$stem/ffmpeg" "$stem/ffprobe" "$stem/LICENSE" "$stem/NOTICE.txt"
+          test -s "$archive"
+
+          actual=$(tar -tzf "$archive" | LC_ALL=C sort)
+          expected=$(printf '%s\n' \
+            "$stem/LICENSE" \
+            "$stem/NOTICE.txt" \
+            "$stem/ffmpeg" \
+            "$stem/ffprobe")
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::Unexpected archive entries in $archive:"
+            printf '%s\n' "$actual"
+            exit 1
+          fi
+          rm -rf "$stage_root"
+
+      - name: Upload CLI artifact
+        if: inputs.build_programs
+        uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-bin-${{ matrix.variant }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: ffmpeg-bin-${{ env.ASSET_PREFIX }}${{ matrix.os }}-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           retention-days: 1
 
@@ -233,6 +474,8 @@ jobs:
       CGO_ENABLED: "1"
       GOFLAGS: ${{ matrix.variant == 'embedded' && '-tags=embedded' || '' }}
       BUILDER_FLAGS: ${{ matrix.variant == 'embedded' && '--embedded' || '' }}
+      PROGRAMS_FLAG: ${{ inputs.build_programs && '--programs' || '' }}
+      FFMPEG_RELEASE_TAG: ${{ inputs.release_tag }}
       LIB_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded/' || '' }}
       ASSET_PREFIX: ${{ matrix.variant == 'embedded' && 'embedded-' || '' }}
       BUILD_ROOT: ${{ matrix.build-root }}
@@ -392,7 +635,8 @@ jobs:
           PATH="$MINGW_BIN:$go_bin:$PATH"
           export PATH
           go run ./internal/builder/ \
-            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} ffmpeg --clean
+            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} \
+            ${PROGRAMS_FLAG:+"$PROGRAMS_FLAG"} ffmpeg --clean
 
       - name: Build FFmpeg library
         env:
@@ -406,7 +650,9 @@ jobs:
             PATH="$rust_bin:$PATH"
           fi
           export PATH
-          go run ./internal/builder/ ${BUILDER_FLAGS:+"$BUILDER_FLAGS"}
+          go run ./internal/builder/ \
+            ${BUILDER_FLAGS:+"$BUILDER_FLAGS"} \
+            ${PROGRAMS_FLAG:+"$PROGRAMS_FLAG"}
 
       - name: Validate archive
         run: |
@@ -433,6 +679,127 @@ jobs:
             }
           '
           df -h .
+
+      - name: Verify Windows CLI binary DLLs
+        if: inputs.build_programs
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          go_bin_dir="$(cygpath -u "$GO_BIN")"
+          PATH="$MINGW_BIN:$go_bin_dir:$PATH"
+          export PATH
+          bin_dir="bin/${LIB_PREFIX}windows_${GOARCH}"
+
+          for bin in "$bin_dir/ffmpeg.exe" "$bin_dir/ffprobe.exe"; do
+            test -s "$bin"
+          done
+          test -s "$bin_dir/LICENSE"
+          test -s "$bin_dir/NOTICE.txt"
+
+          if [ "$VARIANT" = default ]; then
+            grep -q 'GNU GENERAL PUBLIC LICENSE' "$bin_dir/LICENSE"
+            grep -q 'Version 3' "$bin_dir/LICENSE"
+          elif [ "$VARIANT" = embedded ]; then
+            grep -q 'GNU LESSER GENERAL PUBLIC LICENSE' "$bin_dir/LICENSE"
+            grep -q 'Version 2.1' "$bin_dir/LICENSE"
+          else
+            echo "::error::Unexpected variant: $VARIANT"
+            exit 1
+          fi
+
+          for bin in "$bin_dir/ffmpeg.exe" "$bin_dir/ffprobe.exe"; do
+            echo "=== $bin ==="
+            dlls=$(objdump -p "$bin" | awk '/DLL Name:/ { sub(/\r$/, "", $3); print tolower($3) }' | sort -u)
+            printf '%s\n' "$dlls"
+            if [ -z "$dlls" ]; then
+              echo "::error::No DLL imports parsed from $bin"
+              exit 1
+            fi
+            while IFS= read -r dll; do
+              case "$dll" in
+                advapi32.dll | avicap32.dll | bcrypt.dll | crypt32.dll | gdi32.dll | iphlpapi.dll | \
+                kernel32.dll | mfplat.dll | mfuuid.dll | msvfw32.dll | ntdll.dll | ole32.dll | \
+                oleaut32.dll | psapi.dll | secur32.dll | shell32.dll | shlwapi.dll | strmiids.dll | \
+                user32.dll | userenv.dll | vfw32.dll | winmm.dll | ws2_32.dll | \
+                api-ms-win-core-synch-l1-2-0.dll)
+                  ;;
+                ucrtbase.dll | api-ms-win-crt-*.dll)
+                  if [ "$GOARCH" != amd64 ]; then
+                    echo "::error::$bin ($GOARCH) imports UCRT DLL disallowed on $GOARCH: $dll"
+                    exit 1
+                  fi
+                  ;;
+                msvcrt.dll)
+                  if [ "$GOARCH" != 386 ]; then
+                    echo "::error::$bin ($GOARCH) imports msvcrt.dll disallowed on $GOARCH: $dll"
+                    exit 1
+                  fi
+                  ;;
+                *)
+                  echo "::error::$bin has disallowed DLL dependency: $dll"
+                  exit 1
+                  ;;
+              esac
+            done <<< "$dlls"
+          done
+
+      - name: Smoke test Windows CLI binaries
+        if: inputs.build_programs
+        shell: pwsh
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $env:PATH = 'C:\Windows\System32;C:\Windows'
+
+          $libSubdir = if ($env:LIB_PREFIX) {
+            Join-Path ($env:LIB_PREFIX.TrimEnd('/')) "windows_$($env:GOARCH)"
+          } else {
+            "windows_$($env:GOARCH)"
+          }
+          $binDir = Join-Path 'bin' $libSubdir
+          $ffmpeg = Join-Path $binDir 'ffmpeg.exe'
+          $ffprobe = Join-Path $binDir 'ffprobe.exe'
+
+          & $ffmpeg -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $ffprobe -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $codec = if ($env:VARIANT -eq 'default') { 'libx264' } else { 'libopenh264' }
+          $outMp4 = Join-Path $env:RUNNER_TEMP 'smoke.mp4'
+          Remove-Item -Force -ErrorAction SilentlyContinue $outMp4
+
+          & $ffmpeg -hide_banner -loglevel error -y `
+            -filter_complex 'testsrc=duration=1:size=320x240:rate=25,format=yuv420p' `
+            -c:v $codec $outMp4
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path $outMp4) -or (Get-Item $outMp4).Length -le 0) {
+            throw "Expected non-empty smoke test output at $outMp4"
+          }
+
+          $probe = & $ffprobe -v error -select_streams v:0 `
+            -show_entries stream=codec_name,width,height,pix_fmt,nb_frames `
+            -of default=nw=1 $outMp4
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $probe | ForEach-Object { Write-Host $_ }
+
+          $probeLines = @($probe | ForEach-Object { $_.Trim() })
+          $expected = @(
+            'codec_name=h264',
+            'width=320',
+            'height=240',
+            'pix_fmt=yuv420p',
+            'nb_frames=25'
+          )
+          foreach ($line in $expected) {
+            if ($probeLines -cnotcontains $line) {
+              throw "ffprobe output missing expected line: $line"
+            }
+          }
+          Remove-Item -Force $outMp4
 
       - name: Build Go packages
         if: inputs.test
@@ -465,6 +832,76 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ffmpeg-${{ matrix.variant }}-windows-${{ matrix.arch }}
-          path: ffmpeg-*.tar.gz
+          path: ffmpeg-${{ env.ASSET_PREFIX }}windows-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Create CLI archive
+        if: inputs.build_programs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $libSubdir = if ($env:LIB_PREFIX) {
+            Join-Path ($env:LIB_PREFIX.TrimEnd('/')) "windows_$($env:GOARCH)"
+          } else {
+            "windows_$($env:GOARCH)"
+          }
+          $binDir = Join-Path 'bin' $libSubdir
+          $stem = "ffmpeg-bin-$($env:ASSET_PREFIX)windows-$($env:GOARCH)"
+          $archive = "$stem.zip"
+          $stageRoot = Join-Path $env:RUNNER_TEMP 'cli-stage'
+          $stageDir = Join-Path $stageRoot $stem
+
+          Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $stageRoot
+          Remove-Item -Force -ErrorAction SilentlyContinue $archive
+          New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+
+          foreach ($file in @('ffmpeg.exe', 'ffprobe.exe', 'LICENSE', 'NOTICE.txt')) {
+            Copy-Item -Path (Join-Path $binDir $file) -Destination (Join-Path $stageDir $file)
+          }
+
+          Compress-Archive -Path $stageDir -DestinationPath $archive -CompressionLevel Optimal
+          if (-not (Test-Path $archive) -or (Get-Item $archive).Length -le 0) {
+            throw "Expected non-empty archive at $archive"
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $archive).Path)
+          try {
+            foreach ($entry in $zip.Entries) {
+              if ($entry.FullName.Contains('\')) {
+                throw "Archive entry contains backslash separator: $($entry.FullName)"
+              }
+            }
+            $fileEntries = @($zip.Entries | Where-Object {
+              -not $_.FullName.EndsWith('/') -and -not $_.FullName.EndsWith('\')
+            })
+            foreach ($entry in $fileEntries) {
+              if ($entry.Length -le 0) {
+                throw "Archive entry is empty: $($entry.FullName)"
+              }
+            }
+            $actual = @($fileEntries | ForEach-Object { $_.FullName } | Sort-Object -CaseSensitive)
+            $expected = @(
+              "$stem/LICENSE",
+              "$stem/NOTICE.txt",
+              "$stem/ffmpeg.exe",
+              "$stem/ffprobe.exe"
+            ) | Sort-Object -CaseSensitive
+            if (($actual -join "`n") -cne ($expected -join "`n")) {
+              throw "Unexpected archive entries in ${archive}:`n$($actual -join "`n")"
+            }
+          } finally {
+            $zip.Dispose()
+          }
+
+          Remove-Item -Recurse -Force $stageRoot
+
+      - name: Upload CLI artifact
+        if: inputs.build_programs
+        uses: actions/upload-artifact@v7
+        with:
+          name: ffmpeg-bin-${{ matrix.variant }}-windows-${{ matrix.arch }}
+          path: ffmpeg-bin-${{ env.ASSET_PREFIX }}windows-${{ matrix.arch }}.zip
           if-no-files-found: error
           retention-days: 1

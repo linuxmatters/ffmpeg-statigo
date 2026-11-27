@@ -138,7 +138,7 @@ func TestRav1eWindowsInstallCommand(t *testing.T) {
 	for _, tc := range []struct {
 		arch, target, host, flags string
 	}{
-		{"amd64", "x86_64-pc-windows-gnu", "x86_64-w64-mingw32", "-C target-cpu=x86-64-v3 -C link-self-contained=no"},
+		{"amd64", "x86_64-pc-windows-gnu", "x86_64-w64-mingw32", "-C link-self-contained=no"},
 		{"386", "i686-pc-windows-gnu", "i686-w64-mingw32", "-C link-self-contained=no"},
 	} {
 		t.Run(tc.arch, func(t *testing.T) {
@@ -167,11 +167,8 @@ func TestRav1eNonWindowsInstallCommand(t *testing.T) {
 			args, env := rav1eInstallCommand(targetOS, arch, "/stage", "-isysroot /sdk")
 			wantArgs := []string{"cinstall", "--prefix=/stage", "--libdir=lib", "--library-type=staticlib", "--crt-static", "--release", "--no-default-features", "--features=asm,threading"}
 			flags := ""
-			if arch == "amd64" {
-				flags = "-C target-cpu=x86-64-v3"
-			}
 			if targetOS == "darwin" {
-				flags += " -C link-arg=-L" + filepath.Join("/sdk", "usr", "lib")
+				flags = "-C link-arg=-L" + filepath.Join("/sdk", "usr", "lib")
 			}
 			wantEnv := []string{"RUSTFLAGS=" + flags, "CARGO_PROFILE_RELEASE_DEBUG=false"}
 			if !slices.Equal(args, wantArgs) || !slices.Equal(env, wantEnv) {

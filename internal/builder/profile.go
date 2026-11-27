@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -27,11 +30,31 @@ func profilePaths(embedded bool, targetOS, arch string) (buildRoot, output strin
 	return buildRoot, output, nil
 }
 
+func programsOutputDir(embedded bool, targetOS, arch string) (string, error) {
+	output := "bin"
+	if embedded {
+		output = filepath.Join(output, "embedded")
+	}
+	output, err := filepath.Abs(filepath.Join(output, targetOS+"_"+arch))
+	if err != nil {
+		return "", fmt.Errorf("get absolute path for programs output: %w", err)
+	}
+	return output, nil
+}
+
 func librariesForProfile(embedded bool, stagingDir string) []*Library {
-	return librariesForPlatform(embedded, stagingDir, runtime.GOOS, runtime.GOARCH)
+	return librariesForProfileWithPrograms(embedded, false, stagingDir)
+}
+
+func librariesForProfileWithPrograms(embedded, programs bool, stagingDir string) []*Library {
+	return librariesForPlatformWithPrograms(embedded, programs, stagingDir, runtime.GOOS, runtime.GOARCH)
 }
 
 func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*Library {
+	return librariesForPlatformWithPrograms(embedded, false, stagingDir, targetOS, arch)
+}
+
+func librariesForPlatformWithPrograms(embedded, programs bool, stagingDir, targetOS, arch string) []*Library {
 	windowsNative := targetOS == "windows" && (arch == "amd64" || arch == "386")
 	configuredLibraries := make(map[*Library]*Library)
 	var libs []*Library
@@ -73,7 +96,7 @@ func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*L
 	configuredFFmpeg := *ffmpeg
 	configuredFFmpeg.Dependencies = slices.Clone(libs)
 	configuredFFmpeg.ConfigureArgs = func(targetOS string) []string {
-		args := ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir, embedded)
+		args := ffmpegConfigureArgsWithPrograms(targetOS, arch, stagingDir, embedded, programs)
 		for _, lib := range configuredFFmpeg.Dependencies {
 			if lib.Enabled != nil && !*lib.Enabled {
 				continue
@@ -90,14 +113,65 @@ func librariesForPlatform(embedded bool, stagingDir, targetOS, arch string) []*L
 		}
 		return args
 	}
+	if programs {
+		configuredFFmpeg.Binaries = []string{"ffmpeg", "ffprobe"}
+		basePostExtract := ffmpeg.PostExtract
+		configuredFFmpeg.PostExtract = func(ctx context.Context, srcPath string) error {
+			if basePostExtract != nil {
+				if err := basePostExtract(ctx, srcPath); err != nil {
+					return err
+				}
+			}
+			if err := stageFFmpegLicenses(srcPath, stagingDir); err != nil {
+				return err
+			}
+			switch targetOS {
+			case "linux", "windows":
+				if err := scrubProgramPkgConfig(stagingDir); err != nil {
+					return err
+				}
+			case "darwin":
+				if err := pruneStagingDylibs(stagingDir); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 	return append(libs, &configuredFFmpeg)
 }
 
+func stageFFmpegLicenses(srcPath, stagingDir string) error {
+	destDir := filepath.Join(stagingDir, "share", "ffmpeg")
+	for _, name := range []string{"COPYING.GPLv3", "COPYING.LGPLv2.1"} {
+		src := filepath.Join(srcPath, name)
+		data, err := os.ReadFile(src) //nolint:gosec // G304: fixed license filename under the local extracted FFmpeg source directory
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("read %s: %w", src, err)
+		}
+		if err := os.MkdirAll(destDir, 0o755); err != nil {
+			return fmt.Errorf("create %s: %w", destDir, err)
+		}
+		dest := filepath.Join(destDir, name)
+		if err := os.WriteFile(dest, data, 0o644); err != nil { //nolint:gosec // G703: fixed license filename under the local staging directory
+			return fmt.Errorf("write %s: %w", dest, err)
+		}
+	}
+	return nil
+}
+
 func ffmpegConfigureArgs(targetOS, stagingDir string, embedded bool) []string {
-	return ffmpegConfigureArgsForPlatform(targetOS, runtime.GOARCH, stagingDir, embedded)
+	return ffmpegConfigureArgsWithPrograms(targetOS, runtime.GOARCH, stagingDir, embedded, false)
 }
 
 func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded bool) []string {
+	return ffmpegConfigureArgsWithPrograms(targetOS, arch, stagingDir, embedded, false)
+}
+
+func ffmpegConfigureArgsWithPrograms(targetOS, arch, stagingDir string, embedded, programs bool) []string {
 	incDir, libDir := filepath.Join(stagingDir, "include"), filepath.Join(stagingDir, "lib")
 	windowsNative := targetOS == "windows" && (arch == "amd64" || arch == "386")
 	if windowsNative {
@@ -111,6 +185,9 @@ func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded 
 	if targetOS == "darwin" {
 		args = append(args, "--cc=clang", "--cxx=clang++")
 	}
+	if programs && targetOS == "linux" {
+		args = append(args, "--extra-ldexeflags=-static-libstdc++ -static-libgcc")
+	}
 	if windowsNative {
 		ffmpegArch := "x86_64"
 		if arch == "386" {
@@ -118,7 +195,10 @@ func ffmpegConfigureArgsForPlatform(targetOS, arch, stagingDir string, embedded 
 			// GCC 16 on Win32 can enter with a 4-byte stack; swscale needs 16-byte alignment.
 			args = append(args, "--extra-cflags=-mpreferred-stack-boundary=4", "--extra-cflags=-mstackrealign")
 		}
+		if programs {
+			args = append(args, "--extra-ldexeflags=-static -static-libgcc -static-libstdc++")
+		}
 		args = append(args, "--target-os=mingw32", "--arch="+ffmpegArch)
 	}
-	return append(args, ffmpegArgsCommon(targetOS, embedded)...)
+	return append(args, ffmpegArgsCommonWithPrograms(targetOS, embedded, programs)...)
 }

@@ -400,6 +400,10 @@ func FFmpegArgsCommon(os string) []string {
 }
 
 func ffmpegArgsCommon(os string, embedded bool) []string {
+	return ffmpegArgsCommonWithPrograms(os, embedded, false)
+}
+
+func ffmpegArgsCommonWithPrograms(os string, embedded, programs bool) []string {
 	args := []string{"--enable-pic"}
 	if !embedded {
 		args = append(args, "--enable-gpl", "--enable-version3")
@@ -412,7 +416,17 @@ func ffmpegArgsCommon(os string, embedded bool) []string {
 		"--disable-htmlpages",
 		"--disable-manpages",
 		"--disable-podpages",
-		"--disable-programs",
+	)
+	if programs {
+		args = append(args,
+			"--enable-ffmpeg",
+			"--enable-ffprobe",
+			"--disable-ffplay",
+		)
+	} else {
+		args = append(args, "--disable-programs")
+	}
+	args = append(args,
 		"--disable-txtpages",
 		"--disable-everything",
 		"--enable-filters",
