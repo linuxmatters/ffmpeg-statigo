@@ -125,8 +125,13 @@ func librariesForPlatformWithPrograms(embedded, programs bool, stagingDir, targe
 			if err := stageFFmpegLicenses(srcPath, stagingDir); err != nil {
 				return err
 			}
-			if targetOS == "linux" {
-				if err := scrubLinuxPkgConfig(stagingDir); err != nil {
+			switch targetOS {
+			case "linux", "windows":
+				if err := scrubProgramPkgConfig(stagingDir); err != nil {
+					return err
+				}
+			case "darwin":
+				if err := pruneStagingDylibs(stagingDir); err != nil {
 					return err
 				}
 			}

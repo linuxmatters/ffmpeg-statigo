@@ -355,16 +355,123 @@ func TestScrubPkgConfigDir(t *testing.T) {
 		}
 	})
 
-	t.Run("FFmpeg PostExtract scrubs pkgconfig and caches licenses", func(t *testing.T) {
+	for _, target := range []struct {
+		targetOS string
+		arch     string
+	}{
+		{targetOS: "linux", arch: "amd64"},
+		{targetOS: "windows", arch: "amd64"},
+	} {
+		t.Run("FFmpeg PostExtract scrubs pkgconfig and caches licenses on "+target.targetOS+"/"+target.arch, func(t *testing.T) {
+			root := t.TempDir()
+			stage := filepath.Join(root, "staging")
+			pcDir := filepath.Join(stage, "lib", "pkgconfig")
+			if err := os.MkdirAll(pcDir, 0o755); err != nil {
+				t.Fatalf("mkdir pkgconfig: %v", err)
+			}
+			pcFile := filepath.Join(pcDir, "x265.pc")
+			if err := os.WriteFile(pcFile, []byte("Name: x265\nLibs: -lx265\nLibs.private: -lstdc++ -lgcc_s -lgcc\n"), 0o644); err != nil {
+				t.Fatalf("write x265.pc: %v", err)
+			}
+
+			srcPath := filepath.Join(root, "src", "ffmpeg")
+			if err := os.MkdirAll(filepath.Join(srcPath, "libavformat"), 0o755); err != nil {
+				t.Fatalf("mkdir libavformat: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(srcPath, "libavformat", "tls_openssl.c"), []byte("X509_gmtime_adj(X509_get_notBefore(*cert), 0);\n"), 0o644); err != nil {
+				t.Fatalf("write tls_openssl.c: %v", err)
+			}
+			const (
+				gplText  = "GNU GENERAL PUBLIC LICENSE Version 3 fixture\n"
+				lgplText = "GNU LESSER GENERAL PUBLIC LICENSE Version 2.1 fixture\n"
+			)
+			if err := os.WriteFile(filepath.Join(srcPath, "COPYING.GPLv3"), []byte(gplText), 0o644); err != nil {
+				t.Fatalf("write COPYING.GPLv3: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(srcPath, "COPYING.LGPLv2.1"), []byte(lgplText), 0o644); err != nil {
+				t.Fatalf("write COPYING.LGPLv2.1: %v", err)
+			}
+
+			libs := librariesForPlatformWithPrograms(false, true, stage, target.targetOS, target.arch)
+			configuredFFmpeg := libs[len(libs)-1]
+			if configuredFFmpeg.PostExtract == nil {
+				t.Fatal("FFmpeg PostExtract is nil")
+			}
+			if err := configuredFFmpeg.PostExtract(t.Context(), srcPath); err != nil {
+				t.Fatalf("PostExtract() error = %v", err)
+			}
+
+			gotPC, err := os.ReadFile(pcFile)
+			if err != nil {
+				t.Fatalf("read scrubbed x265.pc: %v", err)
+			}
+			wantPC := "Name: x265\nLibs: -lx265\nLibs.private: -lstdc++ -lgcc\n"
+			if string(gotPC) != wantPC {
+				t.Errorf("x265.pc = %q, want %q", string(gotPC), wantPC)
+			}
+
+			for name, want := range map[string]string{
+				"COPYING.GPLv3":    gplText,
+				"COPYING.LGPLv2.1": lgplText,
+			} {
+				cached := filepath.Join(stage, "share", "ffmpeg", name)
+				got, err := os.ReadFile(cached)
+				if err != nil {
+					t.Fatalf("read cached %s: %v", name, err)
+				}
+				if string(got) != want {
+					t.Errorf("cached %s = %q, want %q", name, string(got), want)
+				}
+			}
+		})
+	}
+}
+
+func TestLibiconvDisableShared(t *testing.T) {
+	args := libiconv.ConfigureArgs("darwin")
+	if !slices.Contains(args, "--enable-static") {
+		t.Errorf("libiconv.ConfigureArgs(darwin) = %v, missing --enable-static", args)
+	}
+	if !slices.Contains(args, "--disable-shared") {
+		t.Errorf("libiconv.ConfigureArgs(darwin) = %v, missing --disable-shared", args)
+	}
+}
+
+func TestPruneStagingDylibs(t *testing.T) {
+	t.Run("missing lib directory succeeds", func(t *testing.T) {
+		absent := filepath.Join(t.TempDir(), "does-not-exist")
+		if err := pruneStagingDylibs(absent); err != nil {
+			t.Errorf("pruneStagingDylibs(absent) error = %v, want nil", err)
+		}
+	})
+
+	t.Run("darwin FFmpeg PostExtract removes stale dylibs and preserves static archives", func(t *testing.T) {
 		root := t.TempDir()
 		stage := filepath.Join(root, "staging")
-		pcDir := filepath.Join(stage, "lib", "pkgconfig")
-		if err := os.MkdirAll(pcDir, 0o755); err != nil {
-			t.Fatalf("mkdir pkgconfig: %v", err)
+		libDir := filepath.Join(stage, "lib")
+		if err := os.MkdirAll(libDir, 0o755); err != nil {
+			t.Fatalf("mkdir staging/lib: %v", err)
 		}
-		pcFile := filepath.Join(pcDir, "x265.pc")
-		if err := os.WriteFile(pcFile, []byte("Name: x265\nLibs: -lx265\nLibs.private: -lstdc++ -lgcc_s -lgcc\n"), 0o644); err != nil {
-			t.Fatalf("write x265.pc: %v", err)
+
+		regularDylib := filepath.Join(libDir, "libiconv.2.dylib")
+		if err := os.WriteFile(regularDylib, []byte("macho"), 0o644); err != nil {
+			t.Fatalf("write libiconv.2.dylib: %v", err)
+		}
+		symlinkDylib := filepath.Join(libDir, "libiconv.dylib")
+		if err := os.Symlink("libiconv.2.dylib", symlinkDylib); err != nil {
+			t.Fatalf("symlink libiconv.dylib: %v", err)
+		}
+		danglingDylib := filepath.Join(libDir, "libstale.dylib")
+		if err := os.Symlink("missing.dylib", danglingDylib); err != nil {
+			t.Fatalf("symlink libstale.dylib: %v", err)
+		}
+		staticArchive := filepath.Join(libDir, "libiconv.a")
+		if err := os.WriteFile(staticArchive, []byte("!<arch>\n"), 0o644); err != nil {
+			t.Fatalf("write libiconv.a: %v", err)
+		}
+		subdir := filepath.Join(libDir, "nested.dylib")
+		if err := os.MkdirAll(subdir, 0o755); err != nil {
+			t.Fatalf("mkdir nested.dylib: %v", err)
 		}
 
 		srcPath := filepath.Join(root, "src", "ffmpeg")
@@ -374,18 +481,8 @@ func TestScrubPkgConfigDir(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(srcPath, "libavformat", "tls_openssl.c"), []byte("X509_gmtime_adj(X509_get_notBefore(*cert), 0);\n"), 0o644); err != nil {
 			t.Fatalf("write tls_openssl.c: %v", err)
 		}
-		const (
-			gplText  = "GNU GENERAL PUBLIC LICENSE Version 3 fixture\n"
-			lgplText = "GNU LESSER GENERAL PUBLIC LICENSE Version 2.1 fixture\n"
-		)
-		if err := os.WriteFile(filepath.Join(srcPath, "COPYING.GPLv3"), []byte(gplText), 0o644); err != nil {
-			t.Fatalf("write COPYING.GPLv3: %v", err)
-		}
-		if err := os.WriteFile(filepath.Join(srcPath, "COPYING.LGPLv2.1"), []byte(lgplText), 0o644); err != nil {
-			t.Fatalf("write COPYING.LGPLv2.1: %v", err)
-		}
 
-		libs := librariesForPlatformWithPrograms(false, true, stage, "linux", "amd64")
+		libs := librariesForPlatformWithPrograms(false, true, stage, "darwin", "arm64")
 		configuredFFmpeg := libs[len(libs)-1]
 		if configuredFFmpeg.PostExtract == nil {
 			t.Fatal("FFmpeg PostExtract is nil")
@@ -394,27 +491,16 @@ func TestScrubPkgConfigDir(t *testing.T) {
 			t.Fatalf("PostExtract() error = %v", err)
 		}
 
-		gotPC, err := os.ReadFile(pcFile)
-		if err != nil {
-			t.Fatalf("read scrubbed x265.pc: %v", err)
-		}
-		wantPC := "Name: x265\nLibs: -lx265\nLibs.private: -lstdc++ -lgcc\n"
-		if string(gotPC) != wantPC {
-			t.Errorf("x265.pc = %q, want %q", string(gotPC), wantPC)
-		}
-
-		for name, want := range map[string]string{
-			"COPYING.GPLv3":    gplText,
-			"COPYING.LGPLv2.1": lgplText,
-		} {
-			cached := filepath.Join(stage, "share", "ffmpeg", name)
-			got, err := os.ReadFile(cached)
-			if err != nil {
-				t.Fatalf("read cached %s: %v", name, err)
+		for _, removed := range []string{regularDylib, symlinkDylib, danglingDylib} {
+			if _, err := os.Lstat(removed); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("%s still exists (err = %v), want removed", filepath.Base(removed), err)
 			}
-			if string(got) != want {
-				t.Errorf("cached %s = %q, want %q", name, string(got), want)
-			}
+		}
+		if got, err := os.ReadFile(staticArchive); err != nil || string(got) != "!<arch>\n" {
+			t.Errorf("libiconv.a = %q (err = %v), want preserved", string(got), err)
+		}
+		if info, err := os.Stat(subdir); err != nil || !info.IsDir() {
+			t.Errorf("nested.dylib directory err = %v, want preserved", err)
 		}
 	})
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -196,6 +197,7 @@ var libiconv = &Library{
 			"--disable-debug",
 			"--enable-extra-encodings",
 			"--enable-static",
+			"--disable-shared",
 		}
 	},
 	LinkLibs: []string{"libiconv"},
@@ -900,8 +902,38 @@ func touchAutomakeFiles(srcPath string) error {
 	})
 }
 
-// scrubLinuxPkgConfig removes dynamic -lgcc_s flags from staged Linux pkg-config files.
-func scrubLinuxPkgConfig(stagingDir string) error {
+// pruneStagingDylibs removes any regular *.dylib files or symlinks directly
+// under stagingDir/lib so cached CI staging directories cannot cause dynamic
+// linking when building static macOS binaries.
+func pruneStagingDylibs(stagingDir string) error {
+	libDir := filepath.Join(stagingDir, "lib")
+	entries, err := os.ReadDir(libDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("read staging lib directory %s: %w", libDir, err)
+	}
+
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".dylib") {
+			continue
+		}
+		typ := entry.Type()
+		if !typ.IsRegular() && typ&os.ModeSymlink == 0 {
+			continue
+		}
+		path := filepath.Join(libDir, entry.Name())
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove %s: %w", path, err)
+		}
+	}
+
+	return nil
+}
+
+// scrubProgramPkgConfig removes dynamic -lgcc_s flags from staged pkg-config files.
+func scrubProgramPkgConfig(stagingDir string) error {
 	return scrubPkgConfigDir(pkgConfigPath(stagingDir))
 }
 
