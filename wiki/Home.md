@@ -1,6 +1,6 @@
 # FFmpeg Statigo Wiki
 
-`ffmpeg-statigo` provides static FFmpeg 8.1.2 C library bindings for Go and standalone static `ffmpeg` and `ffprobe` binaries for Linux, macOS, and Windows.
+`ffmpeg-statigo` provides static FFmpeg 8.1.3 C library bindings for Go and standalone static `ffmpeg` and `ffprobe` binaries for Linux, macOS, and Windows.
 
 ## Users
 

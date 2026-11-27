@@ -19,10 +19,10 @@ import (
 )
 
 // Version is the FFmpeg library version (major.minor.patch).
-const Version = "8.1.2"
+const Version = "8.1.3"
 
 // LibRelease is the exact GitHub Release tag for the pre-built static libraries.
-const LibRelease = "lib-8.1.2.1"
+const LibRelease = "lib-8.1.3.0"
 
 // DownloadLibs downloads the FFmpeg static libraries for the current platform
 func DownloadLibs() error {
