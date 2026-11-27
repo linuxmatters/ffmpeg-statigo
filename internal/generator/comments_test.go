@@ -371,8 +371,8 @@ func TestCommentTableTotals(t *testing.T) {
 	root := commentHeaderRoot(t)
 
 	const (
-		wantRaw      = 3883
-		wantEntries  = 3863
+		wantRaw      = 3884
+		wantEntries  = 3864
 		wantRuns     = 20
 		wantAbsorbed = 20
 		wantTrailing = 1020

@@ -46,6 +46,12 @@ import (
 //     against Homebrew/homebrew-core plus void-linux/void-packages (libsrt,
 //     libvpx, dav1d), msys2/MINGW-packages (libsrt, openh264, libvpx), and
 //     macports/macports-ports (openh264).
+//   - ffmpeg n8.1.3: GitHub tag archive verified by two independent fetches
+//     and full extracted tree diff against the GPG-signed official ffmpeg.org
+//     ffmpeg-8.1.3.tar.xz release (good signature from FFmpeg release signing
+//     key), whose digest matches Homebrew/homebrew-core (ffmpeg@8),
+//     macports/macports-ports (ffmpeg8), and gentoo/gentoo Manifest (size,
+//     BLAKE2B, and SHA-512).
 //   - All other entries: TOFU-seeded by `--update-digests` in an automated
 //     environment. A maintainer should independently re-verify each before
 //     relying on it. Several upstreams (videolan/gitlab on-demand tarballs,
@@ -59,7 +65,7 @@ var archiveDigests = map[string]string{
 	"https://downloads.sourceforge.net/project/lame/lame/4.0/lame-4.0.tar.gz":                                                                          "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
 	"https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz":                                                                                       "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1",
 	"https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.1.tar.gz":                                                                                      "9a06844846d664d7122161700c10a64480d7c7bcead3091925a785b38c91edab",
-	"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.2.tar.gz":                                                                                 "9fd092511605bbebafe095ea6d38d9e40f34d12f7386e1258372df8be0576eb7",
+	"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.3.tar.gz":                                                                                 "09f990289327d3ebfedf4fc15cae3f884a65dab7a5aac7bbb5b01ff83900efd9",
 	"https://github.com/FFmpeg/nv-codec-headers/releases/download/n13.0.19.1/nv-codec-headers-13.0.19.1.tar.gz":                                        "eab9d02d461035a4baded23d4f2e2834e5b17934820b79cea45baaf0c85383eb",
 	"https://github.com/Haivision/srt/archive/refs/tags/v1.5.7.tar.gz":                                                                                 "017cd1e437ef2073a4dd10ddf7b55e86bc3d6ebac0393d13bd22f6a57055d32b",
 	"https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.369.tar.gz":                                                                 "a63c6efc6f611e46aa83d65947398d548a718d3a32075e7b2238a930b3a42ced",

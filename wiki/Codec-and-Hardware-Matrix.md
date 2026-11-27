@@ -9,11 +9,11 @@ Reference for the bundled static libraries, hardware acceleration backends, buil
 
 ## Dependency and version matrix
 
-The `default` static build compiles FFmpeg 8.1.2 together with 20 active dependencies from `internal/builder/libraries.go`. Every source archive URL is SHA-256 pinned in `internal/builder/digests.go`.
+The `default` static build compiles FFmpeg 8.1.3 together with 20 active dependencies from `internal/builder/libraries.go`. Every source archive URL is SHA-256 pinned in `internal/builder/digests.go`.
 
 | Library | Version | Platforms | Profiles | Role |
 | --- | --- | --- | --- | --- |
-| FFmpeg | 8.1.2 | Linux, macOS, Windows | `default`, `embedded` | Core multimedia framework (`libavcodec`, `libavdevice`, `libavfilter`, `libavformat`, `libavutil`, `libswresample`, `libswscale`) |
+| FFmpeg | 8.1.3 | Linux, macOS, Windows | `default`, `embedded` | Core multimedia framework (`libavcodec`, `libavdevice`, `libavfilter`, `libavformat`, `libavutil`, `libswresample`, `libswscale`) |
 | dav1d | 1.5.5 | Linux, macOS, Windows | `default` | Fast software AV1 decoder |
 | glslang | 16.6.0 | Linux, macOS, Windows | `default` | Khronos GLSL/ESSL front end and SPIR-V compiler for Vulkan codecs and filters |
 | libdrm | 2.4.134 | Linux | `default` | Direct Rendering Manager library required by `libva` |
@@ -149,7 +149,7 @@ Shared dependencies retained in `embedded`:
 
 ## Compiled component reference
 
-The tables below come from introspection of the current `default` static build (FFmpeg 8.1.2 on Linux). Expand each section to inspect the full list.
+The tables below come from introspection of the current `default` static build (FFmpeg 8.1.3 on Linux). Expand each section to inspect the full list.
 
 | Category | Total | Breakdown |
 | --- | --- | --- |

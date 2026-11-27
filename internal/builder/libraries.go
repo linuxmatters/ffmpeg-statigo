@@ -816,7 +816,7 @@ var libsrt = &Library{
 // ffmpeg - FFmpeg multimedia framework
 var ffmpeg = &Library{
 	Name:          "ffmpeg",
-	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.2.tar.gz",
+	URL:           "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.3.tar.gz",
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // FFmpeg uses --extra-cflags and --extra-ldflags instead
 	PostExtract: func(_ context.Context, srcPath string) error {
