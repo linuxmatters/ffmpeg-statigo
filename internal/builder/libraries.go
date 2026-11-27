@@ -173,7 +173,7 @@ func buildLibraryOrder() ([]*Library, error) {
 // zlib - compression library
 var zlib = &Library{
 	Name:          "zlib",
-	URL:           "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz",
+	URL:           "https://github.com/madler/zlib/releases/download/v1.4/zlib-1.4.tar.gz",
 	FFmpegEnables: []string{"zlib"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // zlib has a custom configure script that rejects CFLAGS/LDFLAGS
@@ -206,7 +206,7 @@ var libiconv = &Library{
 // libxml2 - XML parsing library
 var libxml2 = &Library{
 	Name:          "libxml2",
-	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.3.tar.xz",
+	URL:           "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.4.tar.xz",
 	FFmpegEnables: []string{"libxml2"},
 	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -555,7 +555,7 @@ var libwebp = &Library{
 // lame - MP3 encoder
 var lame = &Library{
 	Name:          "lame",
-	URL:           "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz",
+	URL:           "https://downloads.sourceforge.net/project/lame/lame/4.0/lame-4.0.tar.gz",
 	FFmpegEnables: []string{"libmp3lame"},
 	BuildSystem:   &AutoconfBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -591,7 +591,7 @@ var opus = &Library{
 // libvpx - VP8/VP9 video codec
 var libvpx = &Library{
 	Name:          "libvpx",
-	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.16.0.tar.gz",
+	URL:           "https://github.com/webmproject/libvpx/archive/refs/tags/v1.17.0.tar.gz",
 	FFmpegEnables: []string{"libvpx"},
 	BuildSystem:   &AutoconfBuild{},
 	SkipAutoFlags: true, // vpx has a custom configure script that rejects CFLAGS/LDFLAGS
@@ -673,7 +673,7 @@ var x265 = &Library{
 // dav1d - AV1 video decoder
 var dav1d = &Library{
 	Name:          "dav1d",
-	URL:           "https://code.videolan.org/videolan/dav1d/-/archive/1.5.3/dav1d-1.5.3.tar.bz2",
+	URL:           "https://code.videolan.org/videolan/dav1d/-/archive/1.5.5/dav1d-1.5.5.tar.bz2",
 	FFmpegEnables: []string{"libdav1d"},
 	BuildSystem:   &MesonBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -728,7 +728,7 @@ var vvenc = &Library{
 // - BIO, EVP APIs
 var openssl = &Library{
 	Name:          "openssl",
-	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz",
+	URL:           "https://github.com/openssl/openssl/releases/download/openssl-3.6.5/openssl-3.6.5.tar.gz",
 	FFmpegEnables: []string{"openssl"},
 	BuildSystem:   &OpenSSLBuild{},
 	ConfigureArgs: func(os string) []string {
@@ -791,7 +791,7 @@ var openssl = &Library{
 // libsrt - Secure Reliable Transport (SRT) protocol library
 var libsrt = &Library{
 	Name:          "libsrt",
-	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.5.tar.gz",
+	URL:           "https://github.com/Haivision/srt/archive/refs/tags/v1.5.7.tar.gz",
 	FFmpegEnables: []string{"libsrt"},
 	BuildSystem:   &CMakeBuild{},
 	ConfigureArgs: func(os string) []string {

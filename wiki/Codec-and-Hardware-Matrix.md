@@ -14,30 +14,30 @@ The `default` static build compiles FFmpeg 8.1.2 together with 20 active depende
 | Library | Version | Platforms | Profiles | Role |
 | --- | --- | --- | --- | --- |
 | FFmpeg | 8.1.2 | Linux, macOS, Windows | `default`, `embedded` | Core multimedia framework (`libavcodec`, `libavdevice`, `libavfilter`, `libavformat`, `libavutil`, `libswresample`, `libswscale`) |
-| dav1d | 1.5.3 | Linux, macOS, Windows | `default` | Fast software AV1 decoder |
+| dav1d | 1.5.5 | Linux, macOS, Windows | `default` | Fast software AV1 decoder |
 | glslang | 16.3.0 | Linux, macOS, Windows | `default` | Khronos GLSL/ESSL front end and SPIR-V compiler for Vulkan codecs and filters |
 | libdrm | 2.4.134 | Linux | `default` | Direct Rendering Manager library required by `libva` |
 | libiconv | 1.19 | macOS | `default`, `embedded` | Character set conversion library |
-| libsrt | 1.5.5 | Linux, macOS, Windows | `default` | Secure Reliable Transport (SRT) streaming protocol library |
+| libsrt | 1.5.7 | Linux, macOS, Windows | `default` | Secure Reliable Transport (SRT) streaming protocol library |
 | libva | 2.24.0 | Linux | `default` | Video Acceleration API (VA-API) library and Intel QSV backend |
 | libvpl | 2.17.0 | Linux | `default` | Intel Video Processing Library (oneVPL) dispatcher for QuickSync |
-| libvpx | 1.16.0 | Linux, macOS, Windows | `default`, `embedded` | VP8 decoder and VP9 decoder/encoder (`vp8` encoder disabled) |
+| libvpx | 1.17.0 | Linux, macOS, Windows | `default`, `embedded` | VP8 decoder and VP9 decoder/encoder (`vp8` encoder disabled) |
 | libwebp | 1.6.0 | Linux, macOS, Windows | `default`, `embedded` | WebP still and animated image encoder |
-| libxml2 | 2.15.3 | Linux, macOS, Windows | `default`, `embedded` | XML parser for DASH and playlist formats |
-| mp3lame (`lame`) | 3.100 | Linux, macOS, Windows | `default`, `embedded` | MPEG Audio Layer III (MP3) encoder |
+| libxml2 | 2.15.4 | Linux, macOS, Windows | `default`, `embedded` | XML parser for DASH and playlist formats |
+| mp3lame (`lame`) | 4.0 | Linux, macOS, Windows | `default`, `embedded` | MPEG Audio Layer III (MP3) encoder |
 | nv-codec-headers | 13.0.19.0 | Linux | `default` | NVIDIA Video Codec SDK headers for NVENC and NVDEC |
-| openssl | 3.6.3 | Linux, macOS, Windows | `default` | TLS 1.2/1.3 and DTLS 1.2 for HTTPS, RTMPS, and SRT |
+| openssl | 3.6.5 | Linux, macOS, Windows | `default` | TLS 1.2/1.3 and DTLS 1.2 for HTTPS, RTMPS, and SRT |
 | opus | 1.6.1 | Linux, macOS, Windows | `default`, `embedded` | Royalty-free Opus audio codec |
 | rav1e | 0.8.1 | Linux, macOS, Windows | `default` | Software AV1 encoder |
 | Vulkan-Headers | 1.4.356 | Linux, macOS, Windows | `default` | Vulkan API headers and registry |
 | x264 | head (`0480cb05fa18`) | Linux, macOS, Windows | `default` | GPL software H.264/AVC encoder |
 | x265 | 4.2 | Linux, macOS, Windows | `default` | GPL software H.265/HEVC encoder |
 | zimg | 3.0.6 | Linux, macOS, Windows | `default`, `embedded` | High-precision scaling, colours, and dithering (`zscale` filter) |
-| zlib | 1.3.2 | Linux, macOS, Windows | `default`, `embedded` | Compression library |
+| zlib | 1.4 | Linux, macOS, Windows | `default`, `embedded` | Compression library |
 
 Two additional library definitions exist in `internal/builder/`:
 
-- **OpenH264 2.6.0** (`internal/builder/openh264.go`): Built only in the `embedded` profile on Linux, macOS, and Windows to provide software H.264 encoding without GPL flags.
+- **OpenH264 2.7.0** (`internal/builder/openh264.go`): Built only in the `embedded` profile on Linux, macOS, and Windows to provide software H.264 encoding without GPL flags.
 - **VVenC 1.14.0** (`internal/builder/libraries.go`, pinned to `v1.14.0.tar.gz`): Defined in the builder but disabled (`Enabled: Disabled()`), because it adds about 25 MB to `libffmpeg.a` and encodes too slowly for practical use.
 
 ## Hardware acceleration matrix
@@ -118,14 +118,14 @@ Several features common in full `ffmpeg` CLI distributions are omitted because G
 | Static archive path | `lib/<os>_<arch>/libffmpeg.a` | `lib/embedded/<os>_<arch>/libffmpeg.a` |
 | Release archive name | `ffmpeg-<os>-<arch>.tar.gz` | `ffmpeg-embedded-<os>-<arch>.tar.gz` |
 | CLI archive `LICENSE` | `COPYING.GPLv3` | `COPYING.LGPLv2.1` |
-| H.264 software encoder | `libx264`, `libx264rgb` | `libopenh264` (OpenH264 2.6.0, software-only) |
+| H.264 software encoder | `libx264`, `libx264rgb` | `libopenh264` (OpenH264 2.7.0, software-only) |
 | HEVC and AV1 | Included (`libx265`, `librav1e`, `libdav1d`, `av1`) | Excluded |
 | Hardware acceleration | Included (platform backends above) | Excluded (all backends disabled) |
 | TLS and SRT | Included (`openssl`, `libsrt`) | Excluded |
 
 ### Embedded profile exclusions and retained dependencies
 
-The `embedded` profile targets software-only playback and export with no GPL flags. It swaps `x264` for BSD-licenced OpenH264 2.6.0 and omits 12 `default` dependencies (`dav1d`, `glslang`, `libdrm`, `libsrt`, `libva`, `libvpl`, `nv-codec-headers`, `openssl`, `rav1e`, `Vulkan-Headers`, `x264`, `x265`).
+The `embedded` profile targets software-only playback and export with no GPL flags. It swaps `x264` for BSD-licenced OpenH264 2.7.0 and omits 12 `default` dependencies (`dav1d`, `glslang`, `libdrm`, `libsrt`, `libva`, `libvpl`, `nv-codec-headers`, `openssl`, `rav1e`, `Vulkan-Headers`, `x264`, `x265`).
 
 Component exclusions in `internal/builder/ffmpeg_args.go` (`embeddedFFmpegExclusions`):
 
