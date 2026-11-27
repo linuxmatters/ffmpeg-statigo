@@ -1,0 +1,78 @@
+name: ffmpeg-statigo
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+version_schema: none
+release: "1"
+section: video
+priority: optional
+maintainer: "Martin Wimpress <code@wimpress.io>"
+vendor: Linux Matters
+homepage: https://github.com/linuxmatters/ffmpeg-statigo
+license: GPL-3.0-or-later
+description: Static FFmpeg and FFprobe binaries with modern codecs and hardware acceleration
+
+archlinux:
+  packager: "Martin Wimpress <code@wimpress.io>"
+
+contents:
+  - src: ${STAGE_DIR}/ffmpeg
+    dst: /usr/bin/ffmpeg-statigo
+    expand: true
+    file_info:
+      mode: 0755
+  - src: ${STAGE_DIR}/ffprobe
+    dst: /usr/bin/ffprobe-statigo
+    expand: true
+    file_info:
+      mode: 0755
+  - src: ${STAGE_DIR}/LICENSE
+    dst: /usr/share/doc/ffmpeg-statigo/copyright
+    packager: deb
+    expand: true
+    file_info:
+      mode: 0644
+  - src: ${STAGE_DIR}/NOTICE.txt
+    dst: /usr/share/doc/ffmpeg-statigo/NOTICE.txt
+    packager: deb
+    expand: true
+    file_info:
+      mode: 0644
+  - src: ${STAGE_DIR}/LICENSE
+    dst: /usr/share/licenses/ffmpeg-statigo/LICENSE
+    type: license
+    packager: rpm
+    expand: true
+    file_info:
+      mode: 0644
+  - src: ${STAGE_DIR}/NOTICE.txt
+    dst: /usr/share/licenses/ffmpeg-statigo/NOTICE.txt
+    packager: rpm
+    expand: true
+    file_info:
+      mode: 0644
+  # Arch Linux has no separate %license metadata flag; nfpm skips files with
+  # type: license under the archlinux packager, so omit type here.
+  - src: ${STAGE_DIR}/LICENSE
+    dst: /usr/share/licenses/ffmpeg-statigo/LICENSE
+    packager: archlinux
+    expand: true
+    file_info:
+      mode: 0644
+  - src: ${STAGE_DIR}/NOTICE.txt
+    dst: /usr/share/licenses/ffmpeg-statigo/NOTICE.txt
+    packager: archlinux
+    expand: true
+    file_info:
+      mode: 0644
+
+overrides:
+  deb:
+    depends:
+      - libc6 (>= 2.39)
+  rpm:
+    depends:
+      - libc.so.6(GLIBC_2.39)(64bit)
+  archlinux:
+    depends:
+      - glibc>=2.39

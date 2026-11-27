@@ -21,7 +21,9 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       display_version: ${{ steps.version.outputs.display_version }}
-      windows_assets: ${{ steps.windows-assets.outputs.windows_assets || 'false' }}
+      lib_release: ${{ steps.lib-assets.outputs.lib_release }}
+      windows_assets: ${{ steps.lib-assets.outputs.windows_assets || 'false' }}
+      cli_assets: ${{ steps.lib-assets.outputs.cli_assets || 'false' }}
 
     steps:
       - name: Validate version format
@@ -62,8 +64,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check Windows release assets
-        id: windows-assets
+      - name: Check library release assets
+        id: lib-assets
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
@@ -74,6 +76,7 @@ jobs:
             echo "::error::Invalid or missing LibRelease in lib/fetch.go: $tag"
             exit 1
           fi
+          echo "lib_release=$tag" >> "$GITHUB_OUTPUT"
           api="https://api.github.com/repos/linuxmatters/ffmpeg-statigo/releases/tags/${tag}"
           body_file="${RUNNER_TEMP}/release.json"
           http_code=$(curl --silent --show-error \
@@ -103,6 +106,26 @@ jobs:
           echo "windows_assets=$windows_assets" >> "$GITHUB_OUTPUT"
           if [[ "$windows_assets" != "true" ]]; then
             echo "::notice::Release $tag does not contain all Windows library archives. Skipping test-windows."
+          fi
+          cli_assets=$(jq -r '
+            if (.assets | type) != "array" then
+              error("Missing release asset metadata")
+            else
+              (.assets | map(.name)) as $names |
+              [
+                "SHA256SUMS",
+                "ffmpeg-bin-linux-amd64.tar.gz",
+                "ffmpeg-bin-linux-arm64.tar.gz",
+                "ffmpeg-bin-darwin-amd64.tar.gz",
+                "ffmpeg-bin-darwin-arm64.tar.gz",
+                "ffmpeg-bin-windows-amd64.zip",
+                "ffmpeg-bin-windows-386.zip"
+              ] | all(. as $a | $names | index($a) != null)
+            end
+          ' "$body_file")
+          echo "cli_assets=$cli_assets" >> "$GITHUB_OUTPUT"
+          if [[ "$cli_assets" != "true" ]]; then
+            echo "::notice::Release $tag does not contain all default CLI archives and SHA256SUMS. Skipping CLI packaging."
           fi
 
   test-unix:
@@ -277,6 +300,99 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download and verify CLI archives
+        if: needs.validate.outputs.cli_assets == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIB_RELEASE: ${{ needs.validate.outputs.lib_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          in_dir="${RUNNER_TEMP}/cli-in"
+          mkdir -p "$in_dir"
+
+          archives=(
+            "ffmpeg-bin-linux-amd64.tar.gz"
+            "ffmpeg-bin-linux-arm64.tar.gz"
+            "ffmpeg-bin-darwin-amd64.tar.gz"
+            "ffmpeg-bin-darwin-arm64.tar.gz"
+            "ffmpeg-bin-windows-amd64.zip"
+            "ffmpeg-bin-windows-386.zip"
+          )
+
+          patterns=("--pattern" "SHA256SUMS")
+          for archive in "${archives[@]}"; do
+            patterns+=("--pattern" "$archive")
+          done
+
+          gh release download "$LIB_RELEASE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir "$in_dir" \
+            --clobber \
+            "${patterns[@]}"
+
+          cd "$in_dir"
+          verified=$(sha256sum --check --ignore-missing SHA256SUMS)
+          printf '%s\n' "$verified"
+          for archive in "${archives[@]}"; do
+            if ! grep -Fqx "$archive: OK" <<< "$verified"; then
+              echo "::error::CLI archive was not verified: $archive"
+              exit 1
+            fi
+          done
+
+      - name: Install nfpm
+        if: needs.validate.outputs.cli_assets == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          nfpm_version="2.49.0"
+          nfpm_archive="nfpm_${nfpm_version}_Linux_x86_64.tar.gz"
+          nfpm_sha256="2afaa5ffb5e3493402e31e7c67a5a1fb42133e3f66fc315ca0051934125561c7"
+          nfpm_dir="${RUNNER_TEMP}/nfpm"
+          mkdir -p "${nfpm_dir}/bin"
+
+          curl --fail --silent --show-error --location \
+            --output "${nfpm_dir}/${nfpm_archive}" \
+            "https://github.com/goreleaser/nfpm/releases/download/v${nfpm_version}/${nfpm_archive}"
+
+          printf '%s  %s\n' "$nfpm_sha256" "${nfpm_dir}/${nfpm_archive}" | sha256sum --check --strict -
+          tar -xzf "${nfpm_dir}/${nfpm_archive}" -C "$nfpm_dir" nfpm
+          install -m 0755 "${nfpm_dir}/nfpm" "${nfpm_dir}/bin/nfpm"
+          echo "${nfpm_dir}/bin" >> "$GITHUB_PATH"
+          "${nfpm_dir}/bin/nfpm" --version
+
+      - name: Package CLI release assets
+        if: needs.validate.outputs.cli_assets == 'true'
+        env:
+          TAG: ${{ needs.validate.outputs.version }}
+          LIB_RELEASE: ${{ needs.validate.outputs.lib_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./packaging/package-release.sh \
+            --version "${TAG#v}" \
+            --lib-release "$LIB_RELEASE" \
+            --in-dir "${RUNNER_TEMP}/cli-in" \
+            --out-dir "${RUNNER_TEMP}/cli-out" \
+            --nix-sources "${RUNNER_TEMP}/nix-sources.json"
+
+          sums_file="${RUNNER_TEMP}/cli-out/SHA256SUMS"
+          nix_sources="${RUNNER_TEMP}/nix-sources.json"
+          if [[ ! -s "$sums_file" ]]; then
+            echo "::error::Missing or empty $sums_file"
+            exit 1
+          fi
+          sums_lines=$(wc -l < "$sums_file")
+          if [[ "$sums_lines" -ne 18 ]]; then
+            echo "::error::Expected 18 lines in $sums_file, got $sums_lines"
+            exit 1
+          fi
+          if [[ ! -s "$nix_sources" ]]; then
+            echo "::error::Missing or empty $nix_sources"
+            exit 1
+          fi
+
       - name: Create tag (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -285,6 +401,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          head_commit=$(git rev-parse HEAD)
+          tag_commit=$(git rev-parse -q --verify "refs/tags/${VERSION}^{commit}" || true)
+          if [[ -z "$tag_commit" ]]; then
+            remote_tag=$(git ls-remote --tags origin "refs/tags/${VERSION}")
+            if [[ -n "$remote_tag" ]]; then
+              git fetch --no-tags origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+              tag_commit=$(git rev-parse -q --verify "refs/tags/${VERSION}^{commit}" || true)
+            fi
+          fi
+          if [[ -n "$tag_commit" ]]; then
+            if [[ "$tag_commit" == "$head_commit" ]]; then
+              echo "::notice::Skipping tag creation: tag $VERSION already points to HEAD ($head_commit)"
+              exit 0
+            fi
+            echo "::error::Tag $VERSION already exists on a different commit ($tag_commit != $head_commit)"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Go modules require v prefix for version tags
@@ -295,6 +428,7 @@ jobs:
         id: changelog
         env:
           VERSION: ${{ needs.validate.outputs.version }}
+          CLI_ASSETS: ${{ needs.validate.outputs.cli_assets }}
         shell: bash
         run: |
           set -euo pipefail
@@ -338,6 +472,20 @@ jobs:
             echo ""
             printf '%s%s\n' "**Full Changelog**: ${repo_url}/compare/" \
               "${PREV_TAG:-main}...$VERSION"
+            if [[ "$CLI_ASSETS" == "true" ]]; then
+              echo ""
+              echo "## Install"
+              echo ""
+              echo "- Debian and Ubuntu: [apt.wimpys.world](https://apt.wimpys.world/#ffmpeg-statigo)"
+              echo "- Fedora and openSUSE: [rpm.wimpys.world](https://rpm.wimpys.world/#ffmpeg-statigo)"
+              echo "- Arch Linux: [pkg.wimpys.world](https://pkg.wimpys.world/#ffmpeg-statigo)"
+              echo "- macOS (Homebrew): [brew.wimpys.world](https://brew.wimpys.world/#ffmpeg-statigo)"
+              echo "- Windows (Scoop): [scoop.wimpys.world](https://scoop.wimpys.world/#ffmpeg-statigo)"
+              echo "- Nix and NixOS: [nix.wimpys.world](https://nix.wimpys.world/#ffmpeg-statigo)"
+              echo "- Any platform, with [bin](https://github.com/marcosnils/bin): \`bin install github.com/linuxmatters/ffmpeg-statigo\`"
+              echo ""
+              echo "The Linux packages and binaries need glibc 2.39 or later, for example Ubuntu 24.04, Debian 13, or Fedora 40."
+            fi
           } > changelog.md
 
       - name: Create GitHub Release
@@ -346,5 +494,42 @@ jobs:
           tag_name: ${{ needs.validate.outputs.version }}
           name: ${{ needs.validate.outputs.display_version }}
           body_path: changelog.md
+          files: ${{ needs.validate.outputs.cli_assets == 'true' && format('{0}/cli-out/*', runner.temp) || '' }}
+          fail_on_unmatched_files: ${{ needs.validate.outputs.cli_assets == 'true' }}
           draft: false
           prerelease: false
+
+      - name: Move latest tag
+        if: >-
+          needs.validate.outputs.cli_assets == 'true' &&
+          !contains(needs.validate.outputs.version, '-')
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_version="${RELEASE_TAG#v}"
+          latest_ref=$(git ls-remote --tags origin refs/tags/latest)
+          if [[ -n "$latest_ref" ]]; then
+            git fetch --no-tags origin refs/tags/latest
+            if latest_sources=$(git show FETCH_HEAD:nix/sources.json 2>/dev/null); then
+              latest_version=$(jq -r '.version // empty' <<< "$latest_sources")
+              latest_version="${latest_version#v}"
+              if [[ -n "$latest_version" && "$latest_version" != "$release_version" ]]; then
+                newest=$(printf '%s\n%s\n' "$latest_version" "$release_version" | sort -V | tail -n 1)
+                if [[ "$newest" == "$latest_version" ]]; then
+                  echo "::notice::Skipping latest tag update: existing latest ($latest_version) is newer than $release_version"
+                  exit 0
+                fi
+              fi
+            fi
+          fi
+          git checkout --detach "${RELEASE_TAG}^{commit}"
+          mkdir -p nix
+          cp "${RUNNER_TEMP}/nix-sources.json" nix/sources.json
+          git add -f nix/sources.json
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --message "chore(nix): update sources.json for ${release_version}"
+          git tag --force latest HEAD
+          git push --force origin refs/tags/latest

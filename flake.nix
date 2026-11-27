@@ -18,8 +18,25 @@
       let
         basePkgs = import nixpkgs { inherit system; };
         pkgs = basePkgs // { go = basePkgs.go_1_26; };
+        hasSources = builtins.pathExists ./nix/sources.json;
+        sources =
+          if hasSources then
+            builtins.fromJSON (builtins.readFile ./nix/sources.json)
+          else
+            { systems = { }; };
+        hasPackage = hasSources && builtins.hasAttr system (sources.systems or { });
+        ffmpeg-statigo = pkgs.callPackage ./nix/package.nix { inherit sources; };
       in
       {
+        packages =
+          if hasPackage then
+            {
+              inherit ffmpeg-statigo;
+              default = ffmpeg-statigo;
+            }
+          else
+            { };
+
         devShells.default = pkgs.mkShell {
           packages =
             with pkgs;
@@ -40,6 +57,7 @@
               just
               meson
               nasm
+              nfpm
               ninja
               # Linters and formatters
               actionlint

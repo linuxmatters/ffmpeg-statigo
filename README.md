@@ -56,6 +56,31 @@ The tagged build uses `lib/embedded/<os>_<arch>/libffmpeg.a`, from `ffmpeg-embed
 
 ## Standalone CLI Binaries
 
+| | Platform | Repository |
+| :-: | --- | --- |
+| <img src="https://apt.wimpys.world/logo.svg" width="32" height="32" alt=""> | Debian and Ubuntu | [apt.wimpys.world](https://apt.wimpys.world/#ffmpeg-statigo) |
+| <img src="https://rpm.wimpys.world/logo.svg" width="32" height="32" alt=""> | Fedora and openSUSE | [rpm.wimpys.world](https://rpm.wimpys.world/#ffmpeg-statigo) |
+| <img src="https://pkg.wimpys.world/logo.svg" width="32" height="32" alt=""> | Arch Linux | [pkg.wimpys.world](https://pkg.wimpys.world/#ffmpeg-statigo) |
+| <img src="https://brew.wimpys.world/logo.svg" width="32" height="32" alt=""> | macOS (Homebrew) | [brew.wimpys.world](https://brew.wimpys.world/#ffmpeg-statigo) |
+| <img src="https://scoop.wimpys.world/logo.svg" width="32" height="32" alt=""> | Windows (Scoop) | [scoop.wimpys.world](https://scoop.wimpys.world/#ffmpeg-statigo) |
+| <img src="https://nix.wimpys.world/logo.svg" width="32" height="32" alt=""> | Nix and NixOS | [nix.wimpys.world](https://nix.wimpys.world/#ffmpeg-statigo) |
+
+APT, RPM, Arch, and Nix repositories are signed, and Homebrew and Scoop verify packages over HTTPS with SHA-256 checksums. Each page gives the setup steps and keeps ffmpeg-statigo up to date.
+
+The Linux packages and binaries need glibc 2.39 or later, for example Ubuntu 24.04, Debian 13, or Fedora 40.
+
+Packages install the `default` (GPLv3) profile as `ffmpeg-statigo` and `ffprobe-statigo` to coexist with a system `ffmpeg`, and Homebrew and Scoop also provide `ffprobe-statigo`.
+
+### Any platform
+
+[bin](https://github.com/marcosnils/bin) installs and updates the release binary:
+
+```shell
+bin install github.com/linuxmatters/ffmpeg-statigo
+```
+
+### Direct archives
+
 Pre-built static `ffmpeg` and `ffprobe` executables ship on each `lib-X.Y.Z.N` release on [GitHub Releases](https://github.com/linuxmatters/ffmpeg-statigo/releases) alongside the static libraries.
 Each `lib-X.Y.Z.N` release sets `make_latest: false`, because `vX.Y.Z.N` releases track the Go module as Latest.
 Direct downloads use this URL pattern:
