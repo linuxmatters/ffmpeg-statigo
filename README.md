@@ -1,5 +1,7 @@
 # FFmpeg Statigo
 
+<img src="pages/icon.svg" width="64" height="64" alt="FFmpeg Statigo">
+
 Static FFmpeg 8.1.2 bindings for Go and standalone `ffmpeg-statigo` / `ffprobe-statigo` CLI binaries across Linux, macOS, and Windows.
 
 FFmpeg Statigo bundles static FFmpeg libraries directly into your Go binary so you ship zero runtime FFmpeg installs. It also publishes standalone `ffmpeg-statigo` and `ffprobe-statigo` executables built from the same curated static toolchain.
