@@ -7,7 +7,7 @@ languages:
     cgo: true
 
 repository:
-  description: "Static FFmpeg Go bindings and standalone ffmpeg-statigo/ffprobe-statigo CLI binaries for Linux, macOS, and Windows"
+  description: "Static FFmpeg Go bindings and standalone ffmpeg-statigo/ffprobe-statigo CLI binaries for Linux, macOS, and Windows ⏩"
   homepage: https://linuxmatters.sh/jive/ffmpeg-statigo/
   has_wiki: true
   has_discussions: false
