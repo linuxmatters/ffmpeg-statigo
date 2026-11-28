@@ -177,7 +177,7 @@ Standalone CLI archives bundle their effective `LICENSE` (`COPYING.GPLv3` for `d
 
 <!-- tailor:social-stars:start -->
 <p align="center">
-  <a href="https://github.com/linuxmatters/ffmpeg-statigo/stargazers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stars-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stars-light.svg" alt="Ffmpeg Statigo star history"></picture></a>
+  <a href="https://github.com/linuxmatters/ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stars-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stars-light.svg" alt="Ffmpeg Statigo star history"></picture></a>
 </p>
 <!-- tailor:social-stars:end -->
 
