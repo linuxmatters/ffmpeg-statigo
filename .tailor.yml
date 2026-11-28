@@ -123,6 +123,58 @@ ruleset:
             alerts_threshold: errors
             security_alerts_threshold: high_or_higher
 
+# Pages is opt-in. Omission or enabled: false leaves Pages unmanaged.
+# generator: static (default) creates a starter in an empty path. Hugo and Jekyll need an existing site.
+# path: project-relative source directory, default pages.
+# branch: omit to use the current repository default branch.
+# cname: omit to preserve the domain, use "" to clear it, or set a domain.
+pages:
+  generator: static
+  path: pages
+  links:
+    website: https://linuxmatters.sh/jive/ffmpeg-statigo/
+    bluesky: https://bsky.app/profile/linuxmatters.sh
+    mastodon: "https://ubuntu.social/@linuxmatters"
+    linkedin: https://linkedin.com/in/martinwimpress
+    discord: https://discord.com/invite/vUsydfP
+    podcast: https://linuxmatters.sh
+    github_sponsors: https://github.com/sponsors/flexiondotorg
+
+# Social assets are opt-in. Omission or enabled: false leaves social assets unmanaged.
+social:
+  enabled: true
+  theme: dark
+  accent: "#feb81e"
+  og:
+    output: pages/og.png
+    include_preview: false
+  readme:
+    header: true
+    preferred_links:
+      - bluesky
+      - mastodon
+      - linkedin
+    community: auto
+    packages:
+      - apt
+      - rpm
+      - pkg
+      - brew
+      - scoop
+      - nix
+    stats: true
+    star_history:
+      enabled: true
+      min_stars: 25
+      min_days: 30
+    sponsors: auto
+    contributors: true
+    demo: false
+    footer: true
+  live:
+    branch: social-assets
+    schedule: "0 4 * * *"
+
 labels:
   - name: bug
     color: d20f39

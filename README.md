@@ -1,6 +1,22 @@
-# FFmpeg Statigo
+<!-- tailor:social-header:start -->
+<p align="center">
+  <a href="https://linuxmatters.sh/jive/ffmpeg-statigo/"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/hero-dark.svg"><img src="pages/social/hero-light.svg" alt="Ffmpeg Statigo"></picture></a>
+</p>
+<!-- tailor:social-header:end -->
 
-<img src="pages/icon.svg" width="64" height="64" alt="FFmpeg Statigo">
+<!-- tailor:social-links:start -->
+<p align="center">
+  <a href="https://bsky.app/profile/linuxmatters.sh"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/link-bluesky-dark.svg"><img src="pages/social/link-bluesky-light.svg" alt="Bluesky"></picture></a>
+  <a href="https://ubuntu.social/@linuxmatters"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/link-mastodon-dark.svg"><img src="pages/social/link-mastodon-light.svg" alt="Mastodon"></picture></a>
+  <a href="https://linkedin.com/in/martinwimpress"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/link-linkedin-dark.svg"><img src="pages/social/link-linkedin-light.svg" alt="LinkedIn"></picture></a>
+</p>
+<!-- tailor:social-links:end -->
+
+<!-- tailor:social-community:start -->
+<p align="center">
+  <a href="https://discord.com/invite/vUsydfP"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/community-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/community-light.svg" alt="Discord community"></picture></a>
+</p>
+<!-- tailor:social-community:end -->
 
 Static FFmpeg 8.1.3 bindings for Go and standalone `ffmpeg-statigo` / `ffprobe-statigo` CLI binaries across Linux, macOS, and Windows.
 
@@ -21,7 +37,52 @@ Library releases ship two build profiles for Linux (`amd64`, `arm64`), macOS (`a
 
 See the [Codec and hardware matrix](https://github.com/linuxmatters/ffmpeg-statigo/wiki/Codec-and-Hardware-Matrix) for library versions, enabled codecs, containers, filters, and GPU generation support.
 
-## Install: Go library
+<!-- tailor:social-stats:start -->
+<p align="center">
+  <a href="https://github.com/linuxmatters/ffmpeg-statigo/pulse"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stats-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stats-light.svg" alt="Ffmpeg Statigo statistics"></picture></a>
+</p>
+<!-- tailor:social-stats:end -->
+
+## Install
+
+First-party repositories are published for Linux, macOS, and Windows through [wimpys.world](https://wimpys.world/). APT, RPM, Arch, and Nix repositories are signed, and Homebrew and Scoop verify packages over HTTPS with SHA-256 checksums. Choose your platform below for setup instructions and automatic updates.
+
+<!-- tailor:social-packages:start -->
+<p align="center">
+  <a href="https://apt.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-apt-dark.svg"><img src="pages/social/pkg-apt-light.svg" alt="Debian and Ubuntu"></picture></a>
+  <a href="https://rpm.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-rpm-dark.svg"><img src="pages/social/pkg-rpm-light.svg" alt="Fedora and openSUSE"></picture></a>
+  <a href="https://pkg.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-pkg-dark.svg"><img src="pages/social/pkg-pkg-light.svg" alt="Arch Linux"></picture></a>
+  <br>
+  <a href="https://brew.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-brew-dark.svg"><img src="pages/social/pkg-brew-light.svg" alt="macOS (Homebrew)"></picture></a>
+  <a href="https://scoop.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-scoop-dark.svg"><img src="pages/social/pkg-scoop-light.svg" alt="Windows (Scoop)"></picture></a>
+  <a href="https://nix.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-nix-dark.svg"><img src="pages/social/pkg-nix-light.svg" alt="Nix and NixOS"></picture></a>
+</p>
+<!-- tailor:social-packages:end -->
+
+The Linux packages and binaries need glibc 2.39 or later, for example Ubuntu 24.04, Debian 13, or Fedora 40.
+
+Packages install the `default` (GPLv3) profile as `ffmpeg-statigo` and `ffprobe-statigo` to coexist with a system `ffmpeg`, and Homebrew and Scoop also provide `ffprobe-statigo`.
+
+<details>
+<summary><strong>Any platform (<code>bin</code>)</strong> - install and update the release binary directly</summary>
+
+[bin](https://github.com/marcosnils/bin) installs and updates the release binary:
+
+```shell
+bin install github.com/linuxmatters/ffmpeg-statigo
+```
+
+For direct `lib-X.Y.Z.N` release archives (`default` and `embedded`), SHA-256 checksum verification, and macOS Gatekeeper quarantine removal, see [Standalone CLI downloads](https://github.com/linuxmatters/ffmpeg-statigo/wiki/Standalone-CLI-Downloads).
+
+</details>
+
+<!-- tailor:social-sponsors:start -->
+<p align="center">
+  <a href="https://github.com/sponsors/flexiondotorg"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/sponsors-dark.svg"><img src="pages/social/sponsors-light.svg" alt="Ffmpeg Statigo sponsors"></picture></a>
+</p>
+<!-- tailor:social-sponsors:end -->
+
+### Go library
 
 Static libraries (~100 MB per platform) do not distribute via `go get`. Add FFmpeg Statigo as a git submodule with a `replace` directive:
 
@@ -38,7 +99,7 @@ cd third_party/ffmpeg-statigo && GOFLAGS=-tags=embedded go run ./cmd/download-li
 cd ../.. && CGO_ENABLED=1 go build -tags=embedded ./...
 ```
 
-### Quick start
+## Quick start
 
 The root package exposes raw C pointers that require manual `Free`, `Unref`, and `Close` calls. For automatic `io.Closer` cleanup, use the optional [`av`](av) package:
 
@@ -77,33 +138,6 @@ func main() {
 
 Browse runnable programs in [`examples/`](examples/), read the [High-level `av` package guide](https://github.com/linuxmatters/ffmpeg-statigo/wiki/High-Level-av-Package), or see [Go consumer integration](https://github.com/linuxmatters/ffmpeg-statigo/wiki/Go-Consumer-Integration) for CI setup, cross-compilation, and memory rules.
 
-## Install: standalone CLI binaries
-
-| | Platform | Repository |
-| :-: | --- | --- |
-| <img src="https://apt.wimpys.world/logo.svg" width="32" height="32" alt=""> | Debian and Ubuntu | [apt.wimpys.world](https://apt.wimpys.world/#ffmpeg-statigo) |
-| <img src="https://rpm.wimpys.world/logo.svg" width="32" height="32" alt=""> | Fedora and openSUSE | [rpm.wimpys.world](https://rpm.wimpys.world/#ffmpeg-statigo) |
-| <img src="https://pkg.wimpys.world/logo.svg" width="32" height="32" alt=""> | Arch Linux | [pkg.wimpys.world](https://pkg.wimpys.world/#ffmpeg-statigo) |
-| <img src="https://brew.wimpys.world/logo.svg" width="32" height="32" alt=""> | macOS (Homebrew) | [brew.wimpys.world](https://brew.wimpys.world/#ffmpeg-statigo) |
-| <img src="https://scoop.wimpys.world/logo.svg" width="32" height="32" alt=""> | Windows (Scoop) | [scoop.wimpys.world](https://scoop.wimpys.world/#ffmpeg-statigo) |
-| <img src="https://nix.wimpys.world/logo.svg" width="32" height="32" alt=""> | Nix and NixOS | [nix.wimpys.world](https://nix.wimpys.world/#ffmpeg-statigo) |
-
-APT, RPM, Arch, and Nix repositories are signed, and Homebrew and Scoop verify packages over HTTPS with SHA-256 checksums. Each page gives the setup steps and keeps ffmpeg-statigo up to date.
-
-The Linux packages and binaries need glibc 2.39 or later, for example Ubuntu 24.04, Debian 13, or Fedora 40.
-
-Packages install the `default` (GPLv3) profile as `ffmpeg-statigo` and `ffprobe-statigo` to coexist with a system `ffmpeg`, and Homebrew and Scoop also provide `ffprobe-statigo`.
-
-### Any platform
-
-[bin](https://github.com/marcosnils/bin) installs and updates the release binary:
-
-```shell
-bin install github.com/linuxmatters/ffmpeg-statigo
-```
-
-For direct `lib-X.Y.Z.N` release archives (`default` and `embedded`), SHA-256 checksum verification, and macOS Gatekeeper quarantine removal, see [Standalone CLI downloads](https://github.com/linuxmatters/ffmpeg-statigo/wiki/Standalone-CLI-Downloads).
-
 ## Built with FFmpeg Statigo
 
 Tools built on these bindings for the [Linux Matters](https://linuxmatters.sh) podcast toolchain:
@@ -140,3 +174,21 @@ The Go binding code is MIT licensed. The `default` static library and CLI archiv
 The `embedded` variant omits GPL build flags and uses BSD-licensed OpenH264, but FFmpeg's LGPLv2.1 obligations still apply. Static distribution requires a way for recipients to relink with a modified FFmpeg library, and the self-built OpenH264 archive does **not** qualify for Cisco's binary AVC patent royalty coverage.
 
 Standalone CLI archives bundle their effective `LICENSE` (`COPYING.GPLv3` for `default`, `COPYING.LGPLv2.1` for `embedded`) and `NOTICE.txt` rather than the repository root MIT licence.
+
+<!-- tailor:social-stars:start -->
+<p align="center">
+  <a href="https://github.com/linuxmatters/ffmpeg-statigo/stargazers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stars-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/stars-light.svg" alt="Ffmpeg Statigo star history"></picture></a>
+</p>
+<!-- tailor:social-stars:end -->
+
+<!-- tailor:social-contributors:start -->
+<p align="center">
+  <a href="https://github.com/linuxmatters/ffmpeg-statigo/graphs/contributors"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/contributors-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/contributors-light.svg" alt="Ffmpeg Statigo contributors"></picture></a>
+</p>
+<!-- tailor:social-contributors:end -->
+
+<!-- tailor:social-footer:start -->
+<p align="center">
+  <a href="https://tailor.wimpys.world"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/footer-dark.svg"><img src="pages/social/footer-light.svg" alt="Fitted by Tailor"></picture></a>
+</p>
+<!-- tailor:social-footer:end -->
