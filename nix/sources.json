@@ -1,0 +1,22 @@
+{
+  "version": "8.1.3.0",
+  "libRelease": "lib-8.1.3.0",
+  "systems": {
+    "x86_64-linux": {
+      "url": "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/lib-8.1.3.0/ffmpeg-bin-linux-amd64.tar.gz",
+      "hash": "sha256-+8gUZF3rmR/6cyA5GREn/88bM6GwnGzcE/32jvF9MhA="
+    },
+    "aarch64-linux": {
+      "url": "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/lib-8.1.3.0/ffmpeg-bin-linux-arm64.tar.gz",
+      "hash": "sha256-FYFhxfSW9xS/w/OMweLG6F5ovDfPGJNwFBgmf0lo2AA="
+    },
+    "x86_64-darwin": {
+      "url": "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/lib-8.1.3.0/ffmpeg-bin-darwin-amd64.tar.gz",
+      "hash": "sha256-mdLoE5g2+yula5xaov0amA16I/gzgkaar3pRult9ix4="
+    },
+    "aarch64-darwin": {
+      "url": "https://github.com/linuxmatters/ffmpeg-statigo/releases/download/lib-8.1.3.0/ffmpeg-bin-darwin-arm64.tar.gz",
+      "hash": "sha256-GkuhjM9zqbpn4Pb15qchpAywEuvFAndorIcgYQHnkRo="
+    }
+  }
+}
