@@ -1,20 +1,20 @@
 <!-- tailor:social-header:start -->
 <p align="center">
-  <a href="https://linuxmatters.sh/jive/ffmpeg-statigo/"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/hero-dark.svg"><img src="pages/social/hero-light.svg" alt="Ffmpeg Statigo"></picture></a>
+  <a href="https://linuxmatters.sh/jive/ffmpeg-statigo/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/hero-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/hero-light.svg" alt="Ffmpeg Statigo"></picture></a>
 </p>
 <!-- tailor:social-header:end -->
 
 <!-- tailor:social-links:start -->
 <p align="center">
-  <a href="https://bsky.app/profile/linuxmatters.sh"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/link-bluesky-dark.svg"><img src="pages/social/link-bluesky-light.svg" alt="Bluesky"></picture></a>
-  <a href="https://ubuntu.social/@linuxmatters"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/link-mastodon-dark.svg"><img src="pages/social/link-mastodon-light.svg" alt="Mastodon"></picture></a>
-  <a href="https://linkedin.com/in/martinwimpress"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/link-linkedin-dark.svg"><img src="pages/social/link-linkedin-light.svg" alt="LinkedIn"></picture></a>
+  <a href="https://bsky.app/profile/linuxmatters.sh"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/link-bluesky-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/link-bluesky-light.svg" alt="Bluesky"></picture></a>
+  <a href="https://ubuntu.social/@linuxmatters"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/link-mastodon-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/link-mastodon-light.svg" alt="Mastodon"></picture></a>
+  <a href="https://linkedin.com/in/martinwimpress"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/link-linkedin-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/link-linkedin-light.svg" alt="LinkedIn"></picture></a>
 </p>
 <!-- tailor:social-links:end -->
 
 <!-- tailor:social-community:start -->
 <p align="center">
-  <a href="https://discord.com/invite/vUsydfP"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/community-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/community-light.svg" alt="Discord community"></picture></a>
+  <a href="https://t.me/joinchat/Plfd07auVLayNLBD"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/community-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/community-light.svg" alt="Telegram community"></picture></a>
 </p>
 <!-- tailor:social-community:end -->
 
@@ -49,13 +49,13 @@ First-party repositories are published for Linux, macOS, and Windows through [wi
 
 <!-- tailor:social-packages:start -->
 <p align="center">
-  <a href="https://apt.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-apt-dark.svg"><img src="pages/social/pkg-apt-light.svg" alt="Debian and Ubuntu"></picture></a>
-  <a href="https://rpm.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-rpm-dark.svg"><img src="pages/social/pkg-rpm-light.svg" alt="Fedora and openSUSE"></picture></a>
-  <a href="https://pkg.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-pkg-dark.svg"><img src="pages/social/pkg-pkg-light.svg" alt="Arch Linux"></picture></a>
+  <a href="https://apt.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-apt-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-apt-light.svg" alt="Debian and Ubuntu"></picture></a>
+  <a href="https://rpm.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-rpm-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-rpm-light.svg" alt="Fedora and openSUSE"></picture></a>
+  <a href="https://pkg.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-pkg-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-pkg-light.svg" alt="Arch Linux"></picture></a>
   <br>
-  <a href="https://brew.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-brew-dark.svg"><img src="pages/social/pkg-brew-light.svg" alt="macOS (Homebrew)"></picture></a>
-  <a href="https://scoop.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-scoop-dark.svg"><img src="pages/social/pkg-scoop-light.svg" alt="Windows (Scoop)"></picture></a>
-  <a href="https://nix.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/pkg-nix-dark.svg"><img src="pages/social/pkg-nix-light.svg" alt="Nix and NixOS"></picture></a>
+  <a href="https://brew.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-brew-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-brew-light.svg" alt="macOS (Homebrew)"></picture></a>
+  <a href="https://scoop.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-scoop-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-scoop-light.svg" alt="Windows (Scoop)"></picture></a>
+  <a href="https://nix.wimpys.world/#ffmpeg-statigo"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-nix-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/pkg-nix-light.svg" alt="Nix and NixOS"></picture></a>
 </p>
 <!-- tailor:social-packages:end -->
 
@@ -78,7 +78,7 @@ For direct `lib-X.Y.Z.N` release archives (`default` and `embedded`), SHA-256 ch
 
 <!-- tailor:social-sponsors:start -->
 <p align="center">
-  <a href="https://github.com/sponsors/flexiondotorg"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/sponsors-dark.svg"><img src="pages/social/sponsors-light.svg" alt="Ffmpeg Statigo sponsors"></picture></a>
+  <a href="https://github.com/sponsors/flexiondotorg"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/sponsors-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/sponsors-light.svg" alt="Ffmpeg Statigo sponsors"></picture></a>
 </p>
 <!-- tailor:social-sponsors:end -->
 
@@ -189,6 +189,6 @@ Standalone CLI archives bundle their effective `LICENSE` (`COPYING.GPLv3` for `d
 
 <!-- tailor:social-footer:start -->
 <p align="center">
-  <a href="https://tailor.wimpys.world"><picture><source media="(prefers-color-scheme: dark)" srcset="pages/social/footer-dark.svg"><img src="pages/social/footer-light.svg" alt="Fitted by Tailor"></picture></a>
+  <a href="https://tailor.wimpys.world"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/footer-dark.svg"><img src="https://raw.githubusercontent.com/linuxmatters/ffmpeg-statigo/social-assets/footer-light.svg" alt="Fitted by Tailor"></picture></a>
 </p>
 <!-- tailor:social-footer:end -->
